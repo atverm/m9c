@@ -6,9 +6,9 @@ bytes are the oracle's bytes.  It has one layout, deterministic;
 the P5 differential compares this module's output against the FPC
 printer over the whole corpus.
 
-### Tree (VAR pool: POOL ; root: PTR Ast.Node) : STR
+### Tree (VAR pool: POOL ; root: PTR Ast.Node) : UTF
 
-**Deprecated** (the UTF transition): TreeUtf is its UTF form.
+Since 0.26 a call of Tree is TreeUtf, whose heading this is.
 
 _(documented with the group below)_
 
@@ -19,21 +19,21 @@ TreeUtf is the UTF form of Tree (docs/utf8-stage3-plan.md, step
 caller moves when it moves.  It is named, as none takes a UTF to
 dispatch on.
 
-### TypeText (VAR pool: POOL ; k: Ast.Kid) : STR
+### TypeText (VAR pool: POOL ; k: Ast.Kid) : UTF
 
-**Deprecated** (the UTF transition): TypeTextUtf is its UTF form.
-
-_(undocumented)_
-
-### ParamsText (k: Ast.Kid) : STR
-
-**Deprecated** (the UTF transition): ParamsTextUtf is its UTF form.
+Since 0.26 a call of TypeText is TypeTextUtf, whose heading this is.
 
 _(undocumented)_
 
-### ExprText (k: Ast.Kid) : STR
+### ParamsText (k: Ast.Kid) : UTF
 
-**Deprecated** (the UTF transition): ExprTextUtf is its UTF form.
+Since 0.26 a call of ParamsText is ParamsTextUtf, whose heading this is.
+
+_(undocumented)_
+
+### ExprText (k: Ast.Kid) : UTF
+
+Since 0.26 a call of ExprText is ExprTextUtf, whose heading this is.
 
 _(undocumented)_
 

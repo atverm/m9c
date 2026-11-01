@@ -1,0 +1,29 @@
+(* EXPECT: TASK (Work): both threads hold the m.Job handed over, and it is neither a MONITOR nor a RECORD marked [SHARABLE] *)
+(* A TASK is handed what a THREAD may be handed, and nothing else
+   (thread-not-sharable is the twin).  Tasks run on more than one
+   carrier from stage 2, so the rule is THREAD's.  The legal forms
+   come first. *)
+MODULE m ;
+TYPE
+  Gate = MONITOR RECORD n : I64 END ;
+  Band = RECORD part : SLICE OF I64 END [SHARABLE] ;
+  Job = RECORD n : I64 END ;
+VAR
+  pool : POOL ;
+  g : PTR Gate IN pool ;
+  b : PTR Band IN pool ;
+  o : PTR Job ;
+  j : PTR Job IN pool ;
+PROCEDURE Count (VAR q: Gate) = BEGIN q.n := q.n + 1 END Count ;
+PROCEDURE Fill (VAR q: Band) = BEGIN q.part[0] := 1 END Fill ;
+PROCEDURE Work (VAR q: Job) = BEGIN q.n := q.n + 1 END Work ;
+BEGIN
+  g := NEW (pool, Gate) ;
+  TASK (Count, g) ;
+  b := NEW (pool, Band) ;
+  TASK (Fill, b) ;
+  o := NEW (OWN, Job) ;
+  TASK (Work, o) ;
+  j := NEW (pool, Job) ;
+  TASK (Work, j)
+END m.

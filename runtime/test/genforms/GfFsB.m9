@@ -1,0 +1,26 @@
+DEFINITION MODULE GfFsB ;
+
+(* GfFsB helps GfFieldScope: its own type Input is a record with a
+   slice, and Set takes GfFsA.Params as a VAR parameter. *)
+
+IMPORT GfFsA ;
+
+TYPE
+  Input = RECORD
+    lu : SLICE OF STR ;
+  END ;
+
+PROCEDURE Set (VAR p: GfFsA.Params) ;
+
+END GfFsB.
+
+IMPLEMENTATION MODULE GfFsB ;
+
+IMPORT GfFsA ;
+
+PROCEDURE Set (VAR p: GfFsA.Params) =
+BEGIN
+  p.input := GfFsA.Input.Cf
+END Set ;
+
+END GfFsB.

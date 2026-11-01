@@ -3,12 +3,15 @@ REVIEW HttpServer -- 96 procedures with a body, 68 of them functions; 23 heading
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              68
   assignments                                   473
-  arguments                                    1109
+  arguments                                    1108
   RETURN values                                 252
   operands of a comparison or an operator       496
   CASE labels                                    35
   THREAD arguments                                1
   CASE over variants, proved total                0
+
+CAN TRAP AT RUN TIME -- a byte cut a character can straddle
+  text compared through a byte cut                0
 
 DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0

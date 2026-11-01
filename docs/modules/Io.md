@@ -14,15 +14,15 @@ output, directories.  A file is read or written whole, because that
 is what every caller in this repository does and a partial-read API
 invites the truncation bugs Http.RecvMax already had to fix.
 
-### WriteLine (RO s: STR)
+### WriteLine (RO u: UTF)
 
-**Deprecated** (the UTF transition): WriteLineUtf is its UTF form.
+Since 0.26 a call of WriteLine is WriteLineUtf, whose heading this is.
 
 _(documented with the group below)_
 
-### Write (RO s: STR)
+### Write (RO u: UTF)
 
-**Deprecated** (the UTF transition): WriteUtf is its UTF form.
+Since 0.26 a call of Write is WriteUtf, whose heading this is.
 
 _(documented with the group below)_
 
@@ -33,10 +33,10 @@ without one, and a decimal integer.  They are buffered, and Halt
 below flushes them.  That is why Halt is the only way out of a
 program that has written anything.
 
-  s -- CHARs are Unicode scalars and go out as octets; a scalar
-       past 255 is the CHAR/octet boundary and belongs to
-       DynStr.Bytes, not here.  Nothing in this module raises,
-       so these three cannot be the call that fails.
+  u -- the text, written as its UTF-8 octets.  Since 0.26 a
+       call of WriteLine or Write is WriteLineUtf's or
+       WriteUtf's.  Nothing in this module raises, so these
+       three cannot be the call that fails.
 
 ### WriteBytes (RO b: SLICE OF BYTE)
 
@@ -47,24 +47,17 @@ out before them, and Halt flushes both.  (cp-kernel's issue 18,
 buffered text and does not exist on Windows.)  Standard output is
 binary on every platform.
 
-### ErrLine (RO s: STR)
+### ErrLine (RO u: UTF)
 
-**Deprecated** (the UTF transition): ErrLineUtf is its UTF form.
+Since 0.26 a call of ErrLine is ErrLineUtf, whose heading this is.
 
-ErrLine writes to STDERR, and flushes.  Diagnostics do not belong
-in the program's output stream: the museum's HALT piece is three of
-them lost, and a log line interleaved into a data file is the same
-accident with a longer fuse.
+_(undocumented)_
 
-### Err (RO s: STR)
+### Err (RO u: UTF)
 
-**Deprecated** (the UTF transition): ErrUtf is its UTF form.
+Since 0.26 a call of Err is ErrUtf, whose heading this is.
 
-Err writes to STDERR without a newline and flushes: Write's
-twin.  It is for text that already carries its line ends, such
-as what a child process wrote to its own stderr and System.Exec
-handed back whole.  m9c forwards that as it was, not one line at
-a time.
+_(undocumented)_
 
 ### ArgCount () : I64
 
@@ -85,151 +78,87 @@ exit status; it does not need a silent one.  A code beyond
 0 .. 255 exits 255: the system truncates it, and Halt (256) used
 to exit 0, a failure reported as success.
 
-### ParseI64 (RO s: STR) : I64 RAISES ValueRange
+### ParseI64 (RO s: UTF) : I64 RAISES ValueRange
 
-**Deprecated** (the UTF transition): ParseI64Utf is its UTF form.
+Since 0.26 a call of ParseI64 is ParseI64Utf, whose heading this is.
 
-ParseI64 reads decimal, with an optional leading '-'.  Anything
-else raises: a command
-line is input, and input that is not what it claims is exactly
-what the checked-conversion story exists for.
+_(undocumented)_
 
-### Run (RO cmd: STR) : I64 RAISES ValueRange
+### Run (RO cmd: UTF) : I64 RAISES ValueRange
 
-**Deprecated** (the UTF transition): RunUtf is its UTF form.
+Since 0.26 a call of Run is RunUtf, whose heading this is.
 
-Run hands one command line to the shell and answers its status.
-The shell is what knows how cc is spelled here, so m9c does not
-have to.  Quoting is the hazard: a caller composing a path into
-a command must refuse what it cannot quote rather than compose
-something it cannot predict.
+_(undocumented)_
 
-### Env (VAR pool: POOL ; RO name: STR) : STR RAISES ValueRange
+### Env (VAR pool: POOL ; RO name: UTF) : UTF RAISES ValueRange
 
-**Deprecated** (the UTF transition): EnvUtf is its UTF form.
+Since 0.26 a call of Env is EnvUtf, whose heading this is.
 
-Env answers the variable's value, or empty when it is unset.  Unset
-and empty are not distinguished, because no caller here needs to
-and a two-valued answer nobody reads is a trap.
+EnvUtf answers the value's bytes validated as UTF-8 (ValueRange
+when they are not).  Env answers them one CHAR a byte, so
+`UTF (Io.Env (..))` would encode each byte again.
 
-### Exists (RO path: STR) : BOOL RAISES ValueRange
+### Exists (RO path: UTF) : BOOL RAISES ValueRange
 
-**Deprecated** (the UTF transition): ExistsUtf is its UTF form.
+Since 0.26 a call of Exists is ExistsUtf, whose heading this is.
 
-Exists answers whether path is readable.  It is a probe, not an
-open: the caller that asks this is choosing between candidates.
-A read of each one to find out would be an answer bought at the
-price of the question.
+_(undocumented)_
 
-### ModTime (RO path: STR) : I64 RAISES ValueRange
+### ModTime (RO path: UTF) : I64 RAISES ValueRange
 
-**Deprecated** (the UTF transition): ModTimeUtf is its UTF form.
+Since 0.26 a call of ModTime is ModTimeUtf, whose heading this is.
 
-ModTime answers when the file was last written, in seconds since
-the epoch, or -1 if it cannot be looked at.
+_(undocumented)_
 
-It is a COMPARISON, not a clock.  The only caller asks whether
-an object file is older than the source it came from, and for
-that the ORDER of two answers is all that matters.  That is why
-this is a bare integer rather than a Time.Instant.  It is also
-why a resolution of one second is not a defect: a build that
-rewrites a source and recompiles it inside the same second is a
-build whose inputs nobody could have read either.
+### Remove (RO path: UTF) : BOOL RAISES ValueRange
 
-### Remove (RO path: STR) : BOOL RAISES ValueRange
+Since 0.26 a call of Remove is RemoveUtf, whose heading this is.
 
-**Deprecated** (the UTF transition): RemoveUtf is its UTF form.
+_(undocumented)_
 
-Remove deletes a file and answers whether it is gone.  A by-product
-that cannot be removed is worth a word, not a raise: the object it
-came from was still built.
+### ListDir (VAR pool: POOL ; RO path: UTF) : SLICE OF UTF RAISES IOError, ValueRange
 
-### ListDir (VAR pool: POOL ; RO path: STR) : SLICE OF STR RAISES IOError, ValueRange
+Since 0.26 a call of ListDir is ListDirUtf, whose heading this is.
 
-**Deprecated** (the UTF transition): ListDirUtf is its UTF form.
+ListDirUtf raises ValueRange for a name that is not UTF-8, where
+ListDir answers it one CHAR a byte.
 
-ListDir answers the entries of a directory, '.' and '..'
-excluded, in the order the filesystem hands them out: readdir
-order, NOT sorted.  The zarr proxy must answer ?list with the
-same bytes the Python reference gets from the same syscall.
+### Arg (VAR pool: POOL ; i: I64) : UTF RAISES IndexError, ValueRange
 
-  path -- a directory; anything else RAISES IOError carrying
-          the path, the same contract as ReadFile.  An EMPTY
-          directory answers an empty slice, which is not an
-          error: nothing there and nothing readable are
-          different answers.
+Since 0.26 a call of Arg is ArgUtf, whose heading this is.
 
-### Arg (VAR pool: POOL ; i: I64) : STR RAISES IndexError, ValueRange
+_(undocumented)_
 
-**Deprecated** (the UTF transition): ArgUtf is its UTF form.
+### ReadFile (RO path: UTF) : UTF RAISES ValueRange, IOError [FRESH]
 
-Arg answers argument i as a fresh string in pool, copied out of
-the C argv rather than borrowed from it.
+Since 0.26 a call of ReadFile is ReadFileUtf, whose heading this is.
 
-  i -- 0 .. ArgCount - 1, and 0 is the program's own name.
-       Anything else RAISES IndexError instead of answering the
-       empty string.  An argument that was not given and an
-       argument that was given empty are different, and a
-       command line is exactly where that difference bites.
+ReadFileUtf answers the whole file as text: its octets validated
+as UTF-8 (ValueRange, with the offset of the first that is not)
+and kept as they are.  The answer is a UTF of the file's size,
+where ReadFile's STR is four times it.  ReadFileUtf is not
+ReadFile's twin by shape: it answers in the caller's frame,
+where ReadFile answers into a pool (`UTF (pool, Io.ReadFileUtf
+(path))` keeps it)
 
-### ReadFile (VAR pool: POOL ; RO path: STR) : STR RAISES ValueRange, IOError
+### ReadFileBytes (VAR pool: POOL ; RO path: UTF) : SLICE OF BYTE RAISES ValueRange, IOError
 
-**Deprecated** (the UTF transition): ReadFileUtf is its UTF form.
+Since 0.26 a call of ReadFileBytes is ReadFileBytesUtf, whose heading this is.
 
-ReadFile answers the whole file as text, in one allocation.  There
-is no seeking and no partial read anywhere in this module, for the
-reason the header gives.
+_(undocumented)_
 
-  path -- IOError if it cannot be opened or read; the exception
-          carries the path, so the caller need not compose the
-          message.  ValueRange is the octet boundary on the
-          path itself, not on the contents.
+### WriteFile (RO path: UTF ; RO content: UTF) RAISES ValueRange, IOError
 
-The file is UTF-8 and is decoded as such, strictly: a byte
-sequence that is not UTF-8 raises ValueRange (DynStr.FromUtf8).
-For anything large, or anything that is not text, use
-ReadFileBytes below and read its note first: a CHAR is four
-bytes wide, so this quadruples a file in memory.
-
-A file another process is WRITING at that moment is read as
-whatever it held when its size was taken, possibly nothing, and
-never as an exception.  The size is asked first and the bytes
-second, and between the two a writer can fill the file.  A
-reader polling for a file the way m9setup polls for the
-tutorial's port file met exactly that (2026-09-11).
-
-### ReadFileBytes (VAR pool: POOL ; RO path: STR) : SLICE OF BYTE RAISES ValueRange, IOError
-
-**Deprecated** (the UTF transition): ReadFileBytesUtf is its UTF form.
-
-ReadFileBytes does the same read, as OCTETS.  A CHAR is a Unicode
-scalar and so four bytes wide, which is right for text and wrong
-for a file: ReadFile on a 207 MB CSV allocates 828 MB and spends a
-pass widening bytes nobody wanted widened.  A reader that scans for
-commas wants the bytes.  The slice carries one extra zero byte past
-the end, so a C string function called on a field inside it cannot
-run off the buffer.
-
-### WriteFile (RO path: STR ; RO content: STR) RAISES ValueRange, IOError
-
-**Deprecated** (the UTF transition): WriteFileUtf is its UTF form.
+Since 0.26 a call of WriteFile is WriteFileUtf, whose heading this is.
 
 _(documented with the group below)_
 
-### AppendFile (RO path: STR ; RO content: STR) RAISES ValueRange, IOError
+### AppendFile (RO path: UTF ; RO content: UTF) RAISES ValueRange, IOError
 
-**Deprecated** (the UTF transition): AppendFileUtf is its UTF form.
+Since 0.26 a call of AppendFile is AppendFileUtf, whose heading this is.
 
-With WriteFile and AppendFile the file's bytes become, or gain,
-the UTF-8 of content: every Unicode scalar encoded
-(DynStr.Utf8).  Until 2026-10-09 WriteFile narrowed one CHAR to
-one octet and refused a scalar past 255, while the console
-encoded UTF-8.  So nothing in Io wrote text, and a UTF-8 file
-read with ReadFile printed double-encoded.  cp-kernel found it
-on 0.18.0 (Io.WriteFile of a string holding U+2082 raised
-ValueRange).  A program that holds OCTETS as CHARs, such as an
-HTTP body or a request's bytes, writes them through
-WriteFileBytes (path, DynStr.Bytes (pool, s, FALSE)).
+With WriteFileUtf and AppendFileUtf the file's bytes become, or
+gain, content's octets.
 
 ### ReadStdin (cap: I64) : SLICE OF BYTE
 
@@ -248,16 +177,11 @@ writes a reply and then blocks reading the next request; without
 this the reply sits in the buffer and the client waits on the
 silence.
 
-### FileSize (RO path: STR) : I64 RAISES ValueRange, IOError
+### FileSize (RO path: UTF) : I64 RAISES ValueRange, IOError
 
-**Deprecated** (the UTF transition): FileSizeUtf is its UTF form.
+Since 0.26 a call of FileSize is FileSizeUtf, whose heading this is.
 
-FileSize answers how many bytes the file holds, without reading
-them: the size probe ReadFileBytes has always made first,
-exported.  A caller deciding whether to REDO work needs the size
-and not the contents.  The field precompute, skipping a file
-already written at the right size, is one.  A read of half a
-gigabyte to learn a number is not a probe.
+_(undocumented)_
 
 ### ReadFileHead (VAR pool: POOL ; RO path: STR ; cap: I64) : SLICE OF BYTE RAISES ValueRange, IOError
 
@@ -285,52 +209,35 @@ for that choice, and should not.
 
 It takes seekable files only: a plain file is, a pipe is not.
 
-### MkDir (RO path: STR) RAISES ValueRange, IOError
+### MkDir (RO path: UTF) RAISES ValueRange, IOError
 
-**Deprecated** (the UTF transition): MkDirUtf is its UTF form.
+Since 0.26 a call of MkDir is MkDirUtf, whose heading this is.
 
-MkDir creates the directory, one level; an existing one is fine.
-That is what an output directory needs before the first file
-goes into it.
+_(undocumented)_
 
-### MkDirs (RO path: STR) RAISES ValueRange, IOError
+### MkDirs (RO path: UTF) RAISES ValueRange, IOError
 
-**Deprecated** (the UTF transition): MkDirsUtf is its UTF form.
+Since 0.26 a call of MkDirs is MkDirsUtf, whose heading this is.
 
-MkDirs is mkdir -p: it creates the directory and every missing
-parent; an existing one is fine.  `/' separates, and `\' too on
-Windows.
-IOError names the path where a level could not be made
-(cp-kernel's issue 9, 2026-10-09).
+_(undocumented)_
 
-### Rename (RO from: STR ; RO to: STR) RAISES ValueRange, IOError
+### Rename (RO from: UTF ; RO to: UTF) RAISES ValueRange, IOError
 
-**Deprecated** (the UTF transition): RenameUtf is its UTF form.
+Since 0.26 a call of Rename is RenameUtf, whose heading this is.
 
-Rename is rename(2): atomic replace on one filesystem.  Write the
-temp file, Rename over the target, and a reader never sees a
-half-written document.
+_(undocumented)_
 
-### WriteFileBytes (RO path: STR ; RO content: SLICE OF BYTE) RAISES ValueRange, IOError
+### WriteFileBytes (RO path: UTF ; RO content: SLICE OF BYTE) RAISES ValueRange, IOError
 
-**Deprecated** (the UTF transition): WriteFileBytesUtf is its UTF form.
+Since 0.26 a call of WriteFileBytes is WriteFileBytesUtf, whose heading this is.
 
-WriteFileBytes makes the file's bytes exactly `content`: the twin
-of ReadFileBytes, which existed while writing stayed text-only.
-WriteFile encodes CHARs, which is right for text and absurd for
-a large binary: a 345 MB field cache written through it would
-build 1.4 GB of CHARs first.  That cache is what forced this.
+_(undocumented)_
 
-### AppendFileBytes (RO path: STR ; RO content: SLICE OF BYTE) RAISES ValueRange, IOError
+### AppendFileBytes (RO path: UTF ; RO content: SLICE OF BYTE) RAISES ValueRange, IOError
 
-**Deprecated** (the UTF transition): AppendFileBytesUtf is its UTF form.
+Since 0.26 a call of AppendFileBytes is AppendFileBytesUtf, whose heading this is.
 
-AppendFileBytes appends the same octets, and creates the file if
-it is absent.  It is for a caller who has a STREAM and a
-consumer that wants a PATH: a
-NOAA ObsPack member is 244 MB of HDF5 inside a zip and libnetcdf
-opens a path, so the choice was between one 244 MB buffer and
-one 4 MB one.
+_(undocumented)_
 
 ### EXCEPTION IOError
 

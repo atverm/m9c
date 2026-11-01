@@ -1,0 +1,179 @@
+MODULE TaskCost ;
+
+(* TaskCost is ThreadCost with TASK in place of THREAD (docs/task-plan.md,
+   stage 1).  The modes, the monitors and the output are ThreadCost's,
+   so the two print comparable lines.
+
+     TaskCost create N     N tasks one after another; each signals
+                           that it ran, and the next starts after the
+                           signal.
+     TaskCost burst N      N tasks started at once, then awaited.
+     TaskCost pingpong N   N round trips of a turn between the module
+                           body and one TASK, through a monitor.
+     TaskCost idle N       N tasks parked in WAIT on one monitor, then
+                           released; the runner reads the peak RSS
+                           around it.
+
+   Stage 1 runs every task on the thread that starts it, here the main
+   one.  The module body is itself a task: its WAIT lets the others
+   run. *)
+
+IMPORT Io ;
+IMPORT Fmt ;
+IMPORT Text ;
+IMPORT Time ;
+
+TYPE
+  Count = MONITOR RECORD
+    n : I64 ;                    (* workers that called Finish *)
+  END ;
+
+  Gate = MONITOR RECORD
+    arrived : I64 ;              (* workers parked in Park *)
+    open : BOOL ;
+  END ;
+
+  Ball = MONITOR RECORD
+    turn : I64 ;                 (* 0: the module body's, 1: the worker's *)
+  END ;
+
+  Job = RECORD
+    c : Count ;
+    g : Gate ;
+    b : Ball ;
+    rounds : I64 ;               (* set before any worker starts *)
+  END [SHARABLE] ;
+
+PROCEDURE Finish (VAR c: Count) =
+BEGIN
+  c.n := c.n + 1 ;
+  SIGNAL (c)
+END Finish ;
+
+PROCEDURE AwaitCount (VAR c: Count ; want: I64) =
+BEGIN
+  WHILE c.n < want DO WAIT (c) END
+END AwaitCount ;
+
+PROCEDURE Park (VAR g: Gate) =
+BEGIN
+  g.arrived := g.arrived + 1 ;
+  SIGNAL (g) ;
+  WHILE NOT g.open DO WAIT (g) END
+END Park ;
+
+PROCEDURE AwaitArrived (VAR g: Gate ; want: I64) =
+BEGIN
+  WHILE g.arrived < want DO WAIT (g) END
+END AwaitArrived ;
+
+PROCEDURE Open (VAR g: Gate) =
+BEGIN
+  g.open := TRUE ;
+  SIGNAL (g)
+END Open ;
+
+(* Pass waits for the turn to be me's, then hands it to other. *)
+PROCEDURE Pass (VAR b: Ball ; me, other: I64) =
+BEGIN
+  WHILE b.turn # me DO WAIT (b) END ;
+  b.turn := other ;
+  SIGNAL (b)
+END Pass ;
+
+PROCEDURE AwaitTurn (VAR b: Ball ; me: I64) =
+BEGIN
+  WHILE b.turn # me DO WAIT (b) END
+END AwaitTurn ;
+
+PROCEDURE Noop (VAR j: Job) =
+BEGIN
+  Finish (j.c)
+END Noop ;
+
+PROCEDURE Idle (VAR j: Job) =
+BEGIN
+  Park (j.g) ;
+  Finish (j.c)
+END Idle ;
+
+PROCEDURE Pong (VAR j: Job) =
+VAR i : I64 ;
+BEGIN
+  FOR i := 1 TO j.rounds DO Pass (j.b, 1, 0) END ;
+  Finish (j.c)
+END Pong ;
+
+PROCEDURE Report (RO mode: STR ; n: I64 ; secs: F64 ; RO unit: STR) RAISES ValueRange =
+BEGIN
+  Io.WriteLine (mode + ' n=' + Fmt.I64Str (n) + ' total_s=' + Fmt.Short (secs)
+                + ' per_us=' + Fmt.Short (secs * 1000000.0 / F64 (n)) + ' ' + unit)
+END Report ;
+
+VAR
+  pool : POOL ;
+  j : PTR Job ;
+  mode : STR ;
+  n, i : I64 ;
+  t0, t1, t2 : Time.Instant ;
+
+BEGIN
+  IF Io.ArgCount () < 3 THEN
+    Io.ErrLine ('usage: TaskCost create|burst|pingpong|idle N') ;
+    Io.Halt (2)
+  END ;
+  mode := Io.Arg (pool, 1) ;
+  n := Io.ParseI64 (Io.Arg (pool, 2)) ;
+  j := NEW (pool, Job) ;
+  IF Text.Eq (mode, 'create') THEN
+    t0 := Time.Now () ;
+    FOR i := 1 TO n DO
+      TASK (Noop, j) ;
+      AwaitCount (j.c, i)
+    END ;
+    t1 := Time.Now () ;
+    Report ('create', n, Time.Elapsed (t0, t1), 'per task, start to its Finish seen')
+  ELSIF Text.Eq (mode, 'burst') THEN
+    t0 := Time.Now () ;
+    FOR i := 1 TO n DO TASK (Noop, j) END ;
+    t1 := Time.Now () ;
+    AwaitCount (j.c, n) ;
+    t2 := Time.Now () ;
+    Report ('burst-start', n, Time.Elapsed (t0, t1), 'per TASK statement') ;
+    Report ('burst-all', n, Time.Elapsed (t0, t2), 'per task, all Finished')
+  ELSIF Text.Eq (mode, 'pingpong') THEN
+    j.rounds := n ;
+    TASK (Pong, j) ;
+    t0 := Time.Now () ;
+    FOR i := 1 TO n DO Pass (j.b, 0, 1) END ;
+    AwaitTurn (j.b, 0) ;
+    t1 := Time.Now () ;
+    AwaitCount (j.c, 1) ;
+    Report ('pingpong', n, Time.Elapsed (t0, t1), 'per round trip')
+  ELSIF Text.Eq (mode, 'idle') THEN
+    t0 := Time.Now () ;
+    FOR i := 1 TO n DO TASK (Idle, j) END ;
+    AwaitArrived (j.g, n) ;
+    t1 := Time.Now () ;
+    (* The runner samples RSS while the tasks are parked. *)
+    Time.Sleep (2000) ;
+    t2 := Time.Now () ;
+    Open (j.g) ;
+    AwaitCount (j.c, n) ;
+    Report ('idle-park', n, Time.Elapsed (t0, t1), 'per task, start to parked') ;
+    Report ('idle-release', n, Time.Elapsed (t2, Time.Now ()), 'per task, one broadcast to all Finished')
+  ELSE
+    Io.ErrLine ('unknown mode ' + mode) ;
+    Io.Halt (2)
+  END
+EXCEPT
+| ValueRange :
+    Io.ErrLine ('TaskCost: bad argument') ;
+    Io.Halt (2)
+| IndexError :
+    Io.ErrLine ('TaskCost: bad argument') ;
+    Io.Halt (2)
+| OutOfMemory :
+    Io.ErrLine ('TaskCost: a TASK could not start (OutOfMemory)') ;
+    Io.Halt (3)
+END TaskCost.

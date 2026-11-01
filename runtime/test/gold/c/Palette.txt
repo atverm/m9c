@@ -49,11 +49,14 @@ Palette_Hue Palette_Warmest (m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Palette.Warmest"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Palette_Hue m9ret = {0};
   err->res = m9res;
   m9ret = ((Palette_Hue){ .tag = Palette_Hue_Warm });
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -65,6 +68,8 @@ Palette_Weights Palette_MakeWeights (m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Palette.MakeWeights"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Palette_Weights m9ret = {0};
   Palette_Weights wt = {0}; (void) wt;
   Palette_Hue h = {0}; (void) h;
@@ -73,7 +78,7 @@ Palette_Weights Palette_MakeWeights (m9_state *err)
   m9t1to = (((Palette_Hue){ .tag = Palette_Hue_Neutral })).tag;
   for (; h.tag <= m9t1to; h.tag++) {
     { __typeof__((wt.w.v[(h).tag])) m9v = m9_mul_i64 ((int64_t)((h).tag), INT64_C(10), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 28; goto L_ret; };
       (wt.w.v[(h).tag]) = m9v;
     }
   } }
@@ -81,6 +86,7 @@ Palette_Weights Palette_MakeWeights (m9_state *err)
   m9ret = wt;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -93,6 +99,9 @@ void Palette_m9init (m9_state *err)
   m9done = 1;
   m9_pool *m9prev = err->res;
   err->res = &m9mframe;
+  static const char m9pn[] = "Palette (the module body)"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9prev;
 }

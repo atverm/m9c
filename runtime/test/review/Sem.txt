@@ -1,14 +1,17 @@
-REVIEW Sem -- 667 procedures with a body, 464 of them functions; 93 headings in a DEFINITION
+REVIEW Sem -- 670 procedures with a body, 467 of them functions; 93 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path             464
-  assignments                                  2749
-  arguments                                   11598
-  RETURN values                                1671
-  operands of a comparison or an operator      3531
+  functions answering on every path             467
+  assignments                                  2750
+  arguments                                   11657
+  RETURN values                                1683
+  operands of a comparison or an operator      3537
   CASE labels                                   188
   THREAD arguments                                0
   CASE over variants, proved total                0
+
+CAN TRAP AT RUN TIME -- a byte cut a character can straddle
+  text compared through a byte cut               10   StrScan: write Text.EndsWith (s, lit), ProcHead: write Text.Find, or octets compared with Text.BAt, ProcFits: write Text.StartsWith (s, lit), Compat: write Text.Find, or octets compared with Text.BAt, UtfTwin: write Text.Find, or octets compared with Text.BAt, WidthTwin: write Text.Find, or octets compared with Text.BAt, +4 more
 
 DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    1   pool

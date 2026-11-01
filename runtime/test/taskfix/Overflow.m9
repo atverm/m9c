@@ -1,0 +1,39 @@
+MODULE Overflow ;
+
+(* A task that recurses without end runs into the guard page below its
+   stack.  The program stops by name, "task stack overflow in
+   Overflow.Deep" (docs/task-plan.md, stage 1).  tasks.sh reads the
+   message from stderr. *)
+
+IMPORT Io ;
+
+TYPE
+  Gate = MONITOR RECORD
+    done : BOOL ;
+  END ;
+
+PROCEDURE Down (n: I64) : I64 RAISES Overflow, IndexError =
+VAR pad : ARRAY 64 OF I64 ;
+BEGIN
+  pad[n MOD 64] := n ;
+  RETURN Down (n + 1) + pad[n MOD 64]
+END Down ;
+
+PROCEDURE Deep (VAR g: Gate) =
+BEGIN
+  Io.WriteI64 (Down (0))
+EXCEPT
+| Overflow, IndexError : g.done := TRUE
+END Deep ;
+
+PROCEDURE Await (VAR g: Gate) =
+BEGIN
+  WHILE NOT g.done DO WAIT (g) END
+END Await ;
+
+VAR g : Gate ;
+
+BEGIN
+  TASK (Deep, g) ;
+  Await (g)
+END Overflow.

@@ -1,19 +1,22 @@
-REVIEW Doc -- 29 procedures with a body, 25 of them functions; 2 headings in a DEFINITION
+REVIEW Doc -- 30 procedures with a body, 25 of them functions; 2 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              25
-  assignments                                   141
-  arguments                                     495
+  assignments                                   152
+  arguments                                     515
   RETURN values                                  45
-  operands of a comparison or an operator       206
+  operands of a comparison or an operator       211
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
 
+CAN TRAP AT RUN TIME -- a byte cut a character can straddle
+  text compared through a byte cut                3   HasUtfTwin: write Text.Find, or octets compared with Text.BAt, HasUtfTwin: write Text.StartsWith (s, lit), HasUtfTwin: write Text.Find, or octets compared with Text.BAt
+
 DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
   local pools                                     2   Qual.pool, GroupParams.pool
-  pool parameters                                11   SigText, ParamNames, FieldsJson, ParamsJson, ResultText, RaisesJson, +5 more
+  pool parameters                                12   SigText, ParamNames, FieldsJson, ParamsJson, ResultText, RaisesJson, +6 more
   KEPT parameters                                 2   Collect, Gather
   HEAP named                                      2   Cat3, Cat3
   NEW (OWN, T)                                    0

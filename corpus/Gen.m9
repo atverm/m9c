@@ -153,6 +153,7 @@ VAR
   gpool : POOL ;
   modName : UTF ;
   dbgSrc : UTF ;           (* SetDebugSource; empty = no #line *)
+  curLine : I64 ;          (* the statement being emitted, for ExcGo *)
   pfxMod, pfxC : SLICE OF UTF ;  (* SetPrefix: module -> C prefix *)
   npfx : I64 ;
   constsBase : I64 ;       (* consts below this are the module's; at
@@ -404,6 +405,31 @@ PROCEDURE SetDebugSource (RO file: UTF) =
 BEGIN
   dbgSrc := UTF (gpool, file)
 END SetDebugSource ;
+
+(* ExcGo answers an error test's jump.  It keeps the statement's line
+   in m9ln, then goes to lbl.  The exit label records the line and the
+   procedure, once (SiteLine), so the path that does not raise pays
+   nothing but one test at the exit.  A production build died with
+   only "IndexError" before it (zarrm9, 2026-11-01).  The record was
+   first made at each test: m9c grew 16%. *)
+PROCEDURE ExcGo (RO lbl: UTF) : UTF =
+BEGIN
+  RETURN S5 ('{ m9ln = ', ItoA (curLine), '; goto ', lbl, '; }')
+END ExcGo ;
+
+(* PnLine emits the procedure's name and the line local ExcGo keeps. *)
+PROCEDURE PnLine (RO q: UTF) =
+BEGIN
+  Line (KPbuf, 1, S3 ('static const char m9pn[] = "', q, '"; (void) m9pn;')) ;
+  Line (KPbuf, 1, 'int32_t m9ln = 0; (void) m9ln;')
+END PnLine ;
+
+(* SiteLine emits the exit label's record of where the exception was
+   first seen: a callee's site stands, m9_site keeps the first. *)
+PROCEDURE SiteLine (ind: I64) =
+BEGIN
+  Line (KPbuf, ind, 'if (err->exc) m9_site (err, m9ln, m9pn);')
+END SiteLine ;
 
 (* DbgLine emits one directive per statement, at column 0 and into
    the procedure buffer, so the C compiler attributes the code that
@@ -1954,12 +1980,98 @@ BEGIN
   RETURN b
 END QualBound ;
 
+(* CopyHead answers a node like tn with no kids: the same kind,
+   place, names, flags and number.  The number keys the typed tree and
+   FieldType's index, so a copy reads as its original there. *)
+PROCEDURE CopyHead (tn: PTR Ast.Node) : PTR Ast.Node IN gpool =
+VAR n : PTR Ast.Node IN gpool ;
+BEGIN
+  n := Ast.NewNode (gpool, tn.kind, tn.line, tn.col) ;
+  n.id := tn.id ;
+  Ast.SetAUtf (gpool, n, tn.au) ;
+  Ast.SetBUtf (gpool, n, tn.bu) ;
+  n.f1 := tn.f1 ;
+  n.f2 := tn.f2 ;
+  n.f3 := tn.f3 ;
+  n.f4 := tn.f4 ;
+  RETURN n
+END CopyHead ;
+
+PROCEDURE QualIn (KEPT t: Ast.Kid ; RO KEPT modName: UTF) : Ast.Kid ;
+
+(* QualGroups answers a field list or a parameter list with every
+   group's type qualified in module m (QualIn).  A group keeps its
+   names and its flags. *)
+PROCEDURE QualGroups (KEPT k: Ast.Kid ; RO KEPT m: UTF) : Ast.Kid =
+VAR
+  n, g : PTR Ast.Node IN gpool ;
+  i, j : I64 ;
+BEGIN
+  IF k IS SOME fs THEN
+    n := CopyHead (fs) ;
+    FOR i := 0 TO fs.nkids - 1 DO
+      IF fs.kids[i] IS SOME fg THEN
+        g := CopyHead (fg) ;
+        FOR j := 0 TO fg.nkids - 1 DO
+          IF j = 1 THEN Ast.Add (gpool, g, QualIn (fg.kids[j], m))
+          ELSE Ast.Add (gpool, g, fg.kids[j])
+          END
+        END ;
+        Ast.Add (gpool, n, SOME (g))
+      ELSE
+        Ast.Add (gpool, n, NONE)
+      END
+    END ;
+    RETURN SOME (n)
+  END ;
+  RETURN k
+END QualGroups ;
+
 PROCEDURE QualIn (KEPT t: Ast.Kid ; RO KEPT modName: UTF) : Ast.Kid =
 VAR
-  n : PTR Ast.Node IN gpool ;
+  n, v : PTR Ast.Node IN gpool ;
   b : Ast.Kid ;
+  i : I64 ;
 BEGIN
   IF t IS SOME tn THEN
+    (* A declaration's own body is qualified too: a record's base and
+       fields, a monitor's fields, every variant's fields, a procedure
+       type's parameters and result.  RegisterExtern needs this for an
+       exported TYPE.  Until 2026-11-01 the field `input : Input' of
+       Par.Params was read in the importer, and the importer's own
+       Input was a record (LPJ-GUESS port, M14).  The adoption exit
+       then adopted the component `input.lu' of p, and gcc refused
+       it. *)
+    IF tn.kind = Ast.NRecordType AND tn.nkids >= 2 THEN
+      n := CopyHead (tn) ;
+      Ast.Add (gpool, n, QualIn (tn.kids[0], modName)) ;
+      Ast.Add (gpool, n, QualGroups (tn.kids[1], modName)) ;
+      FOR i := 2 TO tn.nkids - 1 DO Ast.Add (gpool, n, tn.kids[i]) END ;
+      RETURN SOME (n)
+    ELSIF tn.kind = Ast.NMonitorType AND tn.nkids >= 1 THEN
+      n := CopyHead (tn) ;
+      Ast.Add (gpool, n, QualGroups (tn.kids[0], modName)) ;
+      FOR i := 1 TO tn.nkids - 1 DO Ast.Add (gpool, n, tn.kids[i]) END ;
+      RETURN SOME (n)
+    ELSIF tn.kind = Ast.NCaseRecordType THEN
+      n := CopyHead (tn) ;
+      FOR i := 0 TO tn.nkids - 1 DO
+        IF tn.kids[i] IS SOME vn THEN
+          v := CopyHead (vn) ;
+          IF vn.nkids >= 1 THEN Ast.Add (gpool, v, QualGroups (vn.kids[0], modName)) END ;
+          Ast.Add (gpool, n, SOME (v))
+        ELSE
+          Ast.Add (gpool, n, NONE)
+        END
+      END ;
+      RETURN SOME (n)
+    ELSIF tn.kind = Ast.NProcType AND tn.nkids >= 2 THEN
+      n := CopyHead (tn) ;
+      Ast.Add (gpool, n, QualGroups (tn.kids[0], modName)) ;
+      Ast.Add (gpool, n, QualIn (tn.kids[1], modName)) ;
+      FOR i := 2 TO tn.nkids - 1 DO Ast.Add (gpool, n, tn.kids[i]) END ;
+      RETURN SOME (n)
+    END ;
     IF tn.kind = Ast.NQualident THEN
       IF Text.BLen (tn.bu) = 0 AND NOT IsBuiltin (tn.au) AND
          NOT Text.Eq (tn.au, 'STR') AND NOT Text.Eq (tn.au, 'UTF') AND
@@ -2947,7 +3059,8 @@ BEGIN
       ELSIF d.kind = Ast.NExcSection THEN
         FOR j := 0 TO d.nkids - 1 DO
           IF d.kids[j] IS SOME xd THEN
-            MAdd (extExcs, xd.au, xd.kids[0], u.au)
+            (* A payload field's bare type is u's (M14). *)
+            MAdd (extExcs, xd.au, QualGroups (xd.kids[0], u.au), u.au)
           END
         END
       ELSIF d.kind = Ast.NConstSection THEN
@@ -2964,14 +3077,17 @@ BEGIN
      CONST may be declared below the TYPE.  An exported TYPE was
      registered as written until 2026-10-29, so an importer's `VAR v :
      Shapes.Vec' with Vec = ARRAY N OF F64 looked N up among its own
-     constants and was `array count form unsupported'. *)
+     constants and was `array count form unsupported'.  Every bare
+     type name in an exported TYPE is qualified as well (QualIn).  So
+     a walker over an imported record's fields reads them in u, not
+     in the importer (M14, 2026-11-01). *)
   FOR i := 0 TO u.nkids - 1 DO
     IF u.kids[i] IS SOME d THEN
       IF d.kind = Ast.NTypeSection THEN
         FOR j := 0 TO d.nkids - 1 DO
           IF d.kids[j] IS SOME td THEN
             IF td.kids[0] IS SOME tb THEN
-              MAdd (extTypes, Text.Keep (gpool, S3 (u.au, '.', td.au)), QualArr (SOME (tb), u), '')
+              MAdd (extTypes, Text.Keep (gpool, S3 (u.au, '.', td.au)), QualIn (QualArr (SOME (tb), u), u.au), '')
             END
           END
         END
@@ -3279,7 +3395,11 @@ BEGIN
           pi := MFind (extProcs, nm) ;
           IF pi >= 0 THEN
             IF extProcs.es[pi].v IS SOME ep THEN
-              r := Resolve (ep.kids[1])
+              (* The result type is read in the callee's module.  The
+                 importer's own Kid hid Ast.Kid until 2026-11-01, and
+                 the IS SOME was `form unsupported' (M14's sibling,
+                 genforms GfBareName). *)
+              r := Resolve (QualIn (ep.kids[1], Text.Keep (gpool, SLICE (nm, 0, dot))))
             END
           END
         ELSE
@@ -3546,8 +3666,8 @@ END OriginPool ;
    stays inside the cell and needs none. *)
 PROCEDURE AtGuard (RO res: UTF ; tnd: Ast.Kid) : UTF =
 BEGIN
-  RETURN S7 ('({ ', TyC (tnd), ' m9g = (', res, '); if (err->exc) goto ',
-    raiseLbl, '; m9g; })')
+  RETURN S7 ('({ ', TyC (tnd), ' m9g = (', res, '); if (err->exc) ',
+    ExcGo (raiseLbl), '; m9g; })')
 END AtGuard ;
 
 (* NnGuard emits the test before following a pointer READ OUT OF A
@@ -3576,7 +3696,7 @@ PROCEDURE NnGuard (RO res: UTF ; tnd: Ast.Kid ; pend: BOOL) : UTF =
 VAR e : UTF ;
 BEGIN
   e := '' ;
-  IF pend THEN e := S3 ('if (err->exc) goto ', raiseLbl, '; ') END ;
+  IF pend THEN e := S3 ('if (err->exc) ', ExcGo (raiseLbl), '; ') END ;
   (* The temporary's type comes by __typeof__, not by name.  A type of
      a module this unit does not import directly has no name here:
      `Obs.f' of type PTR Frame.Fr in a notebook's show cell failed with
@@ -4111,7 +4231,7 @@ BEGIN
           r := DESSel (e, 1, w, Ast.TypeAt (e.id), tg) ;
           res := S5 ('({ ', TyC (Ast.TypeAt (e.id)), ' ', w, S3 (' = ', l, '; ')) ;
           IF callRaise THEN
-            res := S4 (res, 'if (err->exc) goto ', raiseLbl, '; ')
+            res := S4 (res, 'if (err->exc) ', ExcGo (raiseLbl), '; ')
           END ;
           RETURN S3 (res, r, '; })')
         END ;
@@ -4651,11 +4771,14 @@ BEGIN
   IF dot > 0 THEN
     pi := MFind (extTypes, name)
   ELSE
+    (* A bare name is this module's type or no type at all.  An
+       imported alias is always written Mod.T.  ExtBare took any
+       imported type of the name until 2026-11-01, so a procedure
+       Size beside an imported alias Size = I64 became a conversion
+       (M14's sibling, genforms GfBareName). *)
     pi := -1 ;
     IF FindTypeN (name) IS SOME tnx THEN
       aliasK := SOME (tnx)
-    ELSE
-      pi := ExtBare (name)
     END
   END ;
   IF pi >= 0 THEN aliasK := extTypes.es[pi].v END ;
@@ -5131,7 +5254,7 @@ BEGIN
     nhoist := nhoist + 1 ;
     tmp := S2 ('m9a', ItoA (nhoist)) ;
     Line (KPbuf, ind, S6 ('{ __typeof__(', e, ') ', tmp, ' = ', S2 (e, ';'))) ;
-    Line (KPbuf, ind + 1, S3 ('if (err->exc) goto ', raiseLbl, ';')) ;
+    Line (KPbuf, ind + 1, S3 ('if (err->exc) ', ExcGo (raiseLbl), ';')) ;
     n := n + 1 ;
     MAdd (lowered, IrKey (a.id, 0), NONE, Text.Keep (gpool, tmp))
   END
@@ -5152,7 +5275,7 @@ BEGIN
     nhoist := nhoist + 1 ;
     tmp := S2 ('m9a', ItoA (nhoist)) ;
     Line (KPbuf, ind, S6 ('{ __typeof__(', e, ') ', tmp, ' = ', S2 (e, ';'))) ;
-    Line (KPbuf, ind + 1, S3 ('if (err->exc) goto ', raiseLbl, ';')) ;
+    Line (KPbuf, ind + 1, S3 ('if (err->exc) ', ExcGo (raiseLbl), ';')) ;
     n := n + 1 ;
     MAdd (lowered, IrKey (a.id, 0), NONE, Text.Keep (gpool, S3 ('(*', tmp, ')')))
   END
@@ -5530,7 +5653,7 @@ BEGIN
         (* a call that raised answered nothing: no view of it is taken
            (the drop's own check would replace the exception) *)
         IF vg0c AND ExprRaises (al.kids[0]) THEN
-          DynStr.Append (d3, S3 ('if (err->exc) goto ', raiseLbl, '; '))
+          DynStr.Append (d3, S3 ('if (err->exc) ', ExcGo (raiseLbl), '; '))
         END ;
         DynStr.Append (d3,
           S7 (want2, ' ', vn, 'r; int64_t ', vn, 'o = 0; ', '')) ;
@@ -5934,7 +6057,7 @@ BEGIN
                         at := S2 ('m9_fa', NewTmp ()) ;
                         pre := S6 (pre, '__auto_type ', at, ' = (', e1, '); ') ;
                         IF LeftRaises (alx.kids[k2]) THEN
-                          pre := S4 (pre, 'if (err->exc) goto ', raiseLbl, '; ')
+                          pre := S4 (pre, 'if (err->exc) ', ExcGo (raiseLbl), '; ')
                         END ;
                         args := S2 (args, at)
                       END
@@ -6047,7 +6170,7 @@ BEGIN
                              argument's temporary is. *)
                           px := DES (arg, at) ;
                           args := S6 (args, '({ __typeof__ (&(', px, ')) m9v = &(', px,
-                            S3 ('); if (err->exc) goto ', raiseLbl, '; m9v; })'))
+                            S3 ('); if (err->exc) ', ExcGo (raiseLbl), '; m9v; })'))
                         ELSE
                           args := S4 (args, '&(', DES (arg, at), ')')
                         END
@@ -6671,6 +6794,7 @@ VAR
 BEGIN
   IF k IS SOME st THEN
     DbgLine (st) ;
+    curLine := st.line ;
     CASE st.kind OF
     | Ast.NAssign :
         rel := Releasable (st) ;
@@ -6716,7 +6840,7 @@ BEGIN
              evaluates nothing, so an indexed target is checked once,
              at the store. *)
           Line (KPbuf, ind, S5 ('{ __typeof__(', l, ') m9v = ', r, ';')) ;
-          Line (KPbuf, ind + 1, S3 ('if (err->exc) goto ', raiseLbl, ';')) ;
+          Line (KPbuf, ind + 1, S3 ('if (err->exc) ', ExcGo (raiseLbl), ';')) ;
           IF shared THEN
             r := S3 ('((__typeof__(', l, ')) m9_share_copy (m9v))')
           ELSE
@@ -6724,7 +6848,7 @@ BEGIN
           END ;
           Line (KPbuf, ind + 1, S4 (l, ' = ', r, ';')) ;
           IF lRaise THEN
-            Line (KPbuf, ind + 1, S3 ('if (err->exc) goto ', raiseLbl, ';'))
+            Line (KPbuf, ind + 1, S3 ('if (err->exc) ', ExcGo (raiseLbl), ';'))
           END ;
           Line (KPbuf, ind, '}') ;
         ELSE
@@ -6733,7 +6857,7 @@ BEGIN
           END ;
           Line (KPbuf, ind, S4 (l, ' = ', r, ';')) ;
           IF lRaise THEN
-            Line (KPbuf, ind, S3 ('if (err->exc) goto ', raiseLbl, ';'))
+            Line (KPbuf, ind, S3 ('if (err->exc) ', ExcGo (raiseLbl), ';'))
           END
         END ;
         CloseN (nh, ind) ;
@@ -6751,7 +6875,7 @@ BEGIN
         Line (KPbuf, ind, S2 (CallC (st.kids[0], st.kids[1], tg), ';')) ;
         rs := LeftRaisesCall (st) ;
         IF rs THEN
-          Line (KPbuf, ind, S3 ('if (err->exc) goto ', raiseLbl, ';'))
+          Line (KPbuf, ind, S3 ('if (err->exc) ', ExcGo (raiseLbl), ';'))
         END ;
         CloseN (nh, ind) ;
         IF rel THEN
@@ -6778,7 +6902,7 @@ BEGIN
               Line (KPbuf, ind, S6 ('{ ', TyC (vtN), ' ', CN (bname),
                 ' = ', S2 (cnd, ';'))) ;
               IF rs THEN
-                Line (KPbuf, ind, S3 ('if (err->exc) goto ', raiseLbl, ';'))
+                Line (KPbuf, ind, S3 ('if (err->exc) ', ExcGo (raiseLbl), ';'))
               END ;
               savedScope := scope.n ;
               MAdd (bpool, bname, NONE, Text.Keep (gpool, OriginPool (isn.kids[0]))) ;
@@ -6818,7 +6942,7 @@ BEGIN
           w := NewTmp () ;
           Line (KPbuf, ind, S4 ('bool ', w, ' = ', S2 (cnd, ';'))) ;
           IF rs THEN
-            Line (KPbuf, ind, S3 ('if (err->exc) goto ', raiseLbl, ';'))
+            Line (KPbuf, ind, S3 ('if (err->exc) ', ExcGo (raiseLbl), ';'))
           END ;
           IF Text.BLen (mk) > 0 THEN
             Line (KPbuf, ind, S3 ('m9_pool_release (err->res, ', mk, ');'))
@@ -6844,7 +6968,7 @@ BEGIN
                   S2 (cnd, ';'))) ;
                 IF rs THEN
                   Line (KPbuf, ind + 1,
-                    S3 ('if (err->exc) goto ', raiseLbl, ';'))
+                    S3 ('if (err->exc) ', ExcGo (raiseLbl), ';'))
                 END ;
                 IF Text.BLen (mk) > 0 THEN
                   Line (KPbuf, ind + 1,
@@ -6883,7 +7007,7 @@ BEGIN
                 ' = ', S2 (cnd, ';'))) ;
               IF rs THEN
                 Line (KPbuf, ind + 1,
-                  S3 ('if (err->exc) goto ', raiseLbl, ';'))
+                  S3 ('if (err->exc) ', ExcGo (raiseLbl), ';'))
               END ;
               Line (KPbuf, ind + 1,
                 S3 ('if (!(', CN (bname), ' != NULL)) break;')) ;
@@ -6917,7 +7041,7 @@ BEGIN
           w := NewTmp () ;
           Line (KPbuf, ind + 1, S4 ('bool ', w, ' = ', S2 (cnd, ';'))) ;
           IF rs THEN
-            Line (KPbuf, ind + 1, S3 ('if (err->exc) goto ', raiseLbl, ';'))
+            Line (KPbuf, ind + 1, S3 ('if (err->exc) ', ExcGo (raiseLbl), ';'))
           END ;
           IF Text.BLen (mk) > 0 THEN
             Line (KPbuf, ind + 1, S3 ('m9_pool_release (err->res, ', mk, ');'))
@@ -6980,7 +7104,7 @@ BEGIN
         rs := LeftRaises (st.kids[0]) OR LeftRaises (st.kids[1]) ;
         Line (KPbuf, ind, S4 (w, 'to = ', r, ';')) ;
         IF rs THEN
-          Line (KPbuf, ind, S3 ('if (err->exc) goto ', raiseLbl, ';'))
+          Line (KPbuf, ind, S3 ('if (err->exc) ', ExcGo (raiseLbl), ';'))
         END ;
         stp := '1' ;
         IF st.kids[2] IS SOME by THEN
@@ -7039,7 +7163,7 @@ BEGIN
           Line (KPbuf, ind, S7 ('{ __typeof__(', l, ') ', w, 's = ', l, ';'))
         END ;
         IF rs THEN
-          Line (KPbuf, ind, S3 ('if (err->exc) goto ', raiseLbl, ';'))
+          Line (KPbuf, ind, S3 ('if (err->exc) ', ExcGo (raiseLbl), ';'))
         END ;
         IF Text.Eq (tg, 'ARR') AND ForInPtr (st.kids[0]) THEN
           (* In an array of pointers each element is tested as the
@@ -7121,7 +7245,7 @@ BEGIN
         Line (KPbuf, ind, S6 ('{ __typeof__(', cnd, ') ', w, ' = ',
           S2 (cnd, ';'))) ;
         IF rs THEN
-          Line (KPbuf, ind, S3 ('if (err->exc) goto ', raiseLbl, ';'))
+          Line (KPbuf, ind, S3 ('if (err->exc) ', ExcGo (raiseLbl), ';'))
         END ;
         IF StartsW (tg, 'CR:') THEN
           EmitCaseCR (st, w, tg, ind)
@@ -7250,7 +7374,7 @@ BEGIN
                       S2 (cnd, ', &e);')))
                   END ;
                   Line (KThr, 0,
-                    '  if (e.exc) m9_thread_died (e.exc->name);') ;
+                    '  if (e.exc) m9_thread_died_at (&e);') ;
                   Line (KThr, 0, '  return NULL;') ;
                   Line (KThr, 0, '}') ;
                   Line (KThr, 0, '')
@@ -7261,14 +7385,22 @@ BEGIN
                      poison cell (the second review's gen N2,
                      2026-10-26). *)
                   Line (KPbuf, ind, S3 ('{ void *m9tv = (void *) ', l, ';')) ;
-                  Line (KPbuf, ind + 1, S3 ('if (err->exc) goto ', raiseLbl, ';')) ;
+                  Line (KPbuf, ind + 1, S3 ('if (err->exc) ', ExcGo (raiseLbl), ';')) ;
                   l := 'm9tv'
                 END ;
-                Line (KPbuf, ind, S6 ('m9_thread_start2 (m9_thr_',
-                  CP (modName), '_', bname, ', (void *) ',
-                  S5 (l, ', ', thrPool, ', err);', ''))) ;
+                IF Text.Eq (st.au, 'TASK') THEN
+                  (* A TASK takes THREAD's thunk.  Its name is for the
+                     overflow and deadlock stops (m9rt.c). *)
+                  Line (KPbuf, ind, S6 ('m9_task_start2 (m9_thr_',
+                    CP (modName), '_', bname, ', (void *) ',
+                    S6 (l, ', ', thrPool, ', "', modName, S3 ('.', bname, '", err);'))))
+                ELSE
+                  Line (KPbuf, ind, S6 ('m9_thread_start2 (m9_thr_',
+                    CP (modName), '_', bname, ', (void *) ',
+                    S5 (l, ', ', thrPool, ', err);', '')))
+                END ;
                 Line (KPbuf, ind,
-                  S3 ('if (err->exc) goto ', raiseLbl, ';')) ;
+                  S3 ('if (err->exc) ', ExcGo (raiseLbl), ';')) ;
                 IF ExprRaises (st.kids[1]) THEN Line (KPbuf, ind, '}') END
               END
             ELSE
@@ -7280,7 +7412,15 @@ BEGIN
         END
 
     | Ast.NDispose : EmitDispose (st, ind)
-    | Ast.NRaiseStmt : EmitRaise (st, ind)
+    | Ast.NRaiseStmt :
+        (* The payload is lowered first, as a RETURN's answer is.  An
+           RO record argument made by a call needs its temporary, and
+           without the walk the temporary had no name:
+           `RAISE E (Show (Make (1, s)))' failed with "unknown name: "
+           (the LPJ-GUESS port, M13, 2026-11-01). *)
+        nh := Lower (st.kids[1], ind) ;
+        EmitRaise (st, ind) ;
+        CloseN (nh, ind)
     | Ast.NReturn :
         IF st.kids[0] IS SOME rv THEN
           (* the answer outlives this frame, so it is built in the
@@ -7296,7 +7436,7 @@ BEGIN
           END ;
           Line (KPbuf, ind, S3 ('m9ret = ', r, ';')) ;
           IF rs THEN
-            Line (KPbuf, ind, S3 ('if (err->exc) goto ', raiseLbl, ';'))
+            Line (KPbuf, ind, S3 ('if (err->exc) ', ExcGo (raiseLbl), ';'))
           END ;
           CloseN (nh, ind)
         END ;
@@ -7403,7 +7543,7 @@ BEGIN
     ELSE
       Line (KPbuf, ind, S5 ('if (', w, ') goto ', exitLbl, ';'))
     END ;
-    Line (KPbuf, ind, S3 ('if (err->exc) goto ', raiseLbl, ';')) ;
+    Line (KPbuf, ind, S3 ('if (err->exc) ', ExcGo (raiseLbl), ';')) ;
     RETURN
   END ;
   EmitSeq (st.kids[0], ind)
@@ -7667,7 +7807,7 @@ BEGIN
     Line (KPbuf, ind, S3 ('m9_dispose (', l, ');'))
   END ;
   IF LeftRaisesTarget (st.kids[0]) THEN
-    Line (KPbuf, ind, S3 ('if (err->exc) goto ', raiseLbl, ';'))
+    Line (KPbuf, ind, S3 ('if (err->exc) ', ExcGo (raiseLbl), ';'))
   END
 END EmitDispose ;
 
@@ -7781,6 +7921,7 @@ BEGIN
     END
   END ;
   Line (KPbuf, ind, S3 ('m9_raise (err, ', r, ');')) ;
+  Line (KPbuf, ind, S3 ('m9_site (err, ', ItoA (st.line), ', m9pn);')) ;
   Line (KPbuf, ind, S3 ('goto ', raiseLbl, ';'))
 END EmitRaise ;
 
@@ -7986,6 +8127,7 @@ BEGIN
     ELSE
       Line (KPbuf, 1, 'err->res = &m9frame;')
     END ;
+    PnLine (S3 (modName, '.', gps[gi].name)) ;
     IF Text.BLen (dbgSrc) > 0 THEN
       Line (KPbuf, 1, S3 ('err->file = "', dbgSrc, '";'))
     END ;
@@ -8086,6 +8228,7 @@ BEGIN
     END ;
 
     Line (KPbuf, 0, 'L_ret: ;') ;
+    SiteLine (1) ;
     (* every exit passes through L_ret, so a RAISE drops the lock for
        the same reason a RETURN does -- and the result slot goes back
        to the caller's arena for the same reason again, before this
@@ -8175,6 +8318,7 @@ BEGIN
   Line (KPbuf, 1, 'm9_state *err = &errv;') ;
   PoolReg ('m9mframe') ;
   Line (KPbuf, 1, 'err->res = &m9mframe;') ;
+  PnLine (S2 (modName, ' (the module body)')) ;
   IF Text.BLen (dbgSrc) > 0 THEN
     Line (KPbuf, 1, S3 ('err->file = "', dbgSrc, '";'))
   END ;
@@ -8187,6 +8331,7 @@ BEGIN
   EmitStmt (mainBody, 1) ;
   inMain := FALSE ;
   Line (KPbuf, 0, 'L_ret: ;') ;
+  SiteLine (1) ;
   FOR i := 0 TO nlp - 1 DO
     Line (KPbuf, 1, S3 ('m9_pool_free (&', lpools[i], ');'))
   END ;
@@ -8231,6 +8376,7 @@ BEGIN
      variable stays valid for the process (rule 1). *)
   Line (KPbuf, 1, 'm9_pool *m9prev = err->res;') ;
   Line (KPbuf, 1, 'err->res = &m9mframe;') ;
+  PnLine (S2 (forModule, ' (the module body)')) ;
   (* direct imports first, so their state is ready *)
   FOR i := 0 TO extMods.n - 1 DO
     Line (KPbuf, 1, S3 (CP (extMods.es[i].k), '_m9init (err);',
@@ -8240,6 +8386,7 @@ BEGIN
   EmitStmt (mainBody, 1) ;
   inMain := FALSE ;
   Line (KPbuf, 0, 'L_ret: ;') ;
+  SiteLine (1) ;
   FOR i := 0 TO nlp - 1 DO
     Line (KPbuf, 1, S3 ('m9_pool_free (&', lpools[i], ');'))
   END ;

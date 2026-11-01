@@ -427,7 +427,7 @@ static void *m9_thr_HttpServer_WorkerRun (void *p, m9_pool *pool)
 {
   m9_state e = { 0 };
   HttpServer_WorkerRun ((HttpServer_Worker *) p, pool, &e);
-  if (e.exc) m9_thread_died (e.exc->name);
+  if (e.exc) m9_thread_died_at (&e);
   return NULL;
 }
 
@@ -439,10 +439,12 @@ HttpServer_Router * HttpServer_NewRouter (m9_pool *pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "HttpServer.NewRouter"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   HttpServer_Router * m9ret = NULL;
   HttpServer_Router * r = NULL; (void) r;
   { __typeof__(r) m9v = (HttpServer_Router *) m9_pool_alloc (&((*pool)), sizeof (HttpServer_Router), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 518; goto L_ret; };
     r = m9v;
   }
   r->first = NULL;
@@ -453,6 +455,7 @@ HttpServer_Router * HttpServer_NewRouter (m9_pool *pool, m9_state *err)
   m9ret = r;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -465,14 +468,17 @@ void HttpServer_AddRoute (HttpServer_Router * *r, m9_pool *r_pool, m9_sl_UTF8 me
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.AddRoute"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   HttpServer_Route * nr = NULL; (void) nr;
   if (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->frozen) {
     { __typeof__(path) m9t1 = path; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &HttpServer_Frozen);
+    m9_site (err, 544, m9pn);
     goto L_ret;
   }
   { __typeof__(nr) m9v = (HttpServer_Route *) m9_pool_alloc (r_pool, sizeof (HttpServer_Route), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 545; goto L_ret; };
     nr = m9v;
   }
   nr->method = method;
@@ -487,8 +493,9 @@ void HttpServer_AddRoute (HttpServer_Router * *r, m9_pool *r_pool, m9_sl_UTF8 me
   nr->dir = ((m9_sl_UTF8){ NULL, 0 });
   nr->next = NULL;
   HttpServer_Link (r, r_pool, nr, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 557; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, r_pool, (*r));
   m9_pool_free (&m9frame);
@@ -501,9 +508,12 @@ void HttpServer_AddHandler (HttpServer_Router * *r, m9_pool *r_pool, m9_sl_UTF8 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.AddHandler"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   HttpServer_AddCalled (r, r_pool, method, path, h, ctype, summary, false, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 594; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, r_pool, (*r));
   m9_pool_free (&m9frame);
@@ -516,9 +526,12 @@ void HttpServer_AddPrefix (HttpServer_Router * *r, m9_pool *r_pool, m9_sl_UTF8 m
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.AddPrefix"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   HttpServer_AddCalled (r, r_pool, method, prefix, h, ctype, summary, true, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 605; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, r_pool, (*r));
   m9_pool_free (&m9frame);
@@ -531,14 +544,17 @@ void HttpServer_AddFiles (HttpServer_Router * *r, m9_pool *r_pool, m9_sl_UTF8 pr
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.AddFiles"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   HttpServer_Route * nr = NULL; (void) nr;
   if (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->frozen) {
     { __typeof__(prefix) m9t1 = prefix; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &HttpServer_Frozen);
+    m9_site (err, 615, m9pn);
     goto L_ret;
   }
   { __typeof__(nr) m9v = (HttpServer_Route *) m9_pool_alloc (r_pool, sizeof (HttpServer_Route), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 616; goto L_ret; };
     nr = m9v;
   }
   nr->method = ((m9_sl_UTF8){ (uint8_t *) m9s0, 3 });
@@ -553,8 +569,9 @@ void HttpServer_AddFiles (HttpServer_Router * *r, m9_pool *r_pool, m9_sl_UTF8 pr
   nr->dir = dir;
   nr->next = NULL;
   HttpServer_Link (r, r_pool, nr, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 628; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, r_pool, (*r));
   m9_pool_free (&m9frame);
@@ -567,8 +584,11 @@ void HttpServer_Freeze (HttpServer_Router * *r, m9_pool *r_pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Freeze"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->frozen = true;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, r_pool, (*r));
   m9_pool_free (&m9frame);
@@ -581,11 +601,14 @@ int64_t HttpServer_RouteCount (HttpServer_Router * r, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.RouteCount"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   err->res = m9res;
   m9ret = r->count;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -597,16 +620,19 @@ m9_sl_UTF8 HttpServer_RouteMethod (HttpServer_Router * r, int64_t i, m9_state *e
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.RouteMethod"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   HttpServer_Route * p = NULL; (void) p;
   { __typeof__(p) m9v = HttpServer_RouteAt (r, i, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 663; goto L_ret; };
     p = m9v;
   }
   err->res = m9res;
   m9ret = p->method;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -619,16 +645,19 @@ m9_sl_UTF8 HttpServer_RoutePath (HttpServer_Router * r, int64_t i, m9_state *err
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.RoutePath"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   HttpServer_Route * p = NULL; (void) p;
   { __typeof__(p) m9v = HttpServer_RouteAt (r, i, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 671; goto L_ret; };
     p = m9v;
   }
   err->res = m9res;
   m9ret = p->path;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -641,16 +670,19 @@ int64_t HttpServer_RouteStatus (HttpServer_Router * r, int64_t i, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.RouteStatus"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   HttpServer_Route * p = NULL; (void) p;
   { __typeof__(p) m9v = HttpServer_RouteAt (r, i, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 679; goto L_ret; };
     p = m9v;
   }
   err->res = m9res;
   m9ret = p->status;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -662,16 +694,19 @@ m9_sl_UTF8 HttpServer_RouteType (HttpServer_Router * r, int64_t i, m9_state *err
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.RouteType"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   HttpServer_Route * p = NULL; (void) p;
   { __typeof__(p) m9v = HttpServer_RouteAt (r, i, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 687; goto L_ret; };
     p = m9v;
   }
   err->res = m9res;
   m9ret = p->ctype;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -684,16 +719,19 @@ m9_sl_UTF8 HttpServer_RouteSummary (HttpServer_Router * r, int64_t i, m9_state *
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.RouteSummary"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   HttpServer_Route * p = NULL; (void) p;
   { __typeof__(p) m9v = HttpServer_RouteAt (r, i, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 695; goto L_ret; };
     p = m9v;
   }
   err->res = m9res;
   m9ret = p->summary;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -706,8 +744,11 @@ void HttpServer_Stop (m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Stop"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_srv_stop ();
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -719,6 +760,8 @@ HttpServer_Config HttpServer_Defaults (m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "HttpServer.Defaults"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   HttpServer_Config m9ret = {0};
   HttpServer_Config c = {0}; (void) c;
   c.port = INT64_C(8000);
@@ -742,6 +785,7 @@ HttpServer_Config HttpServer_Defaults (m9_state *err)
   m9ret = c;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.bind.p);
   m9_adopt_if (&m9frame, m9res, m9ret.trusted.p);
@@ -755,6 +799,8 @@ int64_t HttpServer_Run (HttpServer_Config *cfg, HttpServer_Router * r, HttpServe
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Run"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   m9_pool pool = {0}; (void) pool;
   HttpServer_Srv * s = NULL; (void) s;
@@ -766,7 +812,7 @@ int64_t HttpServer_Run (HttpServer_Config *cfg, HttpServer_Router * r, HttpServe
   int64_t n = 0; (void) n;
   int64_t why = 0; (void) why;
   HttpServer_Clear (st, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2437; goto L_ret; };
   if ((!r->frozen)) {
     err->res = m9res;
     m9ret = HttpServer_NotFrozen;
@@ -778,25 +824,25 @@ int64_t HttpServer_Run (HttpServer_Config *cfg, HttpServer_Router * r, HttpServe
     goto L_ret;
   }
   bool m9t1 = ((Text_BLen ((*cfg).bind, err) == INT64_C(0)) || (Text_BLen ((*cfg).bind, err) > INT64_C(45)));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2446; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
     m9ret = HttpServer_BadConfig;
     goto L_ret;
   }
   bool m9t2 = (Text_CpCount ((*cfg).bind, err) != Text_BLen ((*cfg).bind, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2450; goto L_ret; };
   if (m9t2) {
     err->res = m9res;
     m9ret = HttpServer_BadConfig;
     goto L_ret;
   }
   { __typeof__(addr) m9v = DynStr_Bytes (&(pool), (*cfg).bind, true, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2451; goto L_ret; };
     addr = m9v;
   }
-  { __typeof__(lfd) m9v = (int64_t)(({ __auto_type m9_fam9t3 = (((void *)(addr).p)); __auto_type m9_fam9t4 = (((int) m9_i32 ((*cfg).port, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t5 = (((int) m9_i32 ((*cfg).backlog, err))); if (err->exc) goto L_ret; m9_mon *m9_gm = m9_gate (&m9_gate_csrv, "csrv"); m9_mon_enter (m9_gm); __typeof__(tcp_listen_at (m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = tcp_listen_at (m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
-    if (err->exc) goto L_ret;
+  { __typeof__(lfd) m9v = (int64_t)(({ __auto_type m9_fam9t3 = (((void *)(addr).p)); __auto_type m9_fam9t4 = (((int) m9_i32 ((*cfg).port, err))); if (err->exc) { m9ln = 2452; goto L_ret; }; __auto_type m9_fam9t5 = (((int) m9_i32 ((*cfg).backlog, err))); if (err->exc) { m9ln = 2452; goto L_ret; }; m9_mon *m9_gm = m9_gate (&m9_gate_csrv, "csrv"); m9_mon_enter (m9_gm); __typeof__(tcp_listen_at (m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = tcp_listen_at (m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
+    if (err->exc) { m9ln = 2452; goto L_ret; };
     lfd = m9v;
   }
   if ((lfd < INT64_C(0))) {
@@ -810,27 +856,27 @@ int64_t HttpServer_Run (HttpServer_Config *cfg, HttpServer_Router * r, HttpServe
   }
   why = HttpServer_Drained;
   { __typeof__(s) m9v = (HttpServer_Srv *) m9_pool_alloc (&(pool), sizeof (HttpServer_Srv), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2457; goto L_ret; };
     s = m9v;
   }
   s->r = r;
   s->cfg = (*cfg);
   HttpServer_SetCap (&(s->q), (*cfg).queue, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2460; goto L_ret; };
   { __typeof__(k) m9t7to;
   k = INT64_C(0);
   m9t7to = m9_sub_i64 ((*cfg).workers, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2461; goto L_ret; };
   if (k <= m9t7to) for (;;) {
     { __typeof__(w) m9v = (HttpServer_Worker *) m9_pool_alloc (&(pool), sizeof (HttpServer_Worker), 1, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2462; goto L_ret; };
       w = m9v;
     }
     w->s = s;
     w->k = k;
     w->last = INT64_C(0);
     m9_thread_start2 (m9_thr_HttpServer_WorkerRun, (void *) w, &(pool), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2466; goto L_ret; };
     if ((uint64_t) m9t7to - (uint64_t) k < (uint64_t) 1) break;
     k += 1;
   } }
@@ -843,27 +889,27 @@ int64_t HttpServer_Run (HttpServer_Config *cfg, HttpServer_Router * r, HttpServe
     if ((((*cfg).maxConn > INT64_C(0)) && ((*st).connections >= (*cfg).maxConn))) {
       break;
     }
-    { __typeof__(cfd) m9v = (int64_t)(({ __auto_type m9_fam9t10 = (((int) m9_i32 (lfd, err))); if (err->exc) goto L_fin_m9t9; __auto_type m9_fam9t11 = (((int64_t)(INT64_C(250)))); m9_mon *m9_gm = m9_gate (&m9_gate_csrv, "csrv"); m9_mon_enter (m9_gm); __typeof__(tcp_accept_wait (m9_fam9t10, m9_fam9t11)) m9_gv = tcp_accept_wait (m9_fam9t10, m9_fam9t11); m9_mon_leave (m9_gm); m9_gv; }));
-      if (err->exc) goto L_fin_m9t9;
+    { __typeof__(cfd) m9v = (int64_t)(({ __auto_type m9_fam9t10 = (((int) m9_i32 (lfd, err))); if (err->exc) { m9ln = 2473; goto L_fin_m9t9; }; __auto_type m9_fam9t11 = (((int64_t)(INT64_C(250)))); m9_mon *m9_gm = m9_gate (&m9_gate_csrv, "csrv"); m9_mon_enter (m9_gm); __typeof__(tcp_accept_wait (m9_fam9t10, m9_fam9t11)) m9_gv = tcp_accept_wait (m9_fam9t10, m9_fam9t11); m9_mon_leave (m9_gm); m9_gv; }));
+      if (err->exc) { m9ln = 2473; goto L_fin_m9t9; };
       cfd = m9v;
     }
     bool m9t12 = (cfd == m9_neg_i64 (INT64_C(1), err));
-    if (err->exc) goto L_fin_m9t9;
+    if (err->exc) { m9ln = 2474; goto L_fin_m9t9; };
     if (m9t12) {
       break;
     }
     if ((cfd >= INT64_C(0))) {
       { __typeof__((*st).connections) m9v = m9_add_i64 ((*st).connections, INT64_C(1), err);
-        if (err->exc) goto L_fin_m9t9;
+        if (err->exc) { m9ln = 2476; goto L_fin_m9t9; };
         (*st).connections = m9v;
       }
       bool m9t13 = (!HttpServer_Offer (&(s->q), cfd, err));
-      if (err->exc) goto L_fin_m9t9;
+      if (err->exc) { m9ln = 2477; goto L_fin_m9t9; };
       if (m9t13) {
         HttpServer_Busy (cfd, err);
-        if (err->exc) goto L_fin_m9t9;
+        if (err->exc) { m9ln = 2478; goto L_fin_m9t9; };
         { __typeof__((*st).busy) m9v = m9_add_i64 ((*st).busy, INT64_C(1), err);
-          if (err->exc) goto L_fin_m9t9;
+          if (err->exc) { m9ln = 2479; goto L_fin_m9t9; };
           (*st).busy = m9v;
         }
       }
@@ -871,51 +917,51 @@ int64_t HttpServer_Run (HttpServer_Config *cfg, HttpServer_Router * r, HttpServe
   }
 L_fin_m9t9: ;
   m9_fin m9t8f; m9_fin_save (err, &m9t8f);
-  { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t14 = (((int) m9_i32 (lfd, err))); if (err->exc) goto L_ret; tcp_close (m9_fam9t14); }));
-    if (err->exc) goto L_ret;
+  { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t14 = (((int) m9_i32 (lfd, err))); if (err->exc) { m9ln = 2484; goto L_ret; }; tcp_close (m9_fam9t14); }));
+    if (err->exc) { m9ln = 2484; goto L_ret; };
     n = m9v;
   }
   HttpServer_Shut (&(s->q), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2485; goto L_ret; };
   HttpServer_AwaitExits (&(s->q), (*cfg).workers, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2486; goto L_ret; };
   if ((*cfg).signals) {
     ({ __auto_type m9_fam9t15 = (((int)(INT64_C(0)))); m9_mon *m9_gm = m9_gate (&m9_gate_csrv, "csrv"); m9_mon_enter (m9_gm); m9_srv_signals (m9_fam9t15); m9_mon_leave (m9_gm); });
   }
   m9_fin_restore (err, &m9t8f);
   if (m9t8) goto L_ret;
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2487; goto L_ret; };
   { __typeof__(k) m9t16to;
   k = INT64_C(0);
   m9t16to = m9_sub_i64 ((*cfg).workers, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2489; goto L_ret; };
   if (k <= m9t16to) for (;;) {
     { __typeof__((*st).requests) m9v = m9_add_i64 ((*st).requests, (*(HttpServer_Stats *) m9_at (s->st.v, k, INT64_C(64), sizeof (HttpServer_Stats), err)).requests, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2490; goto L_ret; };
       (*st).requests = m9v;
     }
     { __typeof__((*st).faults) m9v = m9_add_i64 ((*st).faults, (*(HttpServer_Stats *) m9_at (s->st.v, k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2491; goto L_ret; };
       (*st).faults = m9v;
     }
     { __typeof__((*st).s2xx) m9v = m9_add_i64 ((*st).s2xx, (*(HttpServer_Stats *) m9_at (s->st.v, k, INT64_C(64), sizeof (HttpServer_Stats), err)).s2xx, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2492; goto L_ret; };
       (*st).s2xx = m9v;
     }
     { __typeof__((*st).s3xx) m9v = m9_add_i64 ((*st).s3xx, (*(HttpServer_Stats *) m9_at (s->st.v, k, INT64_C(64), sizeof (HttpServer_Stats), err)).s3xx, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2493; goto L_ret; };
       (*st).s3xx = m9v;
     }
     { __typeof__((*st).s4xx) m9v = m9_add_i64 ((*st).s4xx, (*(HttpServer_Stats *) m9_at (s->st.v, k, INT64_C(64), sizeof (HttpServer_Stats), err)).s4xx, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2494; goto L_ret; };
       (*st).s4xx = m9v;
     }
     { __typeof__((*st).s5xx) m9v = m9_add_i64 ((*st).s5xx, (*(HttpServer_Stats *) m9_at (s->st.v, k, INT64_C(64), sizeof (HttpServer_Stats), err)).s5xx, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2495; goto L_ret; };
       (*st).s5xx = m9v;
     }
     { __typeof__((*st).bytesOut) m9v = m9_add_i64 ((*st).bytesOut, (*(HttpServer_Stats *) m9_at (s->st.v, k, INT64_C(64), sizeof (HttpServer_Stats), err)).bytesOut, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2496; goto L_ret; };
       (*st).bytesOut = m9v;
     }
     if ((uint64_t) m9t16to - (uint64_t) k < (uint64_t) 1) break;
@@ -925,6 +971,7 @@ L_fin_m9t9: ;
   m9ret = why;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   m9_pool_free (&pool);
@@ -937,6 +984,8 @@ HttpServer_Response HttpServer_Reply (int64_t status, m9_sl_UTF8 ctype, m9_sl_UT
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "HttpServer.Reply"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   HttpServer_Response m9ret = {0};
   HttpServer_Response r = {0}; (void) r;
   r.status = status;
@@ -951,6 +1000,7 @@ HttpServer_Response HttpServer_Reply (int64_t status, m9_sl_UTF8 ctype, m9_sl_UT
   m9ret = r;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.ctype.p);
   m9_adopt_if (&m9frame, m9res, m9ret.text.p);
@@ -967,6 +1017,8 @@ HttpServer_Response HttpServer_ReplyBytes (int64_t status, m9_sl_UTF8 ctype, m9_
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "HttpServer.ReplyBytes"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   HttpServer_Response m9ret = {0};
   HttpServer_Response r = {0}; (void) r;
   r.status = status;
@@ -982,6 +1034,7 @@ HttpServer_Response HttpServer_ReplyBytes (int64_t status, m9_sl_UTF8 ctype, m9_
   m9ret = r;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.ctype.p);
   m9_adopt_if (&m9frame, m9res, m9ret.text.p);
@@ -998,10 +1051,12 @@ HttpServer_Response HttpServer_ReplyFile (m9_sl_UTF8 path, m9_sl_UTF8 ctype, m9_
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "HttpServer.ReplyFile"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   HttpServer_Response m9ret = {0};
   HttpServer_Response r = {0}; (void) r;
   { __typeof__(r) m9v = HttpServer_Reply (INT64_C(200), ctype, ((m9_sl_UTF8){ NULL, 0 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 735; goto L_ret; };
     r = m9v;
   }
   r.file = path;
@@ -1009,6 +1064,7 @@ HttpServer_Response HttpServer_ReplyFile (m9_sl_UTF8 path, m9_sl_UTF8 ctype, m9_
   m9ret = r;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.ctype.p);
   m9_adopt_if (&m9frame, m9res, m9ret.text.p);
@@ -1025,10 +1081,12 @@ HttpServer_Response HttpServer_ReplyStream (int64_t status, m9_sl_UTF8 ctype, Ht
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "HttpServer.ReplyStream"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   HttpServer_Response m9ret = {0};
   HttpServer_Response r = {0}; (void) r;
   { __typeof__(r) m9v = HttpServer_Reply (status, ctype, ((m9_sl_UTF8){ NULL, 0 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 743; goto L_ret; };
     r = m9v;
   }
   r.stream = p;
@@ -1036,6 +1094,7 @@ HttpServer_Response HttpServer_ReplyStream (int64_t status, m9_sl_UTF8 ctype, Ht
   m9ret = r;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.ctype.p);
   m9_adopt_if (&m9frame, m9res, m9ret.text.p);
@@ -1052,161 +1111,163 @@ m9_sl_UTF8 HttpServer_TypeOf (m9_sl_UTF8 path, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.TypeOf"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   int64_t i = 0; (void) i;
   m9_sl_UTF8 ext = {0}; (void) ext;
   { __typeof__(i) m9v = m9_sub_i64 (Text_BLen (path, err), INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 752; goto L_ret; };
     i = m9v;
   }
   for (;;) {
     bool m9t1 = (((i >= INT64_C(0)) && (!Text_BIs (path, i, 46u, err))) && (!Text_BIs (path, i, 47u, err)));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 753; goto L_ret; };
     if (!(m9t1)) break;
     { __typeof__(i) m9v = m9_sub_i64 (i, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 753; goto L_ret; };
       i = m9v;
     }
   }
   bool m9t2 = ((i < INT64_C(0)) || Text_BIs (path, i, 47u, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 754; goto L_ret; };
   if (m9t2) {
     err->res = m9res;
     m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s3, 24 });
     goto L_ret;
   }
   { __typeof__(ext) m9v = m9_utf_slice (path, m9_add_i64 (i, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (path, err), i, err), INT64_C(1), err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 755; goto L_ret; };
     ext = m9v;
   }
   bool m9t4 = (Text_EqUtf (ext, ((m9_sl_UTF8){ (uint8_t *) m9s4, 4 }), err) || Text_EqUtf (ext, ((m9_sl_UTF8){ (uint8_t *) m9s5, 3 }), err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 756; goto L_ret; };
   if (m9t4) {
     err->res = m9res;
     m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s6, 24 });
     goto L_ret;
   }
   bool m9t5 = (Text_EqUtf (ext, ((m9_sl_UTF8){ (uint8_t *) m9s7, 2 }), err) || Text_EqUtf (ext, ((m9_sl_UTF8){ (uint8_t *) m9s8, 3 }), err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 757; goto L_ret; };
   if (m9t5) {
     err->res = m9res;
     m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s9, 30 });
     goto L_ret;
   }
   bool m9t6 = Text_EqUtf (ext, ((m9_sl_UTF8){ (uint8_t *) m9s10, 3 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 758; goto L_ret; };
   if (m9t6) {
     err->res = m9res;
     m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s11, 23 });
     goto L_ret;
   }
   bool m9t7 = Text_EqUtf (ext, ((m9_sl_UTF8){ (uint8_t *) m9s12, 3 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 759; goto L_ret; };
   if (m9t7) {
     err->res = m9res;
     m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s13, 13 });
     goto L_ret;
   }
   bool m9t8 = Text_EqUtf (ext, ((m9_sl_UTF8){ (uint8_t *) m9s14, 3 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 760; goto L_ret; };
   if (m9t8) {
     err->res = m9res;
     m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s15, 9 });
     goto L_ret;
   }
   bool m9t9 = (Text_EqUtf (ext, ((m9_sl_UTF8){ (uint8_t *) m9s16, 3 }), err) || Text_EqUtf (ext, ((m9_sl_UTF8){ (uint8_t *) m9s17, 4 }), err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 761; goto L_ret; };
   if (m9t9) {
     err->res = m9res;
     m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s18, 10 });
     goto L_ret;
   }
   bool m9t10 = Text_EqUtf (ext, ((m9_sl_UTF8){ (uint8_t *) m9s19, 3 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 762; goto L_ret; };
   if (m9t10) {
     err->res = m9res;
     m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s20, 9 });
     goto L_ret;
   }
   bool m9t11 = Text_EqUtf (ext, ((m9_sl_UTF8){ (uint8_t *) m9s21, 4 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 763; goto L_ret; };
   if (m9t11) {
     err->res = m9res;
     m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s22, 10 });
     goto L_ret;
   }
   bool m9t12 = Text_EqUtf (ext, ((m9_sl_UTF8){ (uint8_t *) m9s23, 3 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 764; goto L_ret; };
   if (m9t12) {
     err->res = m9res;
     m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s24, 12 });
     goto L_ret;
   }
   bool m9t13 = Text_EqUtf (ext, ((m9_sl_UTF8){ (uint8_t *) m9s25, 3 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 765; goto L_ret; };
   if (m9t13) {
     err->res = m9res;
     m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s26, 9 });
     goto L_ret;
   }
   bool m9t14 = Text_EqUtf (ext, ((m9_sl_UTF8){ (uint8_t *) m9s27, 4 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 766; goto L_ret; };
   if (m9t14) {
     err->res = m9res;
     m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s28, 16 });
     goto L_ret;
   }
   bool m9t15 = Text_EqUtf (ext, ((m9_sl_UTF8){ (uint8_t *) m9s29, 3 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 767; goto L_ret; };
   if (m9t15) {
     err->res = m9res;
     m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s30, 25 });
     goto L_ret;
   }
   bool m9t16 = Text_EqUtf (ext, ((m9_sl_UTF8){ (uint8_t *) m9s31, 3 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 768; goto L_ret; };
   if (m9t16) {
     err->res = m9res;
     m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s32, 23 });
     goto L_ret;
   }
   bool m9t17 = Text_EqUtf (ext, ((m9_sl_UTF8){ (uint8_t *) m9s33, 3 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 769; goto L_ret; };
   if (m9t17) {
     err->res = m9res;
     m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s34, 15 });
     goto L_ret;
   }
   bool m9t18 = Text_EqUtf (ext, ((m9_sl_UTF8){ (uint8_t *) m9s35, 3 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 770; goto L_ret; };
   if (m9t18) {
     err->res = m9res;
     m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s36, 15 });
     goto L_ret;
   }
   bool m9t19 = Text_EqUtf (ext, ((m9_sl_UTF8){ (uint8_t *) m9s37, 4 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 771; goto L_ret; };
   if (m9t19) {
     err->res = m9res;
     m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s38, 16 });
     goto L_ret;
   }
   bool m9t20 = Text_EqUtf (ext, ((m9_sl_UTF8){ (uint8_t *) m9s39, 3 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 772; goto L_ret; };
   if (m9t20) {
     err->res = m9res;
     m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s40, 15 });
     goto L_ret;
   }
   bool m9t21 = Text_EqUtf (ext, ((m9_sl_UTF8){ (uint8_t *) m9s41, 2 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 773; goto L_ret; };
   if (m9t21) {
     err->res = m9res;
     m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s42, 16 });
     goto L_ret;
   }
   bool m9t22 = Text_EqUtf (ext, ((m9_sl_UTF8){ (uint8_t *) m9s43, 2 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 774; goto L_ret; };
   if (m9t22) {
     err->res = m9res;
     m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s44, 20 });
@@ -1216,6 +1277,7 @@ m9_sl_UTF8 HttpServer_TypeOf (m9_sl_UTF8 path, m9_state *err)
   m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s45, 24 });
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -1228,19 +1290,21 @@ HttpServer_Response HttpServer_WithHeader (HttpServer_Response *resp, m9_sl_UTF8
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "HttpServer.WithHeader"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   HttpServer_Response m9ret = {0};
   HttpServer_Response r = {0}; (void) r;
   r = (*resp);
   bool m9t1 = (Text_BLen (r.headers, err) == INT64_C(0));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 783; goto L_ret; };
   if (m9t1) {
     { __typeof__(r.headers) m9v = m9_utf_cat (err->res, m9_utf_cat (err->res, name, ((m9_sl_UTF8){ (uint8_t *) m9s46, 2 }), err), value, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 784; goto L_ret; };
       r.headers = m9v;
     }
   } else {
     { __typeof__(r.headers) m9v = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, r.headers, m9_utf_of_char (err->res, 10u, err), err), name, err), ((m9_sl_UTF8){ (uint8_t *) m9s47, 2 }), err), value, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 786; goto L_ret; };
       r.headers = m9v;
     }
   }
@@ -1248,6 +1312,7 @@ HttpServer_Response HttpServer_WithHeader (HttpServer_Response *resp, m9_sl_UTF8
   m9ret = r;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.ctype.p);
   m9_adopt_if (&m9frame, m9res, m9ret.text.p);
@@ -1264,12 +1329,15 @@ m9_sl_UTF8 HttpServer_Header (HttpServer_Request *req, m9_sl_UTF8 name, m9_state
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Header"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   err->res = m9res;
   m9ret = Http_Header ((*req).headers, name, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 794; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -1282,49 +1350,54 @@ void HttpServer_Serve (HttpServer_Router * r, int64_t port, int64_t maxRequests,
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Serve"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t lfd = 0; (void) lfd;
   int64_t cfd = 0; (void) cfd;
   int64_t served = 0; (void) served;
   int64_t n = 0; (void) n;
-  { __typeof__(lfd) m9v = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (port, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (HttpServer_Backlog, err))); if (err->exc) goto L_ret; m9_mon *m9_gm = m9_gate (&m9_gate_csrv, "csrv"); m9_mon_enter (m9_gm); __typeof__(tcp_listen (m9_fam9t1, m9_fam9t2)) m9_gv = tcp_listen (m9_fam9t1, m9_fam9t2); m9_mon_leave (m9_gm); m9_gv; }));
-    if (err->exc) goto L_ret;
+  { __typeof__(lfd) m9v = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (port, err))); if (err->exc) { m9ln = 2597; goto L_ret; }; __auto_type m9_fam9t2 = (((int) m9_i32 (HttpServer_Backlog, err))); if (err->exc) { m9ln = 2597; goto L_ret; }; m9_mon *m9_gm = m9_gate (&m9_gate_csrv, "csrv"); m9_mon_enter (m9_gm); __typeof__(tcp_listen (m9_fam9t1, m9_fam9t2)) m9_gv = tcp_listen (m9_fam9t1, m9_fam9t2); m9_mon_leave (m9_gm); m9_gv; }));
+    if (err->exc) { m9ln = 2597; goto L_ret; };
     lfd = m9v;
   }
   if ((lfd < INT64_C(0))) {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s48, 13 })) m9t3 = ((m9_sl_UTF8){ (uint8_t *) m9s48, 13 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &HttpServer_BindError);
+    m9_site (err, 2598, m9pn);
     goto L_ret;
   }
   bool m9t4 = false; (void) m9t4;
   served = INT64_C(0);
   for (;;) {
     if (!((served < maxRequests))) break;
-    { __typeof__(cfd) m9v = (int64_t)(({ __auto_type m9_fam9t6 = (((int) m9_i32 (lfd, err))); if (err->exc) goto L_fin_m9t5; m9_mon *m9_gm = m9_gate (&m9_gate_csrv, "csrv"); m9_mon_enter (m9_gm); __typeof__(tcp_accept (m9_fam9t6)) m9_gv = tcp_accept (m9_fam9t6); m9_mon_leave (m9_gm); m9_gv; }));
-      if (err->exc) goto L_fin_m9t5;
+    { __typeof__(cfd) m9v = (int64_t)(({ __auto_type m9_fam9t6 = (((int) m9_i32 (lfd, err))); if (err->exc) { m9ln = 2602; goto L_fin_m9t5; }; m9_mon *m9_gm = m9_gate (&m9_gate_csrv, "csrv"); m9_mon_enter (m9_gm); __typeof__(tcp_accept (m9_fam9t6)) m9_gv = tcp_accept (m9_fam9t6); m9_mon_leave (m9_gm); m9_gv; }));
+      if (err->exc) { m9ln = 2602; goto L_fin_m9t5; };
       cfd = m9v;
     }
     if ((cfd < INT64_C(0))) {
       { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s49, 13 })) m9t7 = ((m9_sl_UTF8){ (uint8_t *) m9s49, 13 }); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
       m9_raise (err, &HttpServer_BindError);
+      m9_site (err, 2603, m9pn);
       goto L_fin_m9t5;
     }
     HttpServer_Answer (r, cfd, err);
-    if (err->exc) goto L_fin_m9t5;
+    if (err->exc) { m9ln = 2604; goto L_fin_m9t5; };
     { __typeof__(served) m9v = m9_add_i64 (served, INT64_C(1), err);
-      if (err->exc) goto L_fin_m9t5;
+      if (err->exc) { m9ln = 2605; goto L_fin_m9t5; };
       served = m9v;
     }
   }
 L_fin_m9t5: ;
   m9_fin m9t4f; m9_fin_save (err, &m9t4f);
-  { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t8 = (((int) m9_i32 (lfd, err))); if (err->exc) goto L_ret; tcp_close (m9_fam9t8); }));
-    if (err->exc) goto L_ret;
+  { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t8 = (((int) m9_i32 (lfd, err))); if (err->exc) { m9ln = 2608; goto L_ret; }; tcp_close (m9_fam9t8); }));
+    if (err->exc) { m9ln = 2608; goto L_ret; };
     n = m9v;
   }
   m9_fin_restore (err, &m9t4f);
   if (m9t4) goto L_ret;
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2608; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -1336,6 +1409,8 @@ static void HttpServer_Link (HttpServer_Router * *r, m9_pool *r_pool, HttpServer
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Link"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   { HttpServer_Route * t = ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->last;
   if (t != NULL) {
     t->next = nr;
@@ -1344,10 +1419,11 @@ static void HttpServer_Link (HttpServer_Router * *r, m9_pool *r_pool, HttpServer
   } }
   ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->last = nr;
   { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->count) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->count, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 531; goto L_ret; };
     ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->count = m9v;
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, r_pool, (*r));
   m9_pool_free (&m9frame);
@@ -1360,14 +1436,17 @@ static void HttpServer_AddCalled (HttpServer_Router * *r, m9_pool *r_pool, m9_sl
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.AddCalled"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   HttpServer_Route * nr = NULL; (void) nr;
   if (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->frozen) {
     { __typeof__(path) m9t1 = path; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &HttpServer_Frozen);
+    m9_site (err, 570, m9pn);
     goto L_ret;
   }
   { __typeof__(nr) m9v = (HttpServer_Route *) m9_pool_alloc (r_pool, sizeof (HttpServer_Route), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 571; goto L_ret; };
     nr = m9v;
   }
   nr->method = method;
@@ -1382,8 +1461,9 @@ static void HttpServer_AddCalled (HttpServer_Router * *r, m9_pool *r_pool, m9_sl
   nr->dir = ((m9_sl_UTF8){ NULL, 0 });
   nr->next = NULL;
   HttpServer_Link (r, r_pool, nr, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 583; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, r_pool, (*r));
   m9_pool_free (&m9frame);
@@ -1396,6 +1476,8 @@ static HttpServer_Route * HttpServer_RouteAt (HttpServer_Router * r, int64_t i, 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "HttpServer.RouteAt"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   HttpServer_Route * m9ret = NULL;
   HttpServer_Route * c = NULL; (void) c;
   int64_t j = 0; (void) j;
@@ -1403,6 +1485,7 @@ static HttpServer_Route * HttpServer_RouteAt (HttpServer_Router * r, int64_t i, 
     err->i[0] = i;
     err->i[1] = r->count;
     m9_raise (err, &m9_exc_IndexError);
+    m9_site (err, 642, m9pn);
     goto L_ret;
   }
   c = r->first;
@@ -1416,7 +1499,7 @@ static HttpServer_Route * HttpServer_RouteAt (HttpServer_Router * r, int64_t i, 
       goto L_ret;
     }
     { __typeof__(j) m9v = m9_sub_i64 (j, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 647; goto L_ret; };
       j = m9v;
     }
     c = rt->next;
@@ -1424,8 +1507,10 @@ static HttpServer_Route * HttpServer_RouteAt (HttpServer_Router * r, int64_t i, 
   err->i[0] = i;
   err->i[1] = r->count;
   m9_raise (err, &m9_exc_IndexError);
+  m9_site (err, 650, m9pn);
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -1438,9 +1523,12 @@ static void HttpServer_SetCap (HttpServer_Q *q, int64_t cap, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.SetCap"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_mon_enter (&(*q).m9mon);
   (*q).cap = cap;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_mon_leave (&(*q).m9mon);
   m9_pool_free (&m9frame);
@@ -1453,6 +1541,8 @@ static bool HttpServer_Offer (HttpServer_Q *q, int64_t fd, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Offer"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   m9_mon_enter (&(*q).m9mon);
   if (((*q).count >= (*q).cap)) {
@@ -1461,13 +1551,13 @@ static bool HttpServer_Offer (HttpServer_Q *q, int64_t fd, m9_state *err)
     goto L_ret;
   }
   (*(int64_t *) m9_at ((*q).fds.v, (*q).tail, INT64_C(1024), sizeof (int64_t), err)) = fd;
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 836; goto L_ret; };
   { __typeof__((*q).tail) m9v = m9_mod_i64 ((m9_add_i64 ((*q).tail, INT64_C(1), err)), (*q).cap, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 837; goto L_ret; };
     (*q).tail = m9v;
   }
   { __typeof__((*q).count) m9v = m9_add_i64 ((*q).count, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 838; goto L_ret; };
     (*q).count = m9v;
   }
   m9_mon_signal (&((*q)).m9mon);
@@ -1475,6 +1565,7 @@ static bool HttpServer_Offer (HttpServer_Q *q, int64_t fd, m9_state *err)
   m9ret = true;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_mon_leave (&(*q).m9mon);
   m9_pool_free (&m9frame);
@@ -1487,6 +1578,8 @@ static int64_t HttpServer_Take (HttpServer_Q *q, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Take"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   m9_mon_enter (&(*q).m9mon);
   int64_t fd = 0; (void) fd;
@@ -1497,25 +1590,26 @@ static int64_t HttpServer_Take (HttpServer_Q *q, m9_state *err)
   if (((*q).count == INT64_C(0))) {
     err->res = m9res;
     m9ret = m9_neg_i64 (INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 851; goto L_ret; };
     goto L_ret;
   }
   { __typeof__(fd) m9v = (*(int64_t *) m9_at ((*q).fds.v, (*q).head, INT64_C(1024), sizeof (int64_t), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 852; goto L_ret; };
     fd = m9v;
   }
   { __typeof__((*q).head) m9v = m9_mod_i64 ((m9_add_i64 ((*q).head, INT64_C(1), err)), (*q).cap, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 853; goto L_ret; };
     (*q).head = m9v;
   }
   { __typeof__((*q).count) m9v = m9_sub_i64 ((*q).count, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 854; goto L_ret; };
     (*q).count = m9v;
   }
   err->res = m9res;
   m9ret = fd;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_mon_leave (&(*q).m9mon);
   m9_pool_free (&m9frame);
@@ -1528,12 +1622,15 @@ static bool HttpServer_Closing (HttpServer_Q *q, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Closing"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   m9_mon_enter (&(*q).m9mon);
   err->res = m9res;
   m9ret = (*q).closing;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_mon_leave (&(*q).m9mon);
   m9_pool_free (&m9frame);
@@ -1546,12 +1643,15 @@ static int64_t HttpServer_Waiting (HttpServer_Q *q, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Waiting"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   m9_mon_enter (&(*q).m9mon);
   err->res = m9res;
   m9ret = (*q).count;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_mon_leave (&(*q).m9mon);
   m9_pool_free (&m9frame);
@@ -1564,10 +1664,13 @@ static void HttpServer_Shut (HttpServer_Q *q, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Shut"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_mon_enter (&(*q).m9mon);
   (*q).closing = true;
   m9_mon_signal (&((*q)).m9mon);
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_mon_leave (&(*q).m9mon);
   m9_pool_free (&m9frame);
@@ -1580,13 +1683,16 @@ static void HttpServer_Exited (HttpServer_Q *q, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Exited"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_mon_enter (&(*q).m9mon);
   { __typeof__((*q).exited) m9v = m9_add_i64 ((*q).exited, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 877; goto L_ret; };
     (*q).exited = m9v;
   }
   m9_mon_signal (&((*q)).m9mon);
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_mon_leave (&(*q).m9mon);
   m9_pool_free (&m9frame);
@@ -1599,12 +1705,15 @@ static void HttpServer_AwaitExits (HttpServer_Q *q, int64_t n, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.AwaitExits"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_mon_enter (&(*q).m9mon);
   for (;;) {
     if (!(((*q).exited < n))) break;
     m9_mon_wait (&((*q)).m9mon);
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_mon_leave (&(*q).m9mon);
   m9_pool_free (&m9frame);
@@ -1617,18 +1726,20 @@ static int HttpServer_CFd (int64_t v, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.CFd"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int m9ret = {0};
   int32_t bad = 0; (void) bad;
   err->res = m9res;
   m9ret = ((int) m9_i32 (v, err));
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 897; goto L_hdl_m9t1; };
   goto L_ret;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
     { __typeof__(bad) m9v = m9_neg_i64 (INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 900; goto L_ret; };
       bad = m9v;
     }
     err->res = m9res;
@@ -1639,6 +1750,7 @@ L_hdl_m9t1: ;
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -1650,10 +1762,12 @@ static size_t HttpServer_CLen (int64_t v, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.CLen"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   size_t m9ret = 0;
   err->res = m9res;
   m9ret = ((size_t) m9_u64 (v, err));
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 906; goto L_hdl_m9t1; };
   goto L_ret;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -1667,6 +1781,7 @@ L_hdl_m9t1: ;
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -1678,6 +1793,8 @@ static bool HttpServer_WriteAll (int64_t fd, m9_sl_BYTE b, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.WriteAll"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   int64_t done = 0; (void) done;
   int64_t n = 0; (void) n;
@@ -1685,9 +1802,9 @@ static bool HttpServer_WriteAll (int64_t fd, m9_sl_BYTE b, m9_state *err)
   for (;;) {
     if (!((done < (b).len))) break;
     { __typeof__(m9_sub_i64 ((b).len, done, err)) m9a1 = m9_sub_i64 ((b).len, done, err);
-      if (err->exc) goto L_ret;
-    { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t1 = (HttpServer_CFd (fd, err)); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(({ __auto_type m9t2 = b; int64_t m9t2a = done, m9t2n = m9_sub_i64 ((b).len, done, err); int64_t m9t2o = m9_chk_slice (m9t2a, m9t2n, m9t2.len, err); (__typeof__(m9t2)){ m9t2.p + m9t2o, err->exc ? 0 : m9t2n }; })).p)); if (err->exc) goto L_ret; __auto_type m9_fam9t4 = (HttpServer_CLen (m9a1, err)); if (err->exc) goto L_ret; tcp_write (m9_fam9t1, m9_fam9t3, m9_fam9t4); }));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 918; goto L_ret; };
+    { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t1 = (HttpServer_CFd (fd, err)); if (err->exc) { m9ln = 918; goto L_ret; }; __auto_type m9_fam9t3 = (((void *)(({ __auto_type m9t2 = b; int64_t m9t2a = done, m9t2n = m9_sub_i64 ((b).len, done, err); int64_t m9t2o = m9_chk_slice (m9t2a, m9t2n, m9t2.len, err); (__typeof__(m9t2)){ m9t2.p + m9t2o, err->exc ? 0 : m9t2n }; })).p)); if (err->exc) { m9ln = 918; goto L_ret; }; __auto_type m9_fam9t4 = (HttpServer_CLen (m9a1, err)); if (err->exc) { m9ln = 918; goto L_ret; }; tcp_write (m9_fam9t1, m9_fam9t3, m9_fam9t4); }));
+      if (err->exc) { m9ln = 918; goto L_ret; };
       n = m9v;
     }
     }
@@ -1697,7 +1814,7 @@ static bool HttpServer_WriteAll (int64_t fd, m9_sl_BYTE b, m9_state *err)
       goto L_ret;
     }
     { __typeof__(done) m9v = m9_add_i64 (done, n, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 921; goto L_ret; };
       done = m9v;
     }
   }
@@ -1705,6 +1822,7 @@ static bool HttpServer_WriteAll (int64_t fd, m9_sl_BYTE b, m9_state *err)
   m9ret = true;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -1716,11 +1834,14 @@ static void HttpServer_CrLf (DynStr_DString * *d, m9_pool *d_pool, m9_state *err
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.CrLf"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   DynStr_AppendChar (d, d_pool, 13u, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 928; goto L_ret; };
   DynStr_AppendChar (d, d_pool, 10u, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 929; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -1733,6 +1854,8 @@ static m9_sl_UTF8 HttpServer_Reason (int64_t status, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Reason"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   { __typeof__(status) m9t1 = status;
   switch (m9t1) {
@@ -1953,6 +2076,7 @@ static m9_sl_UTF8 HttpServer_Reason (int64_t status, m9_state *err)
   } break;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -1965,19 +2089,22 @@ static void HttpServer_AppendDate (DynStr_DString * *d, m9_pool *d_pool, m9_stat
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.AppendDate"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s86, 6 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 981; goto L_ret; };
   { __typeof__(m9_i64_f64 ((double)((double)(m9_now ())), err)) m9a2 = m9_i64_f64 ((double)((double)(m9_now ())), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 982; goto L_ret; };
   { __typeof__(Http_FormatDate (m9a2, err)) m9a3 = Http_FormatDate (m9a2, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 982; goto L_ret; };
   DynStr_Append (d, d_pool, m9a3, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 982; goto L_ret; };
   }
   }
   HttpServer_CrLf (d, d_pool, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 983; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -1990,17 +2117,20 @@ static uint32_t HttpServer_Lc (uint32_t ch, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Lc"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   uint32_t m9ret = 0;
   if (((ch >= 65u) && (ch <= 90u))) {
     err->res = m9res;
     m9ret = m9_chr (m9_add_i64 ((int64_t)(ch), INT64_C(32), err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 994; goto L_ret; };
     goto L_ret;
   }
   err->res = m9res;
   m9ret = ch;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2012,10 +2142,12 @@ static bool HttpServer_SameCi (m9_sl_UTF8 a, m9_sl_UTF8 lower, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.SameCi"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   int64_t i = 0; (void) i;
   bool m9t1 = (Text_BLen (a, err) != Text_BLen (lower, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1005; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
     m9ret = false;
@@ -2024,12 +2156,12 @@ static bool HttpServer_SameCi (m9_sl_UTF8 a, m9_sl_UTF8 lower, m9_state *err)
   { __typeof__(i) m9t2to;
   i = INT64_C(0);
   m9t2to = m9_sub_i64 (Text_BLen (a, err), INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1006; goto L_ret; };
   if (i <= m9t2to) for (;;) {
     { __typeof__(Text_BChar (a, i, err)) m9a4 = Text_BChar (a, i, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1007; goto L_ret; };
     bool m9t3 = (HttpServer_Lc (m9a4, err) != Text_BChar (lower, i, err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1007; goto L_ret; };
     if (m9t3) {
       err->res = m9res;
       m9ret = false;
@@ -2042,6 +2174,7 @@ static bool HttpServer_SameCi (m9_sl_UTF8 a, m9_sl_UTF8 lower, m9_state *err)
   m9ret = true;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2053,6 +2186,8 @@ static bool HttpServer_IsTchar (uint32_t ch, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.IsTchar"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   m9_sl_UTF8 punct = {0}; (void) punct;
   int64_t i = 0; (void) i;
@@ -2075,10 +2210,10 @@ static bool HttpServer_IsTchar (uint32_t ch, m9_state *err)
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (Text_BLen (punct, err), INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1023; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     bool m9t2 = Text_BIs (punct, i, ch, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1024; goto L_ret; };
     if (m9t2) {
       err->res = m9res;
       m9ret = true;
@@ -2091,6 +2226,7 @@ static bool HttpServer_IsTchar (uint32_t ch, m9_state *err)
   m9ret = false;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2102,10 +2238,12 @@ static bool HttpServer_IsToken (m9_sl_UTF8 s, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.IsToken"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   uint32_t c = 0; (void) c;
   bool m9t1 = (Text_BLen (s, err) == INT64_C(0));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1032; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
     m9ret = false;
@@ -2114,7 +2252,7 @@ static bool HttpServer_IsToken (m9_sl_UTF8 s, m9_state *err)
   { __typeof__(s) m9t2s = s;
   for (int64_t m9t2i = 0; m9t2i < m9t2s.len; ) { c = m9_utf_next (m9t2s, &m9t2i);
     bool m9t3 = (!HttpServer_IsTchar (c, err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1034; goto L_ret; };
     if (m9t3) {
       err->res = m9res;
       m9ret = false;
@@ -2125,6 +2263,7 @@ static bool HttpServer_IsToken (m9_sl_UTF8 s, m9_state *err)
   m9ret = true;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2136,37 +2275,40 @@ static m9_sl_UTF8 HttpServer_Trimmed (m9_sl_UTF8 s, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Trimmed"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   int64_t a = 0; (void) a;
   int64_t b = 0; (void) b;
   a = INT64_C(0);
   { __typeof__(b) m9v = Text_BLen (s, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1045; goto L_ret; };
     b = m9v;
   }
   for (;;) {
     bool m9t1 = ((a < b) && ((Text_BIs (s, a, 32u, err) || Text_BIs (s, a, 9u, err))));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1046; goto L_ret; };
     if (!(m9t1)) break;
     { __typeof__(a) m9v = m9_add_i64 (a, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1046; goto L_ret; };
       a = m9v;
     }
   }
   for (;;) {
-    bool m9t4 = ({ bool m9t3 = (b > a); if (m9t3) { { __typeof__(m9_sub_i64 (b, INT64_C(1), err)) m9a5 = m9_sub_i64 (b, INT64_C(1), err);   if (err->exc) goto L_ret; m9t3 = ((({ bool m9t2 = Text_BIs (s, m9a5, 32u, err); if (!m9t2) { { __typeof__(m9_sub_i64 (b, INT64_C(1), err)) m9a6 = m9_sub_i64 (b, INT64_C(1), err);   if (err->exc) goto L_ret; m9t2 = (Text_BIs (s, m9a6, 9u, err)); } } m9t2; }))); } } m9t3; });
-    if (err->exc) goto L_ret;
+    bool m9t4 = ({ bool m9t3 = (b > a); if (m9t3) { { __typeof__(m9_sub_i64 (b, INT64_C(1), err)) m9a5 = m9_sub_i64 (b, INT64_C(1), err);   if (err->exc) { m9ln = 1047; goto L_ret; }; m9t3 = ((({ bool m9t2 = Text_BIs (s, m9a5, 32u, err); if (!m9t2) { { __typeof__(m9_sub_i64 (b, INT64_C(1), err)) m9a6 = m9_sub_i64 (b, INT64_C(1), err);   if (err->exc) { m9ln = 1047; goto L_ret; }; m9t2 = (Text_BIs (s, m9a6, 9u, err)); } } m9t2; }))); } } m9t3; });
+    if (err->exc) { m9ln = 1047; goto L_ret; };
     if (!(m9t4)) break;
     { __typeof__(b) m9v = m9_sub_i64 (b, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1047; goto L_ret; };
       b = m9v;
     }
   }
   err->res = m9res;
   m9ret = m9_utf_slice (s, a, m9_sub_i64 (b, a, err), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1048; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -2179,39 +2321,41 @@ static int64_t HttpServer_Digits (m9_sl_UTF8 s, int64_t most, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Digits"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   int64_t i = 0; (void) i;
   int64_t v = 0; (void) v;
   bool m9t1 = (Text_BLen (s, err) == INT64_C(0));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1058; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
     m9ret = m9_neg_i64 (INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1058; goto L_ret; };
     goto L_ret;
   }
   v = INT64_C(0);
   { __typeof__(i) m9t2to;
   i = INT64_C(0);
   m9t2to = m9_sub_i64 (Text_BLen (s, err), INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1060; goto L_ret; };
   if (i <= m9t2to) for (;;) {
     bool m9t3 = (((int64_t)(Text_BAt (s, i, err)) < (int64_t)(48u)) || ((int64_t)(Text_BAt (s, i, err)) > (int64_t)(57u)));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1061; goto L_ret; };
     if (m9t3) {
       err->res = m9res;
       m9ret = m9_neg_i64 (INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1061; goto L_ret; };
       goto L_ret;
     }
     if ((v > most)) {
       err->res = m9res;
       m9ret = m9_neg_i64 (INT64_C(2), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1062; goto L_ret; };
       goto L_ret;
     }
     { __typeof__(v) m9v = m9_sub_i64 (m9_add_i64 (m9_mul_i64 (v, INT64_C(10), err), (int64_t)(Text_BAt (s, i, err)), err), (int64_t)(48u), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1063; goto L_ret; };
       v = m9v;
     }
     if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
@@ -2220,13 +2364,14 @@ static int64_t HttpServer_Digits (m9_sl_UTF8 s, int64_t most, m9_state *err)
   if ((v > most)) {
     err->res = m9res;
     m9ret = m9_neg_i64 (INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1065; goto L_ret; };
     goto L_ret;
   }
   err->res = m9res;
   m9ret = v;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2238,30 +2383,33 @@ static int64_t HttpServer_HexVal (uint32_t ch, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.HexVal"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   if (((ch >= 48u) && (ch <= 57u))) {
     err->res = m9res;
     m9ret = m9_sub_i64 ((int64_t)(ch), (int64_t)(48u), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1071; goto L_ret; };
     goto L_ret;
   }
   if (((ch >= 97u) && (ch <= 102u))) {
     err->res = m9res;
     m9ret = m9_add_i64 (m9_sub_i64 ((int64_t)(ch), (int64_t)(97u), err), INT64_C(10), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1072; goto L_ret; };
     goto L_ret;
   }
   if (((ch >= 65u) && (ch <= 70u))) {
     err->res = m9res;
     m9ret = m9_add_i64 (m9_sub_i64 ((int64_t)(ch), (int64_t)(65u), err), INT64_C(10), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1073; goto L_ret; };
     goto L_ret;
   }
   err->res = m9res;
   m9ret = m9_neg_i64 (INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1074; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2273,6 +2421,8 @@ static bool HttpServer_HasToken (m9_sl_UTF8 list, m9_sl_UTF8 lower, m9_state *er
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.HasToken"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   int64_t a = 0; (void) a;
   int64_t i = 0; (void) i;
@@ -2280,24 +2430,24 @@ static bool HttpServer_HasToken (m9_sl_UTF8 list, m9_sl_UTF8 lower, m9_state *er
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = Text_BLen (list, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1085; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     bool m9t2 = ((i == Text_BLen (list, err)) || Text_BIs (list, i, 44u, err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1086; goto L_ret; };
     if (m9t2) {
       { __typeof__(m9_utf_slice (list, a, m9_sub_i64 (i, a, err), err)) m9a7 = m9_utf_slice (list, a, m9_sub_i64 (i, a, err), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1087; goto L_ret; };
       { __typeof__(HttpServer_Trimmed (m9a7, err)) m9a8 = HttpServer_Trimmed (m9a7, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1087; goto L_ret; };
       bool m9t4 = HttpServer_SameCi (m9a8, lower, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1087; goto L_ret; };
       if (m9t4) {
         err->res = m9res;
         m9ret = true;
         goto L_ret;
       } } }
       { __typeof__(a) m9v = m9_add_i64 (i, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1090; goto L_ret; };
         a = m9v;
       }
     }
@@ -2308,6 +2458,7 @@ static bool HttpServer_HasToken (m9_sl_UTF8 list, m9_sl_UTF8 lower, m9_state *er
   m9ret = false;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2319,6 +2470,8 @@ static int64_t HttpServer_Fill (HttpServer_Conn *c, m9_pool *c_pool, m9_state *e
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Fill"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   int64_t n = 0; (void) n;
   if (((*c).have >= ((*c).cb).len)) {
@@ -2327,9 +2480,9 @@ static int64_t HttpServer_Fill (HttpServer_Conn *c, m9_pool *c_pool, m9_state *e
     goto L_ret;
   }
   { __typeof__(m9_sub_i64 (((*c).cb).len, (*c).have, err)) m9a9 = m9_sub_i64 (((*c).cb).len, (*c).have, err);
-    if (err->exc) goto L_ret;
-  { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t1 = (HttpServer_CFd ((*c).fd, err)); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(({ __auto_type m9t2 = (*c).cb; int64_t m9t2a = (*c).have, m9t2n = m9_sub_i64 (((*c).cb).len, (*c).have, err); int64_t m9t2o = m9_chk_slice (m9t2a, m9t2n, m9t2.len, err); (__typeof__(m9t2)){ m9t2.p + m9t2o, err->exc ? 0 : m9t2n }; })).p)); if (err->exc) goto L_ret; __auto_type m9_fam9t4 = (HttpServer_CLen (m9a9, err)); if (err->exc) goto L_ret; tcp_read (m9_fam9t1, m9_fam9t3, m9_fam9t4); }));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1105; goto L_ret; };
+  { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t1 = (HttpServer_CFd ((*c).fd, err)); if (err->exc) { m9ln = 1105; goto L_ret; }; __auto_type m9_fam9t3 = (((void *)(({ __auto_type m9t2 = (*c).cb; int64_t m9t2a = (*c).have, m9t2n = m9_sub_i64 (((*c).cb).len, (*c).have, err); int64_t m9t2o = m9_chk_slice (m9t2a, m9t2n, m9t2.len, err); (__typeof__(m9t2)){ m9t2.p + m9t2o, err->exc ? 0 : m9t2n }; })).p)); if (err->exc) { m9ln = 1105; goto L_ret; }; __auto_type m9_fam9t4 = (HttpServer_CLen (m9a9, err)); if (err->exc) { m9ln = 1105; goto L_ret; }; tcp_read (m9_fam9t1, m9_fam9t3, m9_fam9t4); }));
+    if (err->exc) { m9ln = 1105; goto L_ret; };
     n = m9v;
   }
   }
@@ -2339,13 +2492,14 @@ static int64_t HttpServer_Fill (HttpServer_Conn *c, m9_pool *c_pool, m9_state *e
     goto L_ret;
   }
   { __typeof__((*c).have) m9v = m9_add_i64 ((*c).have, n, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1108; goto L_ret; };
     (*c).have = m9v;
   }
   err->res = m9res;
   m9ret = n;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, c_pool, (*c).cb.p);
   m9_adopt_if (&m9frame, c_pool, (*c).peer.p);
@@ -2359,27 +2513,30 @@ static void HttpServer_Consume (HttpServer_Conn *c, m9_pool *c_pool, int64_t n, 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Consume"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   i = INT64_C(0);
   for (;;) {
     bool m9t1 = (m9_add_i64 (i, n, err) < (*c).have);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1118; goto L_ret; };
     if (!(m9t1)) break;
     { __typeof__((*(uint8_t *) m9_at ((*c).cb.p, i, (*c).cb.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at ((*c).cb.p, m9_add_i64 (i, n, err), (*c).cb.len, sizeof (uint8_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1119; goto L_ret; };
       (*(uint8_t *) m9_at ((*c).cb.p, i, (*c).cb.len, sizeof (uint8_t), err)) = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1119; goto L_ret; };
     }
     { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1120; goto L_ret; };
       i = m9v;
     }
   }
   { __typeof__((*c).have) m9v = m9_sub_i64 ((*c).have, n, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1122; goto L_ret; };
     (*c).have = m9v;
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, c_pool, (*c).cb.p);
   m9_adopt_if (&m9frame, c_pool, (*c).peer.p);
@@ -2393,28 +2550,31 @@ static int64_t HttpServer_FindLf (HttpServer_Conn *c, m9_pool *c_pool, int64_t f
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.FindLf"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   int64_t i = 0; (void) i;
   i = from;
   for (;;) {
     if (!((i < (*c).have))) break;
     bool m9t1 = ((int64_t)((*(uint8_t *) m9_at ((*c).cb.p, i, (*c).cb.len, sizeof (uint8_t), err))) == INT64_C(10));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1132; goto L_ret; };
     if (m9t1) {
       err->res = m9res;
       m9ret = i;
       goto L_ret;
     }
     { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1133; goto L_ret; };
       i = m9v;
     }
   }
   err->res = m9res;
   m9ret = m9_neg_i64 (INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1135; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, c_pool, (*c).cb.p);
   m9_adopt_if (&m9frame, c_pool, (*c).peer.p);
@@ -2428,43 +2588,46 @@ static int64_t HttpServer_HeadEnd (HttpServer_Conn *c, m9_pool *c_pool, int64_t 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.HeadEnd"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   int64_t i = 0; (void) i;
   int64_t lf = 0; (void) lf;
   i = from;
   for (;;) {
     { __typeof__(lf) m9v = HttpServer_FindLf (c, c_pool, i, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1148; goto L_ret; };
       lf = m9v;
     }
     if ((lf < INT64_C(0))) {
       err->res = m9res;
       m9ret = m9_neg_i64 (INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1149; goto L_ret; };
       goto L_ret;
     }
     bool m9t1 = ((lf >= INT64_C(1)) && ((int64_t)((*(uint8_t *) m9_at ((*c).cb.p, m9_sub_i64 (lf, INT64_C(1), err), (*c).cb.len, sizeof (uint8_t), err))) == INT64_C(10)));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1150; goto L_ret; };
     if (m9t1) {
       err->res = m9res;
       m9ret = m9_add_i64 (lf, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1150; goto L_ret; };
       goto L_ret;
     }
     bool m9t2 = (((lf >= INT64_C(2)) && ((int64_t)((*(uint8_t *) m9_at ((*c).cb.p, m9_sub_i64 (lf, INT64_C(1), err), (*c).cb.len, sizeof (uint8_t), err))) == INT64_C(13))) && ((int64_t)((*(uint8_t *) m9_at ((*c).cb.p, m9_sub_i64 (lf, INT64_C(2), err), (*c).cb.len, sizeof (uint8_t), err))) == INT64_C(10)));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1151; goto L_ret; };
     if (m9t2) {
       err->res = m9res;
       m9ret = m9_add_i64 (lf, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1153; goto L_ret; };
       goto L_ret;
     }
     { __typeof__(i) m9v = m9_add_i64 (lf, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1155; goto L_ret; };
       i = m9v;
     }
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, c_pool, (*c).cb.p);
   m9_adopt_if (&m9frame, c_pool, (*c).peer.p);
@@ -2478,10 +2641,12 @@ static void HttpServer_Linger (HttpServer_Conn *c, m9_pool *c_pool, m9_state *er
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Linger"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t n = 0; (void) n;
   int64_t seen = 0; (void) seen;
-  { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t1 = (HttpServer_CFd ((*c).fd, err)); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int64_t)(HttpServer_LingerMs))); tcp_rcvtimeo (m9_fam9t1, m9_fam9t2); }));
-    if (err->exc) goto L_ret;
+  { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t1 = (HttpServer_CFd ((*c).fd, err)); if (err->exc) { m9ln = 1170; goto L_ret; }; __auto_type m9_fam9t2 = (((int64_t)(HttpServer_LingerMs))); tcp_rcvtimeo (m9_fam9t1, m9_fam9t2); }));
+    if (err->exc) { m9ln = 1170; goto L_ret; };
     n = m9v;
   }
   seen = INT64_C(0);
@@ -2489,18 +2654,19 @@ static void HttpServer_Linger (HttpServer_Conn *c, m9_pool *c_pool, m9_state *er
     if (!((seen < HttpServer_LingerMax))) break;
     (*c).have = INT64_C(0);
     { __typeof__(n) m9v = HttpServer_Fill (c, c_pool, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1174; goto L_ret; };
       n = m9v;
     }
     if ((n <= INT64_C(0))) {
       goto L_ret;
     }
     { __typeof__(seen) m9v = m9_add_i64 (seen, n, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1176; goto L_ret; };
       seen = m9v;
     }
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, c_pool, (*c).cb.p);
   m9_adopt_if (&m9frame, c_pool, (*c).peer.p);
@@ -2514,6 +2680,8 @@ static bool HttpServer_HeadersOk (m9_sl_UTF8 h, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.HeadersOk"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   int64_t a = 0; (void) a;
   int64_t i = 0; (void) i;
@@ -2522,24 +2690,24 @@ static bool HttpServer_HeadersOk (m9_sl_UTF8 h, m9_state *err)
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = Text_BLen (h, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1189; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     bool m9t2 = ((i == Text_BLen (h, err)) || Text_BIs (h, i, 10u, err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1190; goto L_ret; };
     if (m9t2) {
       if ((i > a)) {
         colon = a;
         for (;;) {
           bool m9t3 = ((colon < i) && (!Text_BIs (h, colon, 58u, err)));
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1193; goto L_ret; };
           if (!(m9t3)) break;
           { __typeof__(colon) m9v = m9_add_i64 (colon, INT64_C(1), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1193; goto L_ret; };
             colon = m9v;
           }
         }
-        bool m9t6 = ({ bool m9t5 = (colon == i); if (!m9t5) { { __typeof__(m9_utf_slice (h, a, m9_sub_i64 (colon, a, err), err)) m9a10 = m9_utf_slice (h, a, m9_sub_i64 (colon, a, err), err);   if (err->exc) goto L_ret; m9t5 = ((!HttpServer_IsToken (m9a10, err))); } } m9t5; });
-        if (err->exc) goto L_ret;
+        bool m9t6 = ({ bool m9t5 = (colon == i); if (!m9t5) { { __typeof__(m9_utf_slice (h, a, m9_sub_i64 (colon, a, err), err)) m9a10 = m9_utf_slice (h, a, m9_sub_i64 (colon, a, err), err);   if (err->exc) { m9ln = 1194; goto L_ret; }; m9t5 = ((!HttpServer_IsToken (m9a10, err))); } } m9t5; });
+        if (err->exc) { m9ln = 1194; goto L_ret; };
         if (m9t6) {
           err->res = m9res;
           m9ret = false;
@@ -2547,12 +2715,12 @@ static bool HttpServer_HeadersOk (m9_sl_UTF8 h, m9_state *err)
         }
       }
       { __typeof__(a) m9v = m9_add_i64 (i, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1198; goto L_ret; };
         a = m9v;
       }
     } else {
       bool m9t7 = Text_BIs (h, i, 13u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1198; goto L_ret; };
       if (m9t7) {
         err->res = m9res;
         m9ret = false;
@@ -2565,6 +2733,7 @@ static bool HttpServer_HeadersOk (m9_sl_UTF8 h, m9_state *err)
   m9ret = true;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2576,28 +2745,30 @@ static void HttpServer_Lines (DynStr_DString * *d, m9_pool *d_pool, m9_sl_UTF8 l
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Lines"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   int64_t a = 0; (void) a;
   a = INT64_C(0);
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = Text_BLen (lines, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1212; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     bool m9t2 = ((i == Text_BLen (lines, err)) || Text_BIs (lines, i, 10u, err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1213; goto L_ret; };
     if (m9t2) {
       if ((i > a)) {
         { __typeof__(m9_utf_slice (lines, a, m9_sub_i64 (i, a, err), err)) m9a11 = m9_utf_slice (lines, a, m9_sub_i64 (i, a, err), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1215; goto L_ret; };
         DynStr_Append (d, d_pool, m9a11, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1215; goto L_ret; };
         }
         HttpServer_CrLf (d, d_pool, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1216; goto L_ret; };
       }
       { __typeof__(a) m9v = m9_add_i64 (i, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1218; goto L_ret; };
         a = m9v;
       }
     }
@@ -2605,6 +2776,7 @@ static void HttpServer_Lines (DynStr_DString * *d, m9_pool *d_pool, m9_sl_UTF8 l
     i += 1;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -2617,11 +2789,14 @@ static bool HttpServer_NoBody (int64_t status, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.NoBody"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   err->res = m9res;
   m9ret = (((status < INT64_C(200)) || (status == INT64_C(204))) || (status == INT64_C(304)));
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2633,74 +2808,77 @@ static bool HttpServer_Head (int64_t fd, int64_t status, m9_sl_UTF8 ctype, m9_sl
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Head"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
   { __typeof__(d) m9v = DynStr_New (&(scratch), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1239; goto L_ret; };
     d = m9v;
   }
   DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s88, 9 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1240; goto L_ret; };
   DynStr_AppendI64 (&(d), &(scratch), status, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1241; goto L_ret; };
   DynStr_AppendChar (&(d), &(scratch), 32u, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1242; goto L_ret; };
   { __typeof__(HttpServer_Reason (status, err)) m9a12 = HttpServer_Reason (status, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1243; goto L_ret; };
   DynStr_Append (&(d), &(scratch), m9a12, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1243; goto L_ret; };
   }
   HttpServer_CrLf (&(d), &(scratch), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1244; goto L_ret; };
   HttpServer_AppendDate (&(d), &(scratch), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1245; goto L_ret; };
   bool m9t1 = (Text_BLen (ctype, err) > INT64_C(0));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1246; goto L_ret; };
   if (m9t1) {
     DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s89, 14 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1247; goto L_ret; };
     DynStr_Append (&(d), &(scratch), ctype, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1248; goto L_ret; };
     HttpServer_CrLf (&(d), &(scratch), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1249; goto L_ret; };
   }
   HttpServer_Lines (&(d), &(scratch), headers, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1251; goto L_ret; };
   HttpServer_Lines (&(d), &(scratch), extra, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1252; goto L_ret; };
   bool m9t2 = ((length >= INT64_C(0)) && (!HttpServer_NoBody (status, err)));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1253; goto L_ret; };
   if (m9t2) {
     DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s90, 16 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1254; goto L_ret; };
     DynStr_AppendI64 (&(d), &(scratch), length, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1255; goto L_ret; };
     HttpServer_CrLf (&(d), &(scratch), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1256; goto L_ret; };
   }
   if ((!keep)) {
     DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s91, 17 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1259; goto L_ret; };
     HttpServer_CrLf (&(d), &(scratch), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1260; goto L_ret; };
   } else {
     if (keepAlive10) {
       DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s92, 22 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1262; goto L_ret; };
       HttpServer_CrLf (&(d), &(scratch), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1263; goto L_ret; };
   } }
   HttpServer_CrLf (&(d), &(scratch), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1265; goto L_ret; };
   err->res = m9res;
   { __typeof__(DynStr_Octets (d, err)) m9a13 = DynStr_Octets (d, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1268; goto L_ret; };
   m9ret = HttpServer_WriteAll (fd, m9a13, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1268; goto L_ret; };
   }
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
@@ -2713,40 +2891,43 @@ static void HttpServer_Tally (HttpServer_Worker *w, m9_pool *w_pool, int64_t sta
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Tally"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   (*w).last = status;
   if ((status < INT64_C(300))) {
     { __typeof__((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).s2xx) m9v = m9_add_i64 ((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).s2xx, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1274; goto L_ret; };
       (*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).s2xx = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1274; goto L_ret; };
     }
   } else {
     if ((status < INT64_C(400))) {
       { __typeof__((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).s3xx) m9v = m9_add_i64 ((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).s3xx, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1275; goto L_ret; };
         (*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).s3xx = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1275; goto L_ret; };
       }
   } else {
     if ((status < INT64_C(500))) {
       { __typeof__((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).s4xx) m9v = m9_add_i64 ((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).s4xx, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1276; goto L_ret; };
         (*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).s4xx = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1276; goto L_ret; };
       }
   } else {
     { __typeof__((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).s5xx) m9v = m9_add_i64 ((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).s5xx, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1277; goto L_ret; };
       (*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).s5xx = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1277; goto L_ret; };
     }
   } } }
   { __typeof__((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).requests) m9v = m9_add_i64 ((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).requests, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1279; goto L_ret; };
     (*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).requests = m9v;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1279; goto L_ret; };
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, w_pool, (*w).s);
   m9_pool_free (&m9frame);
@@ -2759,33 +2940,36 @@ static bool HttpServer_SendBody (HttpServer_Worker *w, m9_pool *w_pool, HttpServ
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.SendBody"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   bool ok = false; (void) ok;
   { __typeof__(ok) m9v = HttpServer_Head ((*c).fd, status, ctype, headers, extra, (body).len, keep, keepAlive10, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1290; goto L_ret; };
     ok = m9v;
   }
   bool m9t1 = ((ok && (!head)) && (!HttpServer_NoBody (status, err)));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1291; goto L_ret; };
   if (m9t1) {
     { __typeof__(ok) m9v = HttpServer_WriteAll ((*c).fd, body, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1292; goto L_ret; };
       ok = m9v;
     }
     if (ok) {
       { __typeof__((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).bytesOut) m9v = m9_add_i64 ((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).bytesOut, (body).len, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1293; goto L_ret; };
         (*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).bytesOut = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1293; goto L_ret; };
       }
     }
   }
   HttpServer_Tally (w, w_pool, status, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1295; goto L_ret; };
   err->res = m9res;
   m9ret = ok;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, w_pool, (*w).s);
   m9_adopt_if (&m9frame, c_pool, (*c).cb.p);
@@ -2800,12 +2984,15 @@ static bool HttpServer_NotFound (HttpServer_Worker *w, m9_pool *w_pool, HttpServ
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.NotFound"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   err->res = m9res;
   m9ret = HttpServer_SendBody (w, w_pool, c, c_pool, INT64_C(404), ((m9_sl_UTF8){ (uint8_t *) m9s93, 25 }), ((m9_sl_UTF8){ NULL, 0 }), ((m9_sl_UTF8){ NULL, 0 }), m9_utf_octets (((m9_sl_UTF8){ (uint8_t *) m9s94, 9 })), head, keep, keepAlive10, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1302; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, w_pool, (*w).s);
   m9_adopt_if (&m9frame, c_pool, (*c).cb.p);
@@ -2820,42 +3007,44 @@ static bool HttpServer_Compressible (m9_sl_UTF8 ctype, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Compressible"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   m9_sl_UTF8 t = {0}; (void) t;
   int64_t i = 0; (void) i;
   i = INT64_C(0);
   for (;;) {
     bool m9t1 = ((i < Text_BLen (ctype, err)) && (!Text_BIs (ctype, i, 59u, err)));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1316; goto L_ret; };
     if (!(m9t1)) break;
     { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1316; goto L_ret; };
       i = m9v;
     }
   }
   { __typeof__(m9_utf_slice (ctype, INT64_C(0), i, err)) m9a14 = m9_utf_slice (ctype, INT64_C(0), i, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1317; goto L_ret; };
   { __typeof__(t) m9v = HttpServer_Trimmed (m9a14, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1317; goto L_ret; };
     t = m9v;
   }
   }
-  bool m9t5 = ({ bool m9t4 = (Text_BLen (t, err) > INT64_C(5)); if (m9t4) { { __typeof__(m9_utf_slice (t, INT64_C(0), INT64_C(5), err)) m9a15 = m9_utf_slice (t, INT64_C(0), INT64_C(5), err);   if (err->exc) goto L_ret; m9t4 = (HttpServer_SameCi (m9a15, ((m9_sl_UTF8){ (uint8_t *) m9s95, 5 }), err)); } } m9t4; });
-  if (err->exc) goto L_ret;
+  bool m9t5 = ({ bool m9t4 = (Text_BLen (t, err) > INT64_C(5)); if (m9t4) { { __typeof__(m9_utf_slice (t, INT64_C(0), INT64_C(5), err)) m9a15 = m9_utf_slice (t, INT64_C(0), INT64_C(5), err);   if (err->exc) { m9ln = 1318; goto L_ret; }; m9t4 = (HttpServer_SameCi (m9a15, ((m9_sl_UTF8){ (uint8_t *) m9s95, 5 }), err)); } } m9t4; });
+  if (err->exc) { m9ln = 1318; goto L_ret; };
   if (m9t5) {
     err->res = m9res;
     m9ret = true;
     goto L_ret;
   }
   bool m9t6 = (((HttpServer_SameCi (t, ((m9_sl_UTF8){ (uint8_t *) m9s96, 16 }), err) || HttpServer_SameCi (t, ((m9_sl_UTF8){ (uint8_t *) m9s97, 15 }), err)) || HttpServer_SameCi (t, ((m9_sl_UTF8){ (uint8_t *) m9s98, 22 }), err)) || HttpServer_SameCi (t, ((m9_sl_UTF8){ (uint8_t *) m9s99, 13 }), err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1319; goto L_ret; };
   if (m9t6) {
     err->res = m9res;
     m9ret = true;
     goto L_ret;
   }
-  bool m9t11 = ({ bool m9t10 = (Text_BLen (t, err) > INT64_C(5)); if (m9t10) { { __typeof__(m9_utf_slice (t, m9_sub_i64 (Text_BLen (t, err), INT64_C(5), err), INT64_C(5), err)) m9a16 = m9_utf_slice (t, m9_sub_i64 (Text_BLen (t, err), INT64_C(5), err), INT64_C(5), err);   if (err->exc) goto L_ret; m9t10 = ((({ bool m9t9 = HttpServer_SameCi (m9a16, ((m9_sl_UTF8){ (uint8_t *) m9s100, 5 }), err); if (!m9t9) { { __typeof__(m9_utf_slice (t, m9_sub_i64 (Text_BLen (t, err), INT64_C(4), err), INT64_C(4), err)) m9a17 = m9_utf_slice (t, m9_sub_i64 (Text_BLen (t, err), INT64_C(4), err), INT64_C(4), err);   if (err->exc) goto L_ret; m9t9 = (HttpServer_SameCi (m9a17, ((m9_sl_UTF8){ (uint8_t *) m9s101, 4 }), err)); } } m9t9; }))); } } m9t10; });
-  if (err->exc) goto L_ret;
+  bool m9t11 = ({ bool m9t10 = (Text_BLen (t, err) > INT64_C(5)); if (m9t10) { { __typeof__(m9_utf_slice (t, m9_sub_i64 (Text_BLen (t, err), INT64_C(5), err), INT64_C(5), err)) m9a16 = m9_utf_slice (t, m9_sub_i64 (Text_BLen (t, err), INT64_C(5), err), INT64_C(5), err);   if (err->exc) { m9ln = 1323; goto L_ret; }; m9t10 = ((({ bool m9t9 = HttpServer_SameCi (m9a16, ((m9_sl_UTF8){ (uint8_t *) m9s100, 5 }), err); if (!m9t9) { { __typeof__(m9_utf_slice (t, m9_sub_i64 (Text_BLen (t, err), INT64_C(4), err), INT64_C(4), err)) m9a17 = m9_utf_slice (t, m9_sub_i64 (Text_BLen (t, err), INT64_C(4), err), INT64_C(4), err);   if (err->exc) { m9ln = 1323; goto L_ret; }; m9t9 = (HttpServer_SameCi (m9a17, ((m9_sl_UTF8){ (uint8_t *) m9s101, 4 }), err)); } } m9t9; }))); } } m9t10; });
+  if (err->exc) { m9ln = 1323; goto L_ret; };
   if (m9t11) {
     err->res = m9res;
     m9ret = true;
@@ -2865,6 +3054,7 @@ static bool HttpServer_Compressible (m9_sl_UTF8 ctype, m9_state *err)
   m9ret = false;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2876,49 +3066,51 @@ static bool HttpServer_Positive (m9_sl_UTF8 param, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Positive"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   m9_sl_UTF8 p = {0}; (void) p;
   m9_sl_UTF8 v = {0}; (void) v;
   int64_t i = 0; (void) i;
   bool zero = false; (void) zero;
   { __typeof__(p) m9v = HttpServer_Trimmed (param, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1339; goto L_ret; };
     p = m9v;
   }
   bool m9t1 = (Text_BLen (p, err) == INT64_C(0));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1340; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
     m9ret = true;
     goto L_ret;
   }
-  bool m9t4 = ({ bool m9t3 = (Text_BLen (p, err) < INT64_C(3)); if (!m9t3) { { __typeof__(m9_utf_slice (p, INT64_C(0), INT64_C(2), err)) m9a18 = m9_utf_slice (p, INT64_C(0), INT64_C(2), err);   if (err->exc) goto L_ret; m9t3 = ((!HttpServer_SameCi (m9a18, ((m9_sl_UTF8){ (uint8_t *) m9s102, 2 }), err))); } } m9t3; });
-  if (err->exc) goto L_ret;
+  bool m9t4 = ({ bool m9t3 = (Text_BLen (p, err) < INT64_C(3)); if (!m9t3) { { __typeof__(m9_utf_slice (p, INT64_C(0), INT64_C(2), err)) m9a18 = m9_utf_slice (p, INT64_C(0), INT64_C(2), err);   if (err->exc) { m9ln = 1341; goto L_ret; }; m9t3 = ((!HttpServer_SameCi (m9a18, ((m9_sl_UTF8){ (uint8_t *) m9s102, 2 }), err))); } } m9t3; });
+  if (err->exc) { m9ln = 1341; goto L_ret; };
   if (m9t4) {
     err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
   { __typeof__(v) m9v = m9_utf_slice (p, INT64_C(2), m9_sub_i64 (Text_BLen (p, err), INT64_C(2), err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1342; goto L_ret; };
     v = m9v;
   }
   bool m9t6 = (((Text_BLen (v, err) == INT64_C(0)) || (Text_BLen (v, err) > INT64_C(5))) || (((!Text_BIs (v, INT64_C(0), 48u, err)) && (!Text_BIs (v, INT64_C(0), 49u, err)))));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1343; goto L_ret; };
   if (m9t6) {
     err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
   { __typeof__(zero) m9v = Text_BIs (v, INT64_C(0), 48u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1344; goto L_ret; };
     zero = m9v;
   }
   bool m9t7 = (Text_BLen (v, err) > INT64_C(1));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1345; goto L_ret; };
   if (m9t7) {
     bool m9t8 = (!Text_BIs (v, INT64_C(1), 46u, err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1346; goto L_ret; };
     if (m9t8) {
       err->res = m9res;
       m9ret = false;
@@ -2927,20 +3119,20 @@ static bool HttpServer_Positive (m9_sl_UTF8 param, m9_state *err)
     { __typeof__(i) m9t9to;
     i = INT64_C(2);
     m9t9to = m9_sub_i64 (Text_BLen (v, err), INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1347; goto L_ret; };
     if (i <= m9t9to) for (;;) {
       bool m9t10 = (((int64_t)(Text_BAt (v, i, err)) < (int64_t)(48u)) || ((int64_t)(Text_BAt (v, i, err)) > (int64_t)(57u)));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1348; goto L_ret; };
       if (m9t10) {
         err->res = m9res;
         m9ret = false;
         goto L_ret;
       }
       bool m9t11 = (!Text_BIs (v, i, 48u, err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1349; goto L_ret; };
       if (m9t11) {
         bool m9t12 = Text_BIs (v, INT64_C(0), 49u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1350; goto L_ret; };
         if (m9t12) {
           err->res = m9res;
           m9ret = false;
@@ -2956,6 +3148,7 @@ static bool HttpServer_Positive (m9_sl_UTF8 param, m9_state *err)
   m9ret = (!zero);
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2967,6 +3160,8 @@ static bool HttpServer_TakesGzip (m9_sl_UTF8 ae, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.TakesGzip"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   int64_t a = 0; (void) a;
   int64_t i = 0; (void) i;
@@ -2976,68 +3171,68 @@ static bool HttpServer_TakesGzip (m9_sl_UTF8 ae, m9_state *err)
   int64_t gz = 0; (void) gz;
   int64_t star = 0; (void) star;
   { __typeof__(gz) m9v = m9_neg_i64 (INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1367; goto L_ret; };
     gz = m9v;
   }
   { __typeof__(star) m9v = m9_neg_i64 (INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1368; goto L_ret; };
     star = m9v;
   }
   a = INT64_C(0);
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = Text_BLen (ae, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1370; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     bool m9t2 = ((i == Text_BLen (ae, err)) || Text_BIs (ae, i, 44u, err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1371; goto L_ret; };
     if (m9t2) {
       { __typeof__(m9_utf_slice (ae, a, m9_sub_i64 (i, a, err), err)) m9a19 = m9_utf_slice (ae, a, m9_sub_i64 (i, a, err), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1372; goto L_ret; };
       { __typeof__(el) m9v = HttpServer_Trimmed (m9a19, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1372; goto L_ret; };
         el = m9v;
       }
       }
       semi = INT64_C(0);
       for (;;) {
         bool m9t4 = ((semi < Text_BLen (el, err)) && (!Text_BIs (el, semi, 59u, err)));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1374; goto L_ret; };
         if (!(m9t4)) break;
         { __typeof__(semi) m9v = m9_add_i64 (semi, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1374; goto L_ret; };
           semi = m9v;
         }
       }
       { __typeof__(m9_utf_slice (el, INT64_C(0), semi, err)) m9a20 = m9_utf_slice (el, INT64_C(0), semi, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1375; goto L_ret; };
       { __typeof__(coding) m9v = HttpServer_Trimmed (m9a20, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1375; goto L_ret; };
         coding = m9v;
       }
       }
       bool m9t6 = (HttpServer_SameCi (coding, ((m9_sl_UTF8){ (uint8_t *) m9s103, 4 }), err) || HttpServer_SameCi (coding, ((m9_sl_UTF8){ (uint8_t *) m9s104, 6 }), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1376; goto L_ret; };
       if (m9t6) {
         gz = INT64_C(0);
-        bool m9t9 = ({ bool m9t8 = (semi == Text_BLen (el, err)); if (!m9t8) { { __typeof__(m9_utf_slice (el, m9_add_i64 (semi, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (el, err), semi, err), INT64_C(1), err), err)) m9a21 = m9_utf_slice (el, m9_add_i64 (semi, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (el, err), semi, err), INT64_C(1), err), err);   if (err->exc) goto L_ret; m9t8 = (HttpServer_Positive (m9a21, err)); } } m9t8; });
-        if (err->exc) goto L_ret;
+        bool m9t9 = ({ bool m9t8 = (semi == Text_BLen (el, err)); if (!m9t8) { { __typeof__(m9_utf_slice (el, m9_add_i64 (semi, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (el, err), semi, err), INT64_C(1), err), err)) m9a21 = m9_utf_slice (el, m9_add_i64 (semi, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (el, err), semi, err), INT64_C(1), err), err);   if (err->exc) { m9ln = 1378; goto L_ret; }; m9t8 = (HttpServer_Positive (m9a21, err)); } } m9t8; });
+        if (err->exc) { m9ln = 1378; goto L_ret; };
         if (m9t9) {
           gz = INT64_C(1);
         }
       } else {
         bool m9t10 = Text_EqUtf (coding, ((m9_sl_UTF8){ (uint8_t *) m9s105, 1 }), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1378; goto L_ret; };
         if (m9t10) {
           star = INT64_C(0);
-          bool m9t13 = ({ bool m9t12 = (semi == Text_BLen (el, err)); if (!m9t12) { { __typeof__(m9_utf_slice (el, m9_add_i64 (semi, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (el, err), semi, err), INT64_C(1), err), err)) m9a22 = m9_utf_slice (el, m9_add_i64 (semi, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (el, err), semi, err), INT64_C(1), err), err);   if (err->exc) goto L_ret; m9t12 = (HttpServer_Positive (m9a22, err)); } } m9t12; });
-          if (err->exc) goto L_ret;
+          bool m9t13 = ({ bool m9t12 = (semi == Text_BLen (el, err)); if (!m9t12) { { __typeof__(m9_utf_slice (el, m9_add_i64 (semi, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (el, err), semi, err), INT64_C(1), err), err)) m9a22 = m9_utf_slice (el, m9_add_i64 (semi, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (el, err), semi, err), INT64_C(1), err), err);   if (err->exc) { m9ln = 1381; goto L_ret; }; m9t12 = (HttpServer_Positive (m9a22, err)); } } m9t12; });
+          if (err->exc) { m9ln = 1381; goto L_ret; };
           if (m9t13) {
             star = INT64_C(1);
           }
       } }
       { __typeof__(a) m9v = m9_add_i64 (i, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1383; goto L_ret; };
         a = m9v;
       }
     }
@@ -3053,6 +3248,7 @@ static bool HttpServer_TakesGzip (m9_sl_UTF8 ae, m9_state *err)
   m9ret = (star == INT64_C(1));
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -3064,6 +3260,8 @@ static int64_t HttpServer_ParseRange (m9_sl_UTF8 h, int64_t size, int64_t *a, in
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.ParseRange"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   m9_sl_UTF8 spec = {0}; (void) spec;
   int64_t dash = 0; (void) dash;
@@ -3071,38 +3269,38 @@ static int64_t HttpServer_ParseRange (m9_sl_UTF8 h, int64_t size, int64_t *a, in
   int64_t last = 0; (void) last;
   int64_t n = 0; (void) n;
   int64_t i = 0; (void) i;
-  bool m9t3 = ({ bool m9t2 = (Text_BLen (h, err) < INT64_C(6)); if (!m9t2) { { __typeof__(m9_utf_slice (h, INT64_C(0), INT64_C(6), err)) m9a23 = m9_utf_slice (h, INT64_C(0), INT64_C(6), err);   if (err->exc) goto L_ret; m9t2 = ((!HttpServer_SameCi (m9a23, ((m9_sl_UTF8){ (uint8_t *) m9s106, 6 }), err))); } } m9t2; });
-  if (err->exc) goto L_ret;
+  bool m9t3 = ({ bool m9t2 = (Text_BLen (h, err) < INT64_C(6)); if (!m9t2) { { __typeof__(m9_utf_slice (h, INT64_C(0), INT64_C(6), err)) m9a23 = m9_utf_slice (h, INT64_C(0), INT64_C(6), err);   if (err->exc) { m9ln = 1404; goto L_ret; }; m9t2 = ((!HttpServer_SameCi (m9a23, ((m9_sl_UTF8){ (uint8_t *) m9s106, 6 }), err))); } } m9t2; });
+  if (err->exc) { m9ln = 1404; goto L_ret; };
   if (m9t3) {
     err->res = m9res;
     m9ret = INT64_C(0);
     goto L_ret;
   }
   { __typeof__(m9_utf_slice (h, INT64_C(6), m9_sub_i64 (Text_BLen (h, err), INT64_C(6), err), err)) m9a24 = m9_utf_slice (h, INT64_C(6), m9_sub_i64 (Text_BLen (h, err), INT64_C(6), err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1405; goto L_ret; };
   { __typeof__(spec) m9v = HttpServer_Trimmed (m9a24, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1405; goto L_ret; };
     spec = m9v;
   }
   }
   { __typeof__(dash) m9v = m9_neg_i64 (INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1406; goto L_ret; };
     dash = m9v;
   }
   { __typeof__(i) m9t5to;
   i = INT64_C(0);
   m9t5to = m9_sub_i64 (Text_BLen (spec, err), INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1407; goto L_ret; };
   if (i <= m9t5to) for (;;) {
     bool m9t6 = Text_BIs (spec, i, 44u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1408; goto L_ret; };
     if (m9t6) {
       err->res = m9res;
       m9ret = INT64_C(0);
       goto L_ret;
     }
     bool m9t7 = (Text_BIs (spec, i, 45u, err) && (dash < INT64_C(0)));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1409; goto L_ret; };
     if (m9t7) {
       dash = i;
     }
@@ -3116,24 +3314,24 @@ static int64_t HttpServer_ParseRange (m9_sl_UTF8 h, int64_t size, int64_t *a, in
   }
   if ((dash == INT64_C(0))) {
     { __typeof__(m9_utf_slice (spec, INT64_C(1), m9_sub_i64 (Text_BLen (spec, err), INT64_C(1), err), err)) m9a25 = m9_utf_slice (spec, INT64_C(1), m9_sub_i64 (Text_BLen (spec, err), INT64_C(1), err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1414; goto L_ret; };
     { __typeof__(m9_sub_i64 (HttpServer_Huge, INT64_C(1), err)) m9a26 = m9_sub_i64 (HttpServer_Huge, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1414; goto L_ret; };
     { __typeof__(n) m9v = HttpServer_Digits (m9a25, m9a26, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1414; goto L_ret; };
       n = m9v;
     }
     }
     }
     bool m9t9 = (n == m9_neg_i64 (INT64_C(1), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1415; goto L_ret; };
     if (m9t9) {
       err->res = m9res;
       m9ret = INT64_C(0);
       goto L_ret;
     }
     bool m9t10 = (n == m9_neg_i64 (INT64_C(2), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1416; goto L_ret; };
     if (m9t10) {
       n = HttpServer_Huge;
     }
@@ -3146,11 +3344,11 @@ static int64_t HttpServer_ParseRange (m9_sl_UTF8 h, int64_t size, int64_t *a, in
       n = size;
     }
     { __typeof__((*a)) m9v = m9_sub_i64 (size, n, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1419; goto L_ret; };
       (*a) = m9v;
     }
     { __typeof__((*b)) m9v = m9_sub_i64 (size, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1420; goto L_ret; };
       (*b) = m9v;
     }
     err->res = m9res;
@@ -3158,50 +3356,50 @@ static int64_t HttpServer_ParseRange (m9_sl_UTF8 h, int64_t size, int64_t *a, in
     goto L_ret;
   }
   { __typeof__(m9_utf_slice (spec, INT64_C(0), dash, err)) m9a27 = m9_utf_slice (spec, INT64_C(0), dash, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1423; goto L_ret; };
   { __typeof__(m9_sub_i64 (HttpServer_Huge, INT64_C(1), err)) m9a28 = m9_sub_i64 (HttpServer_Huge, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1423; goto L_ret; };
   { __typeof__(first) m9v = HttpServer_Digits (m9a27, m9a28, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1423; goto L_ret; };
     first = m9v;
   }
   }
   }
   bool m9t12 = (first == m9_neg_i64 (INT64_C(1), err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1424; goto L_ret; };
   if (m9t12) {
     err->res = m9res;
     m9ret = INT64_C(0);
     goto L_ret;
   }
   bool m9t13 = (first == m9_neg_i64 (INT64_C(2), err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1425; goto L_ret; };
   if (m9t13) {
     first = HttpServer_Huge;
   }
   last = HttpServer_Huge;
   bool m9t14 = (dash < m9_sub_i64 (Text_BLen (spec, err), INT64_C(1), err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1427; goto L_ret; };
   if (m9t14) {
     { __typeof__(m9_utf_slice (spec, m9_add_i64 (dash, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (spec, err), dash, err), INT64_C(1), err), err)) m9a29 = m9_utf_slice (spec, m9_add_i64 (dash, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (spec, err), dash, err), INT64_C(1), err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1428; goto L_ret; };
     { __typeof__(m9_sub_i64 (HttpServer_Huge, INT64_C(1), err)) m9a30 = m9_sub_i64 (HttpServer_Huge, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1428; goto L_ret; };
     { __typeof__(last) m9v = HttpServer_Digits (m9a29, m9a30, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1428; goto L_ret; };
       last = m9v;
     }
     }
     }
     bool m9t16 = (last == m9_neg_i64 (INT64_C(1), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1429; goto L_ret; };
     if (m9t16) {
       err->res = m9res;
       m9ret = INT64_C(0);
       goto L_ret;
     }
     bool m9t17 = (last == m9_neg_i64 (INT64_C(2), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1430; goto L_ret; };
     if (m9t17) {
       last = HttpServer_Huge;
     }
@@ -3217,10 +3415,10 @@ static int64_t HttpServer_ParseRange (m9_sl_UTF8 h, int64_t size, int64_t *a, in
     goto L_ret;
   }
   bool m9t18 = (last > m9_sub_i64 (size, INT64_C(1), err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1434; goto L_ret; };
   if (m9t18) {
     { __typeof__(last) m9v = m9_sub_i64 (size, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1434; goto L_ret; };
       last = m9v;
     }
   }
@@ -3230,6 +3428,7 @@ static int64_t HttpServer_ParseRange (m9_sl_UTF8 h, int64_t size, int64_t *a, in
   m9ret = INT64_C(1);
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -3241,11 +3440,13 @@ static bool HttpServer_FilePiece (HttpServer_Worker *w, m9_pool *w_pool, int64_t
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.FilePiece"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE b = {0}; (void) b;
   { __typeof__(b) m9v = Io_ReadFileAt (&(scratch), path, off, n, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 1451; goto L_hdl_m9t1; };
     b = m9v;
   }
   goto L_dn_m9t2;
@@ -3261,21 +3462,22 @@ L_hdl_m9t1: ;
   goto L_ret;
 L_dn_m9t2: ;
   bool m9t3 = (((b).len != n) || (!HttpServer_WriteAll (fd, b, err)));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1456; goto L_ret; };
   if (m9t3) {
     err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
   { __typeof__((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).bytesOut) m9v = m9_add_i64 ((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).bytesOut, n, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1457; goto L_ret; };
     (*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).bytesOut = m9v;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1457; goto L_ret; };
   }
   err->res = m9res;
   m9ret = true;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, w_pool, (*w).s);
   m9_pool_free (&m9frame);
@@ -3289,6 +3491,8 @@ static bool HttpServer_SendFile (HttpServer_Worker *w, m9_pool *w_pool, HttpServ
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.SendFile"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   m9_pool scratch = {0}; (void) scratch;
   int64_t size = 0; (void) size;
@@ -3302,7 +3506,7 @@ static bool HttpServer_SendFile (HttpServer_Worker *w, m9_pool *w_pool, HttpServ
   m9_sl_UTF8 rng = {0}; (void) rng;
   bool ok = false; (void) ok;
   { __typeof__(size) m9v = Io_FileSizeUtf ((*resp).file, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 1471; goto L_hdl_m9t1; };
     size = m9v;
   }
   goto L_dn_m9t2;
@@ -3311,7 +3515,7 @@ L_hdl_m9t1: ;
     m9_sl_UTF8 e = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) e;
     err->exc = NULL;
     { __typeof__(size) m9v = m9_neg_i64 (INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1474; goto L_ret; };
       size = m9v;
     }
     goto L_dn_m9t2;
@@ -3319,58 +3523,58 @@ L_hdl_m9t1: ;
   goto L_ret;
 L_dn_m9t2: ;
   bool m9t3 = ((size < INT64_C(0)) || HttpServer_IsDir ((*resp).file, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1479; goto L_ret; };
   if (m9t3) {
     err->res = m9res;
     m9ret = HttpServer_NotFound (w, w_pool, c, c_pool, head, keep, keepAlive10, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1479; goto L_ret; };
     goto L_ret;
   }
   status = (*resp).status;
   a = INT64_C(0);
   { __typeof__(b) m9v = m9_sub_i64 (size, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1482; goto L_ret; };
     b = m9v;
   }
   extra = ((m9_sl_UTF8){ (uint8_t *) m9s107, 20 });
   { __typeof__(rng) m9v = HttpServer_Header (q, ((m9_sl_UTF8){ (uint8_t *) m9s108, 5 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1484; goto L_ret; };
     rng = m9v;
   }
-  bool m9t5 = ({ bool m9t4 = (((status == INT64_C(200)) && Text_EqUtf ((*q).method, ((m9_sl_UTF8){ (uint8_t *) m9s109, 3 }), err)) && (Text_BLen (rng, err) > INT64_C(0))); if (m9t4) { { __typeof__(HttpServer_Header (q, ((m9_sl_UTF8){ (uint8_t *) m9s110, 8 }), err)) m9a31 = HttpServer_Header (q, ((m9_sl_UTF8){ (uint8_t *) m9s110, 8 }), err);   if (err->exc) goto L_ret; m9t4 = ((Text_BLen (m9a31, err) == INT64_C(0))); } } m9t4; });
-  if (err->exc) goto L_ret;
+  bool m9t5 = ({ bool m9t4 = (((status == INT64_C(200)) && Text_EqUtf ((*q).method, ((m9_sl_UTF8){ (uint8_t *) m9s109, 3 }), err)) && (Text_BLen (rng, err) > INT64_C(0))); if (m9t4) { { __typeof__(HttpServer_Header (q, ((m9_sl_UTF8){ (uint8_t *) m9s110, 8 }), err)) m9a31 = HttpServer_Header (q, ((m9_sl_UTF8){ (uint8_t *) m9s110, 8 }), err);   if (err->exc) { m9ln = 1487; goto L_ret; }; m9t4 = ((Text_BLen (m9a31, err) == INT64_C(0))); } } m9t4; });
+  if (err->exc) { m9ln = 1487; goto L_ret; };
   if (m9t5) {
     { __typeof__(k) m9v = HttpServer_ParseRange (rng, size, &(a), &(b), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1489; goto L_ret; };
       k = m9v;
     }
     if ((k == INT64_C(2))) {
       err->res = m9res;
       { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s111, 23 }), HttpServer_Itoa (size, err), err)) m9a32 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s111, 23 }), HttpServer_Itoa (size, err), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1491; goto L_ret; };
       m9ret = HttpServer_SendBody (w, w_pool, c, c_pool, INT64_C(416), ((m9_sl_UTF8){ (uint8_t *) m9s112, 25 }), ((m9_sl_UTF8){ NULL, 0 }), m9a32, m9_utf_octets (((m9_sl_UTF8){ (uint8_t *) m9s113, 21 })), head, keep, keepAlive10, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1491; goto L_ret; };
       }
       goto L_ret;
     } else {
       if ((k == INT64_C(1))) {
         status = INT64_C(206);
         { __typeof__(extra) m9v = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, extra, m9_utf_of_char (err->res, 10u, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s114, 21 }), err), HttpServer_Itoa (a, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s115, 1 }), err), HttpServer_Itoa (b, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s116, 1 }), err), HttpServer_Itoa (size, err), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1497; goto L_ret; };
           extra = m9v;
         }
     } else {
       a = INT64_C(0);
       { __typeof__(b) m9v = m9_sub_i64 (size, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1501; goto L_ret; };
         b = m9v;
       }
     } }
   }
   { __typeof__(m9_add_i64 (m9_sub_i64 (b, a, err), INT64_C(1), err)) m9a33 = m9_add_i64 (m9_sub_i64 (b, a, err), INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1504; goto L_ret; };
   { __typeof__(ok) m9v = HttpServer_Head ((*c).fd, status, (*resp).ctype, (*resp).headers, extra, m9a33, keep, keepAlive10, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1504; goto L_ret; };
     ok = m9v;
   }
   }
@@ -3379,28 +3583,29 @@ L_dn_m9t2: ;
     for (;;) {
       if (!((ok && (off <= b)))) break;
       { __typeof__(n) m9v = m9_add_i64 (m9_sub_i64 (b, off, err), INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1508; goto L_ret; };
         n = m9v;
       }
       if ((n > INT64_C(65536))) {
         n = INT64_C(65536);
       }
       { __typeof__(ok) m9v = HttpServer_FilePiece (w, w_pool, (*c).fd, (*resp).file, off, n, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1510; goto L_ret; };
         ok = m9v;
       }
       { __typeof__(off) m9v = m9_add_i64 (off, n, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1511; goto L_ret; };
         off = m9v;
       }
     }
   }
   HttpServer_Tally (w, w_pool, status, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1514; goto L_ret; };
   err->res = m9res;
   m9ret = ok;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, w_pool, (*w).s);
   m9_adopt_if (&m9frame, c_pool, (*c).cb.p);
@@ -3416,20 +3621,23 @@ static m9_sl_UTF8 HttpServer_Itoa (int64_t v, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Itoa"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
   { __typeof__(d) m9v = DynStr_New (&(scratch), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1523; goto L_ret; };
     d = m9v;
   }
   DynStr_AppendI64 (&(d), &(scratch), v, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1524; goto L_ret; };
   err->res = m9res;
   m9ret = DynStr_View (d, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1525; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9ret = m9_rehome_utf (&scratch, m9res, m9ret, err);
@@ -3444,11 +3652,13 @@ static bool HttpServer_SafeName (m9_sl_UTF8 name, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.SafeName"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   uint32_t c = 0; (void) c;
   uint32_t prev = 0; (void) prev;
   bool m9t1 = (Text_BLen (name, err) == INT64_C(0));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1535; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
     m9ret = false;
@@ -3473,6 +3683,7 @@ static bool HttpServer_SafeName (m9_sl_UTF8 name, m9_state *err)
   m9ret = (prev != 47u);
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -3484,11 +3695,13 @@ static bool HttpServer_IsDir (m9_sl_UTF8 path, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.IsDir"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_m9_sl_UTF8 names = {0}; (void) names;
   { __typeof__(names) m9v = Io_ListDirUtf (&(scratch), path, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 1551; goto L_hdl_m9t1; };
     names = m9v;
   }
   err->res = m9res;
@@ -3507,6 +3720,7 @@ L_hdl_m9t1: ;
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
@@ -3519,14 +3733,16 @@ static HttpServer_Response HttpServer_FileFor (HttpServer_Route * rt, HttpServer
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "HttpServer.FileFor"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   HttpServer_Response m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_UTF8 name = {0}; (void) name;
   m9_sl_UTF8 full = {0}; (void) full;
   { __typeof__(m9_utf_slice ((*q).path, Text_BLen (rt->path, err), m9_sub_i64 (Text_BLen ((*q).path, err), Text_BLen (rt->path, err), err), err)) m9a34 = m9_utf_slice ((*q).path, Text_BLen (rt->path, err), m9_sub_i64 (Text_BLen ((*q).path, err), Text_BLen (rt->path, err), err), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 1569; goto L_hdl_m9t1; };
   { __typeof__(name) m9v = Http_UrlDecode (m9a34, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 1569; goto L_hdl_m9t1; };
     name = m9v;
   }
   }
@@ -3536,51 +3752,52 @@ L_hdl_m9t1: ;
     err->exc = NULL;
     err->res = m9res;
     m9ret = HttpServer_Reply (INT64_C(404), ((m9_sl_UTF8){ (uint8_t *) m9s117, 25 }), ((m9_sl_UTF8){ (uint8_t *) m9s118, 9 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1572; goto L_ret; };
     goto L_ret;
     goto L_dn_m9t2;
   }
   goto L_ret;
 L_dn_m9t2: ;
-  bool m9t5 = ({ bool m9t4 = (Text_BLen (name, err) == INT64_C(0)); if (!m9t4) { { __typeof__(m9_sub_i64 (Text_BLen (name, err), INT64_C(1), err)) m9a35 = m9_sub_i64 (Text_BLen (name, err), INT64_C(1), err);   if (err->exc) goto L_ret; m9t4 = (Text_BIs (name, m9a35, 47u, err)); } } m9t4; });
-  if (err->exc) goto L_ret;
+  bool m9t5 = ({ bool m9t4 = (Text_BLen (name, err) == INT64_C(0)); if (!m9t4) { { __typeof__(m9_sub_i64 (Text_BLen (name, err), INT64_C(1), err)) m9a35 = m9_sub_i64 (Text_BLen (name, err), INT64_C(1), err);   if (err->exc) { m9ln = 1574; goto L_ret; }; m9t4 = (Text_BIs (name, m9a35, 47u, err)); } } m9t4; });
+  if (err->exc) { m9ln = 1574; goto L_ret; };
   if (m9t5) {
     { __typeof__(name) m9v = m9_utf_cat (err->res, name, ((m9_sl_UTF8){ (uint8_t *) m9s119, 10 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1574; goto L_ret; };
       name = m9v;
     }
   }
   bool m9t6 = (!HttpServer_SafeName (name, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1575; goto L_ret; };
   if (m9t6) {
     err->res = m9res;
     m9ret = HttpServer_Reply (INT64_C(404), ((m9_sl_UTF8){ (uint8_t *) m9s120, 25 }), ((m9_sl_UTF8){ (uint8_t *) m9s121, 9 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1575; goto L_ret; };
     goto L_ret;
   }
   { __typeof__(full) m9v = m9_utf_cat (err->res, m9_utf_cat (err->res, rt->dir, ((m9_sl_UTF8){ (uint8_t *) m9s122, 1 }), err), name, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1579; goto L_ret; };
     full = m9v;
   }
   bool m9t7 = (!Io_ExistsUtf (full, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1580; goto L_ret; };
   if (m9t7) {
     err->res = m9res;
     m9ret = HttpServer_Reply (INT64_C(404), ((m9_sl_UTF8){ (uint8_t *) m9s123, 25 }), ((m9_sl_UTF8){ (uint8_t *) m9s124, 9 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1581; goto L_ret; };
     goto L_ret;
   }
   err->res = m9res;
   { __typeof__(HttpServer_TypeOf (name, err)) m9a36 = HttpServer_TypeOf (name, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1583; goto L_ret; };
   { __typeof__(HttpServer_ReplyFile (full, m9a36, err)) m9a37 = HttpServer_ReplyFile (full, m9a36, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1583; goto L_ret; };
   m9ret = HttpServer_WithHeader (&m9a37, ((m9_sl_UTF8){ (uint8_t *) m9s125, 22 }), ((m9_sl_UTF8){ (uint8_t *) m9s126, 7 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1583; goto L_ret; };
   }
   }
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.ctype.p);
   m9_adopt_if (&m9frame, m9res, m9ret.text.p);
@@ -3598,6 +3815,8 @@ static int64_t HttpServer_StreamPart (HttpServer_Worker *w, m9_pool *w_pool, int
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.StreamPart"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
@@ -3605,7 +3824,7 @@ static int64_t HttpServer_StreamPart (HttpServer_Worker *w, m9_pool *w_pool, int
   m9_sl_BYTE b = {0}; (void) b;
   bool ok = false; (void) ok;
   { __typeof__(s) m9v = p (q, part, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 1603; goto L_hdl_m9t1; };
     s = m9v;
   }
   goto L_dn_m9t2;
@@ -3613,59 +3832,59 @@ L_hdl_m9t1: ;
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
     { __typeof__((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults) m9v = m9_add_i64 ((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1606; goto L_ret; };
       (*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1606; goto L_ret; };
     }
     err->res = m9res;
     m9ret = m9_neg_i64 (INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1606; goto L_ret; };
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
     { __typeof__((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults) m9v = m9_add_i64 ((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1608; goto L_ret; };
       (*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1608; goto L_ret; };
     }
     err->res = m9res;
     m9ret = m9_neg_i64 (INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1608; goto L_ret; };
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &m9_exc_Overflow) {
     err->exc = NULL;
     { __typeof__((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults) m9v = m9_add_i64 ((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1610; goto L_ret; };
       (*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1610; goto L_ret; };
     }
     err->res = m9res;
     m9ret = m9_neg_i64 (INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1610; goto L_ret; };
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &m9_exc_OutOfMemory) {
     err->exc = NULL;
     { __typeof__((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults) m9v = m9_add_i64 ((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1612; goto L_ret; };
       (*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1612; goto L_ret; };
     }
     err->res = m9res;
     m9ret = m9_neg_i64 (INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1612; goto L_ret; };
     goto L_ret;
     goto L_dn_m9t2;
   }
   goto L_ret;
 L_dn_m9t2: ;
   bool m9t3 = (Text_BLen (s, err) == INT64_C(0));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1614; goto L_ret; };
   if (m9t3) {
     err->res = m9res;
     m9ret = INT64_C(1);
@@ -3674,41 +3893,42 @@ L_dn_m9t2: ;
   b = m9_utf_octets (s);
   if (chunked) {
     { __typeof__(d) m9v = DynStr_New (&(scratch), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1617; goto L_ret; };
       d = m9v;
     }
     HttpServer_AppendHex (&(d), &(scratch), (b).len, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1618; goto L_ret; };
     HttpServer_CrLf (&(d), &(scratch), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1619; goto L_ret; };
     { __typeof__(DynStr_Octets (d, err)) m9a38 = DynStr_Octets (d, err);
-      if (err->exc) goto L_ret;
-    { __typeof__(ok) m9v = ({ bool m9t4 = (HttpServer_WriteAll (fd, m9a38, err) && HttpServer_WriteAll (fd, b, err)); if (m9t4) { { __typeof__(m9_utf_octets (m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ NULL, 0 }), m9_utf_of_char (err->res, 13u, err), err), m9_utf_of_char (err->res, 10u, err), err))) m9a39 = m9_utf_octets (m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ NULL, 0 }), m9_utf_of_char (err->res, 13u, err), err), m9_utf_of_char (err->res, 10u, err), err));   if (err->exc) goto L_ret; m9t4 = (HttpServer_WriteAll (fd, m9a39, err)); } } m9t4; });
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1620; goto L_ret; };
+    { __typeof__(ok) m9v = ({ bool m9t4 = (HttpServer_WriteAll (fd, m9a38, err) && HttpServer_WriteAll (fd, b, err)); if (m9t4) { { __typeof__(m9_utf_octets (m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ NULL, 0 }), m9_utf_of_char (err->res, 13u, err), err), m9_utf_of_char (err->res, 10u, err), err))) m9a39 = m9_utf_octets (m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ NULL, 0 }), m9_utf_of_char (err->res, 13u, err), err), m9_utf_of_char (err->res, 10u, err), err));   if (err->exc) { m9ln = 1620; goto L_ret; }; m9t4 = (HttpServer_WriteAll (fd, m9a39, err)); } } m9t4; });
+      if (err->exc) { m9ln = 1620; goto L_ret; };
       ok = m9v;
     }
     }
   } else {
     { __typeof__(ok) m9v = HttpServer_WriteAll (fd, b, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1623; goto L_ret; };
       ok = m9v;
     }
   }
   if ((!ok)) {
     err->res = m9res;
     m9ret = m9_neg_i64 (INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1625; goto L_ret; };
     goto L_ret;
   }
   { __typeof__((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).bytesOut) m9v = m9_add_i64 ((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).bytesOut, (b).len, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1626; goto L_ret; };
     (*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).bytesOut = m9v;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1626; goto L_ret; };
   }
   err->res = m9res;
   m9ret = INT64_C(0);
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, w_pool, (*w).s);
   m9_pool_free (&m9frame);
@@ -3722,6 +3942,8 @@ static void HttpServer_AppendHex (DynStr_DString * *d, m9_pool *d_pool, int64_t 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.AppendHex"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_arr_16_uint32_t digits = {0}; (void) digits;
   int64_t n = 0; (void) n;
   int64_t x = 0; (void) x;
@@ -3729,26 +3951,26 @@ static void HttpServer_AppendHex (DynStr_DString * *d, m9_pool *d_pool, int64_t 
   x = v;
   for (;;) {
     bool m9t1 = (m9_mod_i64 (x, INT64_C(16), err) < INT64_C(10));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1638; goto L_ret; };
     if (m9t1) {
       { __typeof__((*(uint32_t *) m9_at (digits.v, n, INT64_C(16), sizeof (uint32_t), err))) m9v = m9_chr (m9_add_i64 (INT64_C(48), m9_mod_i64 (x, INT64_C(16), err), err), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1638; goto L_ret; };
         (*(uint32_t *) m9_at (digits.v, n, INT64_C(16), sizeof (uint32_t), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1638; goto L_ret; };
       }
     } else {
       { __typeof__((*(uint32_t *) m9_at (digits.v, n, INT64_C(16), sizeof (uint32_t), err))) m9v = m9_chr (m9_add_i64 (INT64_C(87), m9_mod_i64 (x, INT64_C(16), err), err), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1638; goto L_ret; };
         (*(uint32_t *) m9_at (digits.v, n, INT64_C(16), sizeof (uint32_t), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1638; goto L_ret; };
       }
     }
     { __typeof__(x) m9v = m9_div_i64 (x, INT64_C(16), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1639; goto L_ret; };
       x = m9v;
     }
     { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1640; goto L_ret; };
       n = m9v;
     }
     if ((x == INT64_C(0))) {
@@ -3758,16 +3980,17 @@ static void HttpServer_AppendHex (DynStr_DString * *d, m9_pool *d_pool, int64_t 
   for (;;) {
     if (!((n > INT64_C(0)))) break;
     { __typeof__(n) m9v = m9_sub_i64 (n, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1644; goto L_ret; };
       n = m9v;
     }
     { __typeof__((*(uint32_t *) m9_at (digits.v, n, INT64_C(16), sizeof (uint32_t), err))) m9a40 = (*(uint32_t *) m9_at (digits.v, n, INT64_C(16), sizeof (uint32_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1645; goto L_ret; };
     DynStr_AppendChar (d, d_pool, m9a40, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1645; goto L_ret; };
     }
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -3780,6 +4003,8 @@ static bool HttpServer_SendStream (HttpServer_Worker *w, m9_pool *w_pool, HttpSe
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.SendStream"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   bool chunked = false; (void) chunked;
   bool ok = false; (void) ok;
@@ -3787,44 +4012,44 @@ static bool HttpServer_SendStream (HttpServer_Worker *w, m9_pool *w_pool, HttpSe
   int64_t part = 0; (void) part;
   int64_t k = 0; (void) k;
   { __typeof__(chunked) m9v = Text_EqUtf ((*q).version, ((m9_sl_UTF8){ (uint8_t *) m9s127, 8 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1660; goto L_ret; };
     chunked = m9v;
   }
   extra = ((m9_sl_UTF8){ NULL, 0 });
   bool m9t1 = (chunked && (!HttpServer_NoBody ((*resp).status, err)));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1662; goto L_ret; };
   if (m9t1) {
     extra = ((m9_sl_UTF8){ (uint8_t *) m9s128, 26 });
   }
   { __typeof__(m9_neg_i64 (INT64_C(1), err)) m9a41 = m9_neg_i64 (INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1663; goto L_ret; };
   { __typeof__(ok) m9v = HttpServer_Head ((*c).fd, (*resp).status, (*resp).ctype, (*resp).headers, extra, m9a41, keep, keepAlive10, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1663; goto L_ret; };
     ok = m9v;
   }
   }
   bool m9t2 = ((ok && (!head)) && (!HttpServer_NoBody ((*resp).status, err)));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1664; goto L_ret; };
   if (m9t2) {
     part = INT64_C(0);
     for (;;) {
       { __typeof__(k) m9v = HttpServer_StreamPart (w, w_pool, (*c).fd, q, p, part, chunked, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1667; goto L_ret; };
         k = m9v;
       }
       if ((k != INT64_C(0))) {
         break;
       }
       { __typeof__(part) m9v = m9_add_i64 (part, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1669; goto L_ret; };
         part = m9v;
       }
     }
     if (((k == INT64_C(1)) && chunked)) {
       { __typeof__(m9_utf_octets (m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s129, 1 }), m9_utf_of_char (err->res, 13u, err), err), m9_utf_of_char (err->res, 10u, err), err), m9_utf_of_char (err->res, 13u, err), err), m9_utf_of_char (err->res, 10u, err), err))) m9a42 = m9_utf_octets (m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s129, 1 }), m9_utf_of_char (err->res, 13u, err), err), m9_utf_of_char (err->res, 10u, err), err), m9_utf_of_char (err->res, 13u, err), err), m9_utf_of_char (err->res, 10u, err), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1672; goto L_ret; };
       { __typeof__(ok) m9v = HttpServer_WriteAll ((*c).fd, m9a42, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1672; goto L_ret; };
         ok = m9v;
       }
       }
@@ -3833,11 +4058,12 @@ static bool HttpServer_SendStream (HttpServer_Worker *w, m9_pool *w_pool, HttpSe
     }
   }
   HttpServer_Tally (w, w_pool, (*resp).status, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1677; goto L_ret; };
   err->res = m9res;
   m9ret = ok;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, w_pool, (*w).s);
   m9_adopt_if (&m9frame, c_pool, (*c).cb.p);
@@ -3852,36 +4078,38 @@ static bool HttpServer_Send (HttpServer_Worker *w, m9_pool *w_pool, HttpServer_C
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Send"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE body = {0}; (void) body;
   m9_sl_UTF8 extra = {0}; (void) extra;
   bool m9t1 = (((!HttpServer_HeadersOk ((*resp).headers, err)) || ((*resp).status < INT64_C(100))) || ((*resp).status > INT64_C(599)));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1691; goto L_ret; };
   if (m9t1) {
     { __typeof__((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults) m9v = m9_add_i64 ((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1692; goto L_ret; };
       (*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1692; goto L_ret; };
     }
     err->res = m9res;
     m9ret = HttpServer_SendBody (w, w_pool, c, c_pool, INT64_C(500), ((m9_sl_UTF8){ (uint8_t *) m9s130, 25 }), ((m9_sl_UTF8){ NULL, 0 }), ((m9_sl_UTF8){ NULL, 0 }), m9_utf_octets (((m9_sl_UTF8){ (uint8_t *) m9s131, 39 })), head, keep, keepAlive10, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1693; goto L_ret; };
     goto L_ret;
   }
   { HttpServer_Producer p = (*resp).stream;
   if (p != NULL) {
     err->res = m9res;
     m9ret = HttpServer_SendStream (w, w_pool, c, c_pool, q, resp, p, head, keep, keepAlive10, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1697; goto L_ret; };
     goto L_ret;
   } }
   bool m9t2 = (Text_BLen ((*resp).file, err) > INT64_C(0));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1698; goto L_ret; };
   if (m9t2) {
     err->res = m9res;
     m9ret = HttpServer_SendFile (w, w_pool, c, c_pool, q, resp, head, keep, keepAlive10, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1698; goto L_ret; };
     goto L_ret;
   }
   if ((*resp).binary) {
@@ -3890,30 +4118,31 @@ static bool HttpServer_Send (HttpServer_Worker *w, m9_pool *w_pool, HttpServer_C
     body = m9_utf_octets ((*resp).text);
   }
   extra = ((m9_sl_UTF8){ NULL, 0 });
-  bool m9t4 = ({ bool m9t3 = ((((({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cfg.gzipMin > INT64_C(0)) && ((body).len >= ({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cfg.gzipMin)) && (!HttpServer_NoBody ((*resp).status, err))) && HttpServer_Compressible ((*resp).ctype, err)); if (m9t3) { { __typeof__(Http_Header ((*resp).headers, ((m9_sl_UTF8){ (uint8_t *) m9s132, 16 }), err)) m9a43 = Http_Header ((*resp).headers, ((m9_sl_UTF8){ (uint8_t *) m9s132, 16 }), err);   if (err->exc) goto L_ret; m9t3 = ((Text_BLen (m9a43, err) == INT64_C(0))); } } m9t3; });
-  if (err->exc) goto L_ret;
+  bool m9t4 = ({ bool m9t3 = ((((({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cfg.gzipMin > INT64_C(0)) && ((body).len >= ({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cfg.gzipMin)) && (!HttpServer_NoBody ((*resp).status, err))) && HttpServer_Compressible ((*resp).ctype, err)); if (m9t3) { { __typeof__(Http_Header ((*resp).headers, ((m9_sl_UTF8){ (uint8_t *) m9s132, 16 }), err)) m9a43 = Http_Header ((*resp).headers, ((m9_sl_UTF8){ (uint8_t *) m9s132, 16 }), err);   if (err->exc) { m9ln = 1701; goto L_ret; }; m9t3 = ((Text_BLen (m9a43, err) == INT64_C(0))); } } m9t3; });
+  if (err->exc) { m9ln = 1701; goto L_ret; };
   if (m9t4) {
     extra = ((m9_sl_UTF8){ (uint8_t *) m9s133, 21 });
     { __typeof__(HttpServer_Header (q, ((m9_sl_UTF8){ (uint8_t *) m9s134, 15 }), err)) m9a44 = HttpServer_Header (q, ((m9_sl_UTF8){ (uint8_t *) m9s134, 15 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1704; goto L_ret; };
     bool m9t5 = HttpServer_TakesGzip (m9a44, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1704; goto L_ret; };
     if (m9t5) {
       { __typeof__(body) m9v = Zip_Gzip (&(scratch), body, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1705; goto L_ret; };
         body = m9v;
       }
       { __typeof__(extra) m9v = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s135, 22 }), m9_utf_of_char (err->res, 10u, err), err), extra, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1706; goto L_ret; };
         extra = m9v;
       }
     } }
   }
   err->res = m9res;
   m9ret = HttpServer_SendBody (w, w_pool, c, c_pool, (*resp).status, (*resp).ctype, (*resp).headers, extra, body, head, keep, keepAlive10, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1709; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, w_pool, (*w).s);
   m9_adopt_if (&m9frame, c_pool, (*c).cb.p);
@@ -3929,51 +4158,54 @@ static void HttpServer_AccessLine (HttpServer_Worker *w, m9_pool *w_pool, m9_sl_
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.AccessLine"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
   int64_t ms = 0; (void) ms;
   { __typeof__(ms) m9v = m9_i64_f64 ((double)(((((double)(m9_now ()) - t0)) * 1000.0)), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1723; goto L_ret; };
     ms = m9v;
   }
   { __typeof__(d) m9v = DynStr_New (&(scratch), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1724; goto L_ret; };
     d = m9v;
   }
   DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s136, 12 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1725; goto L_ret; };
   DynStr_Append (&(d), &(scratch), method, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1726; goto L_ret; };
   DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s137, 6 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1727; goto L_ret; };
   DynStr_Append (&(d), &(scratch), path, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1728; goto L_ret; };
   DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s138, 8 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1729; goto L_ret; };
   DynStr_AppendI64 (&(d), &(scratch), status, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1730; goto L_ret; };
   DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s139, 7 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1731; goto L_ret; };
   DynStr_AppendI64 (&(d), &(scratch), bytes, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1732; goto L_ret; };
   DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s140, 4 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1733; goto L_ret; };
   DynStr_AppendI64 (&(d), &(scratch), ms, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1734; goto L_ret; };
   DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s141, 8 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1735; goto L_ret; };
   DynStr_Append (&(d), &(scratch), client, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1736; goto L_ret; };
   DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s142, 8 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1737; goto L_ret; };
   DynStr_AppendI64 (&(d), &(scratch), (*w).k, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1738; goto L_ret; };
   { __typeof__(DynStr_View (d, err)) m9a45 = DynStr_View (d, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1739; goto L_ret; };
   Logger_Msg (Logger_Info, m9a45, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1739; goto L_ret; };
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, w_pool, (*w).s);
   m9_pool_free (&m9frame);
@@ -3987,11 +4219,13 @@ static bool HttpServer_InList (m9_sl_UTF8 a, m9_sl_UTF8 list, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.InList"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   int64_t i = 0; (void) i;
   int64_t s0 = 0; (void) s0;
   bool m9t1 = (Text_BLen (a, err) == INT64_C(0));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1747; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
     m9ret = false;
@@ -4001,24 +4235,24 @@ static bool HttpServer_InList (m9_sl_UTF8 a, m9_sl_UTF8 list, m9_state *err)
   { __typeof__(i) m9t2to;
   i = INT64_C(0);
   m9t2to = Text_BLen (list, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1749; goto L_ret; };
   if (i <= m9t2to) for (;;) {
     bool m9t3 = ((i == Text_BLen (list, err)) || Text_BIs (list, i, 44u, err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1750; goto L_ret; };
     if (m9t3) {
       { __typeof__(m9_utf_slice (list, s0, m9_sub_i64 (i, s0, err), err)) m9a46 = m9_utf_slice (list, s0, m9_sub_i64 (i, s0, err), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1751; goto L_ret; };
       { __typeof__(HttpServer_Trimmed (m9a46, err)) m9a47 = HttpServer_Trimmed (m9a46, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1751; goto L_ret; };
       bool m9t5 = Text_EqUtf (m9a47, a, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1751; goto L_ret; };
       if (m9t5) {
         err->res = m9res;
         m9ret = true;
         goto L_ret;
       } } }
       { __typeof__(s0) m9v = m9_add_i64 (i, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1752; goto L_ret; };
         s0 = m9v;
       }
     }
@@ -4029,6 +4263,7 @@ static bool HttpServer_InList (m9_sl_UTF8 a, m9_sl_UTF8 list, m9_state *err)
   m9ret = false;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -4040,10 +4275,12 @@ static bool HttpServer_IsAddress (m9_sl_UTF8 a, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.IsAddress"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   int64_t i = 0; (void) i;
   bool m9t1 = ((Text_BLen (a, err) == INT64_C(0)) || (Text_BLen (a, err) > INT64_C(45)));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1763; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
     m9ret = false;
@@ -4052,10 +4289,10 @@ static bool HttpServer_IsAddress (m9_sl_UTF8 a, m9_state *err)
   { __typeof__(i) m9t2to;
   i = INT64_C(0);
   m9t2to = m9_sub_i64 (Text_BLen (a, err), INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1764; goto L_ret; };
   if (i <= m9t2to) for (;;) {
     bool m9t3 = (!(((((((((int64_t)(Text_BAt (a, i, err)) >= (int64_t)(48u)) && ((int64_t)(Text_BAt (a, i, err)) <= (int64_t)(57u)))) || ((((int64_t)(Text_BAt (a, i, err)) >= (int64_t)(97u)) && ((int64_t)(Text_BAt (a, i, err)) <= (int64_t)(102u))))) || ((((int64_t)(Text_BAt (a, i, err)) >= (int64_t)(65u)) && ((int64_t)(Text_BAt (a, i, err)) <= (int64_t)(70u))))) || Text_BIs (a, i, 46u, err)) || Text_BIs (a, i, 58u, err))));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1765; goto L_ret; };
     if (m9t3) {
       err->res = m9res;
       m9ret = false;
@@ -4068,6 +4305,7 @@ static bool HttpServer_IsAddress (m9_sl_UTF8 a, m9_state *err)
   m9ret = true;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -4079,48 +4317,50 @@ static m9_sl_UTF8 HttpServer_ClientOf (m9_sl_UTF8 peer, m9_sl_UTF8 trusted, m9_s
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.ClientOf"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   int64_t i = 0; (void) i;
   int64_t e = 0; (void) e;
   m9_sl_UTF8 a = {0}; (void) a;
   bool m9t1 = (!HttpServer_InList (peer, trusted, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1783; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
     m9ret = peer;
     goto L_ret;
   }
   { __typeof__(e) m9v = Text_BLen (xff, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1784; goto L_ret; };
     e = m9v;
   }
   { __typeof__(i) m9v = m9_sub_i64 (Text_BLen (xff, err), INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1785; goto L_ret; };
     i = m9v;
   }
   for (;;) {
     bool m9t2 = (i >= m9_neg_i64 (INT64_C(1), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1786; goto L_ret; };
     if (!(m9t2)) break;
     bool m9t3 = ((i == m9_neg_i64 (INT64_C(1), err)) || Text_BIs (xff, i, 44u, err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1787; goto L_ret; };
     if (m9t3) {
       { __typeof__(m9_utf_slice (xff, m9_add_i64 (i, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (e, i, err), INT64_C(1), err), err)) m9a48 = m9_utf_slice (xff, m9_add_i64 (i, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (e, i, err), INT64_C(1), err), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1788; goto L_ret; };
       { __typeof__(a) m9v = HttpServer_Trimmed (m9a48, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1788; goto L_ret; };
         a = m9v;
       }
       }
       bool m9t5 = (!HttpServer_IsAddress (a, err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1789; goto L_ret; };
       if (m9t5) {
         err->res = m9res;
         m9ret = peer;
         goto L_ret;
       }
       bool m9t6 = (!HttpServer_InList (a, trusted, err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1790; goto L_ret; };
       if (m9t6) {
         err->res = m9res;
         m9ret = a;
@@ -4129,7 +4369,7 @@ static m9_sl_UTF8 HttpServer_ClientOf (m9_sl_UTF8 peer, m9_sl_UTF8 trusted, m9_s
       e = i;
     }
     { __typeof__(i) m9v = m9_sub_i64 (i, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1793; goto L_ret; };
       i = m9v;
     }
   }
@@ -4137,6 +4377,7 @@ static m9_sl_UTF8 HttpServer_ClientOf (m9_sl_UTF8 peer, m9_sl_UTF8 trusted, m9_s
   m9ret = peer;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -4149,6 +4390,8 @@ static bool HttpServer_Idle (HttpServer_Worker *w, m9_pool *w_pool, HttpServer_C
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Idle"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   int64_t waited = 0; (void) waited;
   int64_t slice = 0; (void) slice;
@@ -4156,28 +4399,28 @@ static bool HttpServer_Idle (HttpServer_Worker *w, m9_pool *w_pool, HttpServer_C
   for (;;) {
     if (!((waited < ({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cfg.idleMs))) break;
     bool m9t1 = ((served > INT64_C(0)) && ((((int64_t)(m9_srv_stopping ()) != INT64_C(0)) || HttpServer_Closing (&(({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->q), err))));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1808; goto L_ret; };
     if (m9t1) {
       err->res = m9res;
       m9ret = false;
       goto L_ret;
     }
     { __typeof__(slice) m9v = m9_sub_i64 (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cfg.idleMs, waited, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1809; goto L_ret; };
       slice = m9v;
     }
     if ((slice > INT64_C(250))) {
       slice = INT64_C(250);
     }
-    bool m9t4 = ((int64_t)(({ __auto_type m9_fam9t2 = (HttpServer_CFd ((*c).fd, err)); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int64_t)(slice))); tcp_readable (m9_fam9t2, m9_fam9t3); })) != INT64_C(0));
-    if (err->exc) goto L_ret;
+    bool m9t4 = ((int64_t)(({ __auto_type m9_fam9t2 = (HttpServer_CFd ((*c).fd, err)); if (err->exc) { m9ln = 1811; goto L_ret; }; __auto_type m9_fam9t3 = (((int64_t)(slice))); tcp_readable (m9_fam9t2, m9_fam9t3); })) != INT64_C(0));
+    if (err->exc) { m9ln = 1811; goto L_ret; };
     if (m9t4) {
       err->res = m9res;
       m9ret = true;
       goto L_ret;
     }
     { __typeof__(waited) m9v = m9_add_i64 (waited, slice, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1812; goto L_ret; };
       waited = m9v;
     }
   }
@@ -4185,6 +4428,7 @@ static bool HttpServer_Idle (HttpServer_Worker *w, m9_pool *w_pool, HttpServer_C
   m9ret = false;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, w_pool, (*w).s);
   m9_adopt_if (&m9frame, c_pool, (*c).cb.p);
@@ -4199,6 +4443,8 @@ static bool HttpServer_Refuse (HttpServer_Worker *w, m9_pool *w_pool, HttpServer
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Refuse"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   m9_pool scratch = {0}; (void) scratch;
   bool ok = false; (void) ok;
@@ -4206,28 +4452,29 @@ static bool HttpServer_Refuse (HttpServer_Worker *w, m9_pool *w_pool, HttpServer
   int64_t b0 = 0; (void) b0;
   t0 = (double)(m9_now ());
   { __typeof__(b0) m9v = (*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).bytesOut;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1829; goto L_ret; };
     b0 = m9v;
   }
   { __typeof__(ok) m9v = HttpServer_SendBody (w, w_pool, c, c_pool, status, ((m9_sl_UTF8){ (uint8_t *) m9s143, 25 }), ((m9_sl_UTF8){ NULL, 0 }), ((m9_sl_UTF8){ NULL, 0 }), m9_utf_octets (why), false, false, false, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1830; goto L_ret; };
     ok = m9v;
   }
   if (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cfg.accessLog) {
     { __typeof__(m9_sub_i64 ((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).bytesOut, b0, err)) m9a49 = m9_sub_i64 ((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).bytesOut, b0, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1833; goto L_ret; };
     HttpServer_AccessLine (w, w_pool, ((m9_sl_UTF8){ (uint8_t *) m9s144, 1 }), ((m9_sl_UTF8){ (uint8_t *) m9s145, 1 }), status, m9a49, t0, (*c).peer, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1833; goto L_ret; };
     }
   }
   if (ok) {
     HttpServer_Linger (c, c_pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1835; goto L_ret; };
   }
   err->res = m9res;
   m9ret = false;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, w_pool, (*w).s);
   m9_adopt_if (&m9frame, c_pool, (*c).cb.p);
@@ -4243,6 +4490,8 @@ static bool HttpServer_Continue100 (HttpServer_Conn *c, m9_pool *c_pool, m9_stat
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Continue100"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   m9_arr_25_uint8_t b = {0}; (void) b;
   m9_sl_UTF8 s = {0}; (void) s;
@@ -4253,26 +4502,27 @@ static bool HttpServer_Continue100 (HttpServer_Conn *c, m9_pool *c_pool, m9_stat
   m9t1to = INT64_C(20);
   if (i <= m9t1to) for (;;) {
     { __typeof__((*(uint8_t *) m9_at (b.v, i, INT64_C(25), sizeof (uint8_t), err))) m9v = m9_byte ((int64_t)(Text_BAt (s, i, err)), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1847; goto L_ret; };
       (*(uint8_t *) m9_at (b.v, i, INT64_C(25), sizeof (uint8_t), err)) = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1847; goto L_ret; };
     }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   (*(uint8_t *) m9_at (b.v, INT64_C(21), INT64_C(25), sizeof (uint8_t), err)) = INT64_C(13);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1848; goto L_ret; };
   (*(uint8_t *) m9_at (b.v, INT64_C(22), INT64_C(25), sizeof (uint8_t), err)) = INT64_C(10);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1848; goto L_ret; };
   (*(uint8_t *) m9_at (b.v, INT64_C(23), INT64_C(25), sizeof (uint8_t), err)) = INT64_C(13);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1848; goto L_ret; };
   (*(uint8_t *) m9_at (b.v, INT64_C(24), INT64_C(25), sizeof (uint8_t), err)) = INT64_C(10);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1848; goto L_ret; };
   err->res = m9res;
   m9ret = HttpServer_WriteAll ((*c).fd, ((m9_sl_BYTE){ (b).v, INT64_C(25) }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1849; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, c_pool, (*c).cb.p);
   m9_adopt_if (&m9frame, c_pool, (*c).peer.p);
@@ -4286,6 +4536,8 @@ static bool HttpServer_ReadFixed (HttpServer_Conn *c, m9_pool *c_pool, m9_sl_BYT
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.ReadFixed"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   int64_t got = 0; (void) got;
   int64_t n = 0; (void) n;
@@ -4298,23 +4550,23 @@ static bool HttpServer_ReadFixed (HttpServer_Conn *c, m9_pool *c_pool, m9_sl_BYT
   for (;;) {
     if (!((got < take))) break;
     { __typeof__((*(uint8_t *) m9_at (body.p, got, body.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at ((*c).cb.p, got, (*c).cb.len, sizeof (uint8_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1864; goto L_ret; };
       (*(uint8_t *) m9_at (body.p, got, body.len, sizeof (uint8_t), err)) = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1864; goto L_ret; };
     }
     { __typeof__(got) m9v = m9_add_i64 (got, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1865; goto L_ret; };
       got = m9v;
     }
   }
   HttpServer_Consume (c, c_pool, take, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1867; goto L_ret; };
   for (;;) {
     if (!((got < (body).len))) break;
     { __typeof__(m9_sub_i64 ((body).len, got, err)) m9a50 = m9_sub_i64 ((body).len, got, err);
-      if (err->exc) goto L_ret;
-    { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t1 = (HttpServer_CFd ((*c).fd, err)); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(({ __auto_type m9t2 = body; int64_t m9t2a = got, m9t2n = m9_sub_i64 ((body).len, got, err); int64_t m9t2o = m9_chk_slice (m9t2a, m9t2n, m9t2.len, err); (__typeof__(m9t2)){ m9t2.p + m9t2o, err->exc ? 0 : m9t2n }; })).p)); if (err->exc) goto L_ret; __auto_type m9_fam9t4 = (HttpServer_CLen (m9a50, err)); if (err->exc) goto L_ret; tcp_read (m9_fam9t1, m9_fam9t3, m9_fam9t4); }));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1869; goto L_ret; };
+    { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t1 = (HttpServer_CFd ((*c).fd, err)); if (err->exc) { m9ln = 1869; goto L_ret; }; __auto_type m9_fam9t3 = (((void *)(({ __auto_type m9t2 = body; int64_t m9t2a = got, m9t2n = m9_sub_i64 ((body).len, got, err); int64_t m9t2o = m9_chk_slice (m9t2a, m9t2n, m9t2.len, err); (__typeof__(m9t2)){ m9t2.p + m9t2o, err->exc ? 0 : m9t2n }; })).p)); if (err->exc) { m9ln = 1869; goto L_ret; }; __auto_type m9_fam9t4 = (HttpServer_CLen (m9a50, err)); if (err->exc) { m9ln = 1869; goto L_ret; }; tcp_read (m9_fam9t1, m9_fam9t3, m9_fam9t4); }));
+      if (err->exc) { m9ln = 1869; goto L_ret; };
       n = m9v;
     }
     }
@@ -4324,7 +4576,7 @@ static bool HttpServer_ReadFixed (HttpServer_Conn *c, m9_pool *c_pool, m9_sl_BYT
       goto L_ret;
     }
     { __typeof__(got) m9v = m9_add_i64 (got, n, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1872; goto L_ret; };
       got = m9v;
     }
   }
@@ -4332,6 +4584,7 @@ static bool HttpServer_ReadFixed (HttpServer_Conn *c, m9_pool *c_pool, m9_sl_BYT
   m9ret = true;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, c_pool, (*c).cb.p);
   m9_adopt_if (&m9frame, c_pool, (*c).peer.p);
@@ -4345,20 +4598,22 @@ static bool HttpServer_NextLine (HttpServer_Conn *c, m9_pool *c_pool, int64_t *l
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.NextLine"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   int64_t lf = 0; (void) lf;
   for (;;) {
     { __typeof__(lf) m9v = HttpServer_FindLf (c, c_pool, INT64_C(0), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1884; goto L_ret; };
       lf = m9v;
     }
     if ((lf >= INT64_C(0))) {
       (*len) = lf;
       bool m9t1 = ((lf >= INT64_C(1)) && ((int64_t)((*(uint8_t *) m9_at ((*c).cb.p, m9_sub_i64 (lf, INT64_C(1), err), (*c).cb.len, sizeof (uint8_t), err))) == INT64_C(13)));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1887; goto L_ret; };
       if (m9t1) {
         { __typeof__((*len)) m9v = m9_sub_i64 (lf, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1887; goto L_ret; };
           (*len) = m9v;
         }
       }
@@ -4372,7 +4627,7 @@ static bool HttpServer_NextLine (HttpServer_Conn *c, m9_pool *c_pool, int64_t *l
       goto L_ret;
     }
     bool m9t2 = (HttpServer_Fill (c, c_pool, err) <= INT64_C(0));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1891; goto L_ret; };
     if (m9t2) {
       err->res = m9res;
       m9ret = false;
@@ -4380,6 +4635,7 @@ static bool HttpServer_NextLine (HttpServer_Conn *c, m9_pool *c_pool, int64_t *l
     }
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, c_pool, (*c).cb.p);
   m9_adopt_if (&m9frame, c_pool, (*c).peer.p);
@@ -4393,17 +4649,20 @@ static void HttpServer_LineEnd (HttpServer_Conn *c, m9_pool *c_pool, int64_t len
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.LineEnd"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t lf = 0; (void) lf;
   { __typeof__(lf) m9v = HttpServer_FindLf (c, c_pool, len, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1899; goto L_ret; };
     lf = m9v;
   }
   { __typeof__(m9_add_i64 (lf, INT64_C(1), err)) m9a51 = m9_add_i64 (lf, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1900; goto L_ret; };
   HttpServer_Consume (c, c_pool, m9a51, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1900; goto L_ret; };
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, c_pool, (*c).cb.p);
   m9_adopt_if (&m9frame, c_pool, (*c).peer.p);
@@ -4417,6 +4676,8 @@ static int64_t HttpServer_ReadChunked (HttpServer_Conn *c, m9_pool *c_pool, m9_s
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.ReadChunked"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   int64_t len = 0; (void) len;
   int64_t i = 0; (void) i;
@@ -4427,7 +4688,7 @@ static int64_t HttpServer_ReadChunked (HttpServer_Conn *c, m9_pool *c_pool, m9_s
   (*got) = INT64_C(0);
   for (;;) {
     bool m9t1 = (!HttpServer_NextLine (c, c_pool, &(len), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1914; goto L_ret; };
     if (m9t1) {
       err->res = m9res;
       m9ret = INT64_C(400);
@@ -4436,13 +4697,13 @@ static int64_t HttpServer_ReadChunked (HttpServer_Conn *c, m9_pool *c_pool, m9_s
     size = INT64_C(0);
     i = INT64_C(0);
     for (;;) {
-      bool m9t3 = ({ bool m9t2 = (i < len); if (m9t2) { { __typeof__(m9_chr ((int64_t)((*(uint8_t *) m9_at ((*c).cb.p, i, (*c).cb.len, sizeof (uint8_t), err))), err)) m9a52 = m9_chr ((int64_t)((*(uint8_t *) m9_at ((*c).cb.p, i, (*c).cb.len, sizeof (uint8_t), err))), err);   if (err->exc) goto L_ret; m9t2 = ((HttpServer_HexVal (m9a52, err) >= INT64_C(0))); } } m9t2; });
-      if (err->exc) goto L_ret;
+      bool m9t3 = ({ bool m9t2 = (i < len); if (m9t2) { { __typeof__(m9_chr ((int64_t)((*(uint8_t *) m9_at ((*c).cb.p, i, (*c).cb.len, sizeof (uint8_t), err))), err)) m9a52 = m9_chr ((int64_t)((*(uint8_t *) m9_at ((*c).cb.p, i, (*c).cb.len, sizeof (uint8_t), err))), err);   if (err->exc) { m9ln = 1917; goto L_ret; }; m9t2 = ((HttpServer_HexVal (m9a52, err) >= INT64_C(0))); } } m9t2; });
+      if (err->exc) { m9ln = 1917; goto L_ret; };
       if (!(m9t3)) break;
       { __typeof__(m9_chr ((int64_t)((*(uint8_t *) m9_at ((*c).cb.p, i, (*c).cb.len, sizeof (uint8_t), err))), err)) m9a53 = m9_chr ((int64_t)((*(uint8_t *) m9_at ((*c).cb.p, i, (*c).cb.len, sizeof (uint8_t), err))), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1918; goto L_ret; };
       { __typeof__(v) m9v = HttpServer_HexVal (m9a53, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1918; goto L_ret; };
         v = m9v;
       }
       }
@@ -4452,11 +4713,11 @@ static int64_t HttpServer_ReadChunked (HttpServer_Conn *c, m9_pool *c_pool, m9_s
         goto L_ret;
       }
       { __typeof__(size) m9v = m9_add_i64 (m9_mul_i64 (size, INT64_C(16), err), v, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1920; goto L_ret; };
         size = m9v;
       }
       { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1921; goto L_ret; };
         i = m9v;
       }
     }
@@ -4466,19 +4727,19 @@ static int64_t HttpServer_ReadChunked (HttpServer_Conn *c, m9_pool *c_pool, m9_s
       goto L_ret;
     }
     bool m9t4 = ((((i < len) && (m9_chr ((int64_t)((*(uint8_t *) m9_at ((*c).cb.p, i, (*c).cb.len, sizeof (uint8_t), err))), err) != 59u)) && (m9_chr ((int64_t)((*(uint8_t *) m9_at ((*c).cb.p, i, (*c).cb.len, sizeof (uint8_t), err))), err) != 32u)) && (m9_chr ((int64_t)((*(uint8_t *) m9_at ((*c).cb.p, i, (*c).cb.len, sizeof (uint8_t), err))), err) != 9u));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1924; goto L_ret; };
     if (m9t4) {
       err->res = m9res;
       m9ret = INT64_C(400);
       goto L_ret;
     }
     HttpServer_LineEnd (c, c_pool, len, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1928; goto L_ret; };
     if ((size == INT64_C(0))) {
       break;
     }
     bool m9t5 = (m9_add_i64 ((*got), size, err) > most);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1930; goto L_ret; };
     if (m9t5) {
       err->res = m9res;
       m9ret = INT64_C(413);
@@ -4489,7 +4750,7 @@ static int64_t HttpServer_ReadChunked (HttpServer_Conn *c, m9_pool *c_pool, m9_s
       if (!((n < size))) break;
       if (((*c).have == INT64_C(0))) {
         bool m9t6 = (HttpServer_Fill (c, c_pool, err) <= INT64_C(0));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1934; goto L_ret; };
         if (m9t6) {
           err->res = m9res;
           m9ret = INT64_C(400);
@@ -4498,39 +4759,39 @@ static int64_t HttpServer_ReadChunked (HttpServer_Conn *c, m9_pool *c_pool, m9_s
       }
       take = (*c).have;
       bool m9t7 = (take > m9_sub_i64 (size, n, err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1937; goto L_ret; };
       if (m9t7) {
         { __typeof__(take) m9v = m9_sub_i64 (size, n, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1937; goto L_ret; };
           take = m9v;
         }
       }
       { __typeof__(i) m9t8to;
       i = INT64_C(0);
       m9t8to = m9_sub_i64 (take, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1938; goto L_ret; };
       if (i <= m9t8to) for (;;) {
         { __typeof__((*(uint8_t *) m9_at (store.p, m9_add_i64 (m9_add_i64 ((*got), n, err), i, err), store.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at ((*c).cb.p, i, (*c).cb.len, sizeof (uint8_t), err));
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1939; goto L_ret; };
           (*(uint8_t *) m9_at (store.p, m9_add_i64 (m9_add_i64 ((*got), n, err), i, err), store.len, sizeof (uint8_t), err)) = m9v;
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1939; goto L_ret; };
         }
         if ((uint64_t) m9t8to - (uint64_t) i < (uint64_t) 1) break;
         i += 1;
       } }
       HttpServer_Consume (c, c_pool, take, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1941; goto L_ret; };
       { __typeof__(n) m9v = m9_add_i64 (n, take, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1942; goto L_ret; };
         n = m9v;
       }
     }
     { __typeof__((*got)) m9v = m9_add_i64 ((*got), size, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1944; goto L_ret; };
       (*got) = m9v;
     }
     bool m9t9 = (!HttpServer_NextLine (c, c_pool, &(len), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1946; goto L_ret; };
     if (m9t9) {
       err->res = m9res;
       m9ret = INT64_C(400);
@@ -4542,18 +4803,18 @@ static int64_t HttpServer_ReadChunked (HttpServer_Conn *c, m9_pool *c_pool, m9_s
       goto L_ret;
     }
     HttpServer_LineEnd (c, c_pool, len, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1948; goto L_ret; };
   }
   for (;;) {
     bool m9t10 = (!HttpServer_NextLine (c, c_pool, &(len), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1952; goto L_ret; };
     if (m9t10) {
       err->res = m9res;
       m9ret = INT64_C(400);
       goto L_ret;
     }
     HttpServer_LineEnd (c, c_pool, len, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1953; goto L_ret; };
     if ((len == INT64_C(0))) {
       break;
     }
@@ -4562,6 +4823,7 @@ static int64_t HttpServer_ReadChunked (HttpServer_Conn *c, m9_pool *c_pool, m9_s
   m9ret = INT64_C(0);
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, c_pool, (*c).cb.p);
   m9_adopt_if (&m9frame, c_pool, (*c).peer.p);
@@ -4575,12 +4837,15 @@ static bool HttpServer_KnownMethod (m9_sl_UTF8 m, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.KnownMethod"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   err->res = m9res;
   m9ret = ((((((Text_EqUtf (m, ((m9_sl_UTF8){ (uint8_t *) m9s147, 3 }), err) || Text_EqUtf (m, ((m9_sl_UTF8){ (uint8_t *) m9s148, 4 }), err)) || Text_EqUtf (m, ((m9_sl_UTF8){ (uint8_t *) m9s149, 4 }), err)) || Text_EqUtf (m, ((m9_sl_UTF8){ (uint8_t *) m9s150, 3 }), err)) || Text_EqUtf (m, ((m9_sl_UTF8){ (uint8_t *) m9s151, 6 }), err)) || Text_EqUtf (m, ((m9_sl_UTF8){ (uint8_t *) m9s152, 5 }), err)) || Text_EqUtf (m, ((m9_sl_UTF8){ (uint8_t *) m9s153, 7 }), err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1963; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -4592,18 +4857,21 @@ static bool HttpServer_PathMatches (HttpServer_Route * rt, m9_sl_UTF8 path, m9_s
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.PathMatches"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   if (rt->prefix) {
     err->res = m9res;
-    m9ret = ({ bool m9t2 = (Text_BLen (path, err) >= Text_BLen (rt->path, err)); if (m9t2) { { __typeof__(m9_utf_slice (path, INT64_C(0), Text_BLen (rt->path, err), err)) m9a54 = m9_utf_slice (path, INT64_C(0), Text_BLen (rt->path, err), err);   if (err->exc) goto L_ret; m9t2 = (Text_EqUtf (m9a54, rt->path, err)); } } m9t2; });
-    if (err->exc) goto L_ret;
+    m9ret = ((Text_BLen (path, err) >= Text_BLen (rt->path, err)) && Text_StartsWithUtf (path, rt->path, err));
+    if (err->exc) { m9ln = 1972; goto L_ret; };
     goto L_ret;
   }
   err->res = m9res;
   m9ret = Text_EqUtf (path, rt->path, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1975; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -4615,12 +4883,14 @@ static HttpServer_Response HttpServer_Dispatch (HttpServer_Worker *w, m9_pool *w
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "HttpServer.Dispatch"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   HttpServer_Response m9ret = {0};
   HttpServer_Route * cur = NULL; (void) cur;
   m9_sl_UTF8 allow = {0}; (void) allow;
   bool isHead = false; (void) isHead;
   { __typeof__(isHead) m9v = Text_EqUtf ((*q).method, ((m9_sl_UTF8){ (uint8_t *) m9s154, 4 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1987; goto L_ret; };
     isHead = m9v;
   }
   allow = ((m9_sl_UTF8){ NULL, 0 });
@@ -4629,58 +4899,58 @@ static HttpServer_Response HttpServer_Dispatch (HttpServer_Worker *w, m9_pool *w
     HttpServer_Route * rt = cur;
     if (!(rt != NULL)) break;
     bool m9t1 = HttpServer_PathMatches (rt, (*q).path, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1991; goto L_ret; };
     if (m9t1) {
       bool m9t2 = (Text_EqUtf (rt->method, (*q).method, err) || ((isHead && Text_EqUtf (rt->method, ((m9_sl_UTF8){ (uint8_t *) m9s155, 3 }), err))));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1992; goto L_ret; };
       if (m9t2) {
         if (rt->files) {
           err->res = m9res;
           m9ret = HttpServer_FileFor (rt, q, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1994; goto L_ret; };
           goto L_ret;
         }
         { HttpServer_Handler f = rt->h;
         if (f != NULL) {
           err->res = m9res;
           m9ret = f (q, err);
-          if (err->exc) goto L_hdl_m9t3;
+          if (err->exc) { m9ln = 1997; goto L_hdl_m9t3; };
           goto L_ret;
           goto L_dn_m9t4;
 L_hdl_m9t3: ;
           if (err->exc == &m9_exc_ValueRange) {
             err->exc = NULL;
             { __typeof__((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults) m9v = m9_add_i64 ((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults, INT64_C(1), err);
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 2000; goto L_ret; };
               (*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults = m9v;
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 2000; goto L_ret; };
             }
             goto L_dn_m9t4;
           }
           if (err->exc == &m9_exc_IndexError) {
             err->exc = NULL;
             { __typeof__((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults) m9v = m9_add_i64 ((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults, INT64_C(1), err);
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 2002; goto L_ret; };
               (*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults = m9v;
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 2002; goto L_ret; };
             }
             goto L_dn_m9t4;
           }
           if (err->exc == &m9_exc_Overflow) {
             err->exc = NULL;
             { __typeof__((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults) m9v = m9_add_i64 ((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults, INT64_C(1), err);
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 2004; goto L_ret; };
               (*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults = m9v;
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 2004; goto L_ret; };
             }
             goto L_dn_m9t4;
           }
           if (err->exc == &m9_exc_OutOfMemory) {
             err->exc = NULL;
             { __typeof__((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults) m9v = m9_add_i64 ((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults, INT64_C(1), err);
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 2006; goto L_ret; };
               (*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults = m9v;
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 2006; goto L_ret; };
             }
             goto L_dn_m9t4;
           }
@@ -4688,31 +4958,31 @@ L_hdl_m9t3: ;
 L_dn_m9t4: ;
           err->res = m9res;
           m9ret = HttpServer_Reply (INT64_C(500), ((m9_sl_UTF8){ (uint8_t *) m9s156, 25 }), ((m9_sl_UTF8){ (uint8_t *) m9s157, 18 }), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 2008; goto L_ret; };
           goto L_ret;
         } }
         err->res = m9res;
         m9ret = HttpServer_Reply (rt->status, rt->ctype, rt->body, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 2011; goto L_ret; };
         goto L_ret;
       }
       bool m9t5 = (Text_BLen (allow, err) > INT64_C(0));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2013; goto L_ret; };
       if (m9t5) {
         { __typeof__(allow) m9v = m9_utf_cat (err->res, allow, ((m9_sl_UTF8){ (uint8_t *) m9s158, 2 }), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 2013; goto L_ret; };
           allow = m9v;
         }
       }
       { __typeof__(allow) m9v = m9_utf_cat (err->res, allow, rt->method, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 2014; goto L_ret; };
         allow = m9v;
       }
       bool m9t6 = Text_EqUtf (rt->method, ((m9_sl_UTF8){ (uint8_t *) m9s159, 3 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2015; goto L_ret; };
       if (m9t6) {
         { __typeof__(allow) m9v = m9_utf_cat (err->res, allow, ((m9_sl_UTF8){ (uint8_t *) m9s160, 6 }), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 2015; goto L_ret; };
           allow = m9v;
         }
       }
@@ -4720,21 +4990,22 @@ L_dn_m9t4: ;
     cur = rt->next;
   }
   bool m9t7 = (Text_BLen (allow, err) > INT64_C(0));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2019; goto L_ret; };
   if (m9t7) {
     err->res = m9res;
-    { __typeof__(HttpServer_Reply (INT64_C(405), ((m9_sl_UTF8){ (uint8_t *) m9s161, 25 }), ((m9_sl_UTF8){ (uint8_t *) m9s162, 18 }), err)) m9a55 = HttpServer_Reply (INT64_C(405), ((m9_sl_UTF8){ (uint8_t *) m9s161, 25 }), ((m9_sl_UTF8){ (uint8_t *) m9s162, 18 }), err);
-      if (err->exc) goto L_ret;
-    m9ret = HttpServer_WithHeader (&m9a55, ((m9_sl_UTF8){ (uint8_t *) m9s163, 5 }), allow, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(HttpServer_Reply (INT64_C(405), ((m9_sl_UTF8){ (uint8_t *) m9s161, 25 }), ((m9_sl_UTF8){ (uint8_t *) m9s162, 18 }), err)) m9a54 = HttpServer_Reply (INT64_C(405), ((m9_sl_UTF8){ (uint8_t *) m9s161, 25 }), ((m9_sl_UTF8){ (uint8_t *) m9s162, 18 }), err);
+      if (err->exc) { m9ln = 2020; goto L_ret; };
+    m9ret = HttpServer_WithHeader (&m9a54, ((m9_sl_UTF8){ (uint8_t *) m9s163, 5 }), allow, err);
+    if (err->exc) { m9ln = 2020; goto L_ret; };
     }
     goto L_ret;
   }
   err->res = m9res;
   m9ret = HttpServer_Reply (INT64_C(404), ((m9_sl_UTF8){ (uint8_t *) m9s164, 25 }), ((m9_sl_UTF8){ (uint8_t *) m9s165, 9 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2024; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.ctype.p);
   m9_adopt_if (&m9frame, m9res, m9ret.text.p);
@@ -4752,36 +5023,38 @@ static m9_sl_UTF8 HttpServer_HeadText (m9_pool *pool, m9_sl_BYTE b, m9_state *er
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.HeadText"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
   int64_t a = 0; (void) a;
   int64_t i = 0; (void) i;
   { __typeof__(d) m9v = DynStr_New (pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2040; goto L_ret; };
     d = m9v;
   }
   a = INT64_C(0);
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((b).len, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2042; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     bool m9t2 = ((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) == INT64_C(10));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2043; goto L_ret; };
     if (m9t2) {
-      { __typeof__(({ __auto_type m9t3 = b; int64_t m9t3a = a, m9t3n = m9_sub_i64 (i, a, err); int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; })) m9a56 = ({ __auto_type m9t3 = b; int64_t m9t3a = a, m9t3n = m9_sub_i64 (i, a, err); int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; });
-        if (err->exc) goto L_ret;
-      { __typeof__(DynStr_Decoded (&(scratch), m9a56, err)) m9a57 = DynStr_Decoded (&(scratch), m9a56, err);
-        if (err->exc) goto L_ret;
-      DynStr_Append (&(d), &((*pool)), m9a57, err);
-      if (err->exc) goto L_ret;
+      { __typeof__(({ __auto_type m9t3 = b; int64_t m9t3a = a, m9t3n = m9_sub_i64 (i, a, err); int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; })) m9a55 = ({ __auto_type m9t3 = b; int64_t m9t3a = a, m9t3n = m9_sub_i64 (i, a, err); int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; });
+        if (err->exc) { m9ln = 2044; goto L_ret; };
+      { __typeof__(DynStr_Decoded (&(scratch), m9a55, err)) m9a56 = DynStr_Decoded (&(scratch), m9a55, err);
+        if (err->exc) { m9ln = 2044; goto L_ret; };
+      DynStr_Append (&(d), &((*pool)), m9a56, err);
+      if (err->exc) { m9ln = 2044; goto L_ret; };
       }
       }
       DynStr_AppendChar (&(d), &((*pool)), 10u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2045; goto L_ret; };
       { __typeof__(a) m9v = m9_add_i64 (i, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 2046; goto L_ret; };
         a = m9v;
       }
     }
@@ -4789,20 +5062,21 @@ static m9_sl_UTF8 HttpServer_HeadText (m9_pool *pool, m9_sl_BYTE b, m9_state *er
     i += 1;
   } }
   if ((a < (b).len)) {
-    { __typeof__(({ __auto_type m9t4 = b; int64_t m9t4a = a, m9t4n = m9_sub_i64 ((b).len, a, err); int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; })) m9a58 = ({ __auto_type m9t4 = b; int64_t m9t4a = a, m9t4n = m9_sub_i64 ((b).len, a, err); int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; });
-      if (err->exc) goto L_ret;
-    { __typeof__(DynStr_Decoded (&(scratch), m9a58, err)) m9a59 = DynStr_Decoded (&(scratch), m9a58, err);
-      if (err->exc) goto L_ret;
-    DynStr_Append (&(d), &((*pool)), m9a59, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(({ __auto_type m9t4 = b; int64_t m9t4a = a, m9t4n = m9_sub_i64 ((b).len, a, err); int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; })) m9a57 = ({ __auto_type m9t4 = b; int64_t m9t4a = a, m9t4n = m9_sub_i64 ((b).len, a, err); int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; });
+      if (err->exc) { m9ln = 2050; goto L_ret; };
+    { __typeof__(DynStr_Decoded (&(scratch), m9a57, err)) m9a58 = DynStr_Decoded (&(scratch), m9a57, err);
+      if (err->exc) { m9ln = 2050; goto L_ret; };
+    DynStr_Append (&(d), &((*pool)), m9a58, err);
+    if (err->exc) { m9ln = 2050; goto L_ret; };
     }
     }
   }
   err->res = m9res;
   m9ret = DynStr_ViewIn (pool, d, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2052; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9ret = m9_rehome_utf (&scratch, m9res, m9ret, err);
@@ -4817,6 +5091,8 @@ static bool HttpServer_One (HttpServer_Worker *w, m9_pool *w_pool, HttpServer_Co
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.One"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_UTF8 head = {0}; (void) head;
@@ -4852,47 +5128,47 @@ static bool HttpServer_One (HttpServer_Worker *w, m9_pool *w_pool, HttpServer_Co
   bool isHead = false; (void) isHead;
   bool sent = false; (void) sent;
   { __typeof__(hend) m9v = m9_neg_i64 (INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2070; goto L_ret; };
     hend = m9v;
   }
   t0 = (- 1.0);
   for (;;) {
     for (;;) {
       bool m9t1 = (((*c).have >= INT64_C(1)) && ((((int64_t)((*(uint8_t *) m9_at ((*c).cb.p, INT64_C(0), (*c).cb.len, sizeof (uint8_t), err))) == INT64_C(10)) || (((((*c).have >= INT64_C(2)) && ((int64_t)((*(uint8_t *) m9_at ((*c).cb.p, INT64_C(0), (*c).cb.len, sizeof (uint8_t), err))) == INT64_C(13))) && ((int64_t)((*(uint8_t *) m9_at ((*c).cb.p, INT64_C(1), (*c).cb.len, sizeof (uint8_t), err))) == INT64_C(10)))))));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2075; goto L_ret; };
       if (!(m9t1)) break;
       bool m9t2 = ((int64_t)((*(uint8_t *) m9_at ((*c).cb.p, INT64_C(0), (*c).cb.len, sizeof (uint8_t), err))) == INT64_C(10));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2077; goto L_ret; };
       if (m9t2) {
         HttpServer_Consume (c, c_pool, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 2077; goto L_ret; };
       } else {
         HttpServer_Consume (c, c_pool, INT64_C(2), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 2077; goto L_ret; };
       }
     }
     if (((*c).have > INT64_C(0))) {
       { __typeof__(hend) m9v = HttpServer_HeadEnd (c, c_pool, INT64_C(0), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 2080; goto L_ret; };
         hend = m9v;
       }
       if ((hend >= INT64_C(0))) {
         break;
       }
       { __typeof__(lf) m9v = HttpServer_FindLf (c, c_pool, INT64_C(0), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 2082; goto L_ret; };
         lf = m9v;
       }
       if (((((lf < INT64_C(0)) && ((*c).have > ({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cfg.lineMax))) || (lf > ({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cfg.lineMax))) {
         err->res = m9res;
         m9ret = HttpServer_Refuse (w, w_pool, c, c_pool, INT64_C(414), ((m9_sl_UTF8){ (uint8_t *) m9s166, 21 }), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 2084; goto L_ret; };
         goto L_ret;
       }
       if (((*c).have >= ((*c).cb).len)) {
         err->res = m9res;
         m9ret = HttpServer_Refuse (w, w_pool, c, c_pool, INT64_C(431), ((m9_sl_UTF8){ (uint8_t *) m9s167, 31 }), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 2087; goto L_ret; };
         goto L_ret;
       }
       if ((t0 < 0.0)) {
@@ -4901,13 +5177,13 @@ static bool HttpServer_One (HttpServer_Worker *w, m9_pool *w_pool, HttpServer_Co
       if ((((((double)(m9_now ()) - t0)) * 1000.0) > (double)(({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cfg.headerMs))) {
         err->res = m9res;
         m9ret = HttpServer_Refuse (w, w_pool, c, c_pool, INT64_C(408), ((m9_sl_UTF8){ (uint8_t *) m9s168, 35 }), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 2091; goto L_ret; };
         goto L_ret;
       }
     }
     if (((*c).have == INT64_C(0))) {
       bool m9t3 = (!HttpServer_Idle (w, w_pool, c, c_pool, served, err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2095; goto L_ret; };
       if (m9t3) {
         err->res = m9res;
         m9ret = false;
@@ -4915,14 +5191,14 @@ static bool HttpServer_One (HttpServer_Worker *w, m9_pool *w_pool, HttpServer_Co
       }
     }
     { __typeof__(n) m9v = HttpServer_Fill (c, c_pool, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2097; goto L_ret; };
       n = m9v;
     }
     if ((n <= INT64_C(0))) {
       if (((*c).have > INT64_C(0))) {
         err->res = m9res;
         m9ret = HttpServer_Refuse (w, w_pool, c, c_pool, INT64_C(408), ((m9_sl_UTF8){ (uint8_t *) m9s169, 35 }), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 2104; goto L_ret; };
         goto L_ret;
       }
       err->res = m9res;
@@ -4930,58 +5206,58 @@ static bool HttpServer_One (HttpServer_Worker *w, m9_pool *w_pool, HttpServer_Co
       goto L_ret;
     }
   }
-  { __typeof__(({ __auto_type m9t4 = (*c).cb; int64_t m9t4a = INT64_C(0), m9t4n = hend; int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; })) m9a60 = ({ __auto_type m9t4 = (*c).cb; int64_t m9t4a = INT64_C(0), m9t4n = hend; int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; });
-    if (err->exc) goto L_ret;
-  { __typeof__(head) m9v = HttpServer_HeadText (&(scratch), m9a60, err);
-    if (err->exc) goto L_ret;
+  { __typeof__(({ __auto_type m9t4 = (*c).cb; int64_t m9t4a = INT64_C(0), m9t4n = hend; int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; })) m9a59 = ({ __auto_type m9t4 = (*c).cb; int64_t m9t4a = INT64_C(0), m9t4n = hend; int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; });
+    if (err->exc) { m9ln = 2115; goto L_ret; };
+  { __typeof__(head) m9v = HttpServer_HeadText (&(scratch), m9a59, err);
+    if (err->exc) { m9ln = 2115; goto L_ret; };
     head = m9v;
   }
   }
   lf = INT64_C(0);
   for (;;) {
     bool m9t5 = (!Text_BIs (head, lf, 10u, err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2119; goto L_ret; };
     if (!(m9t5)) break;
     { __typeof__(lf) m9v = m9_add_i64 (lf, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2119; goto L_ret; };
       lf = m9v;
     }
   }
   { __typeof__(line) m9v = m9_utf_slice (head, INT64_C(0), lf, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2120; goto L_ret; };
     line = m9v;
   }
-  bool m9t8 = ({ bool m9t7 = (Text_BLen (line, err) > INT64_C(0)); if (m9t7) { { __typeof__(m9_sub_i64 (Text_BLen (line, err), INT64_C(1), err)) m9a61 = m9_sub_i64 (Text_BLen (line, err), INT64_C(1), err);   if (err->exc) goto L_ret; m9t7 = (Text_BIs (line, m9a61, 13u, err)); } } m9t7; });
-  if (err->exc) goto L_ret;
+  bool m9t8 = ({ bool m9t7 = (Text_BLen (line, err) > INT64_C(0)); if (m9t7) { { __typeof__(m9_sub_i64 (Text_BLen (line, err), INT64_C(1), err)) m9a60 = m9_sub_i64 (Text_BLen (line, err), INT64_C(1), err);   if (err->exc) { m9ln = 2121; goto L_ret; }; m9t7 = (Text_BIs (line, m9a60, 13u, err)); } } m9t7; });
+  if (err->exc) { m9ln = 2121; goto L_ret; };
   if (m9t8) {
     { __typeof__(line) m9v = m9_utf_slice (line, INT64_C(0), m9_sub_i64 (Text_BLen (line, err), INT64_C(1), err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2122; goto L_ret; };
       line = m9v;
     }
   }
   bool m9t10 = (Text_BLen (line, err) > ({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cfg.lineMax);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2124; goto L_ret; };
   if (m9t10) {
     err->res = m9res;
     m9ret = HttpServer_Refuse (w, w_pool, c, c_pool, INT64_C(414), ((m9_sl_UTF8){ (uint8_t *) m9s170, 21 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2125; goto L_ret; };
     goto L_ret;
   }
   { __typeof__(sp1) m9v = m9_neg_i64 (INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2127; goto L_ret; };
     sp1 = m9v;
   }
   { __typeof__(sp2) m9v = m9_neg_i64 (INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2128; goto L_ret; };
     sp2 = m9v;
   }
   { __typeof__(i) m9t11to;
   i = INT64_C(0);
   m9t11to = m9_sub_i64 (Text_BLen (line, err), INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2129; goto L_ret; };
   if (i <= m9t11to) for (;;) {
     bool m9t12 = Text_BIs (line, i, 32u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2130; goto L_ret; };
     if (m9t12) {
       if ((sp1 < INT64_C(0))) {
         sp1 = i;
@@ -4991,7 +5267,7 @@ static bool HttpServer_One (HttpServer_Worker *w, m9_pool *w_pool, HttpServer_Co
       } else {
         err->res = m9res;
         m9ret = HttpServer_Refuse (w, w_pool, c, c_pool, INT64_C(400), ((m9_sl_UTF8){ (uint8_t *) m9s171, 22 }), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 2133; goto L_ret; };
         goto L_ret;
       } }
     }
@@ -4999,52 +5275,52 @@ static bool HttpServer_One (HttpServer_Worker *w, m9_pool *w_pool, HttpServer_Co
     i += 1;
   } }
   bool m9t13 = (((sp1 <= INT64_C(0)) || (sp2 <= m9_add_i64 (sp1, INT64_C(1), err))) || (sp2 == m9_sub_i64 (Text_BLen (line, err), INT64_C(1), err)));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2137; goto L_ret; };
   if (m9t13) {
     err->res = m9res;
     m9ret = HttpServer_Refuse (w, w_pool, c, c_pool, INT64_C(400), ((m9_sl_UTF8){ (uint8_t *) m9s172, 22 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2138; goto L_ret; };
     goto L_ret;
   }
   { __typeof__(q.method) m9v = m9_utf_slice (line, INT64_C(0), sp1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2140; goto L_ret; };
     q.method = m9v;
   }
   { __typeof__(q.target) m9v = m9_utf_slice (line, m9_add_i64 (sp1, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (sp2, sp1, err), INT64_C(1), err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2141; goto L_ret; };
     q.target = m9v;
   }
   { __typeof__(version) m9v = m9_utf_slice (line, m9_add_i64 (sp2, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (line, err), sp2, err), INT64_C(1), err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2142; goto L_ret; };
     version = m9v;
   }
   q.version = version;
   bool m9t17 = (!HttpServer_IsToken (q.method, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2144; goto L_ret; };
   if (m9t17) {
     err->res = m9res;
     m9ret = HttpServer_Refuse (w, w_pool, c, c_pool, INT64_C(400), ((m9_sl_UTF8){ (uint8_t *) m9s173, 22 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2145; goto L_ret; };
     goto L_ret;
   }
-  bool m9t20 = (((((({ bool m9t19 = (Text_BLen (version, err) != INT64_C(8)); if (!m9t19) { { __typeof__(m9_utf_slice (version, INT64_C(0), INT64_C(5), err)) m9a62 = m9_utf_slice (version, INT64_C(0), INT64_C(5), err);   if (err->exc) goto L_ret; m9t19 = ((!Text_EqUtf (m9a62, ((m9_sl_UTF8){ (uint8_t *) m9s174, 5 }), err))); } } m9t19; }) || (!Text_BIs (version, INT64_C(6), 46u, err))) || ((int64_t)(Text_BAt (version, INT64_C(5), err)) < (int64_t)(48u))) || ((int64_t)(Text_BAt (version, INT64_C(5), err)) > (int64_t)(57u))) || ((int64_t)(Text_BAt (version, INT64_C(7), err)) < (int64_t)(48u))) || ((int64_t)(Text_BAt (version, INT64_C(7), err)) > (int64_t)(57u)));
-  if (err->exc) goto L_ret;
-  if (m9t20) {
+  bool m9t18 = (((((((Text_BLen (version, err) != INT64_C(8)) || (!Text_StartsWithUtf (version, ((m9_sl_UTF8){ (uint8_t *) m9s174, 5 }), err))) || (!Text_BIs (version, INT64_C(6), 46u, err))) || ((int64_t)(Text_BAt (version, INT64_C(5), err)) < (int64_t)(48u))) || ((int64_t)(Text_BAt (version, INT64_C(5), err)) > (int64_t)(57u))) || ((int64_t)(Text_BAt (version, INT64_C(7), err)) < (int64_t)(48u))) || ((int64_t)(Text_BAt (version, INT64_C(7), err)) > (int64_t)(57u)));
+  if (err->exc) { m9ln = 2147; goto L_ret; };
+  if (m9t18) {
     err->res = m9res;
     m9ret = HttpServer_Refuse (w, w_pool, c, c_pool, INT64_C(400), ((m9_sl_UTF8){ (uint8_t *) m9s175, 22 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2150; goto L_ret; };
     goto L_ret;
   }
-  bool m9t21 = ((!Text_EqUtf (version, ((m9_sl_UTF8){ (uint8_t *) m9s176, 8 }), err)) && (!Text_EqUtf (version, ((m9_sl_UTF8){ (uint8_t *) m9s177, 8 }), err)));
-  if (err->exc) goto L_ret;
-  if (m9t21) {
+  bool m9t19 = ((!Text_EqUtf (version, ((m9_sl_UTF8){ (uint8_t *) m9s176, 8 }), err)) && (!Text_EqUtf (version, ((m9_sl_UTF8){ (uint8_t *) m9s177, 8 }), err)));
+  if (err->exc) { m9ln = 2152; goto L_ret; };
+  if (m9t19) {
     err->res = m9res;
     m9ret = HttpServer_Refuse (w, w_pool, c, c_pool, INT64_C(505), ((m9_sl_UTF8){ (uint8_t *) m9s178, 26 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2153; goto L_ret; };
     goto L_ret;
   }
   { __typeof__(hd) m9v = DynStr_New (&(scratch), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2157; goto L_ret; };
     hd = m9v;
   }
   nCl = INT64_C(0);
@@ -5055,169 +5331,169 @@ static bool HttpServer_One (HttpServer_Worker *w, m9_pool *w_pool, HttpServer_Co
   conn = ((m9_sl_UTF8){ NULL, 0 });
   expect = ((m9_sl_UTF8){ NULL, 0 });
   { __typeof__(a) m9v = m9_add_i64 (lf, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2160; goto L_ret; };
     a = m9v;
   }
   for (;;) {
-    bool m9t22 = (a < Text_BLen (head, err));
-    if (err->exc) goto L_ret;
-    if (!(m9t22)) break;
+    bool m9t20 = (a < Text_BLen (head, err));
+    if (err->exc) { m9ln = 2161; goto L_ret; };
+    if (!(m9t20)) break;
     lf = a;
     for (;;) {
-      bool m9t23 = (!Text_BIs (head, lf, 10u, err));
-      if (err->exc) goto L_ret;
-      if (!(m9t23)) break;
+      bool m9t21 = (!Text_BIs (head, lf, 10u, err));
+      if (err->exc) { m9ln = 2163; goto L_ret; };
+      if (!(m9t21)) break;
       { __typeof__(lf) m9v = m9_add_i64 (lf, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 2163; goto L_ret; };
         lf = m9v;
       }
     }
     { __typeof__(line) m9v = m9_utf_slice (head, a, m9_sub_i64 (lf, a, err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2164; goto L_ret; };
       line = m9v;
     }
-    bool m9t26 = ({ bool m9t25 = (Text_BLen (line, err) > INT64_C(0)); if (m9t25) { { __typeof__(m9_sub_i64 (Text_BLen (line, err), INT64_C(1), err)) m9a63 = m9_sub_i64 (Text_BLen (line, err), INT64_C(1), err);   if (err->exc) goto L_ret; m9t25 = (Text_BIs (line, m9a63, 13u, err)); } } m9t25; });
-    if (err->exc) goto L_ret;
-    if (m9t26) {
+    bool m9t24 = ({ bool m9t23 = (Text_BLen (line, err) > INT64_C(0)); if (m9t23) { { __typeof__(m9_sub_i64 (Text_BLen (line, err), INT64_C(1), err)) m9a61 = m9_sub_i64 (Text_BLen (line, err), INT64_C(1), err);   if (err->exc) { m9ln = 2165; goto L_ret; }; m9t23 = (Text_BIs (line, m9a61, 13u, err)); } } m9t23; });
+    if (err->exc) { m9ln = 2165; goto L_ret; };
+    if (m9t24) {
       { __typeof__(line) m9v = m9_utf_slice (line, INT64_C(0), m9_sub_i64 (Text_BLen (line, err), INT64_C(1), err), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 2166; goto L_ret; };
         line = m9v;
       }
     }
     { __typeof__(a) m9v = m9_add_i64 (lf, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2168; goto L_ret; };
       a = m9v;
     }
-    bool m9t28 = (Text_BLen (line, err) > INT64_C(0));
-    if (err->exc) goto L_ret;
-    if (m9t28) {
-      bool m9t29 = (Text_BIs (line, INT64_C(0), 32u, err) || Text_BIs (line, INT64_C(0), 9u, err));
-      if (err->exc) goto L_ret;
-      if (m9t29) {
+    bool m9t26 = (Text_BLen (line, err) > INT64_C(0));
+    if (err->exc) { m9ln = 2169; goto L_ret; };
+    if (m9t26) {
+      bool m9t27 = (Text_BIs (line, INT64_C(0), 32u, err) || Text_BIs (line, INT64_C(0), 9u, err));
+      if (err->exc) { m9ln = 2170; goto L_ret; };
+      if (m9t27) {
         err->res = m9res;
         m9ret = HttpServer_Refuse (w, w_pool, c, c_pool, INT64_C(400), ((m9_sl_UTF8){ (uint8_t *) m9s179, 18 }), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 2171; goto L_ret; };
         goto L_ret;
       }
       i = INT64_C(0);
       for (;;) {
-        bool m9t30 = ((i < Text_BLen (line, err)) && (!Text_BIs (line, i, 58u, err)));
-        if (err->exc) goto L_ret;
-        if (!(m9t30)) break;
+        bool m9t28 = ((i < Text_BLen (line, err)) && (!Text_BIs (line, i, 58u, err)));
+        if (err->exc) { m9ln = 2174; goto L_ret; };
+        if (!(m9t28)) break;
         { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 2174; goto L_ret; };
           i = m9v;
         }
       }
-      bool m9t33 = ({ bool m9t32 = (i == Text_BLen (line, err)); if (!m9t32) { { __typeof__(m9_utf_slice (line, INT64_C(0), i, err)) m9a64 = m9_utf_slice (line, INT64_C(0), i, err);   if (err->exc) goto L_ret; m9t32 = ((!HttpServer_IsToken (m9a64, err))); } } m9t32; });
-      if (err->exc) goto L_ret;
-      if (m9t33) {
+      bool m9t31 = ({ bool m9t30 = (i == Text_BLen (line, err)); if (!m9t30) { { __typeof__(m9_utf_slice (line, INT64_C(0), i, err)) m9a62 = m9_utf_slice (line, INT64_C(0), i, err);   if (err->exc) { m9ln = 2175; goto L_ret; }; m9t30 = ((!HttpServer_IsToken (m9a62, err))); } } m9t30; });
+      if (err->exc) { m9ln = 2175; goto L_ret; };
+      if (m9t31) {
         err->res = m9res;
         m9ret = HttpServer_Refuse (w, w_pool, c, c_pool, INT64_C(400), ((m9_sl_UTF8){ (uint8_t *) m9s180, 21 }), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 2176; goto L_ret; };
         goto L_ret;
       }
       { __typeof__(name) m9v = m9_utf_slice (line, INT64_C(0), i, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 2178; goto L_ret; };
         name = m9v;
       }
-      { __typeof__(m9_utf_slice (line, m9_add_i64 (i, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (line, err), i, err), INT64_C(1), err), err)) m9a65 = m9_utf_slice (line, m9_add_i64 (i, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (line, err), i, err), INT64_C(1), err), err);
-        if (err->exc) goto L_ret;
-      { __typeof__(value) m9v = HttpServer_Trimmed (m9a65, err);
-        if (err->exc) goto L_ret;
+      { __typeof__(m9_utf_slice (line, m9_add_i64 (i, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (line, err), i, err), INT64_C(1), err), err)) m9a63 = m9_utf_slice (line, m9_add_i64 (i, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (line, err), i, err), INT64_C(1), err), err);
+        if (err->exc) { m9ln = 2179; goto L_ret; };
+      { __typeof__(value) m9v = HttpServer_Trimmed (m9a63, err);
+        if (err->exc) { m9ln = 2179; goto L_ret; };
         value = m9v;
       }
       }
-      bool m9t36 = HttpServer_SameCi (name, ((m9_sl_UTF8){ (uint8_t *) m9s181, 14 }), err);
-      if (err->exc) goto L_ret;
-      if (m9t36) {
-        bool m9t37 = ((nCl > INT64_C(0)) && (!Text_EqUtf (value, cl1, err)));
-        if (err->exc) goto L_ret;
-        if (m9t37) {
+      bool m9t34 = HttpServer_SameCi (name, ((m9_sl_UTF8){ (uint8_t *) m9s181, 14 }), err);
+      if (err->exc) { m9ln = 2180; goto L_ret; };
+      if (m9t34) {
+        bool m9t35 = ((nCl > INT64_C(0)) && (!Text_EqUtf (value, cl1, err)));
+        if (err->exc) { m9ln = 2181; goto L_ret; };
+        if (m9t35) {
           err->res = m9res;
           m9ret = HttpServer_Refuse (w, w_pool, c, c_pool, INT64_C(400), ((m9_sl_UTF8){ (uint8_t *) m9s182, 29 }), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 2182; goto L_ret; };
           goto L_ret;
         }
         cl1 = value;
         { __typeof__(nCl) m9v = m9_add_i64 (nCl, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 2185; goto L_ret; };
           nCl = m9v;
         }
       } else {
-        bool m9t38 = HttpServer_SameCi (name, ((m9_sl_UTF8){ (uint8_t *) m9s183, 17 }), err);
-        if (err->exc) goto L_ret;
-        if (m9t38) {
+        bool m9t36 = HttpServer_SameCi (name, ((m9_sl_UTF8){ (uint8_t *) m9s183, 17 }), err);
+        if (err->exc) { m9ln = 2185; goto L_ret; };
+        if (m9t36) {
           te = value;
           { __typeof__(nTe) m9v = m9_add_i64 (nTe, INT64_C(1), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 2188; goto L_ret; };
             nTe = m9v;
           }
       } else {
-        bool m9t39 = HttpServer_SameCi (name, ((m9_sl_UTF8){ (uint8_t *) m9s184, 4 }), err);
-        if (err->exc) goto L_ret;
-        if (m9t39) {
+        bool m9t37 = HttpServer_SameCi (name, ((m9_sl_UTF8){ (uint8_t *) m9s184, 4 }), err);
+        if (err->exc) { m9ln = 2188; goto L_ret; };
+        if (m9t37) {
           { __typeof__(nHost) m9v = m9_add_i64 (nHost, INT64_C(1), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 2190; goto L_ret; };
             nHost = m9v;
           }
       } else {
-        bool m9t40 = HttpServer_SameCi (name, ((m9_sl_UTF8){ (uint8_t *) m9s185, 10 }), err);
-        if (err->exc) goto L_ret;
-        if (m9t40) {
+        bool m9t38 = HttpServer_SameCi (name, ((m9_sl_UTF8){ (uint8_t *) m9s185, 10 }), err);
+        if (err->exc) { m9ln = 2190; goto L_ret; };
+        if (m9t38) {
           conn = value;
       } else {
-        bool m9t41 = HttpServer_SameCi (name, ((m9_sl_UTF8){ (uint8_t *) m9s186, 6 }), err);
-        if (err->exc) goto L_ret;
-        if (m9t41) {
+        bool m9t39 = HttpServer_SameCi (name, ((m9_sl_UTF8){ (uint8_t *) m9s186, 6 }), err);
+        if (err->exc) { m9ln = 2192; goto L_ret; };
+        if (m9t39) {
           expect = value;
       } } } } }
       DynStr_Append (&(hd), &(scratch), name, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2196; goto L_ret; };
       DynStr_Append (&(hd), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s187, 2 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2197; goto L_ret; };
       DynStr_Append (&(hd), &(scratch), value, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2198; goto L_ret; };
       DynStr_AppendChar (&(hd), &(scratch), 10u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2199; goto L_ret; };
     }
   }
   { __typeof__(q.headers) m9v = DynStr_View (hd, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2202; goto L_ret; };
     q.headers = m9v;
   }
-  bool m9t42 = (Text_BLen (q.headers, err) > INT64_C(0));
-  if (err->exc) goto L_ret;
-  if (m9t42) {
+  bool m9t40 = (Text_BLen (q.headers, err) > INT64_C(0));
+  if (err->exc) { m9ln = 2203; goto L_ret; };
+  if (m9t40) {
     { __typeof__(q.headers) m9v = m9_utf_slice (q.headers, INT64_C(0), m9_sub_i64 (Text_BLen (q.headers, err), INT64_C(1), err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2204; goto L_ret; };
       q.headers = m9v;
     }
   }
   HttpServer_Consume (c, c_pool, hend, err);
-  if (err->exc) goto L_ret;
-  bool m9t44 = (Text_EqUtf (version, ((m9_sl_UTF8){ (uint8_t *) m9s188, 8 }), err) && (nHost != INT64_C(1)));
-  if (err->exc) goto L_ret;
-  if (m9t44) {
+  if (err->exc) { m9ln = 2206; goto L_ret; };
+  bool m9t42 = (Text_EqUtf (version, ((m9_sl_UTF8){ (uint8_t *) m9s188, 8 }), err) && (nHost != INT64_C(1)));
+  if (err->exc) { m9ln = 2208; goto L_ret; };
+  if (m9t42) {
     err->res = m9res;
     m9ret = HttpServer_Refuse (w, w_pool, c, c_pool, INT64_C(400), ((m9_sl_UTF8){ (uint8_t *) m9s189, 34 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2209; goto L_ret; };
     goto L_ret;
   }
   if (((nTe > INT64_C(0)) && (nCl > INT64_C(0)))) {
     err->res = m9res;
     m9ret = HttpServer_Refuse (w, w_pool, c, c_pool, INT64_C(400), ((m9_sl_UTF8){ (uint8_t *) m9s190, 45 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2212; goto L_ret; };
     goto L_ret;
   }
   chunked = false;
   if ((nTe > INT64_C(0))) {
-    bool m9t45 = ((nTe > INT64_C(1)) || (!HttpServer_SameCi (te, ((m9_sl_UTF8){ (uint8_t *) m9s191, 7 }), err)));
-    if (err->exc) goto L_ret;
-    if (m9t45) {
+    bool m9t43 = ((nTe > INT64_C(1)) || (!HttpServer_SameCi (te, ((m9_sl_UTF8){ (uint8_t *) m9s191, 7 }), err)));
+    if (err->exc) { m9ln = 2216; goto L_ret; };
+    if (m9t43) {
       err->res = m9res;
       m9ret = HttpServer_Refuse (w, w_pool, c, c_pool, INT64_C(501), ((m9_sl_UTF8){ (uint8_t *) m9s192, 34 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2217; goto L_ret; };
       goto L_ret;
     }
     chunked = true;
@@ -5225,51 +5501,51 @@ static bool HttpServer_One (HttpServer_Worker *w, m9_pool *w_pool, HttpServer_Co
   cl = INT64_C(0);
   if ((nCl > INT64_C(0))) {
     { __typeof__(cl) m9v = HttpServer_Digits (cl1, ({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cfg.bodyMax, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2223; goto L_ret; };
       cl = m9v;
     }
-    bool m9t46 = (cl == m9_neg_i64 (INT64_C(1), err));
-    if (err->exc) goto L_ret;
-    if (m9t46) {
+    bool m9t44 = (cl == m9_neg_i64 (INT64_C(1), err));
+    if (err->exc) { m9ln = 2224; goto L_ret; };
+    if (m9t44) {
       err->res = m9res;
       m9ret = HttpServer_Refuse (w, w_pool, c, c_pool, INT64_C(400), ((m9_sl_UTF8){ (uint8_t *) m9s193, 30 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2224; goto L_ret; };
       goto L_ret;
     }
-    bool m9t47 = (cl == m9_neg_i64 (INT64_C(2), err));
-    if (err->exc) goto L_ret;
-    if (m9t47) {
+    bool m9t45 = (cl == m9_neg_i64 (INT64_C(2), err));
+    if (err->exc) { m9ln = 2225; goto L_ret; };
+    if (m9t45) {
       err->res = m9res;
       m9ret = HttpServer_Refuse (w, w_pool, c, c_pool, INT64_C(413), ((m9_sl_UTF8){ (uint8_t *) m9s194, 22 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2225; goto L_ret; };
       goto L_ret;
     }
   }
-  bool m9t48 = (!HttpServer_KnownMethod (q.method, err));
-  if (err->exc) goto L_ret;
-  if (m9t48) {
+  bool m9t46 = (!HttpServer_KnownMethod (q.method, err));
+  if (err->exc) { m9ln = 2227; goto L_ret; };
+  if (m9t46) {
     err->res = m9res;
     m9ret = HttpServer_Refuse (w, w_pool, c, c_pool, INT64_C(501), ((m9_sl_UTF8){ (uint8_t *) m9s195, 14 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2228; goto L_ret; };
     goto L_ret;
   }
-  bool m9t49 = (Text_BLen (expect, err) > INT64_C(0));
-  if (err->exc) goto L_ret;
-  if (m9t49) {
-    bool m9t50 = (!HttpServer_SameCi (expect, ((m9_sl_UTF8){ (uint8_t *) m9s196, 12 }), err));
-    if (err->exc) goto L_ret;
-    if (m9t50) {
+  bool m9t47 = (Text_BLen (expect, err) > INT64_C(0));
+  if (err->exc) { m9ln = 2232; goto L_ret; };
+  if (m9t47) {
+    bool m9t48 = (!HttpServer_SameCi (expect, ((m9_sl_UTF8){ (uint8_t *) m9s196, 12 }), err));
+    if (err->exc) { m9ln = 2233; goto L_ret; };
+    if (m9t48) {
       err->res = m9res;
       m9ret = HttpServer_Refuse (w, w_pool, c, c_pool, INT64_C(417), ((m9_sl_UTF8){ (uint8_t *) m9s197, 29 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2234; goto L_ret; };
       goto L_ret;
     }
-    bool m9t51 = ((Text_EqUtf (version, ((m9_sl_UTF8){ (uint8_t *) m9s198, 8 }), err) && ((chunked || (cl > INT64_C(0))))) && ((*c).have == INT64_C(0)));
-    if (err->exc) goto L_ret;
-    if (m9t51) {
-      bool m9t52 = (!HttpServer_Continue100 (c, c_pool, err));
-      if (err->exc) goto L_ret;
-      if (m9t52) {
+    bool m9t49 = ((Text_EqUtf (version, ((m9_sl_UTF8){ (uint8_t *) m9s198, 8 }), err) && ((chunked || (cl > INT64_C(0))))) && ((*c).have == INT64_C(0)));
+    if (err->exc) { m9ln = 2236; goto L_ret; };
+    if (m9t49) {
+      bool m9t50 = (!HttpServer_Continue100 (c, c_pool, err));
+      if (err->exc) { m9ln = 2237; goto L_ret; };
+      if (m9t50) {
         err->res = m9res;
         m9ret = false;
         goto L_ret;
@@ -5278,37 +5554,37 @@ static bool HttpServer_One (HttpServer_Worker *w, m9_pool *w_pool, HttpServer_Co
   }
   if (chunked) {
     { __typeof__(q.body) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), ({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cfg.bodyMax, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2241; goto L_ret; };
       q.body = m9v;
     }
     { __typeof__(n) m9v = HttpServer_ReadChunked (c, c_pool, q.body, &(got), ({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cfg.bodyMax, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2242; goto L_ret; };
       n = m9v;
     }
     if ((n == INT64_C(413))) {
       err->res = m9res;
       m9ret = HttpServer_Refuse (w, w_pool, c, c_pool, INT64_C(413), ((m9_sl_UTF8){ (uint8_t *) m9s199, 22 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2243; goto L_ret; };
       goto L_ret;
     }
     if ((n != INT64_C(0))) {
       err->res = m9res;
       m9ret = HttpServer_Refuse (w, w_pool, c, c_pool, INT64_C(400), ((m9_sl_UTF8){ (uint8_t *) m9s200, 22 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2244; goto L_ret; };
       goto L_ret;
     }
-    { __typeof__(q.body) m9v = ({ __auto_type m9t53 = q.body; int64_t m9t53a = INT64_C(0), m9t53n = got; int64_t m9t53o = m9_chk_slice (m9t53a, m9t53n, m9t53.len, err); (__typeof__(m9t53)){ m9t53.p + m9t53o, err->exc ? 0 : m9t53n }; });
-      if (err->exc) goto L_ret;
+    { __typeof__(q.body) m9v = ({ __auto_type m9t51 = q.body; int64_t m9t51a = INT64_C(0), m9t51n = got; int64_t m9t51o = m9_chk_slice (m9t51a, m9t51n, m9t51.len, err); (__typeof__(m9t51)){ m9t51.p + m9t51o, err->exc ? 0 : m9t51n }; });
+      if (err->exc) { m9ln = 2245; goto L_ret; };
       q.body = m9v;
     }
   } else {
     { __typeof__(q.body) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), cl, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2247; goto L_ret; };
       q.body = m9v;
     }
-    bool m9t54 = (!HttpServer_ReadFixed (c, c_pool, q.body, err));
-    if (err->exc) goto L_ret;
-    if (m9t54) {
+    bool m9t52 = (!HttpServer_ReadFixed (c, c_pool, q.body, err));
+    if (err->exc) { m9ln = 2248; goto L_ret; };
+    if (m9t52) {
       err->res = m9res;
       m9ret = false;
       goto L_ret;
@@ -5316,125 +5592,125 @@ static bool HttpServer_One (HttpServer_Worker *w, m9_pool *w_pool, HttpServer_Co
   }
   tg = q.target;
   i = INT64_C(0);
-  bool m9t57 = ({ bool m9t56 = (Text_BLen (tg, err) > INT64_C(7)); if (m9t56) { { __typeof__(m9_utf_slice (tg, INT64_C(0), INT64_C(7), err)) m9a66 = m9_utf_slice (tg, INT64_C(0), INT64_C(7), err);   if (err->exc) goto L_ret; m9t56 = (HttpServer_SameCi (m9a66, ((m9_sl_UTF8){ (uint8_t *) m9s201, 7 }), err)); } } m9t56; });
-  if (err->exc) goto L_ret;
-  if (m9t57) {
+  bool m9t55 = ({ bool m9t54 = (Text_BLen (tg, err) > INT64_C(7)); if (m9t54) { { __typeof__(m9_utf_slice (tg, INT64_C(0), INT64_C(7), err)) m9a64 = m9_utf_slice (tg, INT64_C(0), INT64_C(7), err);   if (err->exc) { m9ln = 2256; goto L_ret; }; m9t54 = (HttpServer_SameCi (m9a64, ((m9_sl_UTF8){ (uint8_t *) m9s201, 7 }), err)); } } m9t54; });
+  if (err->exc) { m9ln = 2256; goto L_ret; };
+  if (m9t55) {
     i = INT64_C(7);
   } else {
-    bool m9t60 = ({ bool m9t59 = (Text_BLen (tg, err) > INT64_C(8)); if (m9t59) { { __typeof__(m9_utf_slice (tg, INT64_C(0), INT64_C(8), err)) m9a67 = m9_utf_slice (tg, INT64_C(0), INT64_C(8), err);   if (err->exc) goto L_ret; m9t59 = (HttpServer_SameCi (m9a67, ((m9_sl_UTF8){ (uint8_t *) m9s202, 8 }), err)); } } m9t59; });
-    if (err->exc) goto L_ret;
-    if (m9t60) {
+    bool m9t58 = ({ bool m9t57 = (Text_BLen (tg, err) > INT64_C(8)); if (m9t57) { { __typeof__(m9_utf_slice (tg, INT64_C(0), INT64_C(8), err)) m9a65 = m9_utf_slice (tg, INT64_C(0), INT64_C(8), err);   if (err->exc) { m9ln = 2256; goto L_ret; }; m9t57 = (HttpServer_SameCi (m9a65, ((m9_sl_UTF8){ (uint8_t *) m9s202, 8 }), err)); } } m9t57; });
+    if (err->exc) { m9ln = 2256; goto L_ret; };
+    if (m9t58) {
       i = INT64_C(8);
   } }
   if ((i > INT64_C(0))) {
     for (;;) {
-      bool m9t61 = (((i < Text_BLen (tg, err)) && (!Text_BIs (tg, i, 47u, err))) && (!Text_BIs (tg, i, 63u, err)));
-      if (err->exc) goto L_ret;
-      if (!(m9t61)) break;
+      bool m9t59 = (((i < Text_BLen (tg, err)) && (!Text_BIs (tg, i, 47u, err))) && (!Text_BIs (tg, i, 63u, err)));
+      if (err->exc) { m9ln = 2260; goto L_ret; };
+      if (!(m9t59)) break;
       { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 2260; goto L_ret; };
         i = m9v;
       }
     }
-    bool m9t62 = (i == Text_BLen (tg, err));
-    if (err->exc) goto L_ret;
-    if (m9t62) {
+    bool m9t60 = (i == Text_BLen (tg, err));
+    if (err->exc) { m9ln = 2261; goto L_ret; };
+    if (m9t60) {
       tg = ((m9_sl_UTF8){ (uint8_t *) m9s203, 1 });
     } else {
-      bool m9t63 = Text_BIs (tg, i, 63u, err);
-      if (err->exc) goto L_ret;
-      if (m9t63) {
+      bool m9t61 = Text_BIs (tg, i, 63u, err);
+      if (err->exc) { m9ln = 2261; goto L_ret; };
+      if (m9t61) {
         { __typeof__(tg) m9v = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s204, 1 }), m9_utf_slice (tg, i, m9_sub_i64 (Text_BLen (tg, err), i, err), err), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 2262; goto L_ret; };
           tg = m9v;
         }
     } else {
       { __typeof__(tg) m9v = m9_utf_slice (tg, i, m9_sub_i64 (Text_BLen (tg, err), i, err), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 2263; goto L_ret; };
         tg = m9v;
       }
     } }
   }
-  bool m9t66 = ((!Text_BIs (tg, INT64_C(0), 47u, err)) && (!((Text_EqUtf (tg, ((m9_sl_UTF8){ (uint8_t *) m9s205, 1 }), err) && Text_EqUtf (q.method, ((m9_sl_UTF8){ (uint8_t *) m9s206, 7 }), err)))));
-  if (err->exc) goto L_ret;
-  if (m9t66) {
+  bool m9t64 = ((!Text_BIs (tg, INT64_C(0), 47u, err)) && (!((Text_EqUtf (tg, ((m9_sl_UTF8){ (uint8_t *) m9s205, 1 }), err) && Text_EqUtf (q.method, ((m9_sl_UTF8){ (uint8_t *) m9s206, 7 }), err)))));
+  if (err->exc) { m9ln = 2266; goto L_ret; };
+  if (m9t64) {
     err->res = m9res;
     m9ret = HttpServer_Refuse (w, w_pool, c, c_pool, INT64_C(400), ((m9_sl_UTF8){ (uint8_t *) m9s207, 24 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2268; goto L_ret; };
     goto L_ret;
   }
   i = INT64_C(0);
   for (;;) {
-    bool m9t67 = ((i < Text_BLen (tg, err)) && (!Text_BIs (tg, i, 63u, err)));
-    if (err->exc) goto L_ret;
-    if (!(m9t67)) break;
+    bool m9t65 = ((i < Text_BLen (tg, err)) && (!Text_BIs (tg, i, 63u, err)));
+    if (err->exc) { m9ln = 2271; goto L_ret; };
+    if (!(m9t65)) break;
     { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2271; goto L_ret; };
       i = m9v;
     }
   }
   { __typeof__(q.path) m9v = m9_utf_slice (tg, INT64_C(0), i, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2272; goto L_ret; };
     q.path = m9v;
   }
-  bool m9t69 = (i < Text_BLen (tg, err));
-  if (err->exc) goto L_ret;
-  if (m9t69) {
+  bool m9t67 = (i < Text_BLen (tg, err));
+  if (err->exc) { m9ln = 2273; goto L_ret; };
+  if (m9t67) {
     { __typeof__(q.query) m9v = m9_utf_slice (tg, m9_add_i64 (i, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (tg, err), i, err), INT64_C(1), err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2274; goto L_ret; };
       q.query = m9v;
     }
   } else {
     q.query = ((m9_sl_UTF8){ NULL, 0 });
   }
   q.peer = (*c).peer;
-  { __typeof__(HttpServer_Header (&(q), ((m9_sl_UTF8){ (uint8_t *) m9s208, 15 }), err)) m9a68 = HttpServer_Header (&(q), ((m9_sl_UTF8){ (uint8_t *) m9s208, 15 }), err);
-    if (err->exc) goto L_ret;
-  { __typeof__(q.client) m9v = HttpServer_ClientOf ((*c).peer, ({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cfg.trusted, m9a68, err);
-    if (err->exc) goto L_ret;
+  { __typeof__(HttpServer_Header (&(q), ((m9_sl_UTF8){ (uint8_t *) m9s208, 15 }), err)) m9a66 = HttpServer_Header (&(q), ((m9_sl_UTF8){ (uint8_t *) m9s208, 15 }), err);
+    if (err->exc) { m9ln = 2279; goto L_ret; };
+  { __typeof__(q.client) m9v = HttpServer_ClientOf ((*c).peer, ({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cfg.trusted, m9a66, err);
+    if (err->exc) { m9ln = 2279; goto L_ret; };
     q.client = m9v;
   }
   }
   q.worker = (*w).k;
   keep10 = false;
-  bool m9t71 = Text_EqUtf (version, ((m9_sl_UTF8){ (uint8_t *) m9s209, 8 }), err);
-  if (err->exc) goto L_ret;
-  if (m9t71) {
+  bool m9t69 = Text_EqUtf (version, ((m9_sl_UTF8){ (uint8_t *) m9s209, 8 }), err);
+  if (err->exc) { m9ln = 2284; goto L_ret; };
+  if (m9t69) {
     { __typeof__(keep) m9v = (!HttpServer_HasToken (conn, ((m9_sl_UTF8){ (uint8_t *) m9s210, 5 }), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2285; goto L_ret; };
       keep = m9v;
     }
   } else {
     { __typeof__(keep10) m9v = HttpServer_HasToken (conn, ((m9_sl_UTF8){ (uint8_t *) m9s211, 10 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2287; goto L_ret; };
       keep10 = m9v;
     }
     keep = keep10;
   }
-  bool m9t72 = (((m9_add_i64 (served, INT64_C(1), err) >= ({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cfg.perConn) || HttpServer_Closing (&(({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->q), err)) || ((int64_t)(m9_srv_stopping ()) != INT64_C(0)));
-  if (err->exc) goto L_ret;
-  if (m9t72) {
+  bool m9t70 = (((m9_add_i64 (served, INT64_C(1), err) >= ({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cfg.perConn) || HttpServer_Closing (&(({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->q), err)) || ((int64_t)(m9_srv_stopping ()) != INT64_C(0)));
+  if (err->exc) { m9ln = 2290; goto L_ret; };
+  if (m9t70) {
     keep = false;
   }
   { __typeof__(isHead) m9v = Text_EqUtf (q.method, ((m9_sl_UTF8){ (uint8_t *) m9s212, 4 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2295; goto L_ret; };
     isHead = m9v;
   }
   { __typeof__(resp) m9v = HttpServer_Dispatch (w, w_pool, &(q), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2296; goto L_ret; };
     resp = m9v;
   }
   if (resp.close) {
     keep = false;
   }
-  bool m9t73 = (((int64_t)(m9_srv_stopping ()) != INT64_C(0)) || HttpServer_Closing (&(({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->q), err));
-  if (err->exc) goto L_ret;
-  if (m9t73) {
+  bool m9t71 = (((int64_t)(m9_srv_stopping ()) != INT64_C(0)) || HttpServer_Closing (&(({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->q), err));
+  if (err->exc) { m9ln = 2300; goto L_ret; };
+  if (m9t71) {
     keep = false;
   }
-  bool m9t74 = (!Text_EqUtf (version, ((m9_sl_UTF8){ (uint8_t *) m9s213, 8 }), err));
-  if (err->exc) goto L_ret;
-  if (m9t74) {
+  bool m9t72 = (!Text_EqUtf (version, ((m9_sl_UTF8){ (uint8_t *) m9s213, 8 }), err));
+  if (err->exc) { m9ln = 2302; goto L_ret; };
+  if (m9t72) {
     { HttpServer_Producer p = resp.stream;
     if (p != NULL) {
       keep = false;
@@ -5442,18 +5718,18 @@ static bool HttpServer_One (HttpServer_Worker *w, m9_pool *w_pool, HttpServer_Co
   }
   t0 = (double)(m9_now ());
   { __typeof__(b0) m9v = (*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).bytesOut;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2306; goto L_ret; };
     b0 = m9v;
   }
   { __typeof__(sent) m9v = HttpServer_Send (w, w_pool, c, c_pool, &(q), &(resp), isHead, keep, (keep10 && keep), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2307; goto L_ret; };
     sent = m9v;
   }
   if (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cfg.accessLog) {
-    { __typeof__(m9_sub_i64 ((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).bytesOut, b0, err)) m9a69 = m9_sub_i64 ((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).bytesOut, b0, err);
-      if (err->exc) goto L_ret;
-    HttpServer_AccessLine (w, w_pool, q.method, q.path, (*w).last, m9a69, t0, q.client, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(m9_sub_i64 ((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).bytesOut, b0, err)) m9a67 = m9_sub_i64 ((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).bytesOut, b0, err);
+      if (err->exc) { m9ln = 2309; goto L_ret; };
+    HttpServer_AccessLine (w, w_pool, q.method, q.path, (*w).last, m9a67, t0, q.client, err);
+    if (err->exc) { m9ln = 2309; goto L_ret; };
     }
   }
   if ((!sent)) {
@@ -5465,6 +5741,7 @@ static bool HttpServer_One (HttpServer_Worker *w, m9_pool *w_pool, HttpServer_Co
   m9ret = keep;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, w_pool, (*w).s);
   m9_adopt_if (&m9frame, c_pool, (*c).cb.p);
@@ -5480,6 +5757,8 @@ static void HttpServer_Serve1 (HttpServer_Worker *w, m9_pool *w_pool, int64_t fd
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Serve1"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_pool cpool = {0}; (void) cpool;
   HttpServer_Conn c = {0}; (void) c;
   m9_arr_64_uint8_t pb = {0}; (void) pb;
@@ -5489,30 +5768,30 @@ static void HttpServer_Serve1 (HttpServer_Worker *w, m9_pool *w_pool, int64_t fd
   bool m9t3 = false; (void) m9t3;
   c.fd = fd;
   { __typeof__(c.cb) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(cpool), ({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_fin_m9t4; } m9g; })->cfg.headerMax, err);
-    if (err->exc) goto L_fin_m9t4;
+    if (err->exc) { m9ln = 2333; goto L_fin_m9t4; };
     c.cb = m9v;
   }
   c.have = INT64_C(0);
-  { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t5 = (((int) m9_i32 (fd, err))); if (err->exc) goto L_fin_m9t4; __auto_type m9_fam9t6 = (((void *)(pb).v)); __auto_type m9_fam9t7 = (((int64_t)(INT64_C(64)))); tcp_peer (m9_fam9t5, m9_fam9t6, m9_fam9t7); }));
-    if (err->exc) goto L_fin_m9t4;
+  { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t5 = (((int) m9_i32 (fd, err))); if (err->exc) { m9ln = 2335; goto L_fin_m9t4; }; __auto_type m9_fam9t6 = (((void *)(pb).v)); __auto_type m9_fam9t7 = (((int64_t)(INT64_C(64)))); tcp_peer (m9_fam9t5, m9_fam9t6, m9_fam9t7); }));
+    if (err->exc) { m9ln = 2335; goto L_fin_m9t4; };
     n = m9v;
   }
   c.peer = ((m9_sl_UTF8){ NULL, 0 });
   if ((n > INT64_C(0))) {
-    { __typeof__(({ int64_t m9t8a = INT64_C(0), m9t8n = n; int64_t m9t8o = m9_chk_slice (m9t8a, m9t8n, INT64_C(64), err); (m9_sl_BYTE){ (pb).v + m9t8o, err->exc ? 0 : m9t8n }; })) m9a70 = ({ int64_t m9t8a = INT64_C(0), m9t8n = n; int64_t m9t8o = m9_chk_slice (m9t8a, m9t8n, INT64_C(64), err); (m9_sl_BYTE){ (pb).v + m9t8o, err->exc ? 0 : m9t8n }; });
-      if (err->exc) goto L_fin_m9t4;
-    { __typeof__(c.peer) m9v = DynStr_Decoded (&(cpool), m9a70, err);
-      if (err->exc) goto L_fin_m9t4;
+    { __typeof__(({ int64_t m9t8a = INT64_C(0), m9t8n = n; int64_t m9t8o = m9_chk_slice (m9t8a, m9t8n, INT64_C(64), err); (m9_sl_BYTE){ (pb).v + m9t8o, err->exc ? 0 : m9t8n }; })) m9a68 = ({ int64_t m9t8a = INT64_C(0), m9t8n = n; int64_t m9t8o = m9_chk_slice (m9t8a, m9t8n, INT64_C(64), err); (m9_sl_BYTE){ (pb).v + m9t8o, err->exc ? 0 : m9t8n }; });
+      if (err->exc) { m9ln = 2337; goto L_fin_m9t4; };
+    { __typeof__(c.peer) m9v = DynStr_Decoded (&(cpool), m9a68, err);
+      if (err->exc) { m9ln = 2337; goto L_fin_m9t4; };
       c.peer = m9v;
     }
     }
   }
-  { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t9 = (((int) m9_i32 (fd, err))); if (err->exc) goto L_fin_m9t4; __auto_type m9_fam9t10 = (((int64_t)(({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_fin_m9t4; } m9g; })->cfg.idleMs))); tcp_rcvtimeo (m9_fam9t9, m9_fam9t10); }));
-    if (err->exc) goto L_fin_m9t4;
+  { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t9 = (((int) m9_i32 (fd, err))); if (err->exc) { m9ln = 2338; goto L_fin_m9t4; }; __auto_type m9_fam9t10 = (((int64_t)(({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_fin_m9t4; } m9g; })->cfg.idleMs))); tcp_rcvtimeo (m9_fam9t9, m9_fam9t10); }));
+    if (err->exc) { m9ln = 2338; goto L_fin_m9t4; };
     n = m9v;
   }
-  { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t11 = (((int) m9_i32 (fd, err))); if (err->exc) goto L_fin_m9t4; tcp_nodelay (m9_fam9t11); }));
-    if (err->exc) goto L_fin_m9t4;
+  { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t11 = (((int) m9_i32 (fd, err))); if (err->exc) { m9ln = 2339; goto L_fin_m9t4; }; tcp_nodelay (m9_fam9t11); }));
+    if (err->exc) { m9ln = 2339; goto L_fin_m9t4; };
     n = m9v;
   }
   served = INT64_C(0);
@@ -5520,64 +5799,65 @@ static void HttpServer_Serve1 (HttpServer_Worker *w, m9_pool *w_pool, int64_t fd
   for (;;) {
     if (!(keep)) break;
     { __typeof__(keep) m9v = HttpServer_One (w, w_pool, &(c), err->res, served, err);
-      if (err->exc) goto L_fin_m9t4;
+      if (err->exc) { m9ln = 2343; goto L_fin_m9t4; };
       keep = m9v;
     }
     { __typeof__(served) m9v = m9_add_i64 (served, INT64_C(1), err);
-      if (err->exc) goto L_fin_m9t4;
+      if (err->exc) { m9ln = 2344; goto L_fin_m9t4; };
       served = m9v;
     }
   }
 L_fin_m9t4: ;
   m9_fin m9t3f; m9_fin_save (err, &m9t3f);
-  { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t12 = (((int) m9_i32 (fd, err))); if (err->exc) goto L_hdl_m9t1; tcp_close (m9_fam9t12); }));
-    if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t12 = (((int) m9_i32 (fd, err))); if (err->exc) { m9ln = 2347; goto L_hdl_m9t1; }; tcp_close (m9_fam9t12); }));
+    if (err->exc) { m9ln = 2347; goto L_hdl_m9t1; };
     n = m9v;
   }
   m9_fin_restore (err, &m9t3f);
   if (m9t3) goto L_ret;
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 2347; goto L_hdl_m9t1; };
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
     { __typeof__((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults) m9v = m9_add_i64 ((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2351; goto L_ret; };
       (*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2351; goto L_ret; };
     }
     goto L_dn_m9t2;
   }
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
     { __typeof__((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults) m9v = m9_add_i64 ((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2353; goto L_ret; };
       (*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2353; goto L_ret; };
     }
     goto L_dn_m9t2;
   }
   if (err->exc == &m9_exc_Overflow) {
     err->exc = NULL;
     { __typeof__((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults) m9v = m9_add_i64 ((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2355; goto L_ret; };
       (*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2355; goto L_ret; };
     }
     goto L_dn_m9t2;
   }
   if (err->exc == &m9_exc_OutOfMemory) {
     err->exc = NULL;
     { __typeof__((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults) m9v = m9_add_i64 ((*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2357; goto L_ret; };
       (*(HttpServer_Stats *) m9_at (({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->st.v, (*w).k, INT64_C(64), sizeof (HttpServer_Stats), err)).faults = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2357; goto L_ret; };
     }
     goto L_dn_m9t2;
   }
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, w_pool, (*w).s);
   m9_pool_free (&m9frame);
@@ -5591,27 +5871,30 @@ static void HttpServer_WorkerRun (HttpServer_Worker *w, m9_pool *w_pool, m9_stat
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.WorkerRun"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t fd = 0; (void) fd;
   m9_keep_at_most (((int64_t)(({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cfg.keepBytes)));
   for (;;) {
     { __typeof__(fd) m9v = HttpServer_Take (&(({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->q), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2373; goto L_ret; };
       fd = m9v;
     }
     if ((fd < INT64_C(0))) {
       break;
     }
     HttpServer_Serve1 (w, w_pool, fd, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2375; goto L_ret; };
     bool m9t2 = (HttpServer_Waiting (&(({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->q), err) == INT64_C(0));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2376; goto L_ret; };
     if (m9t2) {
       m9_release_kept ();
     }
   }
   HttpServer_Exited (&(({ __auto_type m9g = ((*w).s); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->q), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2378; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, w_pool, (*w).s);
   m9_pool_free (&m9frame);
@@ -5624,6 +5907,8 @@ static void HttpServer_Busy (int64_t fd, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Busy"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_arr_4096_uint8_t junk = {0}; (void) junk;
   m9_arr_128_uint8_t b = {0}; (void) b;
   m9_sl_UTF8 s = {0}; (void) s;
@@ -5636,53 +5921,54 @@ static void HttpServer_Busy (int64_t fd, m9_state *err)
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (Text_BLen (s, err), INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2399; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     bool m9t2 = Text_BIs (s, i, 124u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2400; goto L_ret; };
     if (m9t2) {
       (*(uint8_t *) m9_at (b.v, j, INT64_C(128), sizeof (uint8_t), err)) = INT64_C(13);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2401; goto L_ret; };
       (*(uint8_t *) m9_at (b.v, m9_add_i64 (j, INT64_C(1), err), INT64_C(128), sizeof (uint8_t), err)) = INT64_C(10);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 2402; goto L_ret; };
       { __typeof__(j) m9v = m9_add_i64 (j, INT64_C(2), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 2403; goto L_ret; };
         j = m9v;
       }
     } else {
       { __typeof__((*(uint8_t *) m9_at (b.v, j, INT64_C(128), sizeof (uint8_t), err))) m9v = m9_byte ((int64_t)(Text_BAt (s, i, err)), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 2405; goto L_ret; };
         (*(uint8_t *) m9_at (b.v, j, INT64_C(128), sizeof (uint8_t), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 2405; goto L_ret; };
       }
       { __typeof__(j) m9v = m9_add_i64 (j, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 2406; goto L_ret; };
         j = m9v;
       }
     }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
-  { __typeof__(({ int64_t m9t3a = INT64_C(0), m9t3n = j; int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, INT64_C(128), err); (m9_sl_BYTE){ (b).v + m9t3o, err->exc ? 0 : m9t3n }; })) m9a71 = ({ int64_t m9t3a = INT64_C(0), m9t3n = j; int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, INT64_C(128), err); (m9_sl_BYTE){ (b).v + m9t3o, err->exc ? 0 : m9t3n }; });
-    if (err->exc) goto L_ret;
-  { __typeof__(ok) m9v = HttpServer_WriteAll (fd, m9a71, err);
-    if (err->exc) goto L_ret;
+  { __typeof__(({ int64_t m9t3a = INT64_C(0), m9t3n = j; int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, INT64_C(128), err); (m9_sl_BYTE){ (b).v + m9t3o, err->exc ? 0 : m9t3n }; })) m9a69 = ({ int64_t m9t3a = INT64_C(0), m9t3n = j; int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, INT64_C(128), err); (m9_sl_BYTE){ (b).v + m9t3o, err->exc ? 0 : m9t3n }; });
+    if (err->exc) { m9ln = 2409; goto L_ret; };
+  { __typeof__(ok) m9v = HttpServer_WriteAll (fd, m9a69, err);
+    if (err->exc) { m9ln = 2409; goto L_ret; };
     ok = m9v;
   }
   }
-  { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t4 = (((int) m9_i32 (fd, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t5 = (((int64_t)(HttpServer_BusyMs))); tcp_rcvtimeo (m9_fam9t4, m9_fam9t5); }));
-    if (err->exc) goto L_ret;
+  { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t4 = (((int) m9_i32 (fd, err))); if (err->exc) { m9ln = 2410; goto L_ret; }; __auto_type m9_fam9t5 = (((int64_t)(HttpServer_BusyMs))); tcp_rcvtimeo (m9_fam9t4, m9_fam9t5); }));
+    if (err->exc) { m9ln = 2410; goto L_ret; };
     n = m9v;
   }
-  { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t6 = (((int) m9_i32 (fd, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t7 = (((void *)(junk).v)); __auto_type m9_fam9t8 = (((size_t)(INT64_C(4096)))); tcp_read (m9_fam9t6, m9_fam9t7, m9_fam9t8); }));
-    if (err->exc) goto L_ret;
+  { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t6 = (((int) m9_i32 (fd, err))); if (err->exc) { m9ln = 2411; goto L_ret; }; __auto_type m9_fam9t7 = (((void *)(junk).v)); __auto_type m9_fam9t8 = (((size_t)(INT64_C(4096)))); tcp_read (m9_fam9t6, m9_fam9t7, m9_fam9t8); }));
+    if (err->exc) { m9ln = 2411; goto L_ret; };
     n = m9v;
   }
-  { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t9 = (((int) m9_i32 (fd, err))); if (err->exc) goto L_ret; tcp_close (m9_fam9t9); }));
-    if (err->exc) goto L_ret;
+  { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t9 = (((int) m9_i32 (fd, err))); if (err->exc) { m9ln = 2412; goto L_ret; }; tcp_close (m9_fam9t9); }));
+    if (err->exc) { m9ln = 2412; goto L_ret; };
     n = m9v;
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -5694,6 +5980,8 @@ static void HttpServer_Clear (HttpServer_Stats *st, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Clear"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   (*st).connections = INT64_C(0);
   (*st).busy = INT64_C(0);
   (*st).requests = INT64_C(0);
@@ -5704,6 +5992,7 @@ static void HttpServer_Clear (HttpServer_Stats *st, m9_state *err)
   (*st).s5xx = INT64_C(0);
   (*st).bytesOut = INT64_C(0);
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -5715,53 +6004,56 @@ static void HttpServer_Respond (int64_t fd, int64_t status, m9_sl_UTF8 ctype, m9
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Respond"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
   bool ok = false; (void) ok;
   { __typeof__(d) m9v = DynStr_New (&(scratch), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2512; goto L_ret; };
     d = m9v;
   }
   DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s215, 9 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2513; goto L_ret; };
   DynStr_AppendI64 (&(d), &(scratch), status, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2514; goto L_ret; };
   DynStr_AppendChar (&(d), &(scratch), 32u, err);
-  if (err->exc) goto L_ret;
-  { __typeof__(HttpServer_Reason (status, err)) m9a72 = HttpServer_Reason (status, err);
-    if (err->exc) goto L_ret;
-  DynStr_Append (&(d), &(scratch), m9a72, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2515; goto L_ret; };
+  { __typeof__(HttpServer_Reason (status, err)) m9a70 = HttpServer_Reason (status, err);
+    if (err->exc) { m9ln = 2516; goto L_ret; };
+  DynStr_Append (&(d), &(scratch), m9a70, err);
+  if (err->exc) { m9ln = 2516; goto L_ret; };
   }
   HttpServer_CrLf (&(d), &(scratch), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2517; goto L_ret; };
   DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s216, 14 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2518; goto L_ret; };
   DynStr_Append (&(d), &(scratch), ctype, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2519; goto L_ret; };
   HttpServer_CrLf (&(d), &(scratch), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2520; goto L_ret; };
   DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s217, 16 }), err);
-  if (err->exc) goto L_ret;
-  { __typeof__(Text_BLen (body, err)) m9a73 = Text_BLen (body, err);
-    if (err->exc) goto L_ret;
-  DynStr_AppendI64 (&(d), &(scratch), m9a73, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2521; goto L_ret; };
+  { __typeof__(Text_BLen (body, err)) m9a71 = Text_BLen (body, err);
+    if (err->exc) { m9ln = 2522; goto L_ret; };
+  DynStr_AppendI64 (&(d), &(scratch), m9a71, err);
+  if (err->exc) { m9ln = 2522; goto L_ret; };
   }
   HttpServer_CrLf (&(d), &(scratch), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2526; goto L_ret; };
   HttpServer_CrLf (&(d), &(scratch), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2527; goto L_ret; };
   DynStr_Append (&(d), &(scratch), body, err);
-  if (err->exc) goto L_ret;
-  { __typeof__(DynStr_Octets (d, err)) m9a74 = DynStr_Octets (d, err);
-    if (err->exc) goto L_ret;
-  { __typeof__(ok) m9v = HttpServer_WriteAll (fd, m9a74, err);
-    if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2528; goto L_ret; };
+  { __typeof__(DynStr_Octets (d, err)) m9a72 = DynStr_Octets (d, err);
+    if (err->exc) { m9ln = 2529; goto L_ret; };
+  { __typeof__(ok) m9v = HttpServer_WriteAll (fd, m9a72, err);
+    if (err->exc) { m9ln = 2529; goto L_ret; };
     ok = m9v;
   }
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
@@ -5774,6 +6066,8 @@ static void HttpServer_Answer (HttpServer_Router * r, int64_t fd, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "HttpServer.Answer"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE buf = {0}; (void) buf;
   m9_sl_UTF8 req = {0}; (void) req;
@@ -5785,27 +6079,27 @@ static void HttpServer_Answer (HttpServer_Router * r, int64_t fd, m9_state *err)
   int64_t sp1 = 0; (void) sp1;
   int64_t sp2 = 0; (void) sp2;
   { __typeof__(buf) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), HttpServer_ReqMax, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 2545; goto L_ret; };
     buf = m9v;
   }
   bool m9t1 = false; (void) m9t1;
-  { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t3 = (((int) m9_i32 (fd, err))); if (err->exc) goto L_fin_m9t2; __auto_type m9_fam9t4 = (((void *)(buf).p)); __auto_type m9_fam9t5 = (((size_t) m9_u64 (HttpServer_ReqMax, err))); if (err->exc) goto L_fin_m9t2; tcp_read (m9_fam9t3, m9_fam9t4, m9_fam9t5); }));
-    if (err->exc) goto L_fin_m9t2;
+  { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t3 = (((int) m9_i32 (fd, err))); if (err->exc) { m9ln = 2547; goto L_fin_m9t2; }; __auto_type m9_fam9t4 = (((void *)(buf).p)); __auto_type m9_fam9t5 = (((size_t) m9_u64 (HttpServer_ReqMax, err))); if (err->exc) { m9ln = 2547; goto L_fin_m9t2; }; tcp_read (m9_fam9t3, m9_fam9t4, m9_fam9t5); }));
+    if (err->exc) { m9ln = 2547; goto L_fin_m9t2; };
     n = m9v;
   }
   if ((n <= INT64_C(0))) {
     m9t1 = true;
     goto L_fin_m9t2;
   }
-  { __typeof__(({ __auto_type m9t6 = buf; int64_t m9t6a = INT64_C(0), m9t6n = n; int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; })) m9a75 = ({ __auto_type m9t6 = buf; int64_t m9t6a = INT64_C(0), m9t6n = n; int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; });
-    if (err->exc) goto L_fin_m9t2;
-  { __typeof__(req) m9v = HttpServer_HeadText (&(scratch), m9a75, err);
-    if (err->exc) goto L_fin_m9t2;
+  { __typeof__(({ __auto_type m9t6 = buf; int64_t m9t6a = INT64_C(0), m9t6n = n; int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; })) m9a73 = ({ __auto_type m9t6 = buf; int64_t m9t6a = INT64_C(0), m9t6n = n; int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; });
+    if (err->exc) { m9ln = 2554; goto L_fin_m9t2; };
+  { __typeof__(req) m9v = HttpServer_HeadText (&(scratch), m9a73, err);
+    if (err->exc) { m9ln = 2554; goto L_fin_m9t2; };
     req = m9v;
   }
   }
   { __typeof__(n) m9v = Text_BLen (req, err);
-    if (err->exc) goto L_fin_m9t2;
+    if (err->exc) { m9ln = 2555; goto L_fin_m9t2; };
     n = m9v;
   }
   sp1 = INT64_C(0);
@@ -5813,12 +6107,12 @@ static void HttpServer_Answer (HttpServer_Router * r, int64_t fd, m9_state *err)
   for (;;) {
     if (!(((i < n) && (sp1 == INT64_C(0))))) break;
     bool m9t7 = Text_BIs (req, i, 32u, err);
-    if (err->exc) goto L_fin_m9t2;
+    if (err->exc) { m9ln = 2561; goto L_fin_m9t2; };
     if (m9t7) {
       sp1 = i;
     }
     { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-      if (err->exc) goto L_fin_m9t2;
+      if (err->exc) { m9ln = 2562; goto L_fin_m9t2; };
       i = m9v;
     }
   }
@@ -5826,27 +6120,27 @@ static void HttpServer_Answer (HttpServer_Router * r, int64_t fd, m9_state *err)
   for (;;) {
     if (!(((i < n) && (sp2 == INT64_C(0))))) break;
     bool m9t8 = (Text_BIs (req, i, 32u, err) || Text_BIs (req, i, 13u, err));
-    if (err->exc) goto L_fin_m9t2;
+    if (err->exc) { m9ln = 2566; goto L_fin_m9t2; };
     if (m9t8) {
       sp2 = i;
     }
     { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-      if (err->exc) goto L_fin_m9t2;
+      if (err->exc) { m9ln = 2567; goto L_fin_m9t2; };
       i = m9v;
     }
   }
   if (((sp1 == INT64_C(0)) || (sp2 == INT64_C(0)))) {
     HttpServer_Respond (fd, INT64_C(400), ((m9_sl_UTF8){ (uint8_t *) m9s218, 10 }), ((m9_sl_UTF8){ (uint8_t *) m9s219, 22 }), err);
-    if (err->exc) goto L_fin_m9t2;
+    if (err->exc) { m9ln = 2570; goto L_fin_m9t2; };
     m9t1 = true;
     goto L_fin_m9t2;
   }
   { __typeof__(method) m9v = m9_utf_slice (req, INT64_C(0), sp1, err);
-    if (err->exc) goto L_fin_m9t2;
+    if (err->exc) { m9ln = 2573; goto L_fin_m9t2; };
     method = m9v;
   }
   { __typeof__(path) m9v = m9_utf_slice (req, m9_add_i64 (sp1, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (sp2, sp1, err), INT64_C(1), err), err);
-    if (err->exc) goto L_fin_m9t2;
+    if (err->exc) { m9ln = 2574; goto L_fin_m9t2; };
     path = m9v;
   }
   cur = r->first;
@@ -5854,27 +6148,28 @@ static void HttpServer_Answer (HttpServer_Router * r, int64_t fd, m9_state *err)
     HttpServer_Route * rt = cur;
     if (!(rt != NULL)) break;
     bool m9t11 = (Text_EqUtf (rt->method, method, err) && Text_EqUtf (rt->path, path, err));
-    if (err->exc) goto L_fin_m9t2;
+    if (err->exc) { m9ln = 2578; goto L_fin_m9t2; };
     if (m9t11) {
       HttpServer_Respond (fd, rt->status, rt->ctype, rt->body, err);
-      if (err->exc) goto L_fin_m9t2;
+      if (err->exc) { m9ln = 2579; goto L_fin_m9t2; };
       m9t1 = true;
       goto L_fin_m9t2;
     }
     cur = rt->next;
   }
   HttpServer_Respond (fd, INT64_C(404), ((m9_sl_UTF8){ (uint8_t *) m9s220, 10 }), ((m9_sl_UTF8){ (uint8_t *) m9s221, 8 }), err);
-  if (err->exc) goto L_fin_m9t2;
+  if (err->exc) { m9ln = 2584; goto L_fin_m9t2; };
 L_fin_m9t2: ;
   m9_fin m9t1f; m9_fin_save (err, &m9t1f);
-  { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t12 = (((int) m9_i32 (fd, err))); if (err->exc) goto L_ret; tcp_close (m9_fam9t12); }));
-    if (err->exc) goto L_ret;
+  { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t12 = (((int) m9_i32 (fd, err))); if (err->exc) { m9ln = 2586; goto L_ret; }; tcp_close (m9_fam9t12); }));
+    if (err->exc) { m9ln = 2586; goto L_ret; };
     n = m9v;
   }
   m9_fin_restore (err, &m9t1f);
   if (m9t1) goto L_ret;
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 2586; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
@@ -5888,6 +6183,8 @@ void HttpServer_m9init (m9_state *err)
   m9done = 1;
   m9_pool *m9prev = err->res;
   err->res = &m9mframe;
+  static const char m9pn[] = "HttpServer (the module body)"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   DynStr_m9init (err); if (err->exc) goto L_ret;
   Http_m9init (err); if (err->exc) goto L_ret;
   Io_m9init (err); if (err->exc) goto L_ret;
@@ -5895,5 +6192,6 @@ void HttpServer_m9init (m9_state *err)
   Zip_m9init (err); if (err->exc) goto L_ret;
   Text_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9prev;
 }

@@ -14,6 +14,9 @@ void Faults_m9init (m9_state *err)
   m9done = 1;
   m9_pool *m9prev = err->res;
   err->res = &m9mframe;
+  static const char m9pn[] = "Faults (the module body)"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9prev;
 }

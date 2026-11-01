@@ -18,8 +18,7 @@ cd "$(dirname "$0")"
 # gated.  The files on disk BEFORE this regeneration must therefore
 # equal what comes out of it.  In CI that is HEAD; locally it is the
 # tree about to be committed.  The first run after a corpus edit fails
-# ONCE and names the files that moved; stage them and run again
-# (lextest.golden's rule).  A run from a DELETED runtime/gen has
+# ONCE and names the files that moved; stage them and run again.  A run from a DELETED runtime/gen has
 # nothing to compare and says so, because that is how the whole suite
 # is meant to be run.
 if [ -d ../gen ]; then
@@ -73,6 +72,7 @@ run Json DynStr Text
 run JsonUtf DynStr Text
 run Chars Bits Faults Text
 run DynUtf
+run Tsk Faults System
 run Http DynStr Io Text
 run Sparql DynStr Io Http Json Text
 run Rdf DynStr Fmt Json Text Xml
@@ -159,7 +159,7 @@ grep -q 'for (int64_t m9t[0-9]*i = 0; m9t[0-9]*i < m9t[0-9]*s.len; ) { ch = m9_u
   && grep -q '{ __typeof__(arr) \*m9t[0-9]*s = &(arr);' "$TG"/gen_want.txt \
   || { echo "ShareUse: FOR x IN is not the once-evaluated loop -- in BOTH generators"; exit 1; }
 grep -q -A2 '__typeof__(b) m9v = ShareUse_Make (n, err);' "$TG"/gen_want.txt \
-  && grep -A2 '__typeof__(b) m9v = ShareUse_Make (n, err);' "$TG"/gen_want.txt | grep -q 'if (err->exc) goto' \
+  && grep -A2 '__typeof__(b) m9v = ShareUse_Make (n, err);' "$TG"/gen_want.txt | grep -q 'if (err->exc) .*goto' \
   && grep -A3 '__typeof__(b) m9v = ShareUse_Make (n, err);' "$TG"/gen_want.txt | grep -q '  b = m9v;' \
   || { echo "ShareUse: a raising call's answer is stored before its error slot is read -- in BOTH generators"; exit 1; }
 if grep -q 'b = ((__typeof__(b)) m9_share_copy (m9v));' "$TG"/gen_want.txt; then
@@ -168,7 +168,7 @@ fi
 # A raising call nested as an ARGUMENT is hoisted into a guarded
 # temporary before the enclosing call (par 5, 2026-10-08).
 grep -q -A1 '{ __typeof__(ShareUse_Count (n, err)) m9a[0-9]* = ShareUse_Count (n, err);' "$TG"/gen_want.txt \
-  && grep -A1 '{ __typeof__(ShareUse_Count (n, err)) m9a[0-9]* = ShareUse_Count (n, err);' "$TG"/gen_want.txt | grep -q 'if (err->exc) goto' \
+  && grep -A1 '{ __typeof__(ShareUse_Count (n, err)) m9a[0-9]* = ShareUse_Count (n, err);' "$TG"/gen_want.txt | grep -q 'if (err->exc) .*goto' \
   && grep -q 'ShareUse_Use (m9a[0-9]*, err);' "$TG"/gen_want.txt \
   || { echo "ShareUse: a raising call nested as an argument is not guarded before the enclosing call -- in BOTH generators"; exit 1; }
 # F32 of a double is a checked conversion, and a U64 literal past 2^63

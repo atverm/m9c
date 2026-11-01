@@ -40,13 +40,11 @@ run the generator (docs/agent-review-2026-09-27.md F4).  Before
 that a construct the checker accepts and the generator refuses
 was invisible to every editor.
 
-### One (VAR pool: POOL ; line, col: I64 ; RO msg: STR) : SLICE OF Finding
+### One (VAR pool: POOL ; line, col: I64 ; RO msg: UTF) : SLICE OF Finding
 
-**Deprecated** (the UTF transition): OneUtf is its UTF form.
+Since 0.26 a call of One is OneUtf, whose heading this is.
 
-One answers a single finding, as a slice: what a caller answers
-for a refusal of its own (a buffer with no MODULE line, a path it
-will not hand to a shell).  msg is copied into pool.
+OneUtf is One for a UTF message, copied into pool the same way.
 
 ### OneUtf (VAR pool: POOL ; line, col: I64 ; RO msg: UTF) : SLICE OF Finding
 
@@ -96,14 +94,13 @@ page that paints:
 kind is Lex's stable code (0 is EOF and is not listed; 1 is an
 error token), len the token's text length in CHARs.
 
-### JStr (VAR d: PTR DynStr.DString ; RO s: STR) RAISES ValueRange
+### JStr (VAR d: PTR DynStr.DString ; RO s: UTF) RAISES ValueRange
 
-**Deprecated** (the UTF transition): JStrUtf is its UTF form.
+Since 0.26 a call of JStr is JStrUtf, whose heading this is.
 
-JStr appends a JSON string literal to d, with the escapes RFC
-8259 requires and no others: `"` and `\` backslashed, controls as
-\u00XX, everything else as it is.  Json.m9 keeps its emitter
-private; this is the shared home its three copies were owed.
+JStrUtf is JStr for a UTF-8 builder and text: the same escapes,
+byte by byte.  A byte past 0x7F is part of a character and goes
+as it is.
 
 ### JStrUtf (VAR d: PTR DynStr.DString ; RO s: UTF) RAISES ValueRange
 

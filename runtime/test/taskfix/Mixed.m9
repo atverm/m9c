@@ -1,0 +1,75 @@
+MODULE Mixed ;
+
+(* A THREAD and a TASK share one monitor, and each waits for the
+   other's SIGNAL (docs/task-plan.md, stage 1).  The task is parked in
+   user space and the thread sleeps in the kernel.  So each direction
+   takes the other wake path.  The THREAD waits first for the task's
+   ping, then the task waits for the thread's pong.  The module body
+   waits until the task has seen the pong.  A wake lost on either path
+   would hang, and tasks.sh runs this under a timeout. *)
+
+IMPORT Io ;
+
+CONST Rounds = 1000 ;
+
+TYPE
+  Court = MONITOR RECORD
+    ping, pong : I64 ;          (* rounds sent by the task, by the thread *)
+    done : BOOL ;
+  END ;
+
+  Match = RECORD
+    c : Court ;
+  END [SHARABLE] ;
+
+PROCEDURE Ping (VAR c: Court ; k: I64) =
+BEGIN
+  c.ping := k ;
+  SIGNAL (c) ;
+  WHILE c.pong < k DO WAIT (c) END
+END Ping ;
+
+PROCEDURE Pong (VAR c: Court ; k: I64) =
+BEGIN
+  WHILE c.ping < k DO WAIT (c) END ;
+  c.pong := k ;
+  SIGNAL (c)
+END Pong ;
+
+PROCEDURE Finish (VAR c: Court) =
+BEGIN
+  c.done := TRUE ;
+  SIGNAL (c)
+END Finish ;
+
+PROCEDURE Await (VAR c: Court) : I64 =
+BEGIN
+  WHILE NOT c.done DO WAIT (c) END ;
+  RETURN c.pong
+END Await ;
+
+PROCEDURE Pinger (VAR m: Match) =
+VAR k : I64 ;
+BEGIN
+  FOR k := 1 TO Rounds DO Ping (m.c, k) END ;
+  Finish (m.c)
+END Pinger ;
+
+PROCEDURE Ponger (VAR m: Match) =
+VAR k : I64 ;
+BEGIN
+  FOR k := 1 TO Rounds DO Pong (m.c, k) END
+END Ponger ;
+
+VAR
+  pool : POOL ;
+  m : PTR Match ;
+
+BEGIN
+  m := NEW (pool, Match) ;
+  THREAD (Ponger, m) ;
+  TASK (Pinger, m) ;
+  Io.Write ('rounds ') ;
+  Io.WriteI64 (Await (m.c)) ;
+  Io.WriteLine ('')
+END Mixed.

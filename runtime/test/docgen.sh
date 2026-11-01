@@ -3,8 +3,8 @@
 #
 # This script stays separate from docdiff on purpose: a gate that
 # regenerates what it compares against cannot fail.  Run this when a doc
-# comment changes, in the same commit as the change, exactly as
-# lextest.golden is.
+# comment changes, in the same commit as the change, as runtime/gen
+# is regenerated.
 set -e
 cd "$(dirname "$0")"
 . ./lib/gen.sh

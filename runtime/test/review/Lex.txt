@@ -4,11 +4,14 @@ PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              16
   assignments                                   103
   arguments                                     528
-  RETURN values                                 141
+  RETURN values                                 142
   operands of a comparison or an operator       187
-  CASE labels                                    94
+  CASE labels                                    95
   THREAD arguments                                0
   CASE over variants, proved total                0
+
+CAN TRAP AT RUN TIME -- a byte cut a character can straddle
+  text compared through a byte cut                0
 
 DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0

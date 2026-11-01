@@ -67,9 +67,9 @@ digits), as a CRC or a hash word held in an I64 means.  Hex never
 truncates: a wider value overflows the field (cp-kernel's issue
 16).
 
-### I64Pad (v: I64 ; width: I64 ; zero: BOOL) : STR
+### I64Pad (v: I64 ; width: I64 ; zero: BOOL) : UTF
 
-**Deprecated** (the UTF transition): I64PadUtf is its UTF form.
+Since 0.26 a call of I64Pad is I64PadUtf, whose heading this is.
 
 _(documented with the group below)_
 
@@ -80,9 +80,9 @@ over ' ' as the fill.  A value too wide is never truncated: it
 just overflows the field, as printf does.  Silently losing
 digits is the class of bug this language refuses.
 
-### Fixed (v: F64 ; decimals: I64) : STR RAISES ValueRange
+### Fixed (v: F64 ; decimals: I64) : UTF RAISES ValueRange
 
-**Deprecated** (the UTF transition): FixedUtf is its UTF form.
+Since 0.26 a call of Fixed is FixedUtf, whose heading this is.
 
 _(documented with the group below)_
 
@@ -96,19 +96,13 @@ These are the UTF twins (stage 4a, 2026-10-24), with the same
 digits.  Fixed is FixedUtf decoded, the digit work done once on
 octets.
 
-### FixedPad (v: F64 ; width, decimals: I64) : STR RAISES ValueRange
+### FixedPad (v: F64 ; width, decimals: I64) : UTF RAISES ValueRange
 
-**Deprecated** (the UTF transition): FixedPadUtf is its UTF form.
+Since 0.26 a call of FixedPad is FixedPadUtf, whose heading this is.
 
-FixedPad is Pascal's `v:width:decimals`, which is where the shape
-comes from: Fixed, then right-aligned in width with BLANKS.  Pascal
-pads a real field with blanks and never with zeros, so there is no
-zero flag here as there is on I64Pad; a leading-zero float is a
-different thing and nobody has asked for one.
-
-Too wide is never truncated -- it overflows the field, exactly
-as I64Pad does and for the same reason: silently losing digits
-is the class of bug this language refuses.
+These are the UTF twins (stage 4a, 2026-10-24), with the same
+digits.  Fixed is FixedUtf decoded, the digit work done once on
+octets.
 
 ### Sci (v: F64 ; decimals: I64) : STR RAISES ValueRange
 
@@ -158,39 +152,17 @@ and a machine reads back the same number.
 
 _(documented with the group below)_
 
-### ParseBits (RO s: STR) : F64 RAISES ValueRange
+### ParseBits (RO s: UTF) : F64 RAISES ValueRange
 
-**Deprecated** (the UTF transition): ParseBitsUtf is its UTF form.
+Since 0.26 a call of ParseBits is ParseBitsUtf, whose heading this is.
 
-Bits and ParseBits are the exact pair: 16 hex digits, low byte
-first, round-trip total.  The digits are UPPER case and the bytes
-LITTLE-ENDIAN: 1.0 is 000000000000F03F, not Python's
-3ff0000000000000.  This is the byte order a golden file and a
-binary file hold, read in order.  It is NOT the number's
-hexadecimal.  For that, use Hex of an integer.  (cp-kernel lost a
-measurement to the difference.)
+_(undocumented)_
 
-### ParseF64 (RO s: STR) : F64 RAISES ValueRange
+### ParseF64 (RO s: UTF) : F64 RAISES ValueRange
 
-**Deprecated** (the UTF transition): ParseF64Utf is its UTF form.
+Since 0.26 a call of ParseF64 is ParseF64Utf, whose heading this is.
 
-ParseF64 reads a decimal, with optional sign, fraction and
-exponent.  It rejects anything else, because a command line or a
-data file that says it holds a number and does not is the
-boundary this catches.  It is CORRECTLY ROUNDED: the double
-nearest the decimal, ties to even, Python's float(), subnormals
-and digit strings of any length included.  A decimal beyond the
-largest double RAISES ValueRange.  It works in M9 and in
-integers, with no libc: Clinger's fast path, else an exact
-quotient (the implementation says how).  Until 2026-10-09 it
-scaled in F64 and was wrong in 1,314 of 3,510 strings measured:
-by 1 to 10 ulp, the largest double read as infinity, subnormals
-as zero (cp-kernel's finding on 0.19.0).
-THE INTEGER READER IS Io.ParseI64 (RAISES ValueRange, Overflow):
-an optional minus and decimal digits, every I64 down to the
-smallest.  It lives in Io because Fmt imports nothing and Io is
-where the command line is read; a reader looking here is sent
-there (cp-kernel's issue 6, 2026-10-09).
+_(undocumented)_
 
 ### ParseF64Utf (RO s: UTF) : F64 RAISES ValueRange
 

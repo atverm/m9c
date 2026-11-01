@@ -19,6 +19,7 @@ corpus/Json.m9
 corpus/JsonUtf.m9
 corpus/Chars.m9
 corpus/DynUtf.m9
+corpus/Tsk.m9
 corpus/Logger.m9
 corpus/Map.m9
 corpus/Mat.m9

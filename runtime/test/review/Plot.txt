@@ -1,14 +1,17 @@
-REVIEW Plot -- 74 procedures with a body, 33 of them functions; 21 headings in a DEFINITION
+REVIEW Plot -- 75 procedures with a body, 34 of them functions; 21 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              33
+  functions answering on every path              34
   assignments                                   492
-  arguments                                    1899
-  RETURN values                                  68
-  operands of a comparison or an operator       867
+  arguments                                    1907
+  RETURN values                                  71
+  operands of a comparison or an operator       873
   CASE labels                                    23
   THREAD arguments                                0
   CASE over variants, proved total                1
+
+CAN TRAP AT RUN TIME -- a byte cut a character can straddle
+  text compared through a byte cut                0
 
 DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0

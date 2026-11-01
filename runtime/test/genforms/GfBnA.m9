@@ -1,0 +1,27 @@
+DEFINITION MODULE GfBnA ;
+
+(* GfBnA helps GfBareName: a scalar alias Size, and a pointer alias
+   Kid that Get answers. *)
+
+TYPE
+  Size = I64 ;
+  Node = RECORD
+    v : I64 ;
+  END ;
+  Kid = OPT PTR Node ;
+
+PROCEDURE Get (VAR pool: POOL ; v: I64) : Kid ;
+
+END GfBnA.
+
+IMPLEMENTATION MODULE GfBnA ;
+
+PROCEDURE Get (VAR pool: POOL ; v: I64) : Kid =
+VAR n : PTR Node IN pool ;
+BEGIN
+  n := NEW (pool, Node) ;
+  n.v := v ;
+  RETURN SOME (n)
+END Get ;
+
+END GfBnA.

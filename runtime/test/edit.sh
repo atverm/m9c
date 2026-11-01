@@ -176,7 +176,8 @@ M9RUNTIME="$RT" M9LIBRARY="$SRC" "$W/m9c" --run ../../tools/MkKeywords.m9 --chec
 J=$(curl -s http://127.0.0.1:$PORT/kw)
 echo "$J" | grep -q '"KEPT":' || { echo "edit: /kw lacks KEPT"; exit 1; }
 echo "$J" | grep -q '"GRID":' || { echo "edit: /kw lacks GRID"; exit 1; }
-echo "         /kw serves all sixty-two keywords, none adrift"
+echo "$J" | grep -q '"TASK":' || { echo "edit: /kw lacks TASK"; exit 1; }
+echo "         /kw serves all sixty-three keywords, none adrift"
 
 # The examples are listed, and one is served.
 J=$(curl -s http://127.0.0.1:$PORT/examples)

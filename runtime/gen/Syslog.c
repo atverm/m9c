@@ -16,16 +16,18 @@ void Syslog_Open (m9_sl_UTF8 ident, int64_t options, int64_t facility, m9_state 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Syslog.Open"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_BYTE b = {0}; (void) b;
   b = m9_utf_octets (ident);
-  ({ __auto_type m9_fam9t3 = (((void *)(b).p)); __auto_type m9_fam9t4 = (((int) m9_i32 ((b).len, err))); if (err->exc) goto L_hdl_m9t1; __auto_type m9_fam9t5 = (((int) m9_i32 (options, err))); if (err->exc) goto L_hdl_m9t1; __auto_type m9_fam9t6 = (((int) m9_i32 (facility, err))); if (err->exc) goto L_hdl_m9t1; m9_mon *m9_gm = m9_gate (&m9_gate_csyslog, "csyslog"); m9_mon_enter (m9_gm); m9_openlog (m9_fam9t3, m9_fam9t4, m9_fam9t5, m9_fam9t6); m9_mon_leave (m9_gm); });
-  if (err->exc) goto L_hdl_m9t1;
+  ({ __auto_type m9_fam9t3 = (((void *)(b).p)); __auto_type m9_fam9t4 = (((int) m9_i32 ((b).len, err))); if (err->exc) { m9ln = 146; goto L_hdl_m9t1; }; __auto_type m9_fam9t5 = (((int) m9_i32 (options, err))); if (err->exc) { m9ln = 146; goto L_hdl_m9t1; }; __auto_type m9_fam9t6 = (((int) m9_i32 (facility, err))); if (err->exc) { m9ln = 146; goto L_hdl_m9t1; }; m9_mon *m9_gm = m9_gate (&m9_gate_csyslog, "csyslog"); m9_mon_enter (m9_gm); m9_openlog (m9_fam9t3, m9_fam9t4, m9_fam9t5, m9_fam9t6); m9_mon_leave (m9_gm); });
+  if (err->exc) { m9ln = 146; goto L_hdl_m9t1; };
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
-    ({ __auto_type m9_fam9t9 = (((void *)(b).p)); __auto_type m9_fam9t10 = (((int)(INT64_C(0)))); __auto_type m9_fam9t11 = (((int) m9_i32 (options, err))); if (err->exc) goto L_hdl_m9t7; __auto_type m9_fam9t12 = (((int) m9_i32 (facility, err))); if (err->exc) goto L_hdl_m9t7; m9_mon *m9_gm = m9_gate (&m9_gate_csyslog, "csyslog"); m9_mon_enter (m9_gm); m9_openlog (m9_fam9t9, m9_fam9t10, m9_fam9t11, m9_fam9t12); m9_mon_leave (m9_gm); });
-    if (err->exc) goto L_hdl_m9t7;
+    ({ __auto_type m9_fam9t9 = (((void *)(b).p)); __auto_type m9_fam9t10 = (((int)(INT64_C(0)))); __auto_type m9_fam9t11 = (((int) m9_i32 (options, err))); if (err->exc) { m9ln = 156; goto L_hdl_m9t7; }; __auto_type m9_fam9t12 = (((int) m9_i32 (facility, err))); if (err->exc) { m9ln = 156; goto L_hdl_m9t7; }; m9_mon *m9_gm = m9_gate (&m9_gate_csyslog, "csyslog"); m9_mon_enter (m9_gm); m9_openlog (m9_fam9t9, m9_fam9t10, m9_fam9t11, m9_fam9t12); m9_mon_leave (m9_gm); });
+    if (err->exc) { m9ln = 156; goto L_hdl_m9t7; };
     goto L_dn_m9t8;
 L_hdl_m9t7: ;
     if (err->exc == &m9_exc_ValueRange) {
@@ -39,6 +41,7 @@ L_dn_m9t8: ;
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -50,8 +53,11 @@ void Syslog_Close (m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Syslog.Close"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   ({ m9_mon *m9_gm = m9_gate (&m9_gate_csyslog, "csyslog"); m9_mon_enter (m9_gm); m9_closelog (); m9_mon_leave (m9_gm); });
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -63,12 +69,15 @@ int64_t Syslog_Pri (int64_t facility, int64_t level, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Syslog.Pri"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   err->res = m9res;
   m9ret = m9_add_i64 (facility, level, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 169; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -80,6 +89,8 @@ void Syslog_Send (int64_t priority, m9_sl_UTF8 text, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Syslog.Send"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_BYTE b = {0}; (void) b;
   int64_t n = 0; (void) n;
   b = m9_utf_octets (text);
@@ -88,16 +99,16 @@ void Syslog_Send (int64_t priority, m9_sl_UTF8 text, m9_state *err)
     n = Syslog_MaxMsg;
     for (;;) {
       bool m9t3 = ((n > INT64_C(0)) && (m9_div_i64 ((int64_t)((*(uint8_t *) m9_at (b.p, n, b.len, sizeof (uint8_t), err))), INT64_C(64), err) == INT64_C(2)));
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 184; goto L_hdl_m9t1; };
       if (!(m9t3)) break;
       { __typeof__(n) m9v = m9_sub_i64 (n, INT64_C(1), err);
-        if (err->exc) goto L_hdl_m9t1;
+        if (err->exc) { m9ln = 184; goto L_hdl_m9t1; };
         n = m9v;
       }
     }
   }
-  ({ __auto_type m9_fam9t4 = (((int) m9_i32 (priority, err))); if (err->exc) goto L_hdl_m9t1; __auto_type m9_fam9t5 = (((void *)(b).p)); __auto_type m9_fam9t6 = (((int) m9_i32 (n, err))); if (err->exc) goto L_hdl_m9t1; m9_syslog (m9_fam9t4, m9_fam9t5, m9_fam9t6); });
-  if (err->exc) goto L_hdl_m9t1;
+  ({ __auto_type m9_fam9t4 = (((int) m9_i32 (priority, err))); if (err->exc) { m9ln = 186; goto L_hdl_m9t1; }; __auto_type m9_fam9t5 = (((void *)(b).p)); __auto_type m9_fam9t6 = (((int) m9_i32 (n, err))); if (err->exc) { m9ln = 186; goto L_hdl_m9t1; }; m9_syslog (m9_fam9t4, m9_fam9t5, m9_fam9t6); });
+  if (err->exc) { m9ln = 186; goto L_hdl_m9t1; };
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if ((err->exc == &m9_exc_ValueRange || err->exc == &m9_exc_IndexError)) {
@@ -107,6 +118,7 @@ L_hdl_m9t1: ;
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -118,6 +130,8 @@ int64_t Syslog_FromLoggerLevel (int64_t level, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Syslog.FromLoggerLevel"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   { __typeof__(level) m9t1 = level;
   switch (m9t1) {
@@ -152,6 +166,7 @@ int64_t Syslog_FromLoggerLevel (int64_t level, m9_state *err)
   } break;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -164,6 +179,9 @@ void Syslog_m9init (m9_state *err)
   m9done = 1;
   m9_pool *m9prev = err->res;
   err->res = &m9mframe;
+  static const char m9pn[] = "Syslog (the module body)"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9prev;
 }

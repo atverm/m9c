@@ -386,6 +386,8 @@ Zip_Archive * Zip_Open (m9_pool *pool, m9_sl_UTF8 path, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Zip.Open"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Zip_Archive * m9ret = NULL;
   m9_pool scratch = {0}; (void) scratch;
   Zip_Archive * a = NULL; (void) a;
@@ -410,12 +412,13 @@ Zip_Archive * Zip_Open (m9_pool *pool, m9_sl_UTF8 path, m9_state *err)
   int64_t q = 0; (void) q;
   int64_t need = 0; (void) need;
   { __typeof__(size) m9v = Io_FileSizeUtf (path, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 350; goto L_hdl_m9t1; };
     size = m9v;
   }
   if ((size < INT64_C(22))) {
     { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s0, 23 }), path, err)) m9t3 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s0, 23 }), path, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Zip_Error);
+    m9_site (err, 351, m9pn);
     goto L_hdl_m9t1;
   }
   want = Zip_MaxComment;
@@ -423,118 +426,121 @@ Zip_Archive * Zip_Open (m9_pool *pool, m9_sl_UTF8 path, m9_state *err)
     want = size;
   }
   { __typeof__(m9_sub_i64 (size, want, err)) m9a1 = m9_sub_i64 (size, want, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 354; goto L_hdl_m9t1; };
   { __typeof__(tail) m9v = Io_ReadFileAt (&(scratch), path, m9a1, want, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 354; goto L_hdl_m9t1; };
     tail = m9v;
   }
   }
   { __typeof__(eocd) m9v = m9_neg_i64 (INT64_C(1), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 358; goto L_hdl_m9t1; };
     eocd = m9v;
   }
   { __typeof__(at) m9v = m9_sub_i64 ((tail).len, INT64_C(22), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 359; goto L_hdl_m9t1; };
     at = m9v;
   }
   for (;;) {
     if (!(((at >= INT64_C(0)) && (eocd < INT64_C(0))))) break;
     bool m9t4 = (Zip_U (tail, at, INT64_C(4), err) == Zip_SigEocd);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 361; goto L_hdl_m9t1; };
     if (m9t4) {
       eocd = at;
     }
     { __typeof__(at) m9v = m9_sub_i64 (at, INT64_C(1), err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 362; goto L_hdl_m9t1; };
       at = m9v;
     }
   }
   if ((eocd < INT64_C(0))) {
     { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s1, 38 }), path, err)) m9t5 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s1, 38 }), path, err); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     m9_raise (err, &Zip_Error);
+    m9_site (err, 365, m9pn);
     goto L_hdl_m9t1;
   }
   { __typeof__(m9_add_i64 (eocd, INT64_C(4), err)) m9a2 = m9_add_i64 (eocd, INT64_C(4), err);
-    if (err->exc) goto L_hdl_m9t1;
-  bool m9t7 = ({ bool m9t6 = (Zip_U (tail, m9a2, INT64_C(2), err) != INT64_C(0)); if (!m9t6) { { __typeof__(m9_add_i64 (eocd, INT64_C(6), err)) m9a3 = m9_add_i64 (eocd, INT64_C(6), err);   if (err->exc) goto L_hdl_m9t1; m9t6 = ((Zip_U (tail, m9a3, INT64_C(2), err) != INT64_C(0))); } } m9t6; });
-  if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 367; goto L_hdl_m9t1; };
+  bool m9t7 = ({ bool m9t6 = (Zip_U (tail, m9a2, INT64_C(2), err) != INT64_C(0)); if (!m9t6) { { __typeof__(m9_add_i64 (eocd, INT64_C(6), err)) m9a3 = m9_add_i64 (eocd, INT64_C(6), err);   if (err->exc) { m9ln = 367; goto L_hdl_m9t1; }; m9t6 = ((Zip_U (tail, m9a3, INT64_C(2), err) != INT64_C(0))); } } m9t6; });
+  if (err->exc) { m9ln = 367; goto L_hdl_m9t1; };
   if (m9t7) {
     { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s2, 39 }), path, err)) m9t8 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s2, 39 }), path, err); err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
     m9_raise (err, &Zip_Error);
+    m9_site (err, 368, m9pn);
     goto L_hdl_m9t1;
   } }
   { __typeof__(m9_add_i64 (eocd, INT64_C(10), err)) m9a4 = m9_add_i64 (eocd, INT64_C(10), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 370; goto L_hdl_m9t1; };
   { __typeof__(nent) m9v = Zip_U (tail, m9a4, INT64_C(2), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 370; goto L_hdl_m9t1; };
     nent = m9v;
   }
   }
   { __typeof__(m9_add_i64 (eocd, INT64_C(12), err)) m9a5 = m9_add_i64 (eocd, INT64_C(12), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 371; goto L_hdl_m9t1; };
   { __typeof__(cdSize) m9v = Zip_U (tail, m9a5, INT64_C(4), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 371; goto L_hdl_m9t1; };
     cdSize = m9v;
   }
   }
   { __typeof__(m9_add_i64 (eocd, INT64_C(16), err)) m9a6 = m9_add_i64 (eocd, INT64_C(16), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 372; goto L_hdl_m9t1; };
   { __typeof__(cdOff) m9v = Zip_U (tail, m9a6, INT64_C(4), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 372; goto L_hdl_m9t1; };
     cdOff = m9v;
   }
   }
   if ((eocd >= INT64_C(20))) {
     { __typeof__(m9_sub_i64 (eocd, INT64_C(20), err)) m9a7 = m9_sub_i64 (eocd, INT64_C(20), err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 378; goto L_hdl_m9t1; };
     bool m9t9 = (Zip_U (tail, m9a7, INT64_C(4), err) == Zip_SigLoc64);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 378; goto L_hdl_m9t1; };
     if (m9t9) {
       { __typeof__(m9_add_i64 (m9_sub_i64 (eocd, INT64_C(20), err), INT64_C(8), err)) m9a8 = m9_add_i64 (m9_sub_i64 (eocd, INT64_C(20), err), INT64_C(8), err);
-        if (err->exc) goto L_hdl_m9t1;
+        if (err->exc) { m9ln = 379; goto L_hdl_m9t1; };
       { __typeof__(at) m9v = Zip_U (tail, m9a8, INT64_C(8), err);
-        if (err->exc) goto L_hdl_m9t1;
+        if (err->exc) { m9ln = 379; goto L_hdl_m9t1; };
         at = m9v;
       }
       }
       { __typeof__(ex) m9v = Io_ReadFileAt (&(scratch), path, at, INT64_C(56), err);
-        if (err->exc) goto L_hdl_m9t1;
+        if (err->exc) { m9ln = 380; goto L_hdl_m9t1; };
         ex = m9v;
       }
       bool m9t10 = (((ex).len >= INT64_C(56)) && (Zip_U (ex, INT64_C(0), INT64_C(4), err) == Zip_SigEocd64));
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 381; goto L_hdl_m9t1; };
       if (m9t10) {
         { __typeof__(nent) m9v = Zip_U (ex, INT64_C(32), INT64_C(8), err);
-          if (err->exc) goto L_hdl_m9t1;
+          if (err->exc) { m9ln = 382; goto L_hdl_m9t1; };
           nent = m9v;
         }
         { __typeof__(cdSize) m9v = Zip_U (ex, INT64_C(40), INT64_C(8), err);
-          if (err->exc) goto L_hdl_m9t1;
+          if (err->exc) { m9ln = 383; goto L_hdl_m9t1; };
           cdSize = m9v;
         }
         { __typeof__(cdOff) m9v = Zip_U (ex, INT64_C(48), INT64_C(8), err);
-          if (err->exc) goto L_hdl_m9t1;
+          if (err->exc) { m9ln = 384; goto L_hdl_m9t1; };
           cdOff = m9v;
         }
       }
     } }
   }
   { __typeof__(cd) m9v = Io_ReadFileAt (&(scratch), path, cdOff, cdSize, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 389; goto L_hdl_m9t1; };
     cd = m9v;
   }
   if (((cd).len != cdSize)) {
     { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s3, 38 }), path, err)) m9t11 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s3, 38 }), path, err); err->s[0].p = m9t11.p; err->s[0].len = m9t11.len; m9_pay_keep (err, 0, sizeof (*m9t11.p)); }
     m9_raise (err, &Zip_Error);
+    m9_site (err, 391, m9pn);
     goto L_hdl_m9t1;
   }
   { __typeof__(a) m9v = (Zip_Archive *) m9_pool_alloc (&((*pool)), sizeof (Zip_Archive), 1, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 394; goto L_hdl_m9t1; };
     a = m9v;
   }
   a->path = path;
   { __typeof__(a->e) m9v = M9_POOL_SL (m9_sl_Zip_Entry, Zip_Entry, &((*pool)), nent, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 396; goto L_hdl_m9t1; };
     a->e = m9v;
   }
   a->n = INT64_C(0);
@@ -542,190 +548,193 @@ Zip_Archive * Zip_Open (m9_pool *pool, m9_sl_UTF8 path, m9_state *err)
   { __typeof__(i) m9t12to;
   i = INT64_C(0);
   m9t12to = m9_sub_i64 (nent, INT64_C(1), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 399; goto L_hdl_m9t1; };
   if (i <= m9t12to) for (;;) {
     bool m9t13 = (m9_add_i64 (p, INT64_C(46), err) > (cd).len);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 400; goto L_hdl_m9t1; };
     if (m9t13) {
       { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s4, 36 }), path, err)) m9t14 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s4, 36 }), path, err); err->s[0].p = m9t14.p; err->s[0].len = m9t14.len; m9_pay_keep (err, 0, sizeof (*m9t14.p)); }
       m9_raise (err, &Zip_Error);
+      m9_site (err, 401, m9pn);
       goto L_hdl_m9t1;
     }
     bool m9t15 = (Zip_U (cd, p, INT64_C(4), err) != Zip_SigCen);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 403; goto L_hdl_m9t1; };
     if (m9t15) {
       { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s5, 42 }), path, err)) m9t16 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s5, 42 }), path, err); err->s[0].p = m9t16.p; err->s[0].len = m9t16.len; m9_pay_keep (err, 0, sizeof (*m9t16.p)); }
       m9_raise (err, &Zip_Error);
+      m9_site (err, 404, m9pn);
       goto L_hdl_m9t1;
     }
     { __typeof__(m9_add_i64 (p, INT64_C(8), err)) m9a9 = m9_add_i64 (p, INT64_C(8), err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 406; goto L_hdl_m9t1; };
     { __typeof__(flags) m9v = Zip_U (cd, m9a9, INT64_C(2), err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 406; goto L_hdl_m9t1; };
       flags = m9v;
     }
     }
     bool m9t17 = (m9_mod_i64 (flags, INT64_C(2), err) == INT64_C(1));
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 408; goto L_hdl_m9t1; };
     if (m9t17) {
       { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s6, 40 }), path, err)) m9t18 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s6, 40 }), path, err); err->s[0].p = m9t18.p; err->s[0].len = m9t18.len; m9_pay_keep (err, 0, sizeof (*m9t18.p)); }
       m9_raise (err, &Zip_Error);
+      m9_site (err, 409, m9pn);
       goto L_hdl_m9t1;
     }
     { __typeof__(m9_add_i64 (p, INT64_C(10), err)) m9a10 = m9_add_i64 (p, INT64_C(10), err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 411; goto L_hdl_m9t1; };
     { __typeof__((*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).method) m9v = Zip_U (cd, m9a10, INT64_C(2), err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 411; goto L_hdl_m9t1; };
       (*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).method = m9v;
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 411; goto L_hdl_m9t1; };
     }
     }
     { __typeof__(m9_add_i64 (p, INT64_C(16), err)) m9a11 = m9_add_i64 (p, INT64_C(16), err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 412; goto L_hdl_m9t1; };
     { __typeof__((*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).crc) m9v = Zip_U (cd, m9a11, INT64_C(4), err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 412; goto L_hdl_m9t1; };
       (*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).crc = m9v;
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 412; goto L_hdl_m9t1; };
     }
     }
     { __typeof__(m9_add_i64 (p, INT64_C(20), err)) m9a12 = m9_add_i64 (p, INT64_C(20), err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 413; goto L_hdl_m9t1; };
     { __typeof__((*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).csize) m9v = Zip_U (cd, m9a12, INT64_C(4), err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 413; goto L_hdl_m9t1; };
       (*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).csize = m9v;
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 413; goto L_hdl_m9t1; };
     }
     }
     { __typeof__(m9_add_i64 (p, INT64_C(24), err)) m9a13 = m9_add_i64 (p, INT64_C(24), err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 414; goto L_hdl_m9t1; };
     { __typeof__((*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).usize) m9v = Zip_U (cd, m9a13, INT64_C(4), err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 414; goto L_hdl_m9t1; };
       (*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).usize = m9v;
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 414; goto L_hdl_m9t1; };
     }
     }
     { __typeof__(m9_add_i64 (p, INT64_C(28), err)) m9a14 = m9_add_i64 (p, INT64_C(28), err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 415; goto L_hdl_m9t1; };
     { __typeof__(nameLen) m9v = Zip_U (cd, m9a14, INT64_C(2), err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 415; goto L_hdl_m9t1; };
       nameLen = m9v;
     }
     }
     { __typeof__(m9_add_i64 (p, INT64_C(30), err)) m9a15 = m9_add_i64 (p, INT64_C(30), err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 416; goto L_hdl_m9t1; };
     { __typeof__(exLen) m9v = Zip_U (cd, m9a15, INT64_C(2), err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 416; goto L_hdl_m9t1; };
       exLen = m9v;
     }
     }
     { __typeof__(m9_add_i64 (p, INT64_C(32), err)) m9a16 = m9_add_i64 (p, INT64_C(32), err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 417; goto L_hdl_m9t1; };
     { __typeof__(cmLen) m9v = Zip_U (cd, m9a16, INT64_C(2), err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 417; goto L_hdl_m9t1; };
       cmLen = m9v;
     }
     }
     { __typeof__(m9_add_i64 (p, INT64_C(42), err)) m9a17 = m9_add_i64 (p, INT64_C(42), err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 418; goto L_hdl_m9t1; };
     { __typeof__((*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).hdrOff) m9v = Zip_U (cd, m9a17, INT64_C(4), err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 418; goto L_hdl_m9t1; };
       (*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).hdrOff = m9v;
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 418; goto L_hdl_m9t1; };
     }
     }
     bool m9t19 = (m9_mod_i64 ((m9_div_i64 (flags, INT64_C(2048), err)), INT64_C(2), err) == INT64_C(1));
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 421; goto L_hdl_m9t1; };
     if (m9t19) {
       { __typeof__((*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).name) m9v = m9_utf_from_bytes (&((*pool)), ({ __auto_type m9t20 = cd; int64_t m9t20a = m9_add_i64 (p, INT64_C(46), err), m9t20n = nameLen; int64_t m9t20o = m9_chk_slice (m9t20a, m9t20n, m9t20.len, err); (__typeof__(m9t20)){ m9t20.p + m9t20o, err->exc ? 0 : m9t20n }; }), err);
-        if (err->exc) goto L_hdl_m9t1;
+        if (err->exc) { m9ln = 422; goto L_hdl_m9t1; };
         (*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).name = m9v;
-        if (err->exc) goto L_hdl_m9t1;
+        if (err->exc) { m9ln = 422; goto L_hdl_m9t1; };
       }
     } else {
       { __typeof__(({ __auto_type m9t21 = cd; int64_t m9t21a = m9_add_i64 (p, INT64_C(46), err), m9t21n = nameLen; int64_t m9t21o = m9_chk_slice (m9t21a, m9t21n, m9t21.len, err); (__typeof__(m9t21)){ m9t21.p + m9t21o, err->exc ? 0 : m9t21n }; })) m9a18 = ({ __auto_type m9t21 = cd; int64_t m9t21a = m9_add_i64 (p, INT64_C(46), err), m9t21n = nameLen; int64_t m9t21o = m9_chk_slice (m9t21a, m9t21n, m9t21.len, err); (__typeof__(m9t21)){ m9t21.p + m9t21o, err->exc ? 0 : m9t21n }; });
-        if (err->exc) goto L_hdl_m9t1;
+        if (err->exc) { m9ln = 424; goto L_hdl_m9t1; };
       { __typeof__((*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).name) m9v = DynStr_Chars (pool, m9a18, err);
-        if (err->exc) goto L_hdl_m9t1;
+        if (err->exc) { m9ln = 424; goto L_hdl_m9t1; };
         (*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).name = m9v;
-        if (err->exc) goto L_hdl_m9t1;
+        if (err->exc) { m9ln = 424; goto L_hdl_m9t1; };
       }
       }
     }
     { __typeof__(q) m9v = m9_add_i64 (m9_add_i64 (p, INT64_C(46), err), nameLen, err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 428; goto L_hdl_m9t1; };
       q = m9v;
     }
     { __typeof__(need) m9v = m9_add_i64 (q, exLen, err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 429; goto L_hdl_m9t1; };
       need = m9v;
     }
     for (;;) {
       bool m9t22 = (m9_add_i64 (q, INT64_C(4), err) <= need);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 430; goto L_hdl_m9t1; };
       if (!(m9t22)) break;
       { __typeof__(id) m9v = Zip_U (cd, q, INT64_C(2), err);
-        if (err->exc) goto L_hdl_m9t1;
+        if (err->exc) { m9ln = 431; goto L_hdl_m9t1; };
         id = m9v;
       }
       { __typeof__(m9_add_i64 (q, INT64_C(2), err)) m9a19 = m9_add_i64 (q, INT64_C(2), err);
-        if (err->exc) goto L_hdl_m9t1;
+        if (err->exc) { m9ln = 432; goto L_hdl_m9t1; };
       { __typeof__(exSz) m9v = Zip_U (cd, m9a19, INT64_C(2), err);
-        if (err->exc) goto L_hdl_m9t1;
+        if (err->exc) { m9ln = 432; goto L_hdl_m9t1; };
         exSz = m9v;
       }
       }
       if ((id == INT64_C(1))) {
         { __typeof__(at) m9v = m9_add_i64 (q, INT64_C(4), err);
-          if (err->exc) goto L_hdl_m9t1;
+          if (err->exc) { m9ln = 434; goto L_hdl_m9t1; };
           at = m9v;
         }
         bool m9t23 = (((*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).usize == INT64_C(4294967295)) && (m9_add_i64 (at, INT64_C(8), err) <= m9_add_i64 (m9_add_i64 (q, INT64_C(4), err), exSz, err)));
-        if (err->exc) goto L_hdl_m9t1;
+        if (err->exc) { m9ln = 435; goto L_hdl_m9t1; };
         if (m9t23) {
           { __typeof__((*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).usize) m9v = Zip_U (cd, at, INT64_C(8), err);
-            if (err->exc) goto L_hdl_m9t1;
+            if (err->exc) { m9ln = 436; goto L_hdl_m9t1; };
             (*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).usize = m9v;
-            if (err->exc) goto L_hdl_m9t1;
+            if (err->exc) { m9ln = 436; goto L_hdl_m9t1; };
           }
           { __typeof__(at) m9v = m9_add_i64 (at, INT64_C(8), err);
-            if (err->exc) goto L_hdl_m9t1;
+            if (err->exc) { m9ln = 436; goto L_hdl_m9t1; };
             at = m9v;
           }
         }
         bool m9t24 = (((*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).csize == INT64_C(4294967295)) && (m9_add_i64 (at, INT64_C(8), err) <= m9_add_i64 (m9_add_i64 (q, INT64_C(4), err), exSz, err)));
-        if (err->exc) goto L_hdl_m9t1;
+        if (err->exc) { m9ln = 438; goto L_hdl_m9t1; };
         if (m9t24) {
           { __typeof__((*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).csize) m9v = Zip_U (cd, at, INT64_C(8), err);
-            if (err->exc) goto L_hdl_m9t1;
+            if (err->exc) { m9ln = 439; goto L_hdl_m9t1; };
             (*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).csize = m9v;
-            if (err->exc) goto L_hdl_m9t1;
+            if (err->exc) { m9ln = 439; goto L_hdl_m9t1; };
           }
           { __typeof__(at) m9v = m9_add_i64 (at, INT64_C(8), err);
-            if (err->exc) goto L_hdl_m9t1;
+            if (err->exc) { m9ln = 439; goto L_hdl_m9t1; };
             at = m9v;
           }
         }
         bool m9t25 = (((*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).hdrOff == INT64_C(4294967295)) && (m9_add_i64 (at, INT64_C(8), err) <= m9_add_i64 (m9_add_i64 (q, INT64_C(4), err), exSz, err)));
-        if (err->exc) goto L_hdl_m9t1;
+        if (err->exc) { m9ln = 441; goto L_hdl_m9t1; };
         if (m9t25) {
           { __typeof__((*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).hdrOff) m9v = Zip_U (cd, at, INT64_C(8), err);
-            if (err->exc) goto L_hdl_m9t1;
+            if (err->exc) { m9ln = 442; goto L_hdl_m9t1; };
             (*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).hdrOff = m9v;
-            if (err->exc) goto L_hdl_m9t1;
+            if (err->exc) { m9ln = 442; goto L_hdl_m9t1; };
           }
         }
       }
       { __typeof__(q) m9v = m9_add_i64 (m9_add_i64 (q, INT64_C(4), err), exSz, err);
-        if (err->exc) goto L_hdl_m9t1;
+        if (err->exc) { m9ln = 445; goto L_hdl_m9t1; };
         q = m9v;
       }
     }
     { __typeof__(p) m9v = m9_add_i64 (m9_add_i64 (m9_add_i64 (m9_add_i64 (p, INT64_C(46), err), nameLen, err), exLen, err), cmLen, err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 447; goto L_hdl_m9t1; };
       p = m9v;
     }
     { __typeof__(a->n) m9v = m9_add_i64 (a->n, INT64_C(1), err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 448; goto L_hdl_m9t1; };
       a->n = m9v;
     }
     if ((uint64_t) m9t12to - (uint64_t) i < (uint64_t) 1) break;
@@ -740,12 +749,14 @@ L_hdl_m9t1: ;
     err->exc = NULL;
     { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s7, 38 }), path, err)) m9t26 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s7, 38 }), path, err); err->s[0].p = m9t26.p; err->s[0].len = m9t26.len; m9_pay_keep (err, 0, sizeof (*m9t26.p)); }
     m9_raise (err, &Zip_Error);
+    m9_site (err, 452, m9pn);
     goto L_ret;
     goto L_dn_m9t2;
   }
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -759,11 +770,14 @@ int64_t Zip_Count (Zip_Archive * a, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.Count"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   err->res = m9res;
   m9ret = a->n;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -775,16 +789,20 @@ m9_sl_UTF8 Zip_NameAt (Zip_Archive * a, int64_t i, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.NameAt"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   if (((i < INT64_C(0)) || (i >= a->n))) {
     m9_raise (err, &m9_exc_IndexError);
+    m9_site (err, 463, m9pn);
     goto L_ret;
   }
   err->res = m9res;
   m9ret = (*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).name;
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 464; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -797,16 +815,20 @@ int64_t Zip_SizeAt (Zip_Archive * a, int64_t i, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.SizeAt"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   if (((i < INT64_C(0)) || (i >= a->n))) {
     m9_raise (err, &m9_exc_IndexError);
+    m9_site (err, 469, m9pn);
     goto L_ret;
   }
   err->res = m9res;
   m9ret = (*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).usize;
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 470; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -818,16 +840,20 @@ int64_t Zip_MethodAt (Zip_Archive * a, int64_t i, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.MethodAt"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   if (((i < INT64_C(0)) || (i >= a->n))) {
     m9_raise (err, &m9_exc_IndexError);
+    m9_site (err, 475, m9pn);
     goto L_ret;
   }
   err->res = m9res;
   m9ret = (*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).method;
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 476; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -839,16 +865,20 @@ int64_t Zip_CrcAt (Zip_Archive * a, int64_t i, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.CrcAt"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   if (((i < INT64_C(0)) || (i >= a->n))) {
     m9_raise (err, &m9_exc_IndexError);
+    m9_site (err, 481, m9pn);
     goto L_ret;
   }
   err->res = m9res;
   m9ret = (*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).crc;
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 482; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -860,17 +890,19 @@ int64_t Zip_Find (Zip_Archive * a, m9_sl_UTF8 name, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.Find"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   int64_t i = 0; (void) i;
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (a->n, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 489; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     { __typeof__((*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).name) m9a20 = (*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).name;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 490; goto L_ret; };
     bool m9t2 = Text_EqUtf (m9a20, name, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 490; goto L_ret; };
     if (m9t2) {
       err->res = m9res;
       m9ret = i;
@@ -881,9 +913,10 @@ int64_t Zip_Find (Zip_Archive * a, m9_sl_UTF8 name, m9_state *err)
   } }
   err->res = m9res;
   m9ret = m9_neg_i64 (INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 492; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -895,83 +928,88 @@ Zip_Member * Zip_OpenMember (m9_pool *pool, Zip_Archive * a, int64_t i, int64_t 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Zip.OpenMember"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Zip_Member * m9ret = NULL;
   m9_pool scratch = {0}; (void) scratch;
   Zip_Member * m = NULL; (void) m;
   m9_sl_BYTE lh = {0}; (void) lh;
   if (((i < INT64_C(0)) || (i >= a->n))) {
     m9_raise (err, &m9_exc_IndexError);
+    m9_site (err, 1109, m9pn);
     goto L_ret;
   }
   bool m9t1 = (((*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).method != Zip_Stored) && ((*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).method != Zip_Deflated));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1110; goto L_ret; };
   if (m9t1) {
     { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s8, 34 }), (*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).name, err)) m9t2 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s8, 34 }), (*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).name, err); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Zip_Error);
+    m9_site (err, 1111, m9pn);
     goto L_ret;
   }
   if ((block <= INT64_C(0))) {
     block = Zip_DefaultBlock;
   }
   bool m9t3 = (block < m9_mul_i64 (INT64_C(4), Zip_LowWater, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1116; goto L_ret; };
   if (m9t3) {
     { __typeof__(block) m9v = m9_mul_i64 (INT64_C(4), Zip_LowWater, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1116; goto L_ret; };
       block = m9v;
     }
   }
   { __typeof__((*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).hdrOff) m9a21 = (*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).hdrOff;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1121; goto L_ret; };
   { __typeof__(lh) m9v = Io_ReadFileAt (&(scratch), a->path, m9a21, INT64_C(30), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1121; goto L_ret; };
     lh = m9v;
   }
   }
   bool m9t4 = (((lh).len < INT64_C(30)) || (Zip_U (lh, INT64_C(0), INT64_C(4), err) != Zip_SigLoc));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1122; goto L_ret; };
   if (m9t4) {
     { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s9, 32 }), (*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).name, err)) m9t5 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s9, 32 }), (*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).name, err); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     m9_raise (err, &Zip_Error);
+    m9_site (err, 1123, m9pn);
     goto L_ret;
   }
   { __typeof__(m) m9v = (Zip_Member *) m9_pool_alloc (&((*pool)), sizeof (Zip_Member), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1125; goto L_ret; };
     m = m9v;
   }
   m->path = a->path;
   { __typeof__(m->name) m9v = (*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).name;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1127; goto L_ret; };
     m->name = m9v;
   }
   { __typeof__(m->stored) m9v = ((*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).method == Zip_Stored);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1128; goto L_ret; };
     m->stored = m9v;
   }
   { __typeof__(m->dataOff) m9v = m9_add_i64 (m9_add_i64 (m9_add_i64 ((*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).hdrOff, INT64_C(30), err), Zip_U (lh, INT64_C(26), INT64_C(2), err), err), Zip_U (lh, INT64_C(28), INT64_C(2), err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1129; goto L_ret; };
     m->dataOff = m9v;
   }
   { __typeof__(m->cLeft) m9v = (*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).csize;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1130; goto L_ret; };
     m->cLeft = m9v;
   }
   m->done = false;
   m->crc = INT64_C(4294967295);
   { __typeof__(m->want) m9v = (*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).crc;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1133; goto L_ret; };
     m->want = m9v;
   }
   m->made = INT64_C(0);
   { __typeof__(m->usize) m9v = (*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).usize;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1135; goto L_ret; };
     m->usize = m9v;
   }
   if ((!m->stored)) {
     Zip_InflInit (pool, &(m->z), &((*pool)), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1137; goto L_ret; };
     { __typeof__(m->z.inb) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), block, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1138; goto L_ret; };
       m->z.inb = m9v;
     }
   }
@@ -979,6 +1017,7 @@ Zip_Member * Zip_OpenMember (m9_pool *pool, Zip_Archive * a, int64_t i, int64_t 
   m9ret = m;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -992,6 +1031,8 @@ int64_t Zip_Read (Zip_Member * *m, m9_pool *m_pool, m9_sl_BYTE *dst, m9_state *e
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.Read"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE got = {0}; (void) got;
@@ -1011,47 +1052,47 @@ int64_t Zip_Read (Zip_Member * *m, m9_pool *m_pool, m9_sl_BYTE *dst, m9_state *e
     }
     if ((want == INT64_C(0))) {
       Zip_Finished (m, m_pool, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1200; goto L_ret; };
       err->res = m9res;
       m9ret = INT64_C(0);
       goto L_ret;
     }
     { __typeof__(got) m9v = Io_ReadFileAt (&(scratch), ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->path, ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->dataOff, want, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1201; goto L_ret; };
       got = m9v;
     }
     { __typeof__(k) m9t1to;
     k = INT64_C(0);
     m9t1to = m9_sub_i64 ((got).len, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1202; goto L_ret; };
     if (k <= m9t1to) for (;;) {
       { __typeof__((*(uint8_t *) m9_at ((*dst).p, k, (*dst).len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (got.p, k, got.len, sizeof (uint8_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1202; goto L_ret; };
         (*(uint8_t *) m9_at ((*dst).p, k, (*dst).len, sizeof (uint8_t), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1202; goto L_ret; };
       }
       if ((uint64_t) m9t1to - (uint64_t) k < (uint64_t) 1) break;
       k += 1;
     } }
     { __typeof__(({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->dataOff) m9v = m9_add_i64 (({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->dataOff, (got).len, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1203; goto L_ret; };
       ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->dataOff = m9v;
     }
     { __typeof__(({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cLeft) m9v = m9_sub_i64 (({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cLeft, (got).len, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1204; goto L_ret; };
       ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cLeft = m9v;
     }
     { __typeof__(({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->crc) m9v = Zip_CrcRun (({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->crc, got, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1205; goto L_ret; };
       ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->crc = m9v;
     }
     { __typeof__(({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->made) m9v = m9_add_i64 (({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->made, (got).len, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1206; goto L_ret; };
       ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->made = m9v;
     }
     if (((got).len == INT64_C(0))) {
       Zip_Finished (m, m_pool, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1207; goto L_ret; };
     }
     err->res = m9res;
     m9ret = (got).len;
@@ -1060,36 +1101,38 @@ int64_t Zip_Read (Zip_Member * *m, m9_pool *m_pool, m9_sl_BYTE *dst, m9_state *e
   out = INT64_C(0);
   for (;;) {
     Zip_Fill (m, m_pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1213; goto L_ret; };
     prev = out;
     { __typeof__(out) m9v = Zip_Step (&(({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->z), m_pool, dst, out, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1215; goto L_ret; };
       out = m9v;
     }
     if (({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->z.bad) {
       { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s10, 29 })) m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s10, 29 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
       m9_raise (err, &Zip_Error);
+      m9_site (err, 1216, m9pn);
       goto L_ret;
     }
     if (({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->z.short_) {
       { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s11, 26 })) m9t3 = ((m9_sl_UTF8){ (uint8_t *) m9s11, 26 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
       m9_raise (err, &Zip_Error);
+      m9_site (err, 1217, m9pn);
       goto L_ret;
     }
     { __typeof__(({ __auto_type m9t4 = (*dst); int64_t m9t4a = prev, m9t4n = m9_sub_i64 (out, prev, err); int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; })) m9a22 = ({ __auto_type m9t4 = (*dst); int64_t m9t4a = prev, m9t4n = m9_sub_i64 (out, prev, err); int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; });
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1218; goto L_ret; };
     { __typeof__(({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->crc) m9v = Zip_CrcRun (({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->crc, m9a22, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1218; goto L_ret; };
       ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->crc = m9v;
     }
     }
     { __typeof__(({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->made) m9v = m9_sub_i64 (m9_add_i64 (({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->made, out, err), prev, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1219; goto L_ret; };
       ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->made = m9v;
     }
     if ((({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->z.state == Zip_StDone)) {
       Zip_Finished (m, m_pool, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1221; goto L_ret; };
       err->res = m9res;
       m9ret = out;
       goto L_ret;
@@ -1101,6 +1144,7 @@ int64_t Zip_Read (Zip_Member * *m, m9_pool *m_pool, m9_sl_BYTE *dst, m9_state *e
     }
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m_pool, (*m));
   m9_adopt_if (&m9frame, m9res, (*dst).p);
@@ -1115,8 +1159,11 @@ void Zip_Close (Zip_Member * *m, m9_pool *m_pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.Close"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->done = true;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m_pool, (*m));
   m9_pool_free (&m9frame);
@@ -1129,16 +1176,19 @@ m9_sl_BYTE Zip_Gunzip (m9_pool *pool, m9_sl_UTF8 path, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Zip.Gunzip"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_BYTE m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   err->res = m9res;
   { __typeof__(Io_ReadFileBytesUtf (&(scratch), path, err)) m9a23 = Io_ReadFileBytesUtf (&(scratch), path, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1349; goto L_ret; };
   m9ret = Zip_GunzipBytes (pool, m9a23, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1349; goto L_ret; };
   }
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
@@ -1152,6 +1202,8 @@ m9_sl_BYTE Zip_GunzipBytes (m9_pool *pool, m9_sl_BYTE data, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Zip.GunzipBytes"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_BYTE m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   Zip_Infl z = {0}; (void) z;
@@ -1172,29 +1224,29 @@ m9_sl_BYTE Zip_GunzipBytes (m9_pool *pool, m9_sl_BYTE data, m9_state *err)
   room = INT64_C(4096);
   if ((n >= INT64_C(18))) {
     { __typeof__(m9_sub_i64 (n, INT64_C(4), err)) m9a24 = m9_sub_i64 (n, INT64_C(4), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1294; goto L_ret; };
     { __typeof__(size) m9v = Zip_U (data, m9a24, INT64_C(4), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1294; goto L_ret; };
       size = m9v;
     }
     }
     bool m9t1 = ((size >= room) && (size <= m9_mul_i64 (INT64_C(1032), n, err)));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1295; goto L_ret; };
     if (m9t1) {
       { __typeof__(room) m9v = m9_add_i64 (size, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1295; goto L_ret; };
         room = m9v;
       }
     }
   }
   { __typeof__(first) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), room, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1297; goto L_ret; };
     first = m9v;
   }
   buf = first;
   direct = true;
   Zip_InflInit (&(scratch), &(z), err->res, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1300; goto L_ret; };
   z.inb = data;
   z.inLen = n;
   z.last = true;
@@ -1204,26 +1256,28 @@ m9_sl_BYTE Zip_GunzipBytes (m9_pool *pool, m9_sl_BYTE data, m9_state *err)
   for (;;) {
     if (!((at < n))) break;
     { __typeof__(at) m9v = Zip_GzHeader (data, at, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1308; goto L_ret; };
       at = m9v;
     }
     start = total;
     Zip_InflReset (&(z), err->res, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1310; goto L_ret; };
     z.inPos = at;
     for (;;) {
       { __typeof__(total) m9v = Zip_Step (&(z), err->res, &(buf), total, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1313; goto L_ret; };
         total = m9v;
       }
       if (z.bad) {
         { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s12, 26 })) m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s12, 26 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
         m9_raise (err, &Zip_Error);
+        m9_site (err, 1314, m9pn);
         goto L_ret;
       }
       if (z.short_) {
         { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s13, 37 })) m9t3 = ((m9_sl_UTF8){ (uint8_t *) m9s13, 37 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
         m9_raise (err, &Zip_Error);
+        m9_site (err, 1315, m9pn);
         goto L_ret;
       }
       if ((z.state == Zip_StDone)) {
@@ -1232,21 +1286,22 @@ m9_sl_BYTE Zip_GunzipBytes (m9_pool *pool, m9_sl_BYTE data, m9_state *err)
       if ((total < (buf).len)) {
         { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s14, 26 })) m9t4 = ((m9_sl_UTF8){ (uint8_t *) m9s14, 26 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
         m9_raise (err, &Zip_Error);
+        m9_site (err, 1318, m9pn);
         goto L_ret;
       }
       { __typeof__(grown) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), m9_mul_i64 (INT64_C(2), (buf).len, err), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1319; goto L_ret; };
         grown = m9v;
       }
       { __typeof__(k) m9t5to;
       k = INT64_C(0);
       m9t5to = m9_sub_i64 (total, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1320; goto L_ret; };
       if (k <= m9t5to) for (;;) {
         { __typeof__((*(uint8_t *) m9_at (grown.p, k, grown.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (buf.p, k, buf.len, sizeof (uint8_t), err));
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1320; goto L_ret; };
           (*(uint8_t *) m9_at (grown.p, k, grown.len, sizeof (uint8_t), err)) = m9v;
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1320; goto L_ret; };
         }
         if ((uint64_t) m9t5to - (uint64_t) k < (uint64_t) 1) break;
         k += 1;
@@ -1255,66 +1310,69 @@ m9_sl_BYTE Zip_GunzipBytes (m9_pool *pool, m9_sl_BYTE data, m9_state *err)
       direct = false;
     }
     Zip_InflFinish (&(z), err->res, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1324; goto L_ret; };
     at = z.inPos;
     bool m9t6 = (m9_sub_i64 (n, at, err) < INT64_C(8));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1326; goto L_ret; };
     if (m9t6) {
       { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s15, 40 })) m9t7 = ((m9_sl_UTF8){ (uint8_t *) m9s15, 40 }); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
       m9_raise (err, &Zip_Error);
+      m9_site (err, 1326, m9pn);
       goto L_ret;
     }
     { __typeof__(crc) m9v = Zip_U (data, at, INT64_C(4), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1327; goto L_ret; };
       crc = m9v;
     }
     { __typeof__(m9_add_i64 (at, INT64_C(4), err)) m9a25 = m9_add_i64 (at, INT64_C(4), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1328; goto L_ret; };
     { __typeof__(size) m9v = Zip_U (data, m9a25, INT64_C(4), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1328; goto L_ret; };
       size = m9v;
     }
     }
     { __typeof__(at) m9v = m9_add_i64 (at, INT64_C(8), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1329; goto L_ret; };
       at = m9v;
     }
     { __typeof__(({ __auto_type m9t8 = buf; int64_t m9t8a = start, m9t8n = m9_sub_i64 (total, start, err); int64_t m9t8o = m9_chk_slice (m9t8a, m9t8n, m9t8.len, err); (__typeof__(m9t8)){ m9t8.p + m9t8o, err->exc ? 0 : m9t8n }; })) m9a26 = ({ __auto_type m9t8 = buf; int64_t m9t8a = start, m9t8n = m9_sub_i64 (total, start, err); int64_t m9t8o = m9_chk_slice (m9t8a, m9t8n, m9t8.len, err); (__typeof__(m9t8)){ m9t8.p + m9t8o, err->exc ? 0 : m9t8n }; });
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1330; goto L_ret; };
     bool m9t9 = (Zip_Crc32 (m9a26, err) != crc);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1330; goto L_ret; };
     if (m9t9) {
       { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s16, 37 })) m9t10 = ((m9_sl_UTF8){ (uint8_t *) m9s16, 37 }); err->s[0].p = m9t10.p; err->s[0].len = m9t10.len; m9_pay_keep (err, 0, sizeof (*m9t10.p)); }
       m9_raise (err, &Zip_Error);
+      m9_site (err, 1331, m9pn);
       goto L_ret;
     } }
     bool m9t11 = (m9_mod_i64 ((m9_sub_i64 (total, start, err)), INT64_C(4294967296), err) != size);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1333; goto L_ret; };
     if (m9t11) {
       { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s17, 40 })) m9t12 = ((m9_sl_UTF8){ (uint8_t *) m9s17, 40 }); err->s[0].p = m9t12.p; err->s[0].len = m9t12.len; m9_pay_keep (err, 0, sizeof (*m9t12.p)); }
       m9_raise (err, &Zip_Error);
+      m9_site (err, 1334, m9pn);
       goto L_ret;
     }
   }
   if (direct) {
     err->res = m9res;
     m9ret = ({ __auto_type m9t13 = first; int64_t m9t13a = INT64_C(0), m9t13n = total; int64_t m9t13o = m9_chk_slice (m9t13a, m9t13n, m9t13.len, err); (__typeof__(m9t13)){ m9t13.p + m9t13o, err->exc ? 0 : m9t13n }; });
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1337; goto L_ret; };
     goto L_ret;
   }
   { __typeof__(out) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), total, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1340; goto L_ret; };
     out = m9v;
   }
   { __typeof__(k) m9t14to;
   k = INT64_C(0);
   m9t14to = m9_sub_i64 (total, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1341; goto L_ret; };
   if (k <= m9t14to) for (;;) {
     { __typeof__((*(uint8_t *) m9_at (out.p, k, out.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (buf.p, k, buf.len, sizeof (uint8_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1341; goto L_ret; };
       (*(uint8_t *) m9_at (out.p, k, out.len, sizeof (uint8_t), err)) = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1341; goto L_ret; };
     }
     if ((uint64_t) m9t14to - (uint64_t) k < (uint64_t) 1) break;
     k += 1;
@@ -1323,6 +1381,7 @@ m9_sl_BYTE Zip_GunzipBytes (m9_pool *pool, m9_sl_BYTE data, m9_state *err)
   m9ret = out;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
@@ -1336,12 +1395,15 @@ m9_sl_BYTE Zip_Deflate (m9_pool *pool, m9_sl_BYTE data, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Zip.Deflate"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_BYTE m9ret = {0};
   err->res = m9res;
   m9ret = Zip_Packed (pool, data, INT64_C(0), INT64_C(0), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1562; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
@@ -1354,34 +1416,37 @@ m9_sl_BYTE Zip_Compress (m9_pool *pool, m9_sl_BYTE data, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Zip.Compress"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_BYTE m9ret = {0};
   m9_sl_BYTE out = {0}; (void) out;
   { __typeof__(out) m9v = Zip_Packed (pool, data, INT64_C(2), INT64_C(4), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1615; goto L_ret; };
     out = m9v;
   }
   { __typeof__((*(uint8_t *) m9_at (out.p, INT64_C(0), out.len, sizeof (uint8_t), err))) m9v = m9_byte (INT64_C(120), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1618; goto L_ret; };
     (*(uint8_t *) m9_at (out.p, INT64_C(0), out.len, sizeof (uint8_t), err)) = m9v;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1618; goto L_ret; };
   }
   { __typeof__((*(uint8_t *) m9_at (out.p, INT64_C(1), out.len, sizeof (uint8_t), err))) m9v = m9_byte (INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1619; goto L_ret; };
     (*(uint8_t *) m9_at (out.p, INT64_C(1), out.len, sizeof (uint8_t), err)) = m9v;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1619; goto L_ret; };
   }
   { __typeof__(m9_sub_i64 ((out).len, INT64_C(4), err)) m9a27 = m9_sub_i64 ((out).len, INT64_C(4), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1620; goto L_ret; };
   { __typeof__(Zip_Adler32 (data, err)) m9a28 = Zip_Adler32 (data, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1620; goto L_ret; };
   Zip_PutHigh (&(out), m9a27, m9a28, INT64_C(4), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1620; goto L_ret; };
   }
   }
   err->res = m9res;
   m9ret = out;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
@@ -1394,6 +1459,8 @@ m9_sl_BYTE Zip_Decompress (m9_pool *pool, m9_sl_BYTE data, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Zip.Decompress"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_BYTE m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   Zip_Infl z = {0}; (void) z;
@@ -1408,49 +1475,54 @@ m9_sl_BYTE Zip_Decompress (m9_pool *pool, m9_sl_BYTE data, m9_state *err)
   if ((n < INT64_C(6))) {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s18, 39 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s18, 39 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Zip_Error);
+    m9_site (err, 1634, m9pn);
     goto L_ret;
   }
   bool m9t2 = ((m9_mod_i64 ((int64_t)((*(uint8_t *) m9_at (data.p, INT64_C(0), data.len, sizeof (uint8_t), err))), INT64_C(16), err) != INT64_C(8)) || (m9_mod_i64 ((m9_add_i64 (m9_mul_i64 ((int64_t)((*(uint8_t *) m9_at (data.p, INT64_C(0), data.len, sizeof (uint8_t), err))), INT64_C(256), err), (int64_t)((*(uint8_t *) m9_at (data.p, INT64_C(1), data.len, sizeof (uint8_t), err))), err)), INT64_C(31), err) != INT64_C(0)));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1635; goto L_ret; };
   if (m9t2) {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s19, 51 })) m9t3 = ((m9_sl_UTF8){ (uint8_t *) m9s19, 51 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Zip_Error);
+    m9_site (err, 1637, m9pn);
     goto L_ret;
   }
   bool m9t4 = (m9_mod_i64 ((m9_div_i64 ((int64_t)((*(uint8_t *) m9_at (data.p, INT64_C(1), data.len, sizeof (uint8_t), err))), INT64_C(32), err)), INT64_C(2), err) == INT64_C(1));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1639; goto L_ret; };
   if (m9t4) {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s20, 44 })) m9t5 = ((m9_sl_UTF8){ (uint8_t *) m9s20, 44 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     m9_raise (err, &Zip_Error);
+    m9_site (err, 1640, m9pn);
     goto L_ret;
   }
   { __typeof__(buf) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), m9_add_i64 (m9_mul_i64 (INT64_C(4), n, err), INT64_C(4096), err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1644; goto L_ret; };
     buf = m9v;
   }
   Zip_InflInit (&(scratch), &(z), err->res, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1645; goto L_ret; };
   z.inb = data;
   z.inLen = n;
   z.last = true;
   z.whole = true;
   Zip_InflReset (&(z), err->res, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1650; goto L_ret; };
   z.inPos = INT64_C(2);
   total = INT64_C(0);
   for (;;) {
     { __typeof__(total) m9v = Zip_Step (&(z), err->res, &(buf), total, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1654; goto L_ret; };
       total = m9v;
     }
     if (z.bad) {
       { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s21, 26 })) m9t6 = ((m9_sl_UTF8){ (uint8_t *) m9s21, 26 }); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
       m9_raise (err, &Zip_Error);
+      m9_site (err, 1655, m9pn);
       goto L_ret;
     }
     if (z.short_) {
       { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s22, 37 })) m9t7 = ((m9_sl_UTF8){ (uint8_t *) m9s22, 37 }); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
       m9_raise (err, &Zip_Error);
+      m9_site (err, 1656, m9pn);
       goto L_ret;
     }
     if ((z.state == Zip_StDone)) {
@@ -1459,21 +1531,22 @@ m9_sl_BYTE Zip_Decompress (m9_pool *pool, m9_sl_BYTE data, m9_state *err)
     if ((total < (buf).len)) {
       { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s23, 26 })) m9t8 = ((m9_sl_UTF8){ (uint8_t *) m9s23, 26 }); err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
       m9_raise (err, &Zip_Error);
+      m9_site (err, 1658, m9pn);
       goto L_ret;
     }
     { __typeof__(grown) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), m9_mul_i64 (INT64_C(2), (buf).len, err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1659; goto L_ret; };
       grown = m9v;
     }
     { __typeof__(k) m9t9to;
     k = INT64_C(0);
     m9t9to = m9_sub_i64 (total, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1660; goto L_ret; };
     if (k <= m9t9to) for (;;) {
       { __typeof__((*(uint8_t *) m9_at (grown.p, k, grown.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (buf.p, k, buf.len, sizeof (uint8_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1660; goto L_ret; };
         (*(uint8_t *) m9_at (grown.p, k, grown.len, sizeof (uint8_t), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1660; goto L_ret; };
       }
       if ((uint64_t) m9t9to - (uint64_t) k < (uint64_t) 1) break;
       k += 1;
@@ -1481,50 +1554,54 @@ m9_sl_BYTE Zip_Decompress (m9_pool *pool, m9_sl_BYTE data, m9_state *err)
     buf = grown;
   }
   Zip_InflFinish (&(z), err->res, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1663; goto L_ret; };
   at = z.inPos;
   bool m9t10 = (m9_sub_i64 (n, at, err) < INT64_C(4));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1665; goto L_ret; };
   if (m9t10) {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s24, 41 })) m9t11 = ((m9_sl_UTF8){ (uint8_t *) m9s24, 41 }); err->s[0].p = m9t11.p; err->s[0].len = m9t11.len; m9_pay_keep (err, 0, sizeof (*m9t11.p)); }
     m9_raise (err, &Zip_Error);
+    m9_site (err, 1666, m9pn);
     goto L_ret;
   }
   { __typeof__(out) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), total, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1668; goto L_ret; };
     out = m9v;
   }
   { __typeof__(k) m9t12to;
   k = INT64_C(0);
   m9t12to = m9_sub_i64 (total, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1669; goto L_ret; };
   if (k <= m9t12to) for (;;) {
     { __typeof__((*(uint8_t *) m9_at (out.p, k, out.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (buf.p, k, buf.len, sizeof (uint8_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1669; goto L_ret; };
       (*(uint8_t *) m9_at (out.p, k, out.len, sizeof (uint8_t), err)) = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1669; goto L_ret; };
     }
     if ((uint64_t) m9t12to - (uint64_t) k < (uint64_t) 1) break;
     k += 1;
   } }
   bool m9t13 = (Zip_Adler32 (out, err) != m9_add_i64 (m9_mul_i64 ((m9_add_i64 (m9_mul_i64 ((m9_add_i64 (m9_mul_i64 ((int64_t)((*(uint8_t *) m9_at (data.p, at, data.len, sizeof (uint8_t), err))), INT64_C(256), err), (int64_t)((*(uint8_t *) m9_at (data.p, m9_add_i64 (at, INT64_C(1), err), data.len, sizeof (uint8_t), err))), err)), INT64_C(256), err), (int64_t)((*(uint8_t *) m9_at (data.p, m9_add_i64 (at, INT64_C(2), err), data.len, sizeof (uint8_t), err))), err)), INT64_C(256), err), (int64_t)((*(uint8_t *) m9_at (data.p, m9_add_i64 (at, INT64_C(3), err), data.len, sizeof (uint8_t), err))), err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1670; goto L_ret; };
   if (m9t13) {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s25, 42 })) m9t14 = ((m9_sl_UTF8){ (uint8_t *) m9s25, 42 }); err->s[0].p = m9t14.p; err->s[0].len = m9t14.len; m9_pay_keep (err, 0, sizeof (*m9t14.p)); }
     m9_raise (err, &Zip_Error);
+    m9_site (err, 1672, m9pn);
     goto L_ret;
   }
   bool m9t15 = (m9_add_i64 (at, INT64_C(4), err) != n);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1674; goto L_ret; };
   if (m9t15) {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s26, 27 })) m9t16 = ((m9_sl_UTF8){ (uint8_t *) m9s26, 27 }); err->s[0].p = m9t16.p; err->s[0].len = m9t16.len; m9_pay_keep (err, 0, sizeof (*m9t16.p)); }
     m9_raise (err, &Zip_Error);
+    m9_site (err, 1674, m9pn);
     goto L_ret;
   }
   err->res = m9res;
   m9ret = out;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
@@ -1538,54 +1615,57 @@ m9_sl_BYTE Zip_Gzip (m9_pool *pool, m9_sl_BYTE data, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Zip.Gzip"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_BYTE m9ret = {0};
   m9_sl_BYTE out = {0}; (void) out;
   int64_t crc = 0; (void) crc;
   { __typeof__(out) m9v = Zip_Packed (pool, data, INT64_C(10), INT64_C(8), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1685; goto L_ret; };
     out = m9v;
   }
   { __typeof__((*(uint8_t *) m9_at (out.p, INT64_C(0), out.len, sizeof (uint8_t), err))) m9v = m9_byte (INT64_C(31), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1686; goto L_ret; };
     (*(uint8_t *) m9_at (out.p, INT64_C(0), out.len, sizeof (uint8_t), err)) = m9v;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1686; goto L_ret; };
   }
   { __typeof__((*(uint8_t *) m9_at (out.p, INT64_C(1), out.len, sizeof (uint8_t), err))) m9v = m9_byte (INT64_C(139), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1687; goto L_ret; };
     (*(uint8_t *) m9_at (out.p, INT64_C(1), out.len, sizeof (uint8_t), err)) = m9v;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1687; goto L_ret; };
   }
   { __typeof__((*(uint8_t *) m9_at (out.p, INT64_C(2), out.len, sizeof (uint8_t), err))) m9v = m9_byte (INT64_C(8), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1688; goto L_ret; };
     (*(uint8_t *) m9_at (out.p, INT64_C(2), out.len, sizeof (uint8_t), err)) = m9v;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1688; goto L_ret; };
   }
   { __typeof__((*(uint8_t *) m9_at (out.p, INT64_C(9), out.len, sizeof (uint8_t), err))) m9v = m9_byte (INT64_C(255), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1690; goto L_ret; };
     (*(uint8_t *) m9_at (out.p, INT64_C(9), out.len, sizeof (uint8_t), err)) = m9v;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1690; goto L_ret; };
   }
   { __typeof__(crc) m9v = Zip_Crc32 (data, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1691; goto L_ret; };
     crc = m9v;
   }
   { __typeof__(m9_sub_i64 ((out).len, INT64_C(8), err)) m9a29 = m9_sub_i64 ((out).len, INT64_C(8), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1692; goto L_ret; };
   Zip_PutLow (&(out), m9a29, crc, INT64_C(4), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1692; goto L_ret; };
   }
   { __typeof__(m9_sub_i64 ((out).len, INT64_C(4), err)) m9a30 = m9_sub_i64 ((out).len, INT64_C(4), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1693; goto L_ret; };
   { __typeof__(m9_mod_i64 ((data).len, INT64_C(4294967296), err)) m9a31 = m9_mod_i64 ((data).len, INT64_C(4294967296), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1693; goto L_ret; };
   Zip_PutLow (&(out), m9a30, m9a31, INT64_C(4), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1693; goto L_ret; };
   }
   }
   err->res = m9res;
   m9ret = out;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
@@ -1598,15 +1678,18 @@ int64_t Zip_Crc32 (m9_sl_BYTE b, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.Crc32"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   err->res = m9res;
   { __typeof__(Zip_CrcRun (INT64_C(4294967295), b, err)) m9a32 = Zip_CrcRun (INT64_C(4294967295), b, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1081; goto L_ret; };
   m9ret = Bits_Xor (m9a32, INT64_C(4294967295), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1081; goto L_ret; };
   }
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -1618,22 +1701,26 @@ int64_t Zip_Crc32Update (int64_t crc, m9_sl_BYTE b, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.Crc32Update"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   if (((crc < INT64_C(0)) || (crc > INT64_C(4294967295)))) {
     m9_raise (err, &m9_exc_ValueRange);
+    m9_site (err, 1086, m9pn);
     goto L_ret;
   }
   err->res = m9res;
   { __typeof__(Bits_Xor (crc, INT64_C(4294967295), err)) m9a33 = Bits_Xor (crc, INT64_C(4294967295), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1087; goto L_ret; };
   { __typeof__(Zip_CrcRun (m9a33, b, err)) m9a34 = Zip_CrcRun (m9a33, b, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1087; goto L_ret; };
   m9ret = Bits_Xor (m9a34, INT64_C(4294967295), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1087; goto L_ret; };
   }
   }
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -1645,6 +1732,8 @@ int64_t Zip_Adler32 (m9_sl_BYTE b, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.Adler32"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   int64_t a = 0; (void) a;
   int64_t s = 0; (void) s;
@@ -1658,7 +1747,7 @@ int64_t Zip_Adler32 (m9_sl_BYTE b, m9_state *err)
   for (;;) {
     if (!((i < n))) break;
     { __typeof__(stop) m9v = m9_add_i64 (i, INT64_C(5552), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1577; goto L_ret; };
       stop = m9v;
     }
     if ((stop > n)) {
@@ -1667,32 +1756,33 @@ int64_t Zip_Adler32 (m9_sl_BYTE b, m9_state *err)
     for (;;) {
       if (!((i < stop))) break;
       { __typeof__(a) m9v = m9_add_i64 (a, (int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1580; goto L_ret; };
         a = m9v;
       }
       { __typeof__(s) m9v = m9_add_i64 (s, a, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1581; goto L_ret; };
         s = m9v;
       }
       { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1582; goto L_ret; };
         i = m9v;
       }
     }
     { __typeof__(a) m9v = m9_mod_i64 (a, INT64_C(65521), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1584; goto L_ret; };
       a = m9v;
     }
     { __typeof__(s) m9v = m9_mod_i64 (s, INT64_C(65521), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1585; goto L_ret; };
       s = m9v;
     }
   }
   err->res = m9res;
   m9ret = m9_add_i64 (m9_mul_i64 (s, INT64_C(65536), err), a, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1587; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -1704,14 +1794,16 @@ Zip_Writer * Zip_NewWriter (m9_pool *pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Zip.NewWriter"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Zip_Writer * m9ret = NULL;
   Zip_Writer * w = NULL; (void) w;
   { __typeof__(w) m9v = (Zip_Writer *) m9_pool_alloc (&((*pool)), sizeof (Zip_Writer), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1724; goto L_ret; };
     w = m9v;
   }
   { __typeof__(w->e) m9v = M9_POOL_SL (m9_sl_Zip_WEntry, Zip_WEntry, &((*pool)), INT64_C(8), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1725; goto L_ret; };
     w->e = m9v;
   }
   w->n = INT64_C(0);
@@ -1721,6 +1813,7 @@ Zip_Writer * Zip_NewWriter (m9_pool *pool, m9_state *err)
   m9ret = w;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -1733,20 +1826,24 @@ void Zip_SetTime (Zip_Writer * *w, m9_pool *w_pool, int64_t year, int64_t month,
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.SetTime"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   if (((((((((((((year < INT64_C(1980)) || (year > INT64_C(2107))) || (month < INT64_C(1))) || (month > INT64_C(12))) || (day < INT64_C(1))) || (day > INT64_C(31))) || (hour < INT64_C(0))) || (hour > INT64_C(23))) || (minute < INT64_C(0))) || (minute > INT64_C(59))) || (second < INT64_C(0))) || (second > INT64_C(59)))) {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s27, 70 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s27, 70 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Zip_Error);
+    m9_site (err, 1738, m9pn);
     goto L_ret;
   }
   { __typeof__(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->dosDate) m9v = m9_add_i64 (m9_add_i64 (m9_mul_i64 ((m9_sub_i64 (year, INT64_C(1980), err)), INT64_C(512), err), m9_mul_i64 (month, INT64_C(32), err), err), day, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1740; goto L_ret; };
     ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->dosDate = m9v;
   }
   { __typeof__(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->dosTime) m9v = m9_add_i64 (m9_add_i64 (m9_mul_i64 (hour, INT64_C(2048), err), m9_mul_i64 (minute, INT64_C(32), err), err), m9_div_i64 (second, INT64_C(2), err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1741; goto L_ret; };
     ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->dosTime = m9v;
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, w_pool, (*w));
   m9_pool_free (&m9frame);
@@ -1759,36 +1856,41 @@ void Zip_AddBytes (Zip_Writer * *w, m9_pool *w_pool, m9_sl_UTF8 name, m9_sl_BYTE
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.AddBytes"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE nm = {0}; (void) nm;
   m9_sl_BYTE packed = {0}; (void) packed;
   m9_sl_Zip_WEntry more = {0}; (void) more;
   int64_t i = 0; (void) i;
   bool m9t1 = (Text_BLen (name, err) == INT64_C(0));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1785; goto L_ret; };
   if (m9t1) {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s28, 21 })) m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s28, 21 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Zip_Error);
+    m9_site (err, 1785, m9pn);
     goto L_ret;
   }
   nm = m9_utf_octets (name);
   if (((nm).len > Zip_MaxName)) {
     { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s29, 33 }), m9_utf_slice (name, INT64_C(0), INT64_C(40), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s30, 3 }), err)) m9t4 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s29, 33 }), m9_utf_slice (name, INT64_C(0), INT64_C(40), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s30, 3 }), err); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Zip_Error);
+    m9_site (err, 1788, m9pn);
     goto L_ret;
   }
   { __typeof__(i) m9t5to;
   i = INT64_C(0);
   m9t5to = m9_sub_i64 (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1790; goto L_ret; };
   if (i <= m9t5to) for (;;) {
     { __typeof__((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).name) m9a35 = (*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).name;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1791; goto L_ret; };
     bool m9t6 = Zip_SameBytes (m9a35, nm, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1791; goto L_ret; };
     if (m9t6) {
       { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s31, 22 }), name, err)) m9t7 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s31, 22 }), name, err); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
       m9_raise (err, &Zip_Error);
+      m9_site (err, 1792, m9pn);
       goto L_ret;
     } }
     if ((uint64_t) m9t5to - (uint64_t) i < (uint64_t) 1) break;
@@ -1797,16 +1899,18 @@ void Zip_AddBytes (Zip_Writer * *w, m9_pool *w_pool, m9_sl_UTF8 name, m9_sl_BYTE
   if ((({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n == Zip_MaxMembers)) {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s32, 23 })) m9t8 = ((m9_sl_UTF8){ (uint8_t *) m9s32, 23 }); err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
     m9_raise (err, &Zip_Error);
+    m9_site (err, 1795, m9pn);
     goto L_ret;
   }
   if (((data).len > Zip_Max32)) {
     { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s33, 43 }), name, err)) m9t9 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s33, 43 }), name, err); err->s[0].p = m9t9.p; err->s[0].len = m9t9.len; m9_pay_keep (err, 0, sizeof (*m9t9.p)); }
     m9_raise (err, &Zip_Error);
+    m9_site (err, 1796, m9pn);
     goto L_ret;
   }
   if (deflate) {
     { __typeof__(packed) m9v = Zip_Deflate (&(scratch), data, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1797; goto L_ret; };
       packed = m9v;
     }
   } else {
@@ -1815,31 +1919,33 @@ void Zip_AddBytes (Zip_Writer * *w, m9_pool *w_pool, m9_sl_UTF8 name, m9_sl_BYTE
   if (((packed).len > Zip_Max32)) {
     { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s34, 43 }), name, err)) m9t10 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s34, 43 }), name, err); err->s[0].p = m9t10.p; err->s[0].len = m9t10.len; m9_pay_keep (err, 0, sizeof (*m9t10.p)); }
     m9_raise (err, &Zip_Error);
+    m9_site (err, 1798, m9pn);
     goto L_ret;
   }
   { __typeof__(({ __auto_type m9n = ((*w)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a36 = ({ __auto_type m9n = ((*w)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1799; goto L_ret; };
   bool m9t11 = (m9_add_i64 (m9_add_i64 (m9_add_i64 (m9_add_i64 (m9_add_i64 (Zip_Laid (m9a36, err), Zip_LocHdr, err), (nm).len, err), (packed).len, err), m9_mul_i64 ((m9_add_i64 (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, INT64_C(1), err)), Zip_CenHdr, err), err), Zip_EocdLen, err) > Zip_Max32);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1799; goto L_ret; };
   if (m9t11) {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s35, 43 })) m9t12 = ((m9_sl_UTF8){ (uint8_t *) m9s35, 43 }); err->s[0].p = m9t12.p; err->s[0].len = m9t12.len; m9_pay_keep (err, 0, sizeof (*m9t12.p)); }
     m9_raise (err, &Zip_Error);
+    m9_site (err, 1800, m9pn);
     goto L_ret;
   } }
   if ((({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n == (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e).len)) {
     { __typeof__(more) m9v = M9_POOL_SL (m9_sl_Zip_WEntry, Zip_WEntry, w_pool, m9_mul_i64 (INT64_C(2), ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1803; goto L_ret; };
       more = m9v;
     }
     { __typeof__(i) m9t13to;
     i = INT64_C(0);
     m9t13to = m9_sub_i64 (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1804; goto L_ret; };
     if (i <= m9t13to) for (;;) {
       { __typeof__((*(Zip_WEntry *) m9_at (more.p, i, more.len, sizeof (Zip_WEntry), err))) m9v = (*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1804; goto L_ret; };
         (*(Zip_WEntry *) m9_at (more.p, i, more.len, sizeof (Zip_WEntry), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1804; goto L_ret; };
       }
       if ((uint64_t) m9t13to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
@@ -1847,38 +1953,39 @@ void Zip_AddBytes (Zip_Writer * *w, m9_pool *w_pool, m9_sl_UTF8 name, m9_sl_BYTE
     ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e = more;
   }
   { __typeof__((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).name) m9v = Zip_Kept (w, w_pool, nm, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1807; goto L_ret; };
     (*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).name = m9v;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1807; goto L_ret; };
   }
   { __typeof__((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).data) m9v = Zip_Kept (w, w_pool, packed, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1808; goto L_ret; };
     (*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).data = m9v;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1808; goto L_ret; };
   }
   if (deflate) {
     (*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).method = Zip_Deflated;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1809; goto L_ret; };
   } else {
     (*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).method = Zip_Stored;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1809; goto L_ret; };
   }
   { __typeof__((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).crc) m9v = Zip_Crc32 (data, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1810; goto L_ret; };
     (*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).crc = m9v;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1810; goto L_ret; };
   }
   (*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).usize = (data).len;
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1811; goto L_ret; };
   (*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).dosTime = ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->dosTime;
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1812; goto L_ret; };
   (*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).dosDate = ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->dosDate;
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1813; goto L_ret; };
   { __typeof__(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n) m9v = m9_add_i64 (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1814; goto L_ret; };
     ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n = m9v;
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, w_pool, (*w));
   m9_pool_free (&m9frame);
@@ -1892,13 +1999,16 @@ void Zip_AddFile (Zip_Writer * *w, m9_pool *w_pool, m9_sl_UTF8 name, m9_sl_UTF8 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.AddFile"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_pool scratch = {0}; (void) scratch;
   { __typeof__(Io_ReadFileBytesUtf (&(scratch), path, err)) m9a37 = Io_ReadFileBytesUtf (&(scratch), path, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1822; goto L_ret; };
   Zip_AddBytes (w, w_pool, name, m9a37, deflate, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1822; goto L_ret; };
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, w_pool, (*w));
   m9_pool_free (&m9frame);
@@ -1912,6 +2022,8 @@ m9_sl_BYTE Zip_Finish (Zip_Writer * *w, m9_pool *w_pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Zip.Finish"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_BYTE m9ret = {0};
   m9_sl_BYTE out = {0}; (void) out;
   int64_t i = 0; (void) i;
@@ -1924,141 +2036,141 @@ m9_sl_BYTE Zip_Finish (Zip_Writer * *w, m9_pool *w_pool, m9_state *err)
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1832; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     { __typeof__(cdLen) m9v = m9_add_i64 (m9_add_i64 (cdLen, Zip_CenHdr, err), ((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).name).len, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1832; goto L_ret; };
       cdLen = m9v;
     }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   { __typeof__(({ __auto_type m9n = ((*w)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a38 = ({ __auto_type m9n = ((*w)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1833; goto L_ret; };
   { __typeof__(cdAt) m9v = Zip_Laid (m9a38, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1833; goto L_ret; };
     cdAt = m9v;
   }
   }
   { __typeof__(out) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, w_pool, m9_add_i64 (m9_add_i64 (cdAt, cdLen, err), Zip_EocdLen, err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1834; goto L_ret; };
     out = m9v;
   }
   at = INT64_C(0);
   { __typeof__(i) m9t2to;
   i = INT64_C(0);
   m9t2to = m9_sub_i64 (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1836; goto L_ret; };
   if (i <= m9t2to) for (;;) {
     Zip_PutLow (&(out), at, Zip_SigLoc, INT64_C(4), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1837; goto L_ret; };
     { __typeof__(m9_add_i64 (at, INT64_C(4), err)) m9a39 = m9_add_i64 (at, INT64_C(4), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1838; goto L_ret; };
     Zip_PutLow (&(out), m9a39, INT64_C(20), INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1838; goto L_ret; };
     }
     { __typeof__(m9_add_i64 (at, INT64_C(6), err)) m9a40 = m9_add_i64 (at, INT64_C(6), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1839; goto L_ret; };
     Zip_PutLow (&(out), m9a40, INT64_C(2048), INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1839; goto L_ret; };
     }
     { __typeof__(m9_add_i64 (at, INT64_C(8), err)) m9a41 = m9_add_i64 (at, INT64_C(8), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1840; goto L_ret; };
     { __typeof__((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).method) m9a42 = (*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).method;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1840; goto L_ret; };
     Zip_PutLow (&(out), m9a41, m9a42, INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1840; goto L_ret; };
     }
     }
     { __typeof__(m9_add_i64 (at, INT64_C(10), err)) m9a43 = m9_add_i64 (at, INT64_C(10), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1841; goto L_ret; };
     { __typeof__((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).dosTime) m9a44 = (*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).dosTime;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1841; goto L_ret; };
     Zip_PutLow (&(out), m9a43, m9a44, INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1841; goto L_ret; };
     }
     }
     { __typeof__(m9_add_i64 (at, INT64_C(12), err)) m9a45 = m9_add_i64 (at, INT64_C(12), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1842; goto L_ret; };
     { __typeof__((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).dosDate) m9a46 = (*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).dosDate;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1842; goto L_ret; };
     Zip_PutLow (&(out), m9a45, m9a46, INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1842; goto L_ret; };
     }
     }
     { __typeof__(m9_add_i64 (at, INT64_C(14), err)) m9a47 = m9_add_i64 (at, INT64_C(14), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1843; goto L_ret; };
     { __typeof__((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).crc) m9a48 = (*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).crc;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1843; goto L_ret; };
     Zip_PutLow (&(out), m9a47, m9a48, INT64_C(4), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1843; goto L_ret; };
     }
     }
     { __typeof__(m9_add_i64 (at, INT64_C(18), err)) m9a49 = m9_add_i64 (at, INT64_C(18), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1844; goto L_ret; };
     { __typeof__(((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).data).len) m9a50 = ((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).data).len;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1844; goto L_ret; };
     Zip_PutLow (&(out), m9a49, m9a50, INT64_C(4), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1844; goto L_ret; };
     }
     }
     { __typeof__(m9_add_i64 (at, INT64_C(22), err)) m9a51 = m9_add_i64 (at, INT64_C(22), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1845; goto L_ret; };
     { __typeof__((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).usize) m9a52 = (*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).usize;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1845; goto L_ret; };
     Zip_PutLow (&(out), m9a51, m9a52, INT64_C(4), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1845; goto L_ret; };
     }
     }
     { __typeof__(m9_add_i64 (at, INT64_C(26), err)) m9a53 = m9_add_i64 (at, INT64_C(26), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1846; goto L_ret; };
     { __typeof__(((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).name).len) m9a54 = ((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).name).len;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1846; goto L_ret; };
     Zip_PutLow (&(out), m9a53, m9a54, INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1846; goto L_ret; };
     }
     }
     { __typeof__(m9_add_i64 (at, INT64_C(28), err)) m9a55 = m9_add_i64 (at, INT64_C(28), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1847; goto L_ret; };
     Zip_PutLow (&(out), m9a55, INT64_C(0), INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1847; goto L_ret; };
     }
     { __typeof__(at) m9v = m9_add_i64 (at, Zip_LocHdr, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1848; goto L_ret; };
       at = m9v;
     }
     { __typeof__(j) m9t3to;
     j = INT64_C(0);
     m9t3to = m9_sub_i64 (((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).name).len, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1849; goto L_ret; };
     if (j <= m9t3to) for (;;) {
-      { __typeof__((*(uint8_t *) m9_at (out.p, m9_add_i64 (at, j, err), out.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (({ m9_sl_BYTE m9g = ((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).name); if (err->exc) goto L_ret; m9g; }).p, j, ({ m9_sl_BYTE m9g = ((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).name); if (err->exc) goto L_ret; m9g; }).len, sizeof (uint8_t), err));
-        if (err->exc) goto L_ret;
+      { __typeof__((*(uint8_t *) m9_at (out.p, m9_add_i64 (at, j, err), out.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (({ m9_sl_BYTE m9g = ((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).name); if (err->exc) { m9ln = 1849; goto L_ret; }; m9g; }).p, j, ({ m9_sl_BYTE m9g = ((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).name); if (err->exc) { m9ln = 1849; goto L_ret; }; m9g; }).len, sizeof (uint8_t), err));
+        if (err->exc) { m9ln = 1849; goto L_ret; };
         (*(uint8_t *) m9_at (out.p, m9_add_i64 (at, j, err), out.len, sizeof (uint8_t), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1849; goto L_ret; };
       }
       if ((uint64_t) m9t3to - (uint64_t) j < (uint64_t) 1) break;
       j += 1;
     } }
     { __typeof__(at) m9v = m9_add_i64 (at, ((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).name).len, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1850; goto L_ret; };
       at = m9v;
     }
     { __typeof__(j) m9t4to;
     j = INT64_C(0);
     m9t4to = m9_sub_i64 (((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).data).len, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1851; goto L_ret; };
     if (j <= m9t4to) for (;;) {
-      { __typeof__((*(uint8_t *) m9_at (out.p, m9_add_i64 (at, j, err), out.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (({ m9_sl_BYTE m9g = ((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).data); if (err->exc) goto L_ret; m9g; }).p, j, ({ m9_sl_BYTE m9g = ((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).data); if (err->exc) goto L_ret; m9g; }).len, sizeof (uint8_t), err));
-        if (err->exc) goto L_ret;
+      { __typeof__((*(uint8_t *) m9_at (out.p, m9_add_i64 (at, j, err), out.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (({ m9_sl_BYTE m9g = ((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).data); if (err->exc) { m9ln = 1851; goto L_ret; }; m9g; }).p, j, ({ m9_sl_BYTE m9g = ((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).data); if (err->exc) { m9ln = 1851; goto L_ret; }; m9g; }).len, sizeof (uint8_t), err));
+        if (err->exc) { m9ln = 1851; goto L_ret; };
         (*(uint8_t *) m9_at (out.p, m9_add_i64 (at, j, err), out.len, sizeof (uint8_t), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1851; goto L_ret; };
       }
       if ((uint64_t) m9t4to - (uint64_t) j < (uint64_t) 1) break;
       j += 1;
     } }
     { __typeof__(at) m9v = m9_add_i64 (at, ((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).data).len, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1852; goto L_ret; };
       at = m9v;
     }
     if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
@@ -2068,180 +2180,181 @@ m9_sl_BYTE Zip_Finish (Zip_Writer * *w, m9_pool *w_pool, m9_state *err)
   { __typeof__(i) m9t5to;
   i = INT64_C(0);
   m9t5to = m9_sub_i64 (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1855; goto L_ret; };
   if (i <= m9t5to) for (;;) {
     Zip_PutLow (&(out), at, Zip_SigCen, INT64_C(4), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1856; goto L_ret; };
     { __typeof__(m9_add_i64 (at, INT64_C(4), err)) m9a56 = m9_add_i64 (at, INT64_C(4), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1857; goto L_ret; };
     Zip_PutLow (&(out), m9a56, INT64_C(20), INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1857; goto L_ret; };
     }
     { __typeof__(m9_add_i64 (at, INT64_C(6), err)) m9a57 = m9_add_i64 (at, INT64_C(6), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1858; goto L_ret; };
     Zip_PutLow (&(out), m9a57, INT64_C(20), INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1858; goto L_ret; };
     }
     { __typeof__(m9_add_i64 (at, INT64_C(8), err)) m9a58 = m9_add_i64 (at, INT64_C(8), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1859; goto L_ret; };
     Zip_PutLow (&(out), m9a58, INT64_C(2048), INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1859; goto L_ret; };
     }
     { __typeof__(m9_add_i64 (at, INT64_C(10), err)) m9a59 = m9_add_i64 (at, INT64_C(10), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1860; goto L_ret; };
     { __typeof__((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).method) m9a60 = (*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).method;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1860; goto L_ret; };
     Zip_PutLow (&(out), m9a59, m9a60, INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1860; goto L_ret; };
     }
     }
     { __typeof__(m9_add_i64 (at, INT64_C(12), err)) m9a61 = m9_add_i64 (at, INT64_C(12), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1861; goto L_ret; };
     { __typeof__((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).dosTime) m9a62 = (*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).dosTime;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1861; goto L_ret; };
     Zip_PutLow (&(out), m9a61, m9a62, INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1861; goto L_ret; };
     }
     }
     { __typeof__(m9_add_i64 (at, INT64_C(14), err)) m9a63 = m9_add_i64 (at, INT64_C(14), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1862; goto L_ret; };
     { __typeof__((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).dosDate) m9a64 = (*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).dosDate;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1862; goto L_ret; };
     Zip_PutLow (&(out), m9a63, m9a64, INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1862; goto L_ret; };
     }
     }
     { __typeof__(m9_add_i64 (at, INT64_C(16), err)) m9a65 = m9_add_i64 (at, INT64_C(16), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1863; goto L_ret; };
     { __typeof__((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).crc) m9a66 = (*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).crc;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1863; goto L_ret; };
     Zip_PutLow (&(out), m9a65, m9a66, INT64_C(4), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1863; goto L_ret; };
     }
     }
     { __typeof__(m9_add_i64 (at, INT64_C(20), err)) m9a67 = m9_add_i64 (at, INT64_C(20), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1864; goto L_ret; };
     { __typeof__(((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).data).len) m9a68 = ((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).data).len;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1864; goto L_ret; };
     Zip_PutLow (&(out), m9a67, m9a68, INT64_C(4), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1864; goto L_ret; };
     }
     }
     { __typeof__(m9_add_i64 (at, INT64_C(24), err)) m9a69 = m9_add_i64 (at, INT64_C(24), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1865; goto L_ret; };
     { __typeof__((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).usize) m9a70 = (*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).usize;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1865; goto L_ret; };
     Zip_PutLow (&(out), m9a69, m9a70, INT64_C(4), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1865; goto L_ret; };
     }
     }
     { __typeof__(m9_add_i64 (at, INT64_C(28), err)) m9a71 = m9_add_i64 (at, INT64_C(28), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1866; goto L_ret; };
     { __typeof__(((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).name).len) m9a72 = ((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).name).len;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1866; goto L_ret; };
     Zip_PutLow (&(out), m9a71, m9a72, INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1866; goto L_ret; };
     }
     }
     { __typeof__(m9_add_i64 (at, INT64_C(30), err)) m9a73 = m9_add_i64 (at, INT64_C(30), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1867; goto L_ret; };
     Zip_PutLow (&(out), m9a73, INT64_C(0), INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1867; goto L_ret; };
     }
     { __typeof__(m9_add_i64 (at, INT64_C(32), err)) m9a74 = m9_add_i64 (at, INT64_C(32), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1868; goto L_ret; };
     Zip_PutLow (&(out), m9a74, INT64_C(0), INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1868; goto L_ret; };
     }
     { __typeof__(m9_add_i64 (at, INT64_C(34), err)) m9a75 = m9_add_i64 (at, INT64_C(34), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1869; goto L_ret; };
     Zip_PutLow (&(out), m9a75, INT64_C(0), INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1869; goto L_ret; };
     }
     { __typeof__(m9_add_i64 (at, INT64_C(36), err)) m9a76 = m9_add_i64 (at, INT64_C(36), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1870; goto L_ret; };
     Zip_PutLow (&(out), m9a76, INT64_C(0), INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1870; goto L_ret; };
     }
     { __typeof__(m9_add_i64 (at, INT64_C(38), err)) m9a77 = m9_add_i64 (at, INT64_C(38), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1871; goto L_ret; };
     Zip_PutLow (&(out), m9a77, INT64_C(0), INT64_C(4), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1871; goto L_ret; };
     }
     { __typeof__(m9_add_i64 (at, INT64_C(42), err)) m9a78 = m9_add_i64 (at, INT64_C(42), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1872; goto L_ret; };
     Zip_PutLow (&(out), m9a78, hdrOff, INT64_C(4), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1872; goto L_ret; };
     }
     { __typeof__(at) m9v = m9_add_i64 (at, Zip_CenHdr, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1873; goto L_ret; };
       at = m9v;
     }
     { __typeof__(j) m9t6to;
     j = INT64_C(0);
     m9t6to = m9_sub_i64 (((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).name).len, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1874; goto L_ret; };
     if (j <= m9t6to) for (;;) {
-      { __typeof__((*(uint8_t *) m9_at (out.p, m9_add_i64 (at, j, err), out.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (({ m9_sl_BYTE m9g = ((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).name); if (err->exc) goto L_ret; m9g; }).p, j, ({ m9_sl_BYTE m9g = ((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).name); if (err->exc) goto L_ret; m9g; }).len, sizeof (uint8_t), err));
-        if (err->exc) goto L_ret;
+      { __typeof__((*(uint8_t *) m9_at (out.p, m9_add_i64 (at, j, err), out.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (({ m9_sl_BYTE m9g = ((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).name); if (err->exc) { m9ln = 1874; goto L_ret; }; m9g; }).p, j, ({ m9_sl_BYTE m9g = ((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).name); if (err->exc) { m9ln = 1874; goto L_ret; }; m9g; }).len, sizeof (uint8_t), err));
+        if (err->exc) { m9ln = 1874; goto L_ret; };
         (*(uint8_t *) m9_at (out.p, m9_add_i64 (at, j, err), out.len, sizeof (uint8_t), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1874; goto L_ret; };
       }
       if ((uint64_t) m9t6to - (uint64_t) j < (uint64_t) 1) break;
       j += 1;
     } }
     { __typeof__(at) m9v = m9_add_i64 (at, ((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).name).len, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1875; goto L_ret; };
       at = m9v;
     }
     { __typeof__(hdrOff) m9v = m9_add_i64 (m9_add_i64 (m9_add_i64 (hdrOff, Zip_LocHdr, err), ((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).name).len, err), ((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).data).len, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1876; goto L_ret; };
       hdrOff = m9v;
     }
     if ((uint64_t) m9t5to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   Zip_PutLow (&(out), at, Zip_SigEocd, INT64_C(4), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1878; goto L_ret; };
   { __typeof__(m9_add_i64 (at, INT64_C(4), err)) m9a79 = m9_add_i64 (at, INT64_C(4), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1879; goto L_ret; };
   Zip_PutLow (&(out), m9a79, INT64_C(0), INT64_C(2), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1879; goto L_ret; };
   }
   { __typeof__(m9_add_i64 (at, INT64_C(6), err)) m9a80 = m9_add_i64 (at, INT64_C(6), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1880; goto L_ret; };
   Zip_PutLow (&(out), m9a80, INT64_C(0), INT64_C(2), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1880; goto L_ret; };
   }
   { __typeof__(m9_add_i64 (at, INT64_C(8), err)) m9a81 = m9_add_i64 (at, INT64_C(8), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1881; goto L_ret; };
   Zip_PutLow (&(out), m9a81, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, INT64_C(2), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1881; goto L_ret; };
   }
   { __typeof__(m9_add_i64 (at, INT64_C(10), err)) m9a82 = m9_add_i64 (at, INT64_C(10), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1882; goto L_ret; };
   Zip_PutLow (&(out), m9a82, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, INT64_C(2), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1882; goto L_ret; };
   }
   { __typeof__(m9_add_i64 (at, INT64_C(12), err)) m9a83 = m9_add_i64 (at, INT64_C(12), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1883; goto L_ret; };
   Zip_PutLow (&(out), m9a83, cdLen, INT64_C(4), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1883; goto L_ret; };
   }
   { __typeof__(m9_add_i64 (at, INT64_C(16), err)) m9a84 = m9_add_i64 (at, INT64_C(16), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1884; goto L_ret; };
   Zip_PutLow (&(out), m9a84, cdAt, INT64_C(4), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1884; goto L_ret; };
   }
   { __typeof__(m9_add_i64 (at, INT64_C(20), err)) m9a85 = m9_add_i64 (at, INT64_C(20), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1885; goto L_ret; };
   Zip_PutLow (&(out), m9a85, INT64_C(0), INT64_C(2), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1885; goto L_ret; };
   }
   err->res = m9res;
   m9ret = out;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_adopt_if (&m9frame, w_pool, (*w));
@@ -2255,12 +2368,15 @@ void Zip_WriteTo (Zip_Writer * *w, m9_pool *w_pool, m9_sl_UTF8 path, m9_state *e
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.WriteTo"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   { __typeof__(Zip_Finish (w, w_pool, err)) m9a86 = Zip_Finish (w, w_pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1892; goto L_ret; };
   Io_WriteFileBytesUtf (path, m9a86, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1892; goto L_ret; };
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, w_pool, (*w));
   m9_pool_free (&m9frame);
@@ -2273,24 +2389,27 @@ static int64_t Zip_U (m9_sl_BYTE b, int64_t at, int64_t n, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.U"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   int64_t v = 0; (void) v;
   int64_t k = 0; (void) k;
   bool m9t1 = ((n == INT64_C(8)) && ((int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (at, INT64_C(7), err), b.len, sizeof (uint8_t), err))) >= INT64_C(128)));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 330; goto L_ret; };
   if (m9t1) {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s36, 49 })) m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s36, 49 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Zip_Error);
+    m9_site (err, 331, m9pn);
     goto L_ret;
   }
   v = INT64_C(0);
   { __typeof__(k) m9t3to;
   k = m9_sub_i64 (n, INT64_C(1), err);
   m9t3to = INT64_C(0);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 334; goto L_ret; };
   if (k >= m9t3to) for (;;) {
     { __typeof__(v) m9v = m9_add_i64 (m9_mul_i64 (v, INT64_C(256), err), (int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (at, k, err), b.len, sizeof (uint8_t), err))), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 335; goto L_ret; };
       v = m9v;
     }
     if ((uint64_t) k - (uint64_t) m9t3to < (uint64_t) 1) break;
@@ -2300,6 +2419,7 @@ static int64_t Zip_U (m9_sl_BYTE b, int64_t at, int64_t n, m9_state *err)
   m9ret = v;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2311,6 +2431,8 @@ static void Zip_InflReset (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.InflReset"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   (*z).hold = INT64_C(0);
   (*z).bits = INT64_C(0);
   (*z).wpos = INT64_C(0);
@@ -2323,6 +2445,7 @@ static void Zip_InflReset (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
   (*z).bad = false;
   (*z).short_ = false;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, z_pool, (*z).inb.p);
   m9_adopt_if (&m9frame, z_pool, (*z).win.p);
@@ -2344,40 +2467,42 @@ static void Zip_InflInit (m9_pool *pool, Zip_Infl *z, m9_pool *z_pool, m9_state 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.InflInit"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   { __typeof__((*z).win) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), Zip_WinSize, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 564; goto L_ret; };
     (*z).win = m9v;
   }
   { __typeof__((*z).lfast) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), Zip_FastSize, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 565; goto L_ret; };
     (*z).lfast = m9v;
   }
   { __typeof__((*z).lcount) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), INT64_C(16), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 566; goto L_ret; };
     (*z).lcount = m9v;
   }
   { __typeof__((*z).lsym) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), INT64_C(288), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 567; goto L_ret; };
     (*z).lsym = m9v;
   }
   { __typeof__((*z).dfast) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), Zip_FastSize, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 568; goto L_ret; };
     (*z).dfast = m9v;
   }
   { __typeof__((*z).dcount) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), INT64_C(16), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 569; goto L_ret; };
     (*z).dcount = m9v;
   }
   { __typeof__((*z).dsym) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), INT64_C(32), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 570; goto L_ret; };
     (*z).dsym = m9v;
   }
   { __typeof__((*z).lens) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), INT64_C(320), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 571; goto L_ret; };
     (*z).lens = m9v;
   }
   { __typeof__((*z).work) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), INT64_C(32), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 572; goto L_ret; };
     (*z).work = m9v;
   }
   (*z).inPos = INT64_C(0);
@@ -2385,8 +2510,9 @@ static void Zip_InflInit (m9_pool *pool, Zip_Infl *z, m9_pool *z_pool, m9_state 
   (*z).last = false;
   (*z).whole = false;
   Zip_InflReset (z, z_pool, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 577; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, z_pool, (*z).inb.p);
   m9_adopt_if (&m9frame, z_pool, (*z).win.p);
@@ -2408,28 +2534,31 @@ static void Zip_Refill (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.Refill"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   for (;;) {
     if (!((((*z).bits <= INT64_C(48)) && ((*z).inPos < (*z).inLen)))) break;
     { __typeof__((int64_t)((*(uint8_t *) m9_at ((*z).inb.p, (*z).inPos, (*z).inb.len, sizeof (uint8_t), err)))) m9a87 = (int64_t)((*(uint8_t *) m9_at ((*z).inb.p, (*z).inPos, (*z).inb.len, sizeof (uint8_t), err)));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 585; goto L_ret; };
     { __typeof__(Bits_Shl (m9a87, (*z).bits, err)) m9a88 = Bits_Shl (m9a87, (*z).bits, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 585; goto L_ret; };
     { __typeof__((*z).hold) m9v = Bits_Or ((*z).hold, m9a88, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 585; goto L_ret; };
       (*z).hold = m9v;
     }
     }
     }
     { __typeof__((*z).inPos) m9v = m9_add_i64 ((*z).inPos, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 586; goto L_ret; };
       (*z).inPos = m9v;
     }
     { __typeof__((*z).bits) m9v = m9_add_i64 ((*z).bits, INT64_C(8), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 587; goto L_ret; };
       (*z).bits = m9v;
     }
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, z_pool, (*z).inb.p);
   m9_adopt_if (&m9frame, z_pool, (*z).win.p);
@@ -2451,11 +2580,13 @@ static int64_t Zip_Take (Zip_Infl *z, m9_pool *z_pool, int64_t n, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.Take"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   int64_t v = 0; (void) v;
   if (((*z).bits < n)) {
     Zip_Refill (z, z_pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 597; goto L_ret; };
     if (((*z).bits < n)) {
       (*z).short_ = true;
       err->res = m9res;
@@ -2464,24 +2595,25 @@ static int64_t Zip_Take (Zip_Infl *z, m9_pool *z_pool, int64_t n, m9_state *err)
     }
   }
   { __typeof__((*(int64_t *) m9_at ((*Mask).v, n, INT64_C(17), sizeof (int64_t), err))) m9a89 = (*(int64_t *) m9_at ((*Mask).v, n, INT64_C(17), sizeof (int64_t), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 603; goto L_ret; };
   { __typeof__(v) m9v = Bits_And ((*z).hold, m9a89, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 603; goto L_ret; };
     v = m9v;
   }
   }
   { __typeof__((*z).hold) m9v = Bits_Shr ((*z).hold, n, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 604; goto L_ret; };
     (*z).hold = m9v;
   }
   { __typeof__((*z).bits) m9v = m9_sub_i64 ((*z).bits, n, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 605; goto L_ret; };
     (*z).bits = m9v;
   }
   err->res = m9res;
   m9ret = v;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, z_pool, (*z).inb.p);
   m9_adopt_if (&m9frame, z_pool, (*z).win.p);
@@ -2503,6 +2635,8 @@ static int64_t Zip_Sym (Zip_Infl *z, m9_pool *z_pool, m9_sl_I64 fast, m9_sl_I64 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.Sym"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   int64_t e = 0; (void) e;
   int64_t len = 0; (void) len;
@@ -2512,29 +2646,29 @@ static int64_t Zip_Sym (Zip_Infl *z, m9_pool *z_pool, m9_sl_I64 fast, m9_sl_I64 
   int64_t n = 0; (void) n;
   int64_t k = 0; (void) k;
   { __typeof__(m9_sub_i64 (Zip_FastSize, INT64_C(1), err)) m9a90 = m9_sub_i64 (Zip_FastSize, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 615; goto L_ret; };
   { __typeof__(e) m9v = (*(int64_t *) m9_at (fast.p, Bits_And ((*z).hold, m9a90, err), fast.len, sizeof (int64_t), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 615; goto L_ret; };
     e = m9v;
   }
   }
   if ((e > INT64_C(0))) {
     { __typeof__(len) m9v = Bits_And (e, INT64_C(15), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 617; goto L_ret; };
       len = m9v;
     }
     if ((len <= (*z).bits)) {
       { __typeof__((*z).hold) m9v = Bits_Shr ((*z).hold, len, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 619; goto L_ret; };
         (*z).hold = m9v;
       }
       { __typeof__((*z).bits) m9v = m9_sub_i64 ((*z).bits, len, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 620; goto L_ret; };
         (*z).bits = m9v;
       }
       err->res = m9res;
       m9ret = Bits_Shr (e, INT64_C(4), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 621; goto L_ret; };
       goto L_ret;
     }
   }
@@ -2549,49 +2683,49 @@ static int64_t Zip_Sym (Zip_Infl *z, m9_pool *z_pool, m9_sl_I64 fast, m9_sl_I64 
       (*z).short_ = true;
       err->res = m9res;
       m9ret = m9_neg_i64 (INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 630; goto L_ret; };
       goto L_ret;
     }
     { __typeof__(m9_sub_i64 (k, INT64_C(1), err)) m9a91 = m9_sub_i64 (k, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 632; goto L_ret; };
     { __typeof__(Bits_Shr ((*z).hold, m9a91, err)) m9a92 = Bits_Shr ((*z).hold, m9a91, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 632; goto L_ret; };
     { __typeof__(code) m9v = m9_add_i64 (code, Bits_And (m9a92, INT64_C(1), err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 632; goto L_ret; };
       code = m9v;
     }
     }
     }
     { __typeof__(n) m9v = (*(int64_t *) m9_at (count.p, k, count.len, sizeof (int64_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 633; goto L_ret; };
       n = m9v;
     }
     bool m9t2 = (m9_sub_i64 (code, n, err) < first);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 634; goto L_ret; };
     if (m9t2) {
       { __typeof__((*z).hold) m9v = Bits_Shr ((*z).hold, k, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 635; goto L_ret; };
         (*z).hold = m9v;
       }
       { __typeof__((*z).bits) m9v = m9_sub_i64 ((*z).bits, k, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 636; goto L_ret; };
         (*z).bits = m9v;
       }
       err->res = m9res;
       m9ret = (*(int64_t *) m9_at (symbol.p, m9_add_i64 (index, (m9_sub_i64 (code, first, err)), err), symbol.len, sizeof (int64_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 637; goto L_ret; };
       goto L_ret;
     }
     { __typeof__(index) m9v = m9_add_i64 (index, n, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 639; goto L_ret; };
       index = m9v;
     }
     { __typeof__(first) m9v = m9_mul_i64 ((m9_add_i64 (first, n, err)), INT64_C(2), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 640; goto L_ret; };
       first = m9v;
     }
     { __typeof__(code) m9v = m9_mul_i64 (code, INT64_C(2), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 641; goto L_ret; };
       code = m9v;
     }
     if ((uint64_t) m9t1to - (uint64_t) k < (uint64_t) 1) break;
@@ -2600,9 +2734,10 @@ static int64_t Zip_Sym (Zip_Infl *z, m9_pool *z_pool, m9_sl_I64 fast, m9_sl_I64 
   (*z).bad = true;
   err->res = m9res;
   m9ret = m9_neg_i64 (INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 644; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, z_pool, (*z).inb.p);
   m9_adopt_if (&m9frame, z_pool, (*z).win.p);
@@ -2624,6 +2759,8 @@ static int64_t Zip_Build (m9_sl_I64 *fast, m9_sl_I64 *count, m9_sl_I64 *symbol, 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.Build"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   int64_t s = 0; (void) s;
   int64_t len = 0; (void) len;
@@ -2638,19 +2775,19 @@ static int64_t Zip_Build (m9_sl_I64 *fast, m9_sl_I64 *count, m9_sl_I64 *symbol, 
   m9t1to = INT64_C(15);
   if (len <= m9t1to) for (;;) {
     (*(int64_t *) m9_at ((*count).p, len, (*count).len, sizeof (int64_t), err)) = INT64_C(0);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 656; goto L_ret; };
     if ((uint64_t) m9t1to - (uint64_t) len < (uint64_t) 1) break;
     len += 1;
   } }
   { __typeof__(s) m9t2to;
   s = INT64_C(0);
   m9t2to = m9_sub_i64 (n, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 657; goto L_ret; };
   if (s <= m9t2to) for (;;) {
     { __typeof__((*(int64_t *) m9_at ((*count).p, (*(int64_t *) m9_at (lens.p, m9_add_i64 (from, s, err), lens.len, sizeof (int64_t), err)), (*count).len, sizeof (int64_t), err))) m9v = m9_add_i64 ((*(int64_t *) m9_at ((*count).p, (*(int64_t *) m9_at (lens.p, m9_add_i64 (from, s, err), lens.len, sizeof (int64_t), err)), (*count).len, sizeof (int64_t), err)), INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 657; goto L_ret; };
       (*(int64_t *) m9_at ((*count).p, (*(int64_t *) m9_at (lens.p, m9_add_i64 (from, s, err), lens.len, sizeof (int64_t), err)), (*count).len, sizeof (int64_t), err)) = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 657; goto L_ret; };
     }
     if ((uint64_t) m9t2to - (uint64_t) s < (uint64_t) 1) break;
     s += 1;
@@ -2658,15 +2795,15 @@ static int64_t Zip_Build (m9_sl_I64 *fast, m9_sl_I64 *count, m9_sl_I64 *symbol, 
   { __typeof__(k) m9t3to;
   k = INT64_C(0);
   m9t3to = m9_sub_i64 (Zip_FastSize, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 658; goto L_ret; };
   if (k <= m9t3to) for (;;) {
     (*(int64_t *) m9_at ((*fast).p, k, (*fast).len, sizeof (int64_t), err)) = INT64_C(0);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 658; goto L_ret; };
     if ((uint64_t) m9t3to - (uint64_t) k < (uint64_t) 1) break;
     k += 1;
   } }
   bool m9t4 = ((*(int64_t *) m9_at ((*count).p, INT64_C(0), (*count).len, sizeof (int64_t), err)) == n);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 659; goto L_ret; };
   if (m9t4) {
     err->res = m9res;
     m9ret = INT64_C(0);
@@ -2678,7 +2815,7 @@ static int64_t Zip_Build (m9_sl_I64 *fast, m9_sl_I64 *count, m9_sl_I64 *symbol, 
   m9t5to = INT64_C(15);
   if (len <= m9t5to) for (;;) {
     { __typeof__(left) m9v = m9_sub_i64 (m9_mul_i64 (left, INT64_C(2), err), (*(int64_t *) m9_at ((*count).p, len, (*count).len, sizeof (int64_t), err)), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 662; goto L_ret; };
       left = m9v;
     }
     if ((left < INT64_C(0))) {
@@ -2690,15 +2827,15 @@ static int64_t Zip_Build (m9_sl_I64 *fast, m9_sl_I64 *count, m9_sl_I64 *symbol, 
     len += 1;
   } }
   (*(int64_t *) m9_at ((*work).p, INT64_C(1), (*work).len, sizeof (int64_t), err)) = INT64_C(0);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 667; goto L_ret; };
   { __typeof__(len) m9t6to;
   len = INT64_C(1);
   m9t6to = INT64_C(14);
   if (len <= m9t6to) for (;;) {
     { __typeof__((*(int64_t *) m9_at ((*work).p, m9_add_i64 (len, INT64_C(1), err), (*work).len, sizeof (int64_t), err))) m9v = m9_add_i64 ((*(int64_t *) m9_at ((*work).p, len, (*work).len, sizeof (int64_t), err)), (*(int64_t *) m9_at ((*count).p, len, (*count).len, sizeof (int64_t), err)), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 668; goto L_ret; };
       (*(int64_t *) m9_at ((*work).p, m9_add_i64 (len, INT64_C(1), err), (*work).len, sizeof (int64_t), err)) = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 668; goto L_ret; };
     }
     if ((uint64_t) m9t6to - (uint64_t) len < (uint64_t) 1) break;
     len += 1;
@@ -2706,19 +2843,19 @@ static int64_t Zip_Build (m9_sl_I64 *fast, m9_sl_I64 *count, m9_sl_I64 *symbol, 
   { __typeof__(s) m9t7to;
   s = INT64_C(0);
   m9t7to = m9_sub_i64 (n, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 669; goto L_ret; };
   if (s <= m9t7to) for (;;) {
     { __typeof__(len) m9v = (*(int64_t *) m9_at (lens.p, m9_add_i64 (from, s, err), lens.len, sizeof (int64_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 670; goto L_ret; };
       len = m9v;
     }
     if ((len != INT64_C(0))) {
       (*(int64_t *) m9_at ((*symbol).p, (*(int64_t *) m9_at ((*work).p, len, (*work).len, sizeof (int64_t), err)), (*symbol).len, sizeof (int64_t), err)) = s;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 672; goto L_ret; };
       { __typeof__((*(int64_t *) m9_at ((*work).p, len, (*work).len, sizeof (int64_t), err))) m9v = m9_add_i64 ((*(int64_t *) m9_at ((*work).p, len, (*work).len, sizeof (int64_t), err)), INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 673; goto L_ret; };
         (*(int64_t *) m9_at ((*work).p, len, (*work).len, sizeof (int64_t), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 673; goto L_ret; };
       }
     }
     if ((uint64_t) m9t7to - (uint64_t) s < (uint64_t) 1) break;
@@ -2731,45 +2868,45 @@ static int64_t Zip_Build (m9_sl_I64 *fast, m9_sl_I64 *count, m9_sl_I64 *symbol, 
   if (len <= m9t8to) for (;;) {
     if ((len > INT64_C(1))) {
       { __typeof__(code) m9v = m9_mul_i64 ((m9_add_i64 (code, (*(int64_t *) m9_at ((*count).p, m9_sub_i64 (len, INT64_C(1), err), (*count).len, sizeof (int64_t), err)), err)), INT64_C(2), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 681; goto L_ret; };
         code = m9v;
       }
     }
     (*(int64_t *) m9_at ((*work).p, m9_add_i64 (INT64_C(16), len, err), (*work).len, sizeof (int64_t), err)) = code;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 682; goto L_ret; };
     if ((uint64_t) m9t8to - (uint64_t) len < (uint64_t) 1) break;
     len += 1;
   } }
   { __typeof__(s) m9t9to;
   s = INT64_C(0);
   m9t9to = m9_sub_i64 (n, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 684; goto L_ret; };
   if (s <= m9t9to) for (;;) {
     { __typeof__(len) m9v = (*(int64_t *) m9_at (lens.p, m9_add_i64 (from, s, err), lens.len, sizeof (int64_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 685; goto L_ret; };
       len = m9v;
     }
     if ((len != INT64_C(0))) {
       { __typeof__(code) m9v = (*(int64_t *) m9_at ((*work).p, m9_add_i64 (INT64_C(16), len, err), (*work).len, sizeof (int64_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 687; goto L_ret; };
         code = m9v;
       }
       { __typeof__((*(int64_t *) m9_at ((*work).p, m9_add_i64 (INT64_C(16), len, err), (*work).len, sizeof (int64_t), err))) m9v = m9_add_i64 (code, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 688; goto L_ret; };
         (*(int64_t *) m9_at ((*work).p, m9_add_i64 (INT64_C(16), len, err), (*work).len, sizeof (int64_t), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 688; goto L_ret; };
       }
       if ((len <= Zip_FastBits)) {
         r = INT64_C(0);
         { __typeof__(b) m9t10to;
         b = INT64_C(0);
         m9t10to = m9_sub_i64 (len, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 691; goto L_ret; };
         if (b <= m9t10to) for (;;) {
           { __typeof__(Bits_Shr (code, b, err)) m9a93 = Bits_Shr (code, b, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 692; goto L_ret; };
           { __typeof__(r) m9v = m9_add_i64 (m9_mul_i64 (r, INT64_C(2), err), Bits_And (m9a93, INT64_C(1), err), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 692; goto L_ret; };
             r = m9v;
           }
           }
@@ -2777,19 +2914,19 @@ static int64_t Zip_Build (m9_sl_I64 *fast, m9_sl_I64 *count, m9_sl_I64 *symbol, 
           b += 1;
         } }
         { __typeof__(step) m9v = Bits_Shl (INT64_C(1), len, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 694; goto L_ret; };
           step = m9v;
         }
         k = r;
         for (;;) {
           if (!((k < Zip_FastSize))) break;
           { __typeof__((*(int64_t *) m9_at ((*fast).p, k, (*fast).len, sizeof (int64_t), err))) m9v = m9_add_i64 (m9_mul_i64 (s, INT64_C(16), err), len, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 697; goto L_ret; };
             (*(int64_t *) m9_at ((*fast).p, k, (*fast).len, sizeof (int64_t), err)) = m9v;
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 697; goto L_ret; };
           }
           { __typeof__(k) m9v = m9_add_i64 (k, step, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 698; goto L_ret; };
             k = m9v;
           }
         }
@@ -2802,6 +2939,7 @@ static int64_t Zip_Build (m9_sl_I64 *fast, m9_sl_I64 *count, m9_sl_I64 *symbol, 
   m9ret = left;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, (*fast).p);
   m9_adopt_if (&m9frame, m9res, (*count).p);
@@ -2817,6 +2955,8 @@ static void Zip_Fixed (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.Fixed"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t s = 0; (void) s;
   int64_t left = 0; (void) left;
   { __typeof__(s) m9t1to;
@@ -2824,7 +2964,7 @@ static void Zip_Fixed (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
   m9t1to = INT64_C(143);
   if (s <= m9t1to) for (;;) {
     (*(int64_t *) m9_at ((*z).lens.p, s, (*z).lens.len, sizeof (int64_t), err)) = INT64_C(8);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 710; goto L_ret; };
     if ((uint64_t) m9t1to - (uint64_t) s < (uint64_t) 1) break;
     s += 1;
   } }
@@ -2833,7 +2973,7 @@ static void Zip_Fixed (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
   m9t2to = INT64_C(255);
   if (s <= m9t2to) for (;;) {
     (*(int64_t *) m9_at ((*z).lens.p, s, (*z).lens.len, sizeof (int64_t), err)) = INT64_C(9);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 711; goto L_ret; };
     if ((uint64_t) m9t2to - (uint64_t) s < (uint64_t) 1) break;
     s += 1;
   } }
@@ -2842,7 +2982,7 @@ static void Zip_Fixed (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
   m9t3to = INT64_C(279);
   if (s <= m9t3to) for (;;) {
     (*(int64_t *) m9_at ((*z).lens.p, s, (*z).lens.len, sizeof (int64_t), err)) = INT64_C(7);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 712; goto L_ret; };
     if ((uint64_t) m9t3to - (uint64_t) s < (uint64_t) 1) break;
     s += 1;
   } }
@@ -2851,12 +2991,12 @@ static void Zip_Fixed (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
   m9t4to = INT64_C(287);
   if (s <= m9t4to) for (;;) {
     (*(int64_t *) m9_at ((*z).lens.p, s, (*z).lens.len, sizeof (int64_t), err)) = INT64_C(8);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 713; goto L_ret; };
     if ((uint64_t) m9t4to - (uint64_t) s < (uint64_t) 1) break;
     s += 1;
   } }
   { __typeof__(left) m9v = ({ m9_pool *m9t5 = err->res; err->res = z_pool; int64_t m9t6 = Zip_Build (&((*z).lfast), &((*z).lcount), &((*z).lsym), &((*z).work), (*z).lens, INT64_C(0), INT64_C(288), err); err->res = m9t5; m9t6; });
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 714; goto L_ret; };
     left = m9v;
   }
   { __typeof__(s) m9t7to;
@@ -2864,15 +3004,16 @@ static void Zip_Fixed (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
   m9t7to = INT64_C(29);
   if (s <= m9t7to) for (;;) {
     (*(int64_t *) m9_at ((*z).lens.p, s, (*z).lens.len, sizeof (int64_t), err)) = INT64_C(5);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 715; goto L_ret; };
     if ((uint64_t) m9t7to - (uint64_t) s < (uint64_t) 1) break;
     s += 1;
   } }
   { __typeof__(left) m9v = ({ m9_pool *m9t8 = err->res; err->res = z_pool; int64_t m9t9 = Zip_Build (&((*z).dfast), &((*z).dcount), &((*z).dsym), &((*z).work), (*z).lens, INT64_C(0), INT64_C(30), err); err->res = m9t8; m9t9; });
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 716; goto L_ret; };
     left = m9v;
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, z_pool, (*z).inb.p);
   m9_adopt_if (&m9frame, z_pool, (*z).win.p);
@@ -2894,6 +3035,8 @@ static void Zip_Dynamic (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.Dynamic"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t nlen = 0; (void) nlen;
   int64_t ndist = 0; (void) ndist;
   int64_t ncode = 0; (void) ncode;
@@ -2903,15 +3046,15 @@ static void Zip_Dynamic (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
   int64_t rep = 0; (void) rep;
   int64_t left = 0; (void) left;
   { __typeof__(nlen) m9v = m9_add_i64 (Zip_Take (z, z_pool, INT64_C(5), err), INT64_C(257), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 724; goto L_ret; };
     nlen = m9v;
   }
   { __typeof__(ndist) m9v = m9_add_i64 (Zip_Take (z, z_pool, INT64_C(5), err), INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 725; goto L_ret; };
     ndist = m9v;
   }
   { __typeof__(ncode) m9v = m9_add_i64 (Zip_Take (z, z_pool, INT64_C(4), err), INT64_C(4), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 726; goto L_ret; };
     ncode = m9v;
   }
   if ((*z).short_) {
@@ -2926,19 +3069,19 @@ static void Zip_Dynamic (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
   m9t1to = INT64_C(18);
   if (i <= m9t1to) for (;;) {
     (*(int64_t *) m9_at ((*z).lens.p, i, (*z).lens.len, sizeof (int64_t), err)) = INT64_C(0);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 732; goto L_ret; };
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   { __typeof__(i) m9t2to;
   i = INT64_C(0);
   m9t2to = m9_sub_i64 (ncode, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 733; goto L_ret; };
   if (i <= m9t2to) for (;;) {
     { __typeof__((*(int64_t *) m9_at ((*z).lens.p, (*(int64_t *) m9_at ((*Order).v, i, INT64_C(19), sizeof (int64_t), err)), (*z).lens.len, sizeof (int64_t), err))) m9v = Zip_Take (z, z_pool, INT64_C(3), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 733; goto L_ret; };
       (*(int64_t *) m9_at ((*z).lens.p, (*(int64_t *) m9_at ((*Order).v, i, INT64_C(19), sizeof (int64_t), err)), (*z).lens.len, sizeof (int64_t), err)) = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 733; goto L_ret; };
     }
     if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
@@ -2947,7 +3090,7 @@ static void Zip_Dynamic (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
     goto L_ret;
   }
   { __typeof__(left) m9v = ({ m9_pool *m9t3 = err->res; err->res = z_pool; int64_t m9t4 = Zip_Build (&((*z).lfast), &((*z).lcount), &((*z).lsym), &((*z).work), (*z).lens, INT64_C(0), INT64_C(19), err); err->res = m9t3; m9t4; });
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 735; goto L_ret; };
     left = m9v;
   }
   if ((left != INT64_C(0))) {
@@ -2957,12 +3100,12 @@ static void Zip_Dynamic (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
   i = INT64_C(0);
   for (;;) {
     bool m9t5 = (i < m9_add_i64 (nlen, ndist, err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 741; goto L_ret; };
     if (!(m9t5)) break;
     Zip_Refill (z, z_pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 742; goto L_ret; };
     { __typeof__(s) m9v = Zip_Sym (z, z_pool, (*z).lfast, (*z).lcount, (*z).lsym, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 743; goto L_ret; };
       s = m9v;
     }
     if ((s < INT64_C(0))) {
@@ -2970,9 +3113,9 @@ static void Zip_Dynamic (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
     }
     if ((s < INT64_C(16))) {
       (*(int64_t *) m9_at ((*z).lens.p, i, (*z).lens.len, sizeof (int64_t), err)) = s;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 746; goto L_ret; };
       { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 747; goto L_ret; };
         i = m9v;
       }
     } else {
@@ -2983,22 +3126,22 @@ static void Zip_Dynamic (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
           goto L_ret;
         }
         { __typeof__(prev) m9v = (*(int64_t *) m9_at ((*z).lens.p, m9_sub_i64 (i, INT64_C(1), err), (*z).lens.len, sizeof (int64_t), err));
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 755; goto L_ret; };
           prev = m9v;
         }
         { __typeof__(rep) m9v = m9_add_i64 (INT64_C(3), Zip_Take (z, z_pool, INT64_C(2), err), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 756; goto L_ret; };
           rep = m9v;
         }
       } else {
         if ((s == INT64_C(17))) {
           { __typeof__(rep) m9v = m9_add_i64 (INT64_C(3), Zip_Take (z, z_pool, INT64_C(3), err), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 758; goto L_ret; };
             rep = m9v;
           }
       } else {
         { __typeof__(rep) m9v = m9_add_i64 (INT64_C(11), Zip_Take (z, z_pool, INT64_C(7), err), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 760; goto L_ret; };
           rep = m9v;
         }
       } }
@@ -3006,7 +3149,7 @@ static void Zip_Dynamic (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
         goto L_ret;
       }
       bool m9t6 = (m9_add_i64 (i, rep, err) > m9_add_i64 (nlen, ndist, err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 763; goto L_ret; };
       if (m9t6) {
         (*z).bad = true;
         goto L_ret;
@@ -3014,44 +3157,45 @@ static void Zip_Dynamic (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
       for (;;) {
         if (!((rep > INT64_C(0)))) break;
         (*(int64_t *) m9_at ((*z).lens.p, i, (*z).lens.len, sizeof (int64_t), err)) = prev;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 768; goto L_ret; };
         { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 769; goto L_ret; };
           i = m9v;
         }
         { __typeof__(rep) m9v = m9_sub_i64 (rep, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 770; goto L_ret; };
           rep = m9v;
         }
       }
     }
   }
   bool m9t7 = ((*(int64_t *) m9_at ((*z).lens.p, INT64_C(256), (*z).lens.len, sizeof (int64_t), err)) == INT64_C(0));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 774; goto L_ret; };
   if (m9t7) {
     (*z).bad = true;
     goto L_ret;
   }
   { __typeof__(left) m9v = ({ m9_pool *m9t8 = err->res; err->res = z_pool; int64_t m9t9 = Zip_Build (&((*z).dfast), &((*z).dcount), &((*z).dsym), &((*z).work), (*z).lens, nlen, ndist, err); err->res = m9t8; m9t9; });
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 780; goto L_ret; };
     left = m9v;
   }
   bool m9t10 = ((left < INT64_C(0)) || (((left > INT64_C(0)) && (ndist != m9_add_i64 ((*(int64_t *) m9_at ((*z).dcount.p, INT64_C(0), (*z).dcount.len, sizeof (int64_t), err)), (*(int64_t *) m9_at ((*z).dcount.p, INT64_C(1), (*z).dcount.len, sizeof (int64_t), err)), err)))));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 781; goto L_ret; };
   if (m9t10) {
     (*z).bad = true;
     goto L_ret;
   }
   { __typeof__(left) m9v = ({ m9_pool *m9t11 = err->res; err->res = z_pool; int64_t m9t12 = Zip_Build (&((*z).lfast), &((*z).lcount), &((*z).lsym), &((*z).work), (*z).lens, INT64_C(0), nlen, err); err->res = m9t11; m9t12; });
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 785; goto L_ret; };
     left = m9v;
   }
   bool m9t13 = ((left < INT64_C(0)) || (((left > INT64_C(0)) && (nlen != m9_add_i64 ((*(int64_t *) m9_at ((*z).lcount.p, INT64_C(0), (*z).lcount.len, sizeof (int64_t), err)), (*(int64_t *) m9_at ((*z).lcount.p, INT64_C(1), (*z).lcount.len, sizeof (int64_t), err)), err)))));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 786; goto L_ret; };
   if (m9t13) {
     (*z).bad = true;
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, z_pool, (*z).inb.p);
   m9_adopt_if (&m9frame, z_pool, (*z).win.p);
@@ -3073,15 +3217,17 @@ static void Zip_BlockHeader (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.BlockHeader"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t kind = 0; (void) kind;
   int64_t len = 0; (void) len;
   int64_t nlen = 0; (void) nlen;
   { __typeof__((*z).final) m9v = (Zip_Take (z, z_pool, INT64_C(1), err) == INT64_C(1));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 794; goto L_ret; };
     (*z).final = m9v;
   }
   { __typeof__(kind) m9v = Zip_Take (z, z_pool, INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 795; goto L_ret; };
     kind = m9v;
   }
   if ((*z).short_) {
@@ -3089,25 +3235,25 @@ static void Zip_BlockHeader (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
   }
   if ((kind == INT64_C(0))) {
     { __typeof__(Bits_And ((*z).bits, INT64_C(7), err)) m9a94 = Bits_And ((*z).bits, INT64_C(7), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 799; goto L_ret; };
     { __typeof__(len) m9v = Zip_Take (z, z_pool, m9a94, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 799; goto L_ret; };
       len = m9v;
     }
     }
     { __typeof__(len) m9v = Zip_Take (z, z_pool, INT64_C(16), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 800; goto L_ret; };
       len = m9v;
     }
     { __typeof__(nlen) m9v = Zip_Take (z, z_pool, INT64_C(16), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 801; goto L_ret; };
       nlen = m9v;
     }
     if ((*z).short_) {
       goto L_ret;
     }
     bool m9t1 = (m9_add_i64 (len, nlen, err) != INT64_C(65535));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 803; goto L_ret; };
     if (m9t1) {
       (*z).bad = true;
       goto L_ret;
@@ -3117,17 +3263,18 @@ static void Zip_BlockHeader (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
   } else {
     if ((kind == INT64_C(1))) {
       Zip_Fixed (z, z_pool, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 810; goto L_ret; };
       (*z).state = Zip_StCodes;
   } else {
     if ((kind == INT64_C(2))) {
       Zip_Dynamic (z, z_pool, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 813; goto L_ret; };
       (*z).state = Zip_StCodes;
   } else {
     (*z).bad = true;
   } } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, z_pool, (*z).inb.p);
   m9_adopt_if (&m9frame, z_pool, (*z).win.p);
@@ -3149,12 +3296,15 @@ static void Zip_EndBlock (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.EndBlock"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   if ((*z).final) {
     (*z).state = Zip_StDone;
   } else {
     (*z).state = Zip_StHeader;
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, z_pool, (*z).inb.p);
   m9_adopt_if (&m9frame, z_pool, (*z).win.p);
@@ -3176,6 +3326,8 @@ static int64_t Zip_Fast (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.Fast"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   m9_sl_BYTE inb = {0}; (void) inb;
   m9_sl_BYTE win = {0}; (void) win;
@@ -3212,11 +3364,11 @@ static int64_t Zip_Fast (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
   made = (*z).made;
   out = at;
   { __typeof__(room) m9v = m9_sub_i64 (((*dst)).len, INT64_C(258), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 862; goto L_ret; };
     room = m9v;
   }
   { __typeof__(stop) m9v = m9_sub_i64 ((*z).inLen, INT64_C(16), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 863; goto L_ret; };
     stop = m9v;
   }
   ring = (!(*z).whole);
@@ -3225,28 +3377,28 @@ static int64_t Zip_Fast (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
     for (;;) {
       if (!((bits <= INT64_C(48)))) break;
       { __typeof__((int64_t)((*(uint8_t *) m9_at (inb.p, ip, inb.len, sizeof (uint8_t), err)))) m9a95 = (int64_t)((*(uint8_t *) m9_at (inb.p, ip, inb.len, sizeof (uint8_t), err)));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 867; goto L_ret; };
       { __typeof__(Bits_Shl (m9a95, bits, err)) m9a96 = Bits_Shl (m9a95, bits, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 867; goto L_ret; };
       { __typeof__(hold) m9v = Bits_Or (hold, m9a96, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 867; goto L_ret; };
         hold = m9v;
       }
       }
       }
       { __typeof__(ip) m9v = m9_add_i64 (ip, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 868; goto L_ret; };
         ip = m9v;
       }
       { __typeof__(bits) m9v = m9_add_i64 (bits, INT64_C(8), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 869; goto L_ret; };
         bits = m9v;
       }
     }
     { __typeof__(m9_sub_i64 (Zip_FastSize, INT64_C(1), err)) m9a97 = m9_sub_i64 (Zip_FastSize, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 871; goto L_ret; };
     { __typeof__(e) m9v = (*(int64_t *) m9_at (lf.p, Bits_And (hold, m9a97, err), lf.len, sizeof (int64_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 871; goto L_ret; };
       e = m9v;
     }
     }
@@ -3254,45 +3406,45 @@ static int64_t Zip_Fast (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
       break;
     }
     { __typeof__(k) m9v = Bits_And (e, INT64_C(15), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 873; goto L_ret; };
       k = m9v;
     }
     { __typeof__(s) m9v = Bits_Shr (e, INT64_C(4), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 874; goto L_ret; };
       s = m9v;
     }
     if ((s < INT64_C(256))) {
       { __typeof__(hold) m9v = Bits_Shr (hold, k, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 876; goto L_ret; };
         hold = m9v;
       }
       { __typeof__(bits) m9v = m9_sub_i64 (bits, k, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 877; goto L_ret; };
         bits = m9v;
       }
       { __typeof__(b) m9v = m9_byte (s, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 878; goto L_ret; };
         b = m9v;
       }
       (*(uint8_t *) m9_at ((*dst).p, out, (*dst).len, sizeof (uint8_t), err)) = b;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 879; goto L_ret; };
       if (ring) {
         (*(uint8_t *) m9_at (win.p, wp, win.len, sizeof (uint8_t), err)) = b;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 881; goto L_ret; };
         { __typeof__(m9_add_i64 (wp, INT64_C(1), err)) m9a98 = m9_add_i64 (wp, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 882; goto L_ret; };
         { __typeof__(wp) m9v = Bits_And (m9a98, Zip_WinMask, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 882; goto L_ret; };
           wp = m9v;
         }
         }
       }
       { __typeof__(out) m9v = m9_add_i64 (out, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 884; goto L_ret; };
         out = m9v;
       }
       { __typeof__(made) m9v = m9_add_i64 (made, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 885; goto L_ret; };
         made = m9v;
       }
     } else {
@@ -3300,40 +3452,40 @@ static int64_t Zip_Fast (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
         break;
       }
       { __typeof__(h2) m9v = Bits_Shr (hold, k, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 890; goto L_ret; };
         h2 = m9v;
       }
       { __typeof__(b2) m9v = m9_sub_i64 (bits, k, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 891; goto L_ret; };
         b2 = m9v;
       }
       { __typeof__(s) m9v = m9_sub_i64 (s, INT64_C(257), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 892; goto L_ret; };
         s = m9v;
       }
       { __typeof__(x) m9v = (*(int64_t *) m9_at ((*LExt).v, s, INT64_C(29), sizeof (int64_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 893; goto L_ret; };
         x = m9v;
       }
       { __typeof__((*(int64_t *) m9_at ((*Mask).v, x, INT64_C(17), sizeof (int64_t), err))) m9a99 = (*(int64_t *) m9_at ((*Mask).v, x, INT64_C(17), sizeof (int64_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 894; goto L_ret; };
       { __typeof__(len) m9v = m9_add_i64 ((*(int64_t *) m9_at ((*LBase).v, s, INT64_C(29), sizeof (int64_t), err)), Bits_And (h2, m9a99, err), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 894; goto L_ret; };
         len = m9v;
       }
       }
       { __typeof__(h2) m9v = Bits_Shr (h2, x, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 895; goto L_ret; };
         h2 = m9v;
       }
       { __typeof__(b2) m9v = m9_sub_i64 (b2, x, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 896; goto L_ret; };
         b2 = m9v;
       }
       { __typeof__(m9_sub_i64 (Zip_FastSize, INT64_C(1), err)) m9a100 = m9_sub_i64 (Zip_FastSize, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 897; goto L_ret; };
       { __typeof__(e) m9v = (*(int64_t *) m9_at (df.p, Bits_And (h2, m9a100, err), df.len, sizeof (int64_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 897; goto L_ret; };
         e = m9v;
       }
       }
@@ -3341,38 +3493,38 @@ static int64_t Zip_Fast (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
         break;
       }
       { __typeof__(k) m9v = Bits_And (e, INT64_C(15), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 899; goto L_ret; };
         k = m9v;
       }
       { __typeof__(d) m9v = Bits_Shr (e, INT64_C(4), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 900; goto L_ret; };
         d = m9v;
       }
       { __typeof__(h2) m9v = Bits_Shr (h2, k, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 901; goto L_ret; };
         h2 = m9v;
       }
       { __typeof__(b2) m9v = m9_sub_i64 (b2, k, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 902; goto L_ret; };
         b2 = m9v;
       }
       { __typeof__(x) m9v = (*(int64_t *) m9_at ((*DExt).v, d, INT64_C(30), sizeof (int64_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 903; goto L_ret; };
         x = m9v;
       }
       { __typeof__((*(int64_t *) m9_at ((*Mask).v, x, INT64_C(17), sizeof (int64_t), err))) m9a101 = (*(int64_t *) m9_at ((*Mask).v, x, INT64_C(17), sizeof (int64_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 904; goto L_ret; };
       { __typeof__(dist) m9v = m9_add_i64 ((*(int64_t *) m9_at ((*DBase).v, d, INT64_C(30), sizeof (int64_t), err)), Bits_And (h2, m9a101, err), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 904; goto L_ret; };
         dist = m9v;
       }
       }
       { __typeof__(h2) m9v = Bits_Shr (h2, x, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 905; goto L_ret; };
         h2 = m9v;
       }
       { __typeof__(b2) m9v = m9_sub_i64 (b2, x, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 906; goto L_ret; };
         b2 = m9v;
       }
       if ((dist > made)) {
@@ -3386,25 +3538,25 @@ static int64_t Zip_Fast (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
         m9t1to = len;
         if (i <= m9t1to) for (;;) {
           { __typeof__(m9_sub_i64 (wp, dist, err)) m9a102 = m9_sub_i64 (wp, dist, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 912; goto L_ret; };
           { __typeof__(b) m9v = (*(uint8_t *) m9_at (win.p, Bits_And (m9a102, Zip_WinMask, err), win.len, sizeof (uint8_t), err));
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 912; goto L_ret; };
             b = m9v;
           }
           }
           (*(uint8_t *) m9_at ((*dst).p, out, (*dst).len, sizeof (uint8_t), err)) = b;
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 913; goto L_ret; };
           (*(uint8_t *) m9_at (win.p, wp, win.len, sizeof (uint8_t), err)) = b;
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 914; goto L_ret; };
           { __typeof__(m9_add_i64 (wp, INT64_C(1), err)) m9a103 = m9_add_i64 (wp, INT64_C(1), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 915; goto L_ret; };
           { __typeof__(wp) m9v = Bits_And (m9a103, Zip_WinMask, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 915; goto L_ret; };
             wp = m9v;
           }
           }
           { __typeof__(out) m9v = m9_add_i64 (out, INT64_C(1), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 916; goto L_ret; };
             out = m9v;
           }
           if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
@@ -3416,12 +3568,12 @@ static int64_t Zip_Fast (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
         m9t2to = len;
         if (i <= m9t2to) for (;;) {
           { __typeof__((*(uint8_t *) m9_at ((*dst).p, out, (*dst).len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at ((*dst).p, m9_sub_i64 (out, dist, err), (*dst).len, sizeof (uint8_t), err));
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 920; goto L_ret; };
             (*(uint8_t *) m9_at ((*dst).p, out, (*dst).len, sizeof (uint8_t), err)) = m9v;
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 920; goto L_ret; };
           }
           { __typeof__(out) m9v = m9_add_i64 (out, INT64_C(1), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 921; goto L_ret; };
             out = m9v;
           }
           if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
@@ -3429,7 +3581,7 @@ static int64_t Zip_Fast (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
         } }
       }
       { __typeof__(made) m9v = m9_add_i64 (made, len, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 924; goto L_ret; };
         made = m9v;
       }
     }
@@ -3443,6 +3595,7 @@ static int64_t Zip_Fast (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
   m9ret = out;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, z_pool, (*z).inb.p);
   m9_adopt_if (&m9frame, z_pool, (*z).win.p);
@@ -3465,6 +3618,8 @@ static int64_t Zip_Step (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.Step"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   int64_t out = 0; (void) out;
   int64_t n = 0; (void) n;
@@ -3484,7 +3639,7 @@ static int64_t Zip_Step (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
       goto L_ret;
     }
     bool m9t1 = ((!(*z).last) && (m9_sub_i64 ((*z).inLen, (*z).inPos, err) < Zip_LowWater));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 955; goto L_ret; };
     if (m9t1) {
       err->res = m9res;
       m9ret = out;
@@ -3498,40 +3653,40 @@ static int64_t Zip_Step (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
         if (!(((left > INT64_C(0)) && (out < n)))) break;
         if ((*z).whole) {
           { __typeof__(b) m9v = (*(uint8_t *) m9_at ((*dst).p, m9_sub_i64 (out, dist, err), (*dst).len, sizeof (uint8_t), err));
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 964; goto L_ret; };
             b = m9v;
           }
         } else {
           { __typeof__(m9_sub_i64 (wp, dist, err)) m9a104 = m9_sub_i64 (wp, dist, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 966; goto L_ret; };
           { __typeof__(b) m9v = (*(uint8_t *) m9_at ((*z).win.p, Bits_And (m9a104, Zip_WinMask, err), (*z).win.len, sizeof (uint8_t), err));
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 966; goto L_ret; };
             b = m9v;
           }
           }
           (*(uint8_t *) m9_at ((*z).win.p, wp, (*z).win.len, sizeof (uint8_t), err)) = b;
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 967; goto L_ret; };
           { __typeof__(m9_add_i64 (wp, INT64_C(1), err)) m9a105 = m9_add_i64 (wp, INT64_C(1), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 968; goto L_ret; };
           { __typeof__(wp) m9v = Bits_And (m9a105, Zip_WinMask, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 968; goto L_ret; };
             wp = m9v;
           }
           }
         }
         (*(uint8_t *) m9_at ((*dst).p, out, (*dst).len, sizeof (uint8_t), err)) = b;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 970; goto L_ret; };
         { __typeof__(out) m9v = m9_add_i64 (out, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 971; goto L_ret; };
           out = m9v;
         }
         { __typeof__(left) m9v = m9_sub_i64 (left, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 972; goto L_ret; };
           left = m9v;
         }
       }
       { __typeof__((*z).made) m9v = m9_add_i64 ((*z).made, (m9_sub_i64 ((*z).copyLeft, left, err)), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 974; goto L_ret; };
         (*z).made = m9v;
       }
       (*z).wpos = wp;
@@ -3544,55 +3699,55 @@ static int64_t Zip_Step (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
     } else {
       if (((*z).state == Zip_StHeader)) {
         Zip_BlockHeader (z, z_pool, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 979; goto L_ret; };
     } else {
       if (((*z).state == Zip_StStored)) {
         for (;;) {
           if (!(((((*z).storedLeft > INT64_C(0)) && (out < n)) && ((((*z).bits >= INT64_C(8)) || ((*z).inPos < (*z).inLen)))))) break;
           if (((*z).bits >= INT64_C(8))) {
             { __typeof__(b) m9v = m9_byte (Zip_Take (z, z_pool, INT64_C(8), err), err);
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 983; goto L_ret; };
               b = m9v;
             }
           } else {
             { __typeof__(b) m9v = (*(uint8_t *) m9_at ((*z).inb.p, (*z).inPos, (*z).inb.len, sizeof (uint8_t), err));
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 985; goto L_ret; };
               b = m9v;
             }
             { __typeof__((*z).inPos) m9v = m9_add_i64 ((*z).inPos, INT64_C(1), err);
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 986; goto L_ret; };
               (*z).inPos = m9v;
             }
           }
           (*(uint8_t *) m9_at ((*dst).p, out, (*dst).len, sizeof (uint8_t), err)) = b;
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 988; goto L_ret; };
           if ((!(*z).whole)) {
             (*(uint8_t *) m9_at ((*z).win.p, (*z).wpos, (*z).win.len, sizeof (uint8_t), err)) = b;
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 990; goto L_ret; };
             { __typeof__(m9_add_i64 ((*z).wpos, INT64_C(1), err)) m9a106 = m9_add_i64 ((*z).wpos, INT64_C(1), err);
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 991; goto L_ret; };
             { __typeof__((*z).wpos) m9v = Bits_And (m9a106, Zip_WinMask, err);
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 991; goto L_ret; };
               (*z).wpos = m9v;
             }
             }
           }
           { __typeof__((*z).made) m9v = m9_add_i64 ((*z).made, INT64_C(1), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 993; goto L_ret; };
             (*z).made = m9v;
           }
           { __typeof__(out) m9v = m9_add_i64 (out, INT64_C(1), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 994; goto L_ret; };
             out = m9v;
           }
           { __typeof__((*z).storedLeft) m9v = m9_sub_i64 ((*z).storedLeft, INT64_C(1), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 995; goto L_ret; };
             (*z).storedLeft = m9v;
           }
         }
         if (((*z).storedLeft == INT64_C(0))) {
           Zip_EndBlock (z, z_pool, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 998; goto L_ret; };
         } else {
           if ((out >= n)) {
             err->res = m9res;
@@ -3608,10 +3763,10 @@ static int64_t Zip_Step (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
         } }
     } else {
       bool m9t2 = ((m9_sub_i64 (n, out, err) > INT64_C(258)) && (m9_sub_i64 ((*z).inLen, (*z).inPos, err) > INT64_C(16)));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1006; goto L_ret; };
       if (m9t2) {
         { __typeof__(out) m9v = Zip_Fast (z, z_pool, dst, out, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1007; goto L_ret; };
           out = m9v;
         }
       }
@@ -3621,9 +3776,9 @@ static int64_t Zip_Step (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
         goto L_ret;
       }
       Zip_Refill (z, z_pool, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1013; goto L_ret; };
       { __typeof__(s) m9v = Zip_Sym (z, z_pool, (*z).lfast, (*z).lcount, (*z).lsym, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1014; goto L_ret; };
         s = m9v;
       }
       if ((s < INT64_C(0))) {
@@ -3633,37 +3788,37 @@ static int64_t Zip_Step (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
       }
       if ((s < INT64_C(256))) {
         { __typeof__(b) m9v = m9_byte (s, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1017; goto L_ret; };
           b = m9v;
         }
         (*(uint8_t *) m9_at ((*dst).p, out, (*dst).len, sizeof (uint8_t), err)) = b;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1018; goto L_ret; };
         if ((!(*z).whole)) {
           (*(uint8_t *) m9_at ((*z).win.p, (*z).wpos, (*z).win.len, sizeof (uint8_t), err)) = b;
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1020; goto L_ret; };
           { __typeof__(m9_add_i64 ((*z).wpos, INT64_C(1), err)) m9a107 = m9_add_i64 ((*z).wpos, INT64_C(1), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1021; goto L_ret; };
           { __typeof__((*z).wpos) m9v = Bits_And (m9a107, Zip_WinMask, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1021; goto L_ret; };
             (*z).wpos = m9v;
           }
           }
         }
         { __typeof__((*z).made) m9v = m9_add_i64 ((*z).made, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1023; goto L_ret; };
           (*z).made = m9v;
         }
         { __typeof__(out) m9v = m9_add_i64 (out, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1024; goto L_ret; };
           out = m9v;
         }
       } else {
         if ((s == INT64_C(256))) {
           Zip_EndBlock (z, z_pool, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1026; goto L_ret; };
       } else {
         { __typeof__(s) m9v = m9_sub_i64 (s, INT64_C(257), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1028; goto L_ret; };
           s = m9v;
         }
         if ((s >= INT64_C(29))) {
@@ -3673,14 +3828,14 @@ static int64_t Zip_Step (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
           goto L_ret;
         }
         { __typeof__((*(int64_t *) m9_at ((*LExt).v, s, INT64_C(29), sizeof (int64_t), err))) m9a108 = (*(int64_t *) m9_at ((*LExt).v, s, INT64_C(29), sizeof (int64_t), err));
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1033; goto L_ret; };
         { __typeof__(len) m9v = m9_add_i64 ((*(int64_t *) m9_at ((*LBase).v, s, INT64_C(29), sizeof (int64_t), err)), Zip_Take (z, z_pool, m9a108, err), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1033; goto L_ret; };
           len = m9v;
         }
         }
         { __typeof__(d) m9v = Zip_Sym (z, z_pool, (*z).dfast, (*z).dcount, (*z).dsym, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1034; goto L_ret; };
           d = m9v;
         }
         if ((d < INT64_C(0))) {
@@ -3689,9 +3844,9 @@ static int64_t Zip_Step (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
           goto L_ret;
         }
         { __typeof__((*(int64_t *) m9_at ((*DExt).v, d, INT64_C(30), sizeof (int64_t), err))) m9a109 = (*(int64_t *) m9_at ((*DExt).v, d, INT64_C(30), sizeof (int64_t), err));
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1040; goto L_ret; };
         { __typeof__(dist) m9v = m9_add_i64 ((*(int64_t *) m9_at ((*DBase).v, d, INT64_C(30), sizeof (int64_t), err)), Zip_Take (z, z_pool, m9a109, err), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1040; goto L_ret; };
           dist = m9v;
         }
         }
@@ -3712,6 +3867,7 @@ static int64_t Zip_Step (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
     } } }
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, z_pool, (*z).inb.p);
   m9_adopt_if (&m9frame, z_pool, (*z).win.p);
@@ -3734,13 +3890,16 @@ static void Zip_InflFinish (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.InflFinish"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   { __typeof__((*z).inPos) m9v = m9_sub_i64 ((*z).inPos, m9_div_i64 ((*z).bits, INT64_C(8), err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1059; goto L_ret; };
     (*z).inPos = m9v;
   }
   (*z).hold = INT64_C(0);
   (*z).bits = INT64_C(0);
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, z_pool, (*z).inb.p);
   m9_adopt_if (&m9frame, z_pool, (*z).win.p);
@@ -3762,6 +3921,8 @@ static int64_t Zip_CrcRun (int64_t c, m9_sl_BYTE b, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.CrcRun"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   if (((b).len == INT64_C(0))) {
     err->res = m9res;
@@ -3772,6 +3933,7 @@ static int64_t Zip_CrcRun (int64_t c, m9_sl_BYTE b, m9_state *err)
   m9ret = (int64_t)(m9_crc_raw (((int64_t)(c)), ((void *)(b).p), ((int64_t)((b).len))));
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -3783,13 +3945,15 @@ static void Zip_Fill (Zip_Member * *m, m9_pool *m_pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.Fill"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE got = {0}; (void) got;
   int64_t want = 0; (void) want;
   int64_t k = 0; (void) k;
   int64_t keep = 0; (void) keep;
   { __typeof__(keep) m9v = m9_sub_i64 (({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->z.inLen, ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->z.inPos, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1153; goto L_ret; };
     keep = m9v;
   }
   if (((keep >= Zip_LowWater) || (({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cLeft == INT64_C(0)))) {
@@ -3799,51 +3963,51 @@ static void Zip_Fill (Zip_Member * *m, m9_pool *m_pool, m9_state *err)
   { __typeof__(k) m9t1to;
   k = INT64_C(0);
   m9t1to = m9_sub_i64 (keep, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1158; goto L_ret; };
   if (k <= m9t1to) for (;;) {
     { __typeof__((*(uint8_t *) m9_at (({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->z.inb.p, k, ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->z.inb.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->z.inb.p, m9_add_i64 (({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->z.inPos, k, err), ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->z.inb.len, sizeof (uint8_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1158; goto L_ret; };
       (*(uint8_t *) m9_at (({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->z.inb.p, k, ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->z.inb.len, sizeof (uint8_t), err)) = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1158; goto L_ret; };
     }
     if ((uint64_t) m9t1to - (uint64_t) k < (uint64_t) 1) break;
     k += 1;
   } }
   { __typeof__(want) m9v = m9_sub_i64 ((({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->z.inb).len, keep, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1159; goto L_ret; };
     want = m9v;
   }
   if ((want > ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cLeft)) {
     want = ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cLeft;
   }
   { __typeof__(got) m9v = Io_ReadFileAt (&(scratch), ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->path, ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->dataOff, want, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1161; goto L_ret; };
     got = m9v;
   }
   { __typeof__(k) m9t2to;
   k = INT64_C(0);
   m9t2to = m9_sub_i64 ((got).len, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1162; goto L_ret; };
   if (k <= m9t2to) for (;;) {
     { __typeof__((*(uint8_t *) m9_at (({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->z.inb.p, m9_add_i64 (keep, k, err), ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->z.inb.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (got.p, k, got.len, sizeof (uint8_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1162; goto L_ret; };
       (*(uint8_t *) m9_at (({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->z.inb.p, m9_add_i64 (keep, k, err), ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->z.inb.len, sizeof (uint8_t), err)) = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1162; goto L_ret; };
     }
     if ((uint64_t) m9t2to - (uint64_t) k < (uint64_t) 1) break;
     k += 1;
   } }
   ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->z.inPos = INT64_C(0);
   { __typeof__(({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->z.inLen) m9v = m9_add_i64 (keep, (got).len, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1164; goto L_ret; };
     ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->z.inLen = m9v;
   }
   { __typeof__(({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->dataOff) m9v = m9_add_i64 (({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->dataOff, (got).len, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1165; goto L_ret; };
     ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->dataOff = m9v;
   }
   { __typeof__(({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cLeft) m9v = m9_sub_i64 (({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cLeft, (got).len, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1166; goto L_ret; };
     ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cLeft = m9v;
   }
   if (((got).len == INT64_C(0))) {
@@ -3851,6 +4015,7 @@ static void Zip_Fill (Zip_Member * *m, m9_pool *m_pool, m9_state *err)
   }
   ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->z.last = (({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cLeft == INT64_C(0));
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m_pool, (*m));
   m9_pool_free (&m9frame);
@@ -3864,20 +4029,25 @@ static void Zip_Finished (Zip_Member * *m, m9_pool *m_pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.Finished"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->done = true;
   if ((({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->made != ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->usize)) {
     { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s37, 14 }), ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->name, err), ((m9_sl_UTF8){ (uint8_t *) m9s38, 33 }), err)) m9t1 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s37, 14 }), ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->name, err), ((m9_sl_UTF8){ (uint8_t *) m9s38, 33 }), err); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Zip_Error);
+    m9_site (err, 1181, m9pn);
     goto L_ret;
   }
   bool m9t2 = (Bits_Xor (({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->crc, INT64_C(4294967295), err) != ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->want);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1183; goto L_ret; };
   if (m9t2) {
     { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s39, 11 }), ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->name, err), ((m9_sl_UTF8){ (uint8_t *) m9s40, 25 }), err)) m9t3 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s39, 11 }), ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->name, err), ((m9_sl_UTF8){ (uint8_t *) m9s40, 25 }), err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Zip_Error);
+    m9_site (err, 1184, m9pn);
     goto L_ret;
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m_pool, (*m));
   m9_pool_free (&m9frame);
@@ -3890,104 +4060,112 @@ static int64_t Zip_GzHeader (m9_sl_BYTE data, int64_t at, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.GzHeader"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   int64_t n = 0; (void) n;
   int64_t flags = 0; (void) flags;
   int64_t p = 0; (void) p;
   n = (data).len;
   bool m9t1 = (m9_sub_i64 (n, at, err) < INT64_C(18));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1244; goto L_ret; };
   if (m9t1) {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s41, 37 })) m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s41, 37 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Zip_Error);
+    m9_site (err, 1244, m9pn);
     goto L_ret;
   }
   bool m9t3 = (((int64_t)((*(uint8_t *) m9_at (data.p, at, data.len, sizeof (uint8_t), err))) != INT64_C(31)) || ((int64_t)((*(uint8_t *) m9_at (data.p, m9_add_i64 (at, INT64_C(1), err), data.len, sizeof (uint8_t), err))) != INT64_C(139)));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1245; goto L_ret; };
   if (m9t3) {
     if ((at == INT64_C(0))) {
       { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s42, 33 })) m9t4 = ((m9_sl_UTF8){ (uint8_t *) m9s42, 33 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
       m9_raise (err, &Zip_Error);
+      m9_site (err, 1246, m9pn);
       goto L_ret;
     }
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s43, 32 })) m9t5 = ((m9_sl_UTF8){ (uint8_t *) m9s43, 32 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     m9_raise (err, &Zip_Error);
+    m9_site (err, 1247, m9pn);
     goto L_ret;
   }
   bool m9t6 = ((int64_t)((*(uint8_t *) m9_at (data.p, m9_add_i64 (at, INT64_C(2), err), data.len, sizeof (uint8_t), err))) != INT64_C(8));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1249; goto L_ret; };
   if (m9t6) {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s44, 32 })) m9t7 = ((m9_sl_UTF8){ (uint8_t *) m9s44, 32 }); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
     m9_raise (err, &Zip_Error);
+    m9_site (err, 1250, m9pn);
     goto L_ret;
   }
   { __typeof__(flags) m9v = (int64_t)((*(uint8_t *) m9_at (data.p, m9_add_i64 (at, INT64_C(3), err), data.len, sizeof (uint8_t), err)));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1252; goto L_ret; };
     flags = m9v;
   }
   { __typeof__(p) m9v = m9_add_i64 (at, INT64_C(10), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1253; goto L_ret; };
     p = m9v;
   }
   bool m9t8 = (m9_mod_i64 ((m9_div_i64 (flags, INT64_C(4), err)), INT64_C(2), err) == INT64_C(1));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1254; goto L_ret; };
   if (m9t8) {
     { __typeof__(p) m9v = m9_add_i64 (m9_add_i64 (p, INT64_C(2), err), Zip_U (data, p, INT64_C(2), err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1255; goto L_ret; };
       p = m9v;
     }
   }
   bool m9t9 = (m9_mod_i64 ((m9_div_i64 (flags, INT64_C(8), err)), INT64_C(2), err) == INT64_C(1));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1257; goto L_ret; };
   if (m9t9) {
     for (;;) {
       bool m9t10 = ((p < n) && ((int64_t)((*(uint8_t *) m9_at (data.p, p, data.len, sizeof (uint8_t), err))) != INT64_C(0)));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1258; goto L_ret; };
       if (!(m9t10)) break;
       { __typeof__(p) m9v = m9_add_i64 (p, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1258; goto L_ret; };
         p = m9v;
       }
     }
     { __typeof__(p) m9v = m9_add_i64 (p, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1259; goto L_ret; };
       p = m9v;
     }
   }
   bool m9t11 = (m9_mod_i64 ((m9_div_i64 (flags, INT64_C(16), err)), INT64_C(2), err) == INT64_C(1));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1261; goto L_ret; };
   if (m9t11) {
     for (;;) {
       bool m9t12 = ((p < n) && ((int64_t)((*(uint8_t *) m9_at (data.p, p, data.len, sizeof (uint8_t), err))) != INT64_C(0)));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1262; goto L_ret; };
       if (!(m9t12)) break;
       { __typeof__(p) m9v = m9_add_i64 (p, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1262; goto L_ret; };
         p = m9v;
       }
     }
     { __typeof__(p) m9v = m9_add_i64 (p, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1263; goto L_ret; };
       p = m9v;
     }
   }
   bool m9t13 = (m9_mod_i64 ((m9_div_i64 (flags, INT64_C(2), err)), INT64_C(2), err) == INT64_C(1));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1265; goto L_ret; };
   if (m9t13) {
     { __typeof__(p) m9v = m9_add_i64 (p, INT64_C(2), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1265; goto L_ret; };
       p = m9v;
     }
   }
   if ((p > n)) {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s45, 37 })) m9t14 = ((m9_sl_UTF8){ (uint8_t *) m9s45, 37 }); err->s[0].p = m9t14.p; err->s[0].len = m9t14.len; m9_pay_keep (err, 0, sizeof (*m9t14.p)); }
     m9_raise (err, &Zip_Error);
+    m9_site (err, 1266, m9pn);
     goto L_ret;
   }
   err->res = m9res;
   m9ret = p;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -3999,38 +4177,41 @@ static void Zip_PutBits (Zip_Sink *o, m9_pool *o_pool, int64_t v, int64_t n, m9_
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.PutBits"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   { __typeof__(Bits_Shl (v, (*o).bits, err)) m9a110 = Bits_Shl (v, (*o).bits, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1378; goto L_ret; };
   { __typeof__((*o).hold) m9v = Bits_Or ((*o).hold, m9a110, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1378; goto L_ret; };
     (*o).hold = m9v;
   }
   }
   { __typeof__((*o).bits) m9v = m9_add_i64 ((*o).bits, n, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1379; goto L_ret; };
     (*o).bits = m9v;
   }
   for (;;) {
     if (!(((*o).bits >= INT64_C(8)))) break;
     { __typeof__((*(uint8_t *) m9_at ((*o).buf.p, (*o).n, (*o).buf.len, sizeof (uint8_t), err))) m9v = m9_byte (Bits_And ((*o).hold, INT64_C(255), err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1381; goto L_ret; };
       (*(uint8_t *) m9_at ((*o).buf.p, (*o).n, (*o).buf.len, sizeof (uint8_t), err)) = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1381; goto L_ret; };
     }
     { __typeof__((*o).n) m9v = m9_add_i64 ((*o).n, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1382; goto L_ret; };
       (*o).n = m9v;
     }
     { __typeof__((*o).hold) m9v = Bits_Shr ((*o).hold, INT64_C(8), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1383; goto L_ret; };
       (*o).hold = m9v;
     }
     { __typeof__((*o).bits) m9v = m9_sub_i64 ((*o).bits, INT64_C(8), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1384; goto L_ret; };
       (*o).bits = m9v;
     }
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, o_pool, (*o).buf.p);
   m9_pool_free (&m9frame);
@@ -4043,18 +4224,20 @@ static void Zip_PutCode (Zip_Sink *o, m9_pool *o_pool, int64_t code, int64_t n, 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.PutCode"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t r = 0; (void) r;
   int64_t i = 0; (void) i;
   r = INT64_C(0);
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1394; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     { __typeof__(Bits_Shr (code, i, err)) m9a111 = Bits_Shr (code, i, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1395; goto L_ret; };
     { __typeof__(r) m9v = m9_add_i64 (m9_mul_i64 (r, INT64_C(2), err), Bits_And (m9a111, INT64_C(1), err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1395; goto L_ret; };
       r = m9v;
     }
     }
@@ -4062,8 +4245,9 @@ static void Zip_PutCode (Zip_Sink *o, m9_pool *o_pool, int64_t code, int64_t n, 
     i += 1;
   } }
   Zip_PutBits (o, o_pool, r, n, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1397; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, o_pool, (*o).buf.p);
   m9_pool_free (&m9frame);
@@ -4076,34 +4260,37 @@ static void Zip_PutSym (Zip_Sink *o, m9_pool *o_pool, int64_t sym, m9_state *err
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.PutSym"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   if ((sym < INT64_C(144))) {
     { __typeof__(m9_add_i64 (INT64_C(48), sym, err)) m9a112 = m9_add_i64 (INT64_C(48), sym, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1404; goto L_ret; };
     Zip_PutCode (o, o_pool, m9a112, INT64_C(8), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1404; goto L_ret; };
     }
   } else {
     if ((sym < INT64_C(256))) {
       { __typeof__(m9_sub_i64 (m9_add_i64 (INT64_C(400), sym, err), INT64_C(144), err)) m9a113 = m9_sub_i64 (m9_add_i64 (INT64_C(400), sym, err), INT64_C(144), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1405; goto L_ret; };
       Zip_PutCode (o, o_pool, m9a113, INT64_C(9), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1405; goto L_ret; };
       }
   } else {
     if ((sym < INT64_C(280))) {
       { __typeof__(m9_sub_i64 (sym, INT64_C(256), err)) m9a114 = m9_sub_i64 (sym, INT64_C(256), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1406; goto L_ret; };
       Zip_PutCode (o, o_pool, m9a114, INT64_C(7), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1406; goto L_ret; };
       }
   } else {
     { __typeof__(m9_sub_i64 (m9_add_i64 (INT64_C(192), sym, err), INT64_C(280), err)) m9a115 = m9_sub_i64 (m9_add_i64 (INT64_C(192), sym, err), INT64_C(280), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1407; goto L_ret; };
     Zip_PutCode (o, o_pool, m9a115, INT64_C(8), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1407; goto L_ret; };
     }
   } } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, o_pool, (*o).buf.p);
   m9_pool_free (&m9frame);
@@ -4116,52 +4303,55 @@ static void Zip_PutMatch (Zip_Sink *o, m9_pool *o_pool, int64_t len, int64_t dis
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.PutMatch"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t s = 0; (void) s;
   int64_t d = 0; (void) d;
   s = INT64_C(28);
   for (;;) {
     bool m9t1 = ((*(int64_t *) m9_at ((*LBase).v, s, INT64_C(29), sizeof (int64_t), err)) > len);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1417; goto L_ret; };
     if (!(m9t1)) break;
     { __typeof__(s) m9v = m9_sub_i64 (s, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1417; goto L_ret; };
       s = m9v;
     }
   }
   { __typeof__(m9_add_i64 (INT64_C(257), s, err)) m9a116 = m9_add_i64 (INT64_C(257), s, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1418; goto L_ret; };
   Zip_PutSym (o, o_pool, m9a116, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1418; goto L_ret; };
   }
   { __typeof__(m9_sub_i64 (len, (*(int64_t *) m9_at ((*LBase).v, s, INT64_C(29), sizeof (int64_t), err)), err)) m9a117 = m9_sub_i64 (len, (*(int64_t *) m9_at ((*LBase).v, s, INT64_C(29), sizeof (int64_t), err)), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1419; goto L_ret; };
   { __typeof__((*(int64_t *) m9_at ((*LExt).v, s, INT64_C(29), sizeof (int64_t), err))) m9a118 = (*(int64_t *) m9_at ((*LExt).v, s, INT64_C(29), sizeof (int64_t), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1419; goto L_ret; };
   Zip_PutBits (o, o_pool, m9a117, m9a118, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1419; goto L_ret; };
   }
   }
   d = INT64_C(29);
   for (;;) {
     bool m9t2 = ((*(int64_t *) m9_at ((*DBase).v, d, INT64_C(30), sizeof (int64_t), err)) > dist);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1421; goto L_ret; };
     if (!(m9t2)) break;
     { __typeof__(d) m9v = m9_sub_i64 (d, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1421; goto L_ret; };
       d = m9v;
     }
   }
   Zip_PutCode (o, o_pool, d, INT64_C(5), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1422; goto L_ret; };
   { __typeof__(m9_sub_i64 (dist, (*(int64_t *) m9_at ((*DBase).v, d, INT64_C(30), sizeof (int64_t), err)), err)) m9a119 = m9_sub_i64 (dist, (*(int64_t *) m9_at ((*DBase).v, d, INT64_C(30), sizeof (int64_t), err)), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1423; goto L_ret; };
   { __typeof__((*(int64_t *) m9_at ((*DExt).v, d, INT64_C(30), sizeof (int64_t), err))) m9a120 = (*(int64_t *) m9_at ((*DExt).v, d, INT64_C(30), sizeof (int64_t), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1423; goto L_ret; };
   Zip_PutBits (o, o_pool, m9a119, m9a120, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1423; goto L_ret; };
   }
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, o_pool, (*o).buf.p);
   m9_pool_free (&m9frame);
@@ -4174,26 +4364,28 @@ static int64_t Zip_Hash3 (m9_sl_BYTE b, int64_t i, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.Hash3"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   err->res = m9res;
   { __typeof__((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)))) m9a121 = (int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1428; goto L_ret; };
   { __typeof__(Bits_Shl (m9a121, INT64_C(10), err)) m9a122 = Bits_Shl (m9a121, INT64_C(10), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1428; goto L_ret; };
   { __typeof__((int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, INT64_C(1), err), b.len, sizeof (uint8_t), err)))) m9a123 = (int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, INT64_C(1), err), b.len, sizeof (uint8_t), err)));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1428; goto L_ret; };
   { __typeof__(Bits_Shl (m9a123, INT64_C(5), err)) m9a124 = Bits_Shl (m9a123, INT64_C(5), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1428; goto L_ret; };
   { __typeof__(Bits_Xor (m9a122, m9a124, err)) m9a125 = Bits_Xor (m9a122, m9a124, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1428; goto L_ret; };
   { __typeof__((int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, INT64_C(2), err), b.len, sizeof (uint8_t), err)))) m9a126 = (int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, INT64_C(2), err), b.len, sizeof (uint8_t), err)));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1428; goto L_ret; };
   { __typeof__(Bits_Xor (m9a125, m9a126, err)) m9a127 = Bits_Xor (m9a125, m9a126, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1428; goto L_ret; };
   { __typeof__(m9_sub_i64 (Zip_HashSize, INT64_C(1), err)) m9a128 = m9_sub_i64 (Zip_HashSize, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1428; goto L_ret; };
   m9ret = Bits_And (m9a127, m9a128, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1428; goto L_ret; };
   }
   }
   }
@@ -4204,6 +4396,7 @@ static int64_t Zip_Hash3 (m9_sl_BYTE b, int64_t i, m9_state *err)
   }
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -4215,6 +4408,8 @@ static void Zip_FixedBlock (m9_pool *pool, m9_sl_BYTE data, Zip_Sink *o, m9_pool
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.FixedBlock"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_I64 head = {0}; (void) head;
   m9_sl_I64 prev = {0}; (void) prev;
   int64_t n = 0; (void) n;
@@ -4230,59 +4425,59 @@ static void Zip_FixedBlock (m9_pool *pool, m9_sl_BYTE data, Zip_Sink *o, m9_pool
   int64_t stop = 0; (void) stop;
   n = (data).len;
   { __typeof__((*o).buf) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), m9_add_i64 (m9_add_i64 (n, m9_div_i64 (n, INT64_C(8), err), err), INT64_C(16), err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1445; goto L_ret; };
     (*o).buf = m9v;
   }
   (*o).n = INT64_C(0);
   (*o).hold = INT64_C(0);
   (*o).bits = INT64_C(0);
   { __typeof__(head) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), Zip_HashSize, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1450; goto L_ret; };
     head = m9v;
   }
   { __typeof__(prev) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), Zip_WinSize, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1451; goto L_ret; };
     prev = m9v;
   }
   Zip_PutBits (o, o_pool, INT64_C(1), INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1452; goto L_ret; };
   Zip_PutBits (o, o_pool, INT64_C(1), INT64_C(2), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1453; goto L_ret; };
   i = INT64_C(0);
   for (;;) {
     if (!((i < n))) break;
     best = INT64_C(0);
     bestAt = INT64_C(0);
     bool m9t1 = (m9_add_i64 (i, Zip_MinMatch, err) <= n);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1458; goto L_ret; };
     if (m9t1) {
       { __typeof__(h) m9v = Zip_Hash3 (data, i, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1459; goto L_ret; };
         h = m9v;
       }
       { __typeof__(limit) m9v = m9_sub_i64 (n, i, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1460; goto L_ret; };
         limit = m9v;
       }
       if ((limit > Zip_MaxMatch)) {
         limit = Zip_MaxMatch;
       }
       { __typeof__(cand) m9v = m9_sub_i64 ((*(int64_t *) m9_at (head.p, h, head.len, sizeof (int64_t), err)), INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1462; goto L_ret; };
         cand = m9v;
       }
       tries = INT64_C(0);
       for (;;) {
         bool m9t2 = (((cand >= INT64_C(0)) && (m9_sub_i64 (i, cand, err) <= Zip_WinSize)) && (tries < Zip_MaxChain));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1464; goto L_ret; };
         if (!(m9t2)) break;
         len = INT64_C(0);
         for (;;) {
           bool m9t3 = ((len < limit) && ((*(uint8_t *) m9_at (data.p, m9_add_i64 (cand, len, err), data.len, sizeof (uint8_t), err)) == (*(uint8_t *) m9_at (data.p, m9_add_i64 (i, len, err), data.len, sizeof (uint8_t), err))));
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1466; goto L_ret; };
           if (!(m9t3)) break;
           { __typeof__(len) m9v = m9_add_i64 (len, INT64_C(1), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1467; goto L_ret; };
             len = m9v;
           }
         }
@@ -4294,16 +4489,16 @@ static void Zip_FixedBlock (m9_pool *pool, m9_sl_BYTE data, Zip_Sink *o, m9_pool
           tries = Zip_MaxChain;
         } else {
           { __typeof__(tries) m9v = m9_add_i64 (tries, INT64_C(1), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1476; goto L_ret; };
             tries = m9v;
           }
           { __typeof__(k) m9v = m9_sub_i64 ((*(int64_t *) m9_at (prev.p, Bits_And (cand, Zip_WinMask, err), prev.len, sizeof (int64_t), err)), INT64_C(1), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1477; goto L_ret; };
             k = m9v;
           }
           if ((k >= cand)) {
             { __typeof__(cand) m9v = m9_neg_i64 (INT64_C(1), err);
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 1480; goto L_ret; };
               cand = m9v;
             }
           } else {
@@ -4314,61 +4509,62 @@ static void Zip_FixedBlock (m9_pool *pool, m9_sl_BYTE data, Zip_Sink *o, m9_pool
     }
     if ((best >= Zip_MinMatch)) {
       { __typeof__(m9_sub_i64 (i, bestAt, err)) m9a129 = m9_sub_i64 (i, bestAt, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1485; goto L_ret; };
       Zip_PutMatch (o, o_pool, best, m9a129, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1485; goto L_ret; };
       }
       { __typeof__(stop) m9v = m9_add_i64 (i, best, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1486; goto L_ret; };
         stop = m9v;
       }
     } else {
       { __typeof__((int64_t)((*(uint8_t *) m9_at (data.p, i, data.len, sizeof (uint8_t), err)))) m9a130 = (int64_t)((*(uint8_t *) m9_at (data.p, i, data.len, sizeof (uint8_t), err)));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1488; goto L_ret; };
       Zip_PutSym (o, o_pool, m9a130, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1488; goto L_ret; };
       }
       { __typeof__(stop) m9v = m9_add_i64 (i, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1489; goto L_ret; };
         stop = m9v;
       }
     }
     for (;;) {
       if (!((i < stop))) break;
       bool m9t4 = (m9_add_i64 (i, Zip_MinMatch, err) <= n);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1493; goto L_ret; };
       if (m9t4) {
         { __typeof__(h) m9v = Zip_Hash3 (data, i, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1494; goto L_ret; };
           h = m9v;
         }
         { __typeof__((*(int64_t *) m9_at (prev.p, Bits_And (i, Zip_WinMask, err), prev.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at (head.p, h, head.len, sizeof (int64_t), err));
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1495; goto L_ret; };
           (*(int64_t *) m9_at (prev.p, Bits_And (i, Zip_WinMask, err), prev.len, sizeof (int64_t), err)) = m9v;
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1495; goto L_ret; };
         }
         { __typeof__((*(int64_t *) m9_at (head.p, h, head.len, sizeof (int64_t), err))) m9v = m9_add_i64 (i, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1496; goto L_ret; };
           (*(int64_t *) m9_at (head.p, h, head.len, sizeof (int64_t), err)) = m9v;
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1496; goto L_ret; };
         }
       }
       { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1498; goto L_ret; };
         i = m9v;
       }
     }
   }
   Zip_PutSym (o, o_pool, INT64_C(256), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1501; goto L_ret; };
   if (((*o).bits > INT64_C(0))) {
     { __typeof__(m9_sub_i64 (INT64_C(8), (*o).bits, err)) m9a131 = m9_sub_i64 (INT64_C(8), (*o).bits, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1502; goto L_ret; };
     Zip_PutBits (o, o_pool, INT64_C(0), m9a131, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1502; goto L_ret; };
     }
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, o_pool, (*o).buf.p);
   m9_pool_free (&m9frame);
@@ -4381,6 +4577,8 @@ static m9_sl_BYTE Zip_StoredBlocks (m9_pool *pool, m9_sl_BYTE data, m9_state *er
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Zip.StoredBlocks"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_BYTE m9ret = {0};
   m9_sl_BYTE out = {0}; (void) out;
   int64_t n = 0; (void) n;
@@ -4391,74 +4589,74 @@ static m9_sl_BYTE Zip_StoredBlocks (m9_pool *pool, m9_sl_BYTE data, m9_state *er
   int64_t last = 0; (void) last;
   n = (data).len;
   { __typeof__(out) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), m9_add_i64 (n, m9_mul_i64 (INT64_C(5), (m9_add_i64 (m9_div_i64 (n, INT64_C(65535), err), INT64_C(1), err)), err), err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1515; goto L_ret; };
     out = m9v;
   }
   at = INT64_C(0);
   w = INT64_C(0);
   for (;;) {
     { __typeof__(len) m9v = m9_sub_i64 (n, at, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1519; goto L_ret; };
       len = m9v;
     }
     if ((len > INT64_C(65535))) {
       len = INT64_C(65535);
     }
     bool m9t1 = (m9_add_i64 (at, len, err) == n);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1521; goto L_ret; };
     if (m9t1) {
       last = INT64_C(1);
     } else {
       last = INT64_C(0);
     }
     { __typeof__((*(uint8_t *) m9_at (out.p, w, out.len, sizeof (uint8_t), err))) m9v = m9_byte (last, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1522; goto L_ret; };
       (*(uint8_t *) m9_at (out.p, w, out.len, sizeof (uint8_t), err)) = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1522; goto L_ret; };
     }
     { __typeof__((*(uint8_t *) m9_at (out.p, m9_add_i64 (w, INT64_C(1), err), out.len, sizeof (uint8_t), err))) m9v = m9_byte (m9_mod_i64 (len, INT64_C(256), err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1523; goto L_ret; };
       (*(uint8_t *) m9_at (out.p, m9_add_i64 (w, INT64_C(1), err), out.len, sizeof (uint8_t), err)) = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1523; goto L_ret; };
     }
     { __typeof__((*(uint8_t *) m9_at (out.p, m9_add_i64 (w, INT64_C(2), err), out.len, sizeof (uint8_t), err))) m9v = m9_byte (m9_div_i64 (len, INT64_C(256), err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1524; goto L_ret; };
       (*(uint8_t *) m9_at (out.p, m9_add_i64 (w, INT64_C(2), err), out.len, sizeof (uint8_t), err)) = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1524; goto L_ret; };
     }
     { __typeof__((*(uint8_t *) m9_at (out.p, m9_add_i64 (w, INT64_C(3), err), out.len, sizeof (uint8_t), err))) m9v = m9_byte (m9_sub_i64 (INT64_C(255), m9_mod_i64 (len, INT64_C(256), err), err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1525; goto L_ret; };
       (*(uint8_t *) m9_at (out.p, m9_add_i64 (w, INT64_C(3), err), out.len, sizeof (uint8_t), err)) = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1525; goto L_ret; };
     }
     { __typeof__((*(uint8_t *) m9_at (out.p, m9_add_i64 (w, INT64_C(4), err), out.len, sizeof (uint8_t), err))) m9v = m9_byte (m9_sub_i64 (INT64_C(255), m9_div_i64 (len, INT64_C(256), err), err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1526; goto L_ret; };
       (*(uint8_t *) m9_at (out.p, m9_add_i64 (w, INT64_C(4), err), out.len, sizeof (uint8_t), err)) = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1526; goto L_ret; };
     }
     { __typeof__(w) m9v = m9_add_i64 (w, INT64_C(5), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1527; goto L_ret; };
       w = m9v;
     }
     { __typeof__(k) m9t2to;
     k = INT64_C(0);
     m9t2to = m9_sub_i64 (len, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1528; goto L_ret; };
     if (k <= m9t2to) for (;;) {
       { __typeof__((*(uint8_t *) m9_at (out.p, m9_add_i64 (w, k, err), out.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (data.p, m9_add_i64 (at, k, err), data.len, sizeof (uint8_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1528; goto L_ret; };
         (*(uint8_t *) m9_at (out.p, m9_add_i64 (w, k, err), out.len, sizeof (uint8_t), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1528; goto L_ret; };
       }
       if ((uint64_t) m9t2to - (uint64_t) k < (uint64_t) 1) break;
       k += 1;
     } }
     { __typeof__(w) m9v = m9_add_i64 (w, len, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1529; goto L_ret; };
       w = m9v;
     }
     { __typeof__(at) m9v = m9_add_i64 (at, len, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1530; goto L_ret; };
       at = m9v;
     }
     if ((last == INT64_C(1))) {
@@ -4467,9 +4665,10 @@ static m9_sl_BYTE Zip_StoredBlocks (m9_pool *pool, m9_sl_BYTE data, m9_state *er
   }
   err->res = m9res;
   m9ret = ({ __auto_type m9t3 = out; int64_t m9t3a = INT64_C(0), m9t3n = w; int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; });
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1533; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
@@ -4482,6 +4681,8 @@ static m9_sl_BYTE Zip_Packed (m9_pool *pool, m9_sl_BYTE data, int64_t front, int
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Zip.Packed"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_BYTE m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   Zip_Sink o = {0}; (void) o;
@@ -4489,32 +4690,32 @@ static m9_sl_BYTE Zip_Packed (m9_pool *pool, m9_sl_BYTE data, int64_t front, int
   m9_sl_BYTE out = {0}; (void) out;
   int64_t k = 0; (void) k;
   Zip_FixedBlock (&(scratch), data, &(o), err->res, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1548; goto L_ret; };
   { __typeof__(body) m9v = ({ __auto_type m9t1 = o.buf; int64_t m9t1a = INT64_C(0), m9t1n = o.n; int64_t m9t1o = m9_chk_slice (m9t1a, m9t1n, m9t1.len, err); (__typeof__(m9t1)){ m9t1.p + m9t1o, err->exc ? 0 : m9t1n }; });
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1549; goto L_ret; };
     body = m9v;
   }
   bool m9t2 = (o.n > m9_add_i64 ((data).len, m9_mul_i64 (INT64_C(5), (m9_add_i64 (m9_div_i64 ((data).len, INT64_C(65535), err), INT64_C(1), err)), err), err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1550; goto L_ret; };
   if (m9t2) {
     { __typeof__(body) m9v = Zip_StoredBlocks (&(scratch), data, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1551; goto L_ret; };
       body = m9v;
     }
   }
   { __typeof__(out) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), m9_add_i64 (m9_add_i64 (front, (body).len, err), back, err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1553; goto L_ret; };
     out = m9v;
   }
   { __typeof__(k) m9t3to;
   k = INT64_C(0);
   m9t3to = m9_sub_i64 ((body).len, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1554; goto L_ret; };
   if (k <= m9t3to) for (;;) {
     { __typeof__((*(uint8_t *) m9_at (out.p, m9_add_i64 (front, k, err), out.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (body.p, k, body.len, sizeof (uint8_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1554; goto L_ret; };
       (*(uint8_t *) m9_at (out.p, m9_add_i64 (front, k, err), out.len, sizeof (uint8_t), err)) = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1554; goto L_ret; };
     }
     if ((uint64_t) m9t3to - (uint64_t) k < (uint64_t) 1) break;
     k += 1;
@@ -4523,6 +4724,7 @@ static m9_sl_BYTE Zip_Packed (m9_pool *pool, m9_sl_BYTE data, int64_t front, int
   m9ret = out;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
@@ -4536,25 +4738,28 @@ static void Zip_PutLow (m9_sl_BYTE *out, int64_t at, int64_t v, int64_t n, m9_st
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.PutLow"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t k = 0; (void) k;
   { __typeof__(k) m9t1to;
   k = INT64_C(0);
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1595; goto L_ret; };
   if (k <= m9t1to) for (;;) {
     { __typeof__((*(uint8_t *) m9_at ((*out).p, m9_add_i64 (at, k, err), (*out).len, sizeof (uint8_t), err))) m9v = m9_byte (m9_mod_i64 (v, INT64_C(256), err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1596; goto L_ret; };
       (*(uint8_t *) m9_at ((*out).p, m9_add_i64 (at, k, err), (*out).len, sizeof (uint8_t), err)) = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1596; goto L_ret; };
     }
     { __typeof__(v) m9v = m9_div_i64 (v, INT64_C(256), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1597; goto L_ret; };
       v = m9v;
     }
     if ((uint64_t) m9t1to - (uint64_t) k < (uint64_t) 1) break;
     k += 1;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, (*out).p);
   m9_pool_free (&m9frame);
@@ -4567,25 +4772,28 @@ static void Zip_PutHigh (m9_sl_BYTE *out, int64_t at, int64_t v, int64_t n, m9_s
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.PutHigh"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t k = 0; (void) k;
   { __typeof__(k) m9t1to;
   k = m9_sub_i64 (n, INT64_C(1), err);
   m9t1to = INT64_C(0);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1604; goto L_ret; };
   if (k >= m9t1to) for (;;) {
     { __typeof__((*(uint8_t *) m9_at ((*out).p, m9_add_i64 (at, k, err), (*out).len, sizeof (uint8_t), err))) m9v = m9_byte (m9_mod_i64 (v, INT64_C(256), err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1605; goto L_ret; };
       (*(uint8_t *) m9_at ((*out).p, m9_add_i64 (at, k, err), (*out).len, sizeof (uint8_t), err)) = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1605; goto L_ret; };
     }
     { __typeof__(v) m9v = m9_div_i64 (v, INT64_C(256), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1606; goto L_ret; };
       v = m9v;
     }
     if ((uint64_t) k - (uint64_t) m9t1to < (uint64_t) 1) break;
     k += -1;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, (*out).p);
   m9_pool_free (&m9frame);
@@ -4598,22 +4806,24 @@ static m9_sl_BYTE Zip_Kept (Zip_Writer * *w, m9_pool *w_pool, m9_sl_BYTE b, m9_s
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Zip.Kept"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_BYTE m9ret = {0};
   m9_sl_BYTE c = {0}; (void) c;
   int64_t i = 0; (void) i;
   { __typeof__(c) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, w_pool, (b).len, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1750; goto L_ret; };
     c = m9v;
   }
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((b).len, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1751; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     { __typeof__((*(uint8_t *) m9_at (c.p, i, c.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1751; goto L_ret; };
       (*(uint8_t *) m9_at (c.p, i, c.len, sizeof (uint8_t), err)) = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1751; goto L_ret; };
     }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
@@ -4622,6 +4832,7 @@ static m9_sl_BYTE Zip_Kept (Zip_Writer * *w, m9_pool *w_pool, m9_sl_BYTE b, m9_s
   m9ret = c;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_adopt_if (&m9frame, w_pool, (*w));
@@ -4635,6 +4846,8 @@ static bool Zip_SameBytes (m9_sl_BYTE a, m9_sl_BYTE b, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.SameBytes"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   int64_t i = 0; (void) i;
   if (((a).len != (b).len)) {
@@ -4645,10 +4858,10 @@ static bool Zip_SameBytes (m9_sl_BYTE a, m9_sl_BYTE b, m9_state *err)
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((a).len, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1759; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     bool m9t2 = ((*(uint8_t *) m9_at (a.p, i, a.len, sizeof (uint8_t), err)) != (*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1760; goto L_ret; };
     if (m9t2) {
       err->res = m9res;
       m9ret = false;
@@ -4661,6 +4874,7 @@ static bool Zip_SameBytes (m9_sl_BYTE a, m9_sl_BYTE b, m9_state *err)
   m9ret = true;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -4672,6 +4886,8 @@ static int64_t Zip_Laid (Zip_Writer * w, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Zip.Laid"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   int64_t i = 0; (void) i;
   int64_t t = 0; (void) t;
@@ -4679,10 +4895,10 @@ static int64_t Zip_Laid (Zip_Writer * w, m9_state *err)
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (w->n, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1770; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     { __typeof__(t) m9v = m9_add_i64 (m9_add_i64 (m9_add_i64 (t, Zip_LocHdr, err), ((*(Zip_WEntry *) m9_at (w->e.p, i, w->e.len, sizeof (Zip_WEntry), err)).name).len, err), ((*(Zip_WEntry *) m9_at (w->e.p, i, w->e.len, sizeof (Zip_WEntry), err)).data).len, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1771; goto L_ret; };
       t = m9v;
     }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
@@ -4692,6 +4908,7 @@ static int64_t Zip_Laid (Zip_Writer * w, m9_state *err)
   m9ret = t;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -4704,10 +4921,13 @@ void Zip_m9init (m9_state *err)
   m9done = 1;
   m9_pool *m9prev = err->res;
   err->res = &m9mframe;
+  static const char m9pn[] = "Zip (the module body)"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   DynStr_m9init (err); if (err->exc) goto L_ret;
   Io_m9init (err); if (err->exc) goto L_ret;
   Bits_m9init (err); if (err->exc) goto L_ret;
   Text_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9prev;
 }

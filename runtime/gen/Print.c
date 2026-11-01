@@ -114,62 +114,64 @@ static const uint8_t m9s101[6] = { 82, 69, 84, 85, 82, 78 };
 static const uint8_t m9s102[6] = { 82, 65, 73, 83, 69, 32 };
 static const uint8_t m9s103[2] = { 32, 40 };
 static const uint8_t m9s104[9] = { 68, 73, 83, 80, 79, 83, 69, 32, 40 };
-static const uint8_t m9s105[8] = { 84, 72, 82, 69, 65, 68, 32, 40 };
-static const uint8_t m9s106[2] = { 44, 32 };
-static const uint8_t m9s107[10] = { 84, 82, 65, 78, 83, 70, 69, 82, 32, 40 };
+static const uint8_t m9s105[4] = { 84, 65, 83, 75 };
+static const uint8_t m9s106[6] = { 84, 65, 83, 75, 32, 40 };
+static const uint8_t m9s107[8] = { 84, 72, 82, 69, 65, 68, 32, 40 };
 static const uint8_t m9s108[2] = { 44, 32 };
-static const uint8_t m9s109[6] = { 87, 65, 73, 84, 32, 40 };
-static const uint8_t m9s110[8] = { 83, 73, 71, 78, 65, 76, 32, 40 };
-static const uint8_t m9s111[6] = { 63, 115, 116, 109, 116, 63 };
-static const uint8_t m9s112[3] = { 32, 59, 32 };
-static const uint8_t m9s113[4] = { 86, 65, 82, 32 };
-static const uint8_t m9s114[4] = { 79, 87, 78, 32 };
-static const uint8_t m9s115[3] = { 82, 79, 32 };
-static const uint8_t m9s116[5] = { 75, 69, 80, 84, 32 };
-static const uint8_t m9s117[2] = { 58, 32 };
-static const uint8_t m9s118[5] = { 67, 79, 78, 83, 84 };
-static const uint8_t m9s119[3] = { 32, 61, 32 };
-static const uint8_t m9s120[2] = { 32, 59 };
-static const uint8_t m9s121[4] = { 84, 89, 80, 69 };
-static const uint8_t m9s122[3] = { 32, 61, 32 };
-static const uint8_t m9s123[2] = { 32, 59 };
-static const uint8_t m9s124[3] = { 86, 65, 82 };
-static const uint8_t m9s125[3] = { 82, 79, 32 };
-static const uint8_t m9s126[3] = { 32, 58, 32 };
-static const uint8_t m9s127[2] = { 32, 59 };
-static const uint8_t m9s128[9] = { 69, 88, 67, 69, 80, 84, 73, 79, 78 };
-static const uint8_t m9s129[2] = { 32, 40 };
-static const uint8_t m9s130[2] = { 32, 59 };
-static const uint8_t m9s131[10] = { 80, 82, 79, 67, 69, 68, 85, 82, 69, 32 };
-static const uint8_t m9s132[3] = { 32, 61, 32 };
-static const uint8_t m9s133[2] = { 32, 40 };
-static const uint8_t m9s134[3] = { 32, 58, 32 };
-static const uint8_t m9s135[3] = { 82, 79, 32 };
-static const uint8_t m9s136[7] = { 82, 65, 73, 83, 69, 83, 32 };
-static const uint8_t m9s137[2] = { 44, 32 };
-static const uint8_t m9s138[2] = { 32, 91 };
-static const uint8_t m9s139[2] = { 32, 61 };
-static const uint8_t m9s140[2] = { 32, 59 };
-static const uint8_t m9s141[2] = { 32, 59 };
-static const uint8_t m9s142[7] = { 85, 78, 83, 65, 70, 69, 32 };
-static const uint8_t m9s143[9] = { 83, 84, 65, 84, 69, 70, 85, 76, 32 };
-static const uint8_t m9s144[18] = { 68, 69, 70, 73, 78, 73, 84, 73, 79, 78, 32, 77, 79, 68, 85, 76, 69, 32 };
-static const uint8_t m9s145[4] = { 70, 79, 82, 32 };
-static const uint8_t m9s146[6] = { 32, 76, 73, 78, 75, 32 };
-static const uint8_t m9s147[2] = { 44, 32 };
-static const uint8_t m9s148[2] = { 32, 59 };
-static const uint8_t m9s149[7] = { 85, 78, 83, 65, 70, 69, 32 };
-static const uint8_t m9s150[22] = { 73, 77, 80, 76, 69, 77, 69, 78, 84, 65, 84, 73, 79, 78, 32, 77, 79, 68, 85, 76, 69, 32 };
-static const uint8_t m9s151[2] = { 32, 59 };
-static const uint8_t m9s152[7] = { 77, 79, 68, 85, 76, 69, 32 };
+static const uint8_t m9s109[10] = { 84, 82, 65, 78, 83, 70, 69, 82, 32, 40 };
+static const uint8_t m9s110[2] = { 44, 32 };
+static const uint8_t m9s111[6] = { 87, 65, 73, 84, 32, 40 };
+static const uint8_t m9s112[8] = { 83, 73, 71, 78, 65, 76, 32, 40 };
+static const uint8_t m9s113[6] = { 63, 115, 116, 109, 116, 63 };
+static const uint8_t m9s114[3] = { 32, 59, 32 };
+static const uint8_t m9s115[4] = { 86, 65, 82, 32 };
+static const uint8_t m9s116[4] = { 79, 87, 78, 32 };
+static const uint8_t m9s117[3] = { 82, 79, 32 };
+static const uint8_t m9s118[5] = { 75, 69, 80, 84, 32 };
+static const uint8_t m9s119[2] = { 58, 32 };
+static const uint8_t m9s120[5] = { 67, 79, 78, 83, 84 };
+static const uint8_t m9s121[3] = { 32, 61, 32 };
+static const uint8_t m9s122[2] = { 32, 59 };
+static const uint8_t m9s123[4] = { 84, 89, 80, 69 };
+static const uint8_t m9s124[3] = { 32, 61, 32 };
+static const uint8_t m9s125[2] = { 32, 59 };
+static const uint8_t m9s126[3] = { 86, 65, 82 };
+static const uint8_t m9s127[3] = { 82, 79, 32 };
+static const uint8_t m9s128[3] = { 32, 58, 32 };
+static const uint8_t m9s129[2] = { 32, 59 };
+static const uint8_t m9s130[9] = { 69, 88, 67, 69, 80, 84, 73, 79, 78 };
+static const uint8_t m9s131[2] = { 32, 40 };
+static const uint8_t m9s132[2] = { 32, 59 };
+static const uint8_t m9s133[10] = { 80, 82, 79, 67, 69, 68, 85, 82, 69, 32 };
+static const uint8_t m9s134[3] = { 32, 61, 32 };
+static const uint8_t m9s135[2] = { 32, 40 };
+static const uint8_t m9s136[3] = { 32, 58, 32 };
+static const uint8_t m9s137[3] = { 82, 79, 32 };
+static const uint8_t m9s138[7] = { 82, 65, 73, 83, 69, 83, 32 };
+static const uint8_t m9s139[2] = { 44, 32 };
+static const uint8_t m9s140[2] = { 32, 91 };
+static const uint8_t m9s141[2] = { 32, 61 };
+static const uint8_t m9s142[2] = { 32, 59 };
+static const uint8_t m9s143[2] = { 32, 59 };
+static const uint8_t m9s144[7] = { 85, 78, 83, 65, 70, 69, 32 };
+static const uint8_t m9s145[9] = { 83, 84, 65, 84, 69, 70, 85, 76, 32 };
+static const uint8_t m9s146[18] = { 68, 69, 70, 73, 78, 73, 84, 73, 79, 78, 32, 77, 79, 68, 85, 76, 69, 32 };
+static const uint8_t m9s147[4] = { 70, 79, 82, 32 };
+static const uint8_t m9s148[6] = { 32, 76, 73, 78, 75, 32 };
+static const uint8_t m9s149[2] = { 44, 32 };
+static const uint8_t m9s150[2] = { 32, 59 };
+static const uint8_t m9s151[7] = { 85, 78, 83, 65, 70, 69, 32 };
+static const uint8_t m9s152[22] = { 73, 77, 80, 76, 69, 77, 69, 78, 84, 65, 84, 73, 79, 78, 32, 77, 79, 68, 85, 76, 69, 32 };
 static const uint8_t m9s153[2] = { 32, 59 };
-static const uint8_t m9s154[5] = { 70, 82, 79, 77, 32 };
-static const uint8_t m9s155[8] = { 32, 73, 77, 80, 79, 82, 84, 32 };
-static const uint8_t m9s156[2] = { 32, 59 };
-static const uint8_t m9s157[7] = { 73, 77, 80, 79, 82, 84, 32 };
+static const uint8_t m9s154[7] = { 77, 79, 68, 85, 76, 69, 32 };
+static const uint8_t m9s155[2] = { 32, 59 };
+static const uint8_t m9s156[5] = { 70, 82, 79, 77, 32 };
+static const uint8_t m9s157[8] = { 32, 73, 77, 80, 79, 82, 84, 32 };
 static const uint8_t m9s158[2] = { 32, 59 };
-static const uint8_t m9s159[4] = { 69, 78, 68, 32 };
-static const uint8_t m9s160[1] = { 46 };
+static const uint8_t m9s159[7] = { 73, 77, 80, 79, 82, 84, 32 };
+static const uint8_t m9s160[2] = { 32, 59 };
+static const uint8_t m9s161[4] = { 69, 78, 68, 32 };
+static const uint8_t m9s162[1] = { 46 };
 
 static void Print_Sp (DynStr_DString * *d, m9_pool *d_pool, int64_t ind, m9_state *err);
 static void Print_Quoted (DynStr_DString * *d, m9_pool *d_pool, m9_sl_UTF8 s, m9_state *err);
@@ -200,38 +202,41 @@ m9_sl_UTF8 Print_TreeUtf (m9_pool *pool, Ast_Node * root, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Print.TreeUtf"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   int64_t i = 0; (void) i;
   { __typeof__(d) m9v = DynStr_New (pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 980; goto L_ret; };
     d = m9v;
   }
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (root->nkids, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 981; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     if ((i > INT64_C(0))) {
       DynStr_AppendChar (&(d), &((*pool)), 10u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 983; goto L_ret; };
       DynStr_AppendChar (&(d), &((*pool)), 10u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 984; goto L_ret; };
     }
     { Ast_Node * u = (*(Ast_Node * *) m9_at (root->kids.p, i, root->kids.len, sizeof (Ast_Node *), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 986; goto L_ret; };
     if (u != NULL) {
       Print_EUnit (&(d), &((*pool)), u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 986; goto L_ret; };
     } }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   err->res = m9res;
   m9ret = DynStr_ViewIn (pool, d, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 988; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -244,19 +249,22 @@ m9_sl_UTF8 Print_TypeTextUtf (m9_pool *pool, Ast_Node * k, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Print.TypeTextUtf"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   { __typeof__(d) m9v = DynStr_New (pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 952; goto L_ret; };
     d = m9v;
   }
   Print_EType (&(d), &((*pool)), k, INT64_C(0), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 953; goto L_ret; };
   err->res = m9res;
   m9ret = DynStr_ViewIn (pool, d, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 954; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -269,20 +277,23 @@ m9_sl_UTF8 Print_ParamsTextUtf (Ast_Node * k, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Print.ParamsTextUtf"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   m9_pool pool = {0}; (void) pool;
   DynStr_DString * d = NULL; (void) d;
   { __typeof__(d) m9v = DynStr_New (&(pool), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 961; goto L_ret; };
     d = m9v;
   }
   Print_EParams (&(d), &(pool), k, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 962; goto L_ret; };
   err->res = m9res;
   m9ret = DynStr_View (d, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 963; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9ret = m9_rehome_utf (&pool, m9res, m9ret, err);
@@ -297,20 +308,23 @@ m9_sl_UTF8 Print_ExprTextUtf (Ast_Node * k, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Print.ExprTextUtf"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   m9_pool pool = {0}; (void) pool;
   DynStr_DString * d = NULL; (void) d;
   { __typeof__(d) m9v = DynStr_New (&(pool), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 970; goto L_ret; };
     d = m9v;
   }
   Print_E (&(d), &(pool), k, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 971; goto L_ret; };
   err->res = m9res;
   m9ret = DynStr_View (d, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 972; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9ret = m9_rehome_utf (&pool, m9res, m9ret, err);
@@ -325,18 +339,21 @@ static void Print_Sp (DynStr_DString * *d, m9_pool *d_pool, int64_t ind, m9_stat
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Print.Sp"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   { __typeof__(i) m9t1to;
   i = INT64_C(1);
   m9t1to = m9_mul_i64 (ind, INT64_C(2), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 53; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     DynStr_AppendChar (d, d_pool, 32u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 53; goto L_ret; };
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -349,21 +366,24 @@ static void Print_Quoted (DynStr_DString * *d, m9_pool *d_pool, m9_sl_UTF8 s, m9
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Print.Quoted"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   uint32_t q = 0; (void) q;
   bool m9t1 = (Text_FindCharUtf (s, 39u, err) >= INT64_C(0));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 60; goto L_ret; };
   if (m9t1) {
     q = 34u;
   } else {
     q = 39u;
   }
   DynStr_AppendChar (d, d_pool, q, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 61; goto L_ret; };
   DynStr_Append (d, d_pool, s, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 62; goto L_ret; };
   DynStr_AppendChar (d, d_pool, q, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 63; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -376,17 +396,20 @@ static void Print_Qual (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, m9_s
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Print.Qual"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   DynStr_Append (d, d_pool, n->au, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 69; goto L_ret; };
   bool m9t1 = (Text_BLen (n->bu, err) > INT64_C(0));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 70; goto L_ret; };
   if (m9t1) {
     DynStr_AppendChar (d, d_pool, 46u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 71; goto L_ret; };
     DynStr_Append (d, d_pool, n->bu, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 72; goto L_ret; };
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -399,26 +422,29 @@ static void Print_Idents (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, m9
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Print.Idents"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (n->nkids, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 80; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     if ((i > INT64_C(0))) {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s0, 2 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 81; goto L_ret; };
     }
     { Ast_Node * id = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 82; goto L_ret; };
     if (id != NULL) {
       DynStr_Append (d, d_pool, id->au, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 82; goto L_ret; };
     } }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -431,6 +457,8 @@ static void Print_E (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * k, m9_stat
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Print.E"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t j = 0; (void) j;
   { Ast_Node * n = k;
   if (n != NULL) {
@@ -439,308 +467,309 @@ static void Print_E (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * k, m9_stat
     case INT64_C(60):
     {
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a1 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 130; goto L_ret; };
       Print_E (d, d_pool, m9a1, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 130; goto L_ret; };
       }
       DynStr_AppendChar (d, d_pool, 32u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 131; goto L_ret; };
       DynStr_Append (d, d_pool, n->au, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 132; goto L_ret; };
       DynStr_AppendChar (d, d_pool, 32u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 133; goto L_ret; };
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a2 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 134; goto L_ret; };
       Print_E (d, d_pool, m9a2, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 134; goto L_ret; };
       }
     } break;
     case INT64_C(61):
     {
       bool m9t2 = Text_EqUtf (n->au, ((m9_sl_UTF8){ (uint8_t *) m9s1, 3 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 136; goto L_ret; };
       if (m9t2) {
         DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s2, 4 }), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 137; goto L_ret; };
       } else {
         DynStr_Append (d, d_pool, n->au, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 139; goto L_ret; };
       }
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a3 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 141; goto L_ret; };
       Print_E (d, d_pool, m9a3, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 141; goto L_ret; };
       }
     } break;
     case INT64_C(62):
     {
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a4 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 143; goto L_ret; };
       Print_E (d, d_pool, m9a4, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 143; goto L_ret; };
       }
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s3, 4 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 144; goto L_ret; };
       { Ast_Node * t = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 145; goto L_ret; };
       if (t != NULL) {
         if ((t->kind == Ast_NIsSome)) {
           if (t->f1) {
             DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s4, 4 }), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 148; goto L_ret; };
           } else {
             bool m9t3 = (Text_BLen (t->au, err) == INT64_C(0));
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 148; goto L_ret; };
             if (m9t3) {
               DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s5, 4 }), err);
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 150; goto L_ret; };
           } else {
             DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s6, 5 }), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 152; goto L_ret; };
             DynStr_Append (d, d_pool, t->au, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 153; goto L_ret; };
           } }
         } else {
           Print_Qual (d, d_pool, t, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 156; goto L_ret; };
         }
       } }
     } break;
     case INT64_C(64):
     {
       DynStr_AppendChar (d, d_pool, 40u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 160; goto L_ret; };
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a5 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 161; goto L_ret; };
       Print_E (d, d_pool, m9a5, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 161; goto L_ret; };
       }
       DynStr_AppendChar (d, d_pool, 41u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 162; goto L_ret; };
     } break;
     case INT64_C(65):
     case INT64_C(66):
     case INT64_C(67):
     {
       DynStr_Append (d, d_pool, n->au, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 164; goto L_ret; };
     } break;
     case INT64_C(68):
     {
       Print_Quoted (d, d_pool, n->au, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 166; goto L_ret; };
     } break;
     case INT64_C(69):
     {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s7, 4 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 167; goto L_ret; };
     } break;
     case INT64_C(70):
     {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s8, 5 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 168; goto L_ret; };
     } break;
     case INT64_C(71):
     {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s9, 4 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 169; goto L_ret; };
     } break;
     case INT64_C(72):
     {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s10, 6 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 171; goto L_ret; };
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a6 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 172; goto L_ret; };
       Print_E (d, d_pool, m9a6, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 172; goto L_ret; };
       }
       DynStr_AppendChar (d, d_pool, 41u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 173; goto L_ret; };
     } break;
     case INT64_C(73):
     {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s11, 8 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 175; goto L_ret; };
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a7 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 176; goto L_ret; };
       Print_E (d, d_pool, m9a7, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 176; goto L_ret; };
       }
       DynStr_AppendChar (d, d_pool, 41u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 177; goto L_ret; };
     } break;
     case INT64_C(74):
     {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s12, 5 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 179; goto L_ret; };
       { Ast_Node * p = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 180; goto L_ret; };
       if (p != NULL) {
         Print_Desig (d, d_pool, p, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 181; goto L_ret; };
         DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s13, 2 }), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 182; goto L_ret; };
       } }
       { Ast_Node * q = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 187; goto L_ret; };
       if (q != NULL) {
         if ((q->kind == Ast_NQualident)) {
           Print_Qual (d, d_pool, q, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 188; goto L_ret; };
         } else {
           { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a8 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 189; goto L_ret; };
           Print_E (d, d_pool, m9a8, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 189; goto L_ret; };
           }
         }
       } }
       { __typeof__(j) m9t4to;
       j = INT64_C(2);
       m9t4to = m9_sub_i64 (n->nkids, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 192; goto L_ret; };
       if (j <= m9t4to) for (;;) {
         { Ast_Node * c = (*(Ast_Node * *) m9_at (n->kids.p, j, n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 193; goto L_ret; };
         if (c != NULL) {
           DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s14, 2 }), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 194; goto L_ret; };
           { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, j, n->kids.len, sizeof (Ast_Node *), err))) m9a9 = (*(Ast_Node * *) m9_at (n->kids.p, j, n->kids.len, sizeof (Ast_Node *), err));
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 195; goto L_ret; };
           Print_E (d, d_pool, m9a9, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 195; goto L_ret; };
           }
         } }
         if ((uint64_t) m9t4to - (uint64_t) j < (uint64_t) 1) break;
         j += 1;
       } }
       DynStr_AppendChar (d, d_pool, 41u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 198; goto L_ret; };
     } break;
     case INT64_C(85):
     {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s15, 6 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 200; goto L_ret; };
       { __typeof__(j) m9t5to;
       j = INT64_C(0);
       m9t5to = m9_sub_i64 (n->nkids, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 201; goto L_ret; };
       if (j <= m9t5to) for (;;) {
         if ((j > INT64_C(0))) {
           DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s16, 2 }), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 202; goto L_ret; };
         }
         { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, j, n->kids.len, sizeof (Ast_Node *), err))) m9a10 = (*(Ast_Node * *) m9_at (n->kids.p, j, n->kids.len, sizeof (Ast_Node *), err));
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 203; goto L_ret; };
         Print_E (d, d_pool, m9a10, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 203; goto L_ret; };
         }
         if ((uint64_t) m9t5to - (uint64_t) j < (uint64_t) 1) break;
         j += 1;
       } }
       DynStr_AppendChar (d, d_pool, 41u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 205; goto L_ret; };
     } break;
     case INT64_C(75):
     {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s17, 7 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 207; goto L_ret; };
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a11 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 208; goto L_ret; };
       Print_E (d, d_pool, m9a11, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 208; goto L_ret; };
       }
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s18, 2 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 209; goto L_ret; };
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a12 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 210; goto L_ret; };
       Print_E (d, d_pool, m9a12, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 210; goto L_ret; };
       }
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s19, 2 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 211; goto L_ret; };
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(2), n->kids.len, sizeof (Ast_Node *), err))) m9a13 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(2), n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 212; goto L_ret; };
       Print_E (d, d_pool, m9a13, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 212; goto L_ret; };
       }
       DynStr_AppendChar (d, d_pool, 41u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 213; goto L_ret; };
     } break;
     case INT64_C(76):
     {
       { Ast_Node * f = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 215; goto L_ret; };
       if (f != NULL) {
         Print_Desig (d, d_pool, f, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 215; goto L_ret; };
       } }
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s20, 2 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 216; goto L_ret; };
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a14 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 217; goto L_ret; };
       Print_Args (d, d_pool, m9a14, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 217; goto L_ret; };
       }
       DynStr_AppendChar (d, d_pool, 41u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 218; goto L_ret; };
     } break;
     case INT64_C(87):
     {
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a15 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 222; goto L_ret; };
       Print_E (d, d_pool, m9a15, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 222; goto L_ret; };
       }
       Print_Desig (d, d_pool, n, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 223; goto L_ret; };
     } break;
     case INT64_C(77):
     {
       Print_Desig (d, d_pool, n, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 225; goto L_ret; };
     } break;
     case INT64_C(26):
     {
       Print_Qual (d, d_pool, n, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 227; goto L_ret; };
     } break;
     case INT64_C(25):
     {
       DynStr_Append (d, d_pool, n->au, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 229; goto L_ret; };
     } break;
     case INT64_C(84):
     {
       DynStr_AppendChar (d, d_pool, 91u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 234; goto L_ret; };
       { __typeof__(j) m9t6to;
       j = INT64_C(0);
       m9t6to = m9_sub_i64 (n->nkids, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 235; goto L_ret; };
       if (j <= m9t6to) for (;;) {
         if ((j > INT64_C(0))) {
           DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s21, 2 }), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 236; goto L_ret; };
         }
         { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, j, n->kids.len, sizeof (Ast_Node *), err))) m9a16 = (*(Ast_Node * *) m9_at (n->kids.p, j, n->kids.len, sizeof (Ast_Node *), err));
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 237; goto L_ret; };
         Print_E (d, d_pool, m9a16, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 237; goto L_ret; };
         }
         if ((uint64_t) m9t6to - (uint64_t) j < (uint64_t) 1) break;
         j += 1;
       } }
       DynStr_AppendChar (d, d_pool, 93u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 239; goto L_ret; };
     } break;
     default: {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s22, 6 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 241; goto L_ret; };
     } break;
     } }
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -753,28 +782,31 @@ static void Print_Args (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * k, m9_s
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Print.Args"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   { Ast_Node * n = k;
   if (n != NULL) {
     { __typeof__(i) m9t1to;
     i = INT64_C(0);
     m9t1to = m9_sub_i64 (n->nkids, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 94; goto L_ret; };
     if (i <= m9t1to) for (;;) {
       if ((i > INT64_C(0))) {
         DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s23, 2 }), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 95; goto L_ret; };
       }
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err))) m9a17 = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 96; goto L_ret; };
       Print_E (d, d_pool, m9a17, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 96; goto L_ret; };
       }
       if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
     } }
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -787,52 +819,55 @@ static void Print_Desig (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, m9_
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Print.Desig"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   int64_t j = 0; (void) j;
   DynStr_Append (d, d_pool, n->au, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 105; goto L_ret; };
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (n->nkids, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 106; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     { Ast_Node * sel = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 107; goto L_ret; };
     if (sel != NULL) {
       if ((sel->kind == Ast_NSelField)) {
         DynStr_AppendChar (d, d_pool, 46u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 109; goto L_ret; };
         DynStr_Append (d, d_pool, sel->au, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 110; goto L_ret; };
       } else {
         if ((sel->kind == Ast_NSelIndex)) {
           DynStr_AppendChar (d, d_pool, 91u, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 112; goto L_ret; };
           { __typeof__(j) m9t2to;
           j = INT64_C(0);
           m9t2to = m9_sub_i64 (sel->nkids, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 113; goto L_ret; };
           if (j <= m9t2to) for (;;) {
             if ((j > INT64_C(0))) {
               DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s24, 2 }), err);
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 114; goto L_ret; };
             }
             { __typeof__((*(Ast_Node * *) m9_at (sel->kids.p, j, sel->kids.len, sizeof (Ast_Node *), err))) m9a18 = (*(Ast_Node * *) m9_at (sel->kids.p, j, sel->kids.len, sizeof (Ast_Node *), err));
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 115; goto L_ret; };
             Print_E (d, d_pool, m9a18, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 115; goto L_ret; };
             }
             if ((uint64_t) m9t2to - (uint64_t) j < (uint64_t) 1) break;
             j += 1;
           } }
           DynStr_AppendChar (d, d_pool, 93u, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 117; goto L_ret; };
       } }
     } }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -845,6 +880,8 @@ static void Print_EType (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * k, int
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Print.EType"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   { Ast_Node * n = k;
   if (n != NULL) {
@@ -853,262 +890,262 @@ static void Print_EType (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * k, int
     case INT64_C(26):
     {
       Print_Qual (d, d_pool, n, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 299; goto L_ret; };
     } break;
     case INT64_C(27):
     {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s25, 6 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 301; goto L_ret; };
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a19 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 302; goto L_ret; };
       Print_E (d, d_pool, m9a19, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 302; goto L_ret; };
       }
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s26, 4 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 303; goto L_ret; };
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a20 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 304; goto L_ret; };
       Print_EType (d, d_pool, m9a20, ind, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 304; goto L_ret; };
       }
     } break;
     case INT64_C(81):
     {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s27, 5 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 306; goto L_ret; };
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a21 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 307; goto L_ret; };
       Print_E (d, d_pool, m9a21, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 307; goto L_ret; };
       }
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s28, 4 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 308; goto L_ret; };
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a22 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 309; goto L_ret; };
       Print_EType (d, d_pool, m9a22, ind, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 309; goto L_ret; };
       }
     } break;
     case INT64_C(28):
     {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s29, 9 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 311; goto L_ret; };
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a23 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 312; goto L_ret; };
       Print_EType (d, d_pool, m9a23, ind, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 312; goto L_ret; };
       }
     } break;
     case INT64_C(35):
     {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s30, 4 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 314; goto L_ret; };
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a24 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 315; goto L_ret; };
       Print_EType (d, d_pool, m9a24, ind, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 315; goto L_ret; };
       }
       { Ast_Node * pd = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 316; goto L_ret; };
       if (pd != NULL) {
         DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s31, 4 }), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 317; goto L_ret; };
         Print_Desig (d, d_pool, pd, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 318; goto L_ret; };
       } }
     } break;
     case INT64_C(36):
     {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s32, 4 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 321; goto L_ret; };
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a25 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 322; goto L_ret; };
       Print_EType (d, d_pool, m9a25, ind, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 322; goto L_ret; };
       }
     } break;
     case INT64_C(37):
     {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s33, 11 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 324; goto L_ret; };
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a26 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 325; goto L_ret; };
       Print_EType (d, d_pool, m9a26, ind, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 325; goto L_ret; };
       }
     } break;
     case INT64_C(29):
     {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s34, 6 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 327; goto L_ret; };
       { Ast_Node * b = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 328; goto L_ret; };
       if (b != NULL) {
         DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s35, 2 }), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 329; goto L_ret; };
         Print_Qual (d, d_pool, b, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 330; goto L_ret; };
         DynStr_AppendChar (d, d_pool, 41u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 331; goto L_ret; };
       } }
       DynStr_AppendChar (d, d_pool, 10u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 333; goto L_ret; };
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a27 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 334; goto L_ret; };
       { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a28 = m9_add_i64 (ind, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 334; goto L_ret; };
       Print_FieldsLines (d, d_pool, m9a27, m9a28, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 334; goto L_ret; };
       }
       }
       Print_Sp (d, d_pool, ind, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 335; goto L_ret; };
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s36, 3 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 336; goto L_ret; };
       if ((n->nkids > INT64_C(2))) {
         { Ast_Node * at = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(2), n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 338; goto L_ret; };
         if (at != NULL) {
           DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s37, 2 }), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 339; goto L_ret; };
           DynStr_Append (d, d_pool, at->au, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 340; goto L_ret; };
           DynStr_AppendChar (d, d_pool, 93u, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 341; goto L_ret; };
         } }
       }
     } break;
     case INT64_C(30):
     {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s38, 11 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 345; goto L_ret; };
       DynStr_AppendChar (d, d_pool, 10u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 346; goto L_ret; };
       { __typeof__(i) m9t2to;
       i = INT64_C(0);
       m9t2to = m9_sub_i64 (n->nkids, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 347; goto L_ret; };
       if (i <= m9t2to) for (;;) {
         { Ast_Node * v = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 348; goto L_ret; };
         if (v != NULL) {
           Print_Sp (d, d_pool, ind, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 349; goto L_ret; };
           DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s39, 2 }), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 350; goto L_ret; };
           DynStr_Append (d, d_pool, v->au, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 351; goto L_ret; };
           { Ast_Node * vf = (*(Ast_Node * *) m9_at (v->kids.p, INT64_C(0), v->kids.len, sizeof (Ast_Node *), err));
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 352; goto L_ret; };
           if (vf != NULL) {
             DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s40, 3 }), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 353; goto L_ret; };
             { __typeof__((*(Ast_Node * *) m9_at (v->kids.p, INT64_C(0), v->kids.len, sizeof (Ast_Node *), err))) m9a29 = (*(Ast_Node * *) m9_at (v->kids.p, INT64_C(0), v->kids.len, sizeof (Ast_Node *), err));
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 354; goto L_ret; };
             Print_FieldsInline (d, d_pool, m9a29, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 354; goto L_ret; };
             }
           } }
           DynStr_AppendChar (d, d_pool, 10u, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 356; goto L_ret; };
         } }
         if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
         i += 1;
       } }
       Print_Sp (d, d_pool, ind, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 359; goto L_ret; };
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s41, 3 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 360; goto L_ret; };
     } break;
     case INT64_C(32):
     {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s42, 14 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 362; goto L_ret; };
       DynStr_AppendChar (d, d_pool, 10u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 363; goto L_ret; };
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a30 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 364; goto L_ret; };
       { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a31 = m9_add_i64 (ind, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 364; goto L_ret; };
       Print_FieldsLines (d, d_pool, m9a30, m9a31, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 364; goto L_ret; };
       }
       }
       Print_Sp (d, d_pool, ind, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 365; goto L_ret; };
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s43, 3 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 366; goto L_ret; };
     } break;
     case INT64_C(82):
     {
       DynStr_AppendChar (d, d_pool, 40u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 368; goto L_ret; };
       { __typeof__(i) m9t3to;
       i = INT64_C(0);
       m9t3to = m9_sub_i64 (n->nkids, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 369; goto L_ret; };
       if (i <= m9t3to) for (;;) {
         { Ast_Node * m = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 370; goto L_ret; };
         if (m != NULL) {
           if ((i > INT64_C(0))) {
             DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s44, 2 }), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 371; goto L_ret; };
           }
           DynStr_Append (d, d_pool, m->au, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 372; goto L_ret; };
         } }
         if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
         i += 1;
       } }
       DynStr_AppendChar (d, d_pool, 41u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 375; goto L_ret; };
     } break;
     case INT64_C(83):
     {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s45, 11 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 380; goto L_ret; };
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a32 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 381; goto L_ret; };
       Print_EParams (d, d_pool, m9a32, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 381; goto L_ret; };
       }
       DynStr_AppendChar (d, d_pool, 41u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 382; goto L_ret; };
       { Ast_Node * rt = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 383; goto L_ret; };
       if (rt != NULL) {
         DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s46, 3 }), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 384; goto L_ret; };
         if (n->f3) {
           DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s47, 3 }), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 385; goto L_ret; };
         }
         { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a33 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 386; goto L_ret; };
         Print_EType (d, d_pool, m9a33, ind, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 386; goto L_ret; };
         }
       } }
       { Ast_Node * rs = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(2), n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 388; goto L_ret; };
       if (rs != NULL) {
         DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s48, 8 }), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 389; goto L_ret; };
         { __typeof__(i) m9t4to;
         i = INT64_C(0);
         m9t4to = m9_sub_i64 (rs->nkids, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 390; goto L_ret; };
         if (i <= m9t4to) for (;;) {
           if ((i > INT64_C(0))) {
             DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s49, 2 }), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 391; goto L_ret; };
           }
           { Ast_Node * q = (*(Ast_Node * *) m9_at (rs->kids.p, i, rs->kids.len, sizeof (Ast_Node *), err));
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 392; goto L_ret; };
           if (q != NULL) {
             Print_Qual (d, d_pool, q, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 392; goto L_ret; };
           } }
           if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
           i += 1;
@@ -1117,11 +1154,12 @@ static void Print_EType (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * k, int
     } break;
     default: {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s50, 6 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 396; goto L_ret; };
     } break;
     } }
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -1134,24 +1172,27 @@ static void Print_Group (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * g, m9_
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Print.Group"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   if (g->f3) {
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s51, 3 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 252; goto L_ret; };
   }
   { Ast_Node * ids = (*(Ast_Node * *) m9_at (g->kids.p, INT64_C(0), g->kids.len, sizeof (Ast_Node *), err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 253; goto L_ret; };
   if (ids != NULL) {
     Print_Idents (d, d_pool, ids, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 253; goto L_ret; };
   } }
   DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s52, 2 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 254; goto L_ret; };
   { __typeof__((*(Ast_Node * *) m9_at (g->kids.p, INT64_C(1), g->kids.len, sizeof (Ast_Node *), err))) m9a34 = (*(Ast_Node * *) m9_at (g->kids.p, INT64_C(1), g->kids.len, sizeof (Ast_Node *), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 255; goto L_ret; };
   Print_EType (d, d_pool, m9a34, INT64_C(0), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 255; goto L_ret; };
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -1164,33 +1205,36 @@ static void Print_FieldsInline (DynStr_DString * *d, m9_pool *d_pool, Ast_Node *
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Print.FieldsInline"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   { Ast_Node * fs = k;
   if (fs != NULL) {
     { __typeof__(i) m9t1to;
     i = INT64_C(0);
     m9t1to = m9_sub_i64 (fs->nkids, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 263; goto L_ret; };
     if (i <= m9t1to) for (;;) {
       if ((i > INT64_C(0))) {
         DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s53, 3 }), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 264; goto L_ret; };
       }
       { Ast_Node * g = (*(Ast_Node * *) m9_at (fs->kids.p, i, fs->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 265; goto L_ret; };
       if (g != NULL) {
         Print_Group (d, d_pool, g, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 265; goto L_ret; };
       } }
       if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
     } }
     if (fs->f1) {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s54, 2 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 267; goto L_ret; };
     }
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -1203,50 +1247,53 @@ static void Print_FieldsLines (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Print.FieldsLines"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   { Ast_Node * fs = k;
   if (fs != NULL) {
     { __typeof__(i) m9t1to;
     i = INT64_C(0);
     m9t1to = m9_sub_i64 (fs->nkids, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 276; goto L_ret; };
     if (i <= m9t1to) for (;;) {
       { Ast_Node * g = (*(Ast_Node * *) m9_at (fs->kids.p, i, fs->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 277; goto L_ret; };
       if (g != NULL) {
         Print_Sp (d, d_pool, ind, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 278; goto L_ret; };
         if (g->f3) {
           DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s55, 3 }), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 279; goto L_ret; };
         }
         { Ast_Node * ids = (*(Ast_Node * *) m9_at (g->kids.p, INT64_C(0), g->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 280; goto L_ret; };
         if (ids != NULL) {
           Print_Idents (d, d_pool, ids, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 280; goto L_ret; };
         } }
         DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s56, 3 }), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 281; goto L_ret; };
         { __typeof__((*(Ast_Node * *) m9_at (g->kids.p, INT64_C(1), g->kids.len, sizeof (Ast_Node *), err))) m9a35 = (*(Ast_Node * *) m9_at (g->kids.p, INT64_C(1), g->kids.len, sizeof (Ast_Node *), err));
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 282; goto L_ret; };
         Print_EType (d, d_pool, m9a35, ind, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 282; goto L_ret; };
         }
         bool m9t2 = (((i < m9_sub_i64 (fs->nkids, INT64_C(1), err))) || fs->f1);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 283; goto L_ret; };
         if (m9t2) {
           DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s57, 2 }), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 284; goto L_ret; };
         }
         DynStr_AppendChar (d, d_pool, 10u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 286; goto L_ret; };
       } }
       if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
     } }
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -1259,38 +1306,41 @@ static void Print_ELabel (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, m9
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Print.ELabel"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   if ((n->kind == Ast_NLabelPattern)) {
     DynStr_Append (d, d_pool, n->au, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 405; goto L_ret; };
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s58, 2 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 406; goto L_ret; };
     { Ast_Node * ids = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 407; goto L_ret; };
     if (ids != NULL) {
       Print_Idents (d, d_pool, ids, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 407; goto L_ret; };
     } }
     DynStr_AppendChar (d, d_pool, 41u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 408; goto L_ret; };
   } else {
     { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a36 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 410; goto L_ret; };
     Print_E (d, d_pool, m9a36, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 410; goto L_ret; };
     }
     { Ast_Node * hi = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 411; goto L_ret; };
     if (hi != NULL) {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s59, 4 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 412; goto L_ret; };
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a37 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 413; goto L_ret; };
       Print_E (d, d_pool, m9a37, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 413; goto L_ret; };
       }
     } }
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -1303,28 +1353,30 @@ static void Print_EBlock (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, in
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Print.EBlock"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   int64_t j = 0; (void) j;
   bool more = false; (void) more;
   Print_Sp (d, d_pool, ind, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 626; goto L_ret; };
   DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s60, 5 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 627; goto L_ret; };
   DynStr_AppendChar (d, d_pool, 10u, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 628; goto L_ret; };
   { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a38 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 629; goto L_ret; };
   { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a39 = m9_add_i64 (ind, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 629; goto L_ret; };
   Print_ESeq (d, d_pool, m9a38, m9a39, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 629; goto L_ret; };
   }
   }
   i = INT64_C(1);
   more = false;
   if ((i < n->nkids)) {
     { Ast_Node * h0 = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 633; goto L_ret; };
     if (h0 != NULL) {
       if ((h0->kind == Ast_NHandler)) {
         more = true;
@@ -1333,86 +1385,86 @@ static void Print_EBlock (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, in
   }
   if (more) {
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 638; goto L_ret; };
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s61, 6 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 639; goto L_ret; };
     DynStr_AppendChar (d, d_pool, 10u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 640; goto L_ret; };
     for (;;) {
       if ((i >= n->nkids)) {
         break;
       }
       { Ast_Node * h = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 643; goto L_ret; };
       if (h != NULL) {
         if ((h->kind != Ast_NHandler)) {
           break;
         }
         Print_Sp (d, d_pool, ind, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 645; goto L_ret; };
         DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s62, 2 }), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 646; goto L_ret; };
         { Ast_Node * q = (*(Ast_Node * *) m9_at (h->kids.p, INT64_C(0), h->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 647; goto L_ret; };
         if (q != NULL) {
           Print_Qual (d, d_pool, q, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 647; goto L_ret; };
         } }
         { __typeof__(j) m9t1to;
         j = INT64_C(3);
         m9t1to = m9_sub_i64 (h->nkids, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 648; goto L_ret; };
         if (j <= m9t1to) for (;;) {
           { Ast_Node * qm = (*(Ast_Node * *) m9_at (h->kids.p, j, h->kids.len, sizeof (Ast_Node *), err));
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 649; goto L_ret; };
           if (qm != NULL) {
             DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s63, 2 }), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 650; goto L_ret; };
             Print_Qual (d, d_pool, qm, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 651; goto L_ret; };
           } }
           if ((uint64_t) m9t1to - (uint64_t) j < (uint64_t) 1) break;
           j += 1;
         } }
         { Ast_Node * ar = (*(Ast_Node * *) m9_at (h->kids.p, INT64_C(1), h->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 654; goto L_ret; };
         if (ar != NULL) {
           DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s64, 2 }), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 655; goto L_ret; };
           { __typeof__(j) m9t2to;
           j = INT64_C(0);
           m9t2to = m9_sub_i64 (ar->nkids, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 656; goto L_ret; };
           if (j <= m9t2to) for (;;) {
             if ((j > INT64_C(0))) {
               DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s65, 2 }), err);
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 657; goto L_ret; };
             }
             { __typeof__((*(Ast_Node * *) m9_at (ar->kids.p, j, ar->kids.len, sizeof (Ast_Node *), err))) m9a40 = (*(Ast_Node * *) m9_at (ar->kids.p, j, ar->kids.len, sizeof (Ast_Node *), err));
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 658; goto L_ret; };
             Print_E (d, d_pool, m9a40, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 658; goto L_ret; };
             }
             if ((uint64_t) m9t2to - (uint64_t) j < (uint64_t) 1) break;
             j += 1;
           } }
           DynStr_AppendChar (d, d_pool, 41u, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 660; goto L_ret; };
         } }
         DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s66, 2 }), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 662; goto L_ret; };
         DynStr_AppendChar (d, d_pool, 10u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 663; goto L_ret; };
         { __typeof__((*(Ast_Node * *) m9_at (h->kids.p, INT64_C(2), h->kids.len, sizeof (Ast_Node *), err))) m9a41 = (*(Ast_Node * *) m9_at (h->kids.p, INT64_C(2), h->kids.len, sizeof (Ast_Node *), err));
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 664; goto L_ret; };
         { __typeof__(m9_add_i64 (ind, INT64_C(2), err)) m9a42 = m9_add_i64 (ind, INT64_C(2), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 664; goto L_ret; };
         Print_ESeq (d, d_pool, m9a41, m9a42, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 664; goto L_ret; };
         }
         }
         { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 665; goto L_ret; };
           i = m9v;
         }
       } else {
@@ -1422,25 +1474,25 @@ static void Print_EBlock (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, in
   }
   if ((i < n->nkids)) {
     { Ast_Node * f = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 672; goto L_ret; };
     if (f != NULL) {
       if ((f->kind == Ast_NFinally)) {
         Print_Sp (d, d_pool, ind, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 674; goto L_ret; };
         DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s67, 7 }), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 675; goto L_ret; };
         DynStr_AppendChar (d, d_pool, 10u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 676; goto L_ret; };
         { __typeof__((*(Ast_Node * *) m9_at (f->kids.p, INT64_C(0), f->kids.len, sizeof (Ast_Node *), err))) m9a43 = (*(Ast_Node * *) m9_at (f->kids.p, INT64_C(0), f->kids.len, sizeof (Ast_Node *), err));
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 677; goto L_ret; };
         { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a44 = m9_add_i64 (ind, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 677; goto L_ret; };
         Print_ESeq (d, d_pool, m9a43, m9a44, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 677; goto L_ret; };
         }
         }
         { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 678; goto L_ret; };
           i = m9v;
         }
       }
@@ -1448,11 +1500,12 @@ static void Print_EBlock (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, in
   }
   if (withEnd) {
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 683; goto L_ret; };
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s68, 3 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 684; goto L_ret; };
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -1465,33 +1518,36 @@ static void Print_ESeq (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * k, int6
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Print.ESeq"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   { Ast_Node * n = k;
   if (n != NULL) {
     { __typeof__(i) m9t1to;
     i = INT64_C(0);
     m9t1to = m9_sub_i64 (n->nkids, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 608; goto L_ret; };
     if (i <= m9t1to) for (;;) {
       { Ast_Node * st = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 609; goto L_ret; };
       if (st != NULL) {
         Print_EStmt (d, d_pool, st, ind, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 610; goto L_ret; };
         bool m9t2 = (((i < m9_sub_i64 (n->nkids, INT64_C(1), err))) || n->f1);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 611; goto L_ret; };
         if (m9t2) {
           DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s69, 2 }), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 612; goto L_ret; };
         }
         DynStr_AppendChar (d, d_pool, 10u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 614; goto L_ret; };
       } }
       if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
     } }
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -1504,6 +1560,8 @@ static void Print_EStmt (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Print.EStmt"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   int64_t j = 0; (void) j;
   { __typeof__(n->kind) m9t1 = n->kind;
@@ -1511,110 +1569,110 @@ static void Print_EStmt (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
   case INT64_C(39):
   {
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 430; goto L_ret; };
     { Ast_Node * ds = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 431; goto L_ret; };
     if (ds != NULL) {
       Print_Desig (d, d_pool, ds, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 431; goto L_ret; };
     } }
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s70, 4 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 432; goto L_ret; };
     { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a45 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 433; goto L_ret; };
     Print_E (d, d_pool, m9a45, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 433; goto L_ret; };
     }
   } break;
   case INT64_C(40):
   {
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 435; goto L_ret; };
     { Ast_Node * ds = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 436; goto L_ret; };
     if (ds != NULL) {
       Print_Desig (d, d_pool, ds, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 436; goto L_ret; };
     } }
     if (n->f1) {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s71, 2 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 438; goto L_ret; };
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a46 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 439; goto L_ret; };
       Print_Args (d, d_pool, m9a46, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 439; goto L_ret; };
       }
       DynStr_AppendChar (d, d_pool, 41u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 440; goto L_ret; };
     }
   } break;
   case INT64_C(41):
   {
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 443; goto L_ret; };
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s72, 3 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 444; goto L_ret; };
     { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a47 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 445; goto L_ret; };
     Print_E (d, d_pool, m9a47, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 445; goto L_ret; };
     }
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s73, 5 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 446; goto L_ret; };
     DynStr_AppendChar (d, d_pool, 10u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 447; goto L_ret; };
     { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a48 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 448; goto L_ret; };
     { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a49 = m9_add_i64 (ind, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 448; goto L_ret; };
     Print_ESeq (d, d_pool, m9a48, m9a49, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 448; goto L_ret; };
     }
     }
     { __typeof__(i) m9t2to;
     i = INT64_C(2);
     m9t2to = m9_sub_i64 (n->nkids, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 449; goto L_ret; };
     if (i <= m9t2to) for (;;) {
       { Ast_Node * e = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 450; goto L_ret; };
       if (e != NULL) {
         if ((e->kind == Ast_NElsif)) {
           Print_Sp (d, d_pool, ind, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 452; goto L_ret; };
           DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s74, 6 }), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 453; goto L_ret; };
           { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a50 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 454; goto L_ret; };
           Print_E (d, d_pool, m9a50, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 454; goto L_ret; };
           }
           DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s75, 5 }), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 455; goto L_ret; };
           DynStr_AppendChar (d, d_pool, 10u, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 456; goto L_ret; };
           { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a51 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 457; goto L_ret; };
           { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a52 = m9_add_i64 (ind, INT64_C(1), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 457; goto L_ret; };
           Print_ESeq (d, d_pool, m9a51, m9a52, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 457; goto L_ret; };
           }
           }
         } else {
           if ((e->kind == Ast_NElse)) {
             Print_Sp (d, d_pool, ind, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 459; goto L_ret; };
             DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s76, 4 }), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 460; goto L_ret; };
             DynStr_AppendChar (d, d_pool, 10u, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 461; goto L_ret; };
             { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a53 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 462; goto L_ret; };
             { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a54 = m9_add_i64 (ind, INT64_C(1), err);
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 462; goto L_ret; };
             Print_ESeq (d, d_pool, m9a53, m9a54, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 462; goto L_ret; };
             }
             }
         } }
@@ -1623,224 +1681,224 @@ static void Print_EStmt (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
       i += 1;
     } }
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 466; goto L_ret; };
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s77, 3 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 467; goto L_ret; };
   } break;
   case INT64_C(43):
   {
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 469; goto L_ret; };
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s78, 6 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 470; goto L_ret; };
     { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a55 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 471; goto L_ret; };
     Print_E (d, d_pool, m9a55, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 471; goto L_ret; };
     }
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s79, 3 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 472; goto L_ret; };
     DynStr_AppendChar (d, d_pool, 10u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 473; goto L_ret; };
     { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a56 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 474; goto L_ret; };
     { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a57 = m9_add_i64 (ind, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 474; goto L_ret; };
     Print_ESeq (d, d_pool, m9a56, m9a57, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 474; goto L_ret; };
     }
     }
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 475; goto L_ret; };
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s80, 3 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 476; goto L_ret; };
   } break;
   case INT64_C(45):
   {
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 478; goto L_ret; };
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s81, 4 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 479; goto L_ret; };
     DynStr_Append (d, d_pool, n->au, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 480; goto L_ret; };
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s82, 4 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 481; goto L_ret; };
     { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a58 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 482; goto L_ret; };
     Print_E (d, d_pool, m9a58, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 482; goto L_ret; };
     }
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s83, 4 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 483; goto L_ret; };
     { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a59 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 484; goto L_ret; };
     Print_E (d, d_pool, m9a59, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 484; goto L_ret; };
     }
     { Ast_Node * by = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(2), n->kids.len, sizeof (Ast_Node *), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 485; goto L_ret; };
     if (by != NULL) {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s84, 4 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 486; goto L_ret; };
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(2), n->kids.len, sizeof (Ast_Node *), err))) m9a60 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(2), n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 487; goto L_ret; };
       Print_E (d, d_pool, m9a60, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 487; goto L_ret; };
       }
     } }
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s85, 3 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 489; goto L_ret; };
     DynStr_AppendChar (d, d_pool, 10u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 490; goto L_ret; };
     { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(3), n->kids.len, sizeof (Ast_Node *), err))) m9a61 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(3), n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 491; goto L_ret; };
     { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a62 = m9_add_i64 (ind, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 491; goto L_ret; };
     Print_ESeq (d, d_pool, m9a61, m9a62, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 491; goto L_ret; };
     }
     }
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 492; goto L_ret; };
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s86, 3 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 493; goto L_ret; };
   } break;
   case INT64_C(88):
   {
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 495; goto L_ret; };
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s87, 4 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 496; goto L_ret; };
     DynStr_Append (d, d_pool, n->au, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 497; goto L_ret; };
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s88, 4 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 498; goto L_ret; };
     { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a63 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 499; goto L_ret; };
     Print_E (d, d_pool, m9a63, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 499; goto L_ret; };
     }
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s89, 3 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 500; goto L_ret; };
     DynStr_AppendChar (d, d_pool, 10u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 501; goto L_ret; };
     { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a64 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 502; goto L_ret; };
     { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a65 = m9_add_i64 (ind, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 502; goto L_ret; };
     Print_ESeq (d, d_pool, m9a64, m9a65, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 502; goto L_ret; };
     }
     }
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 503; goto L_ret; };
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s90, 3 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 504; goto L_ret; };
   } break;
   case INT64_C(46):
   {
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 506; goto L_ret; };
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s91, 4 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 507; goto L_ret; };
     DynStr_AppendChar (d, d_pool, 10u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 508; goto L_ret; };
     { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a66 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 509; goto L_ret; };
     { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a67 = m9_add_i64 (ind, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 509; goto L_ret; };
     Print_ESeq (d, d_pool, m9a66, m9a67, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 509; goto L_ret; };
     }
     }
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 510; goto L_ret; };
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s92, 3 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 511; goto L_ret; };
   } break;
   case INT64_C(47):
   {
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 513; goto L_ret; };
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s93, 4 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 514; goto L_ret; };
   } break;
   case INT64_C(48):
   {
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 516; goto L_ret; };
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s94, 5 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 517; goto L_ret; };
     { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a68 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 518; goto L_ret; };
     Print_E (d, d_pool, m9a68, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 518; goto L_ret; };
     }
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s95, 3 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 519; goto L_ret; };
     DynStr_AppendChar (d, d_pool, 10u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 520; goto L_ret; };
     { __typeof__(i) m9t3to;
     i = INT64_C(1);
     m9t3to = m9_sub_i64 (n->nkids, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 521; goto L_ret; };
     if (i <= m9t3to) for (;;) {
       { Ast_Node * arm = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 522; goto L_ret; };
       if (arm != NULL) {
         if ((arm->kind == Ast_NCaseArm)) {
           Print_Sp (d, d_pool, ind, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 524; goto L_ret; };
           DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s96, 2 }), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 525; goto L_ret; };
           { Ast_Node * lbls = (*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(0), arm->kids.len, sizeof (Ast_Node *), err));
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 526; goto L_ret; };
           if (lbls != NULL) {
             { __typeof__(j) m9t4to;
             j = INT64_C(0);
             m9t4to = m9_sub_i64 (lbls->nkids, INT64_C(1), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 527; goto L_ret; };
             if (j <= m9t4to) for (;;) {
               if ((j > INT64_C(0))) {
                 DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s97, 2 }), err);
-                if (err->exc) goto L_ret;
+                if (err->exc) { m9ln = 528; goto L_ret; };
               }
               { Ast_Node * lb = (*(Ast_Node * *) m9_at (lbls->kids.p, j, lbls->kids.len, sizeof (Ast_Node *), err));
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 529; goto L_ret; };
               if (lb != NULL) {
                 Print_ELabel (d, d_pool, lb, err);
-                if (err->exc) goto L_ret;
+                if (err->exc) { m9ln = 530; goto L_ret; };
               } }
               if ((uint64_t) m9t4to - (uint64_t) j < (uint64_t) 1) break;
               j += 1;
             } }
           } }
           DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s98, 2 }), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 534; goto L_ret; };
           DynStr_AppendChar (d, d_pool, 10u, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 535; goto L_ret; };
           { __typeof__((*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(1), arm->kids.len, sizeof (Ast_Node *), err))) m9a69 = (*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(1), arm->kids.len, sizeof (Ast_Node *), err));
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 536; goto L_ret; };
           { __typeof__(m9_add_i64 (ind, INT64_C(2), err)) m9a70 = m9_add_i64 (ind, INT64_C(2), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 536; goto L_ret; };
           Print_ESeq (d, d_pool, m9a69, m9a70, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 536; goto L_ret; };
           }
           }
         } else {
           if ((arm->kind == Ast_NElse)) {
             Print_Sp (d, d_pool, ind, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 538; goto L_ret; };
             DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s99, 4 }), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 539; goto L_ret; };
             DynStr_AppendChar (d, d_pool, 10u, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 540; goto L_ret; };
             { __typeof__((*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(0), arm->kids.len, sizeof (Ast_Node *), err))) m9a71 = (*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(0), arm->kids.len, sizeof (Ast_Node *), err));
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 541; goto L_ret; };
             { __typeof__(m9_add_i64 (ind, INT64_C(2), err)) m9a72 = m9_add_i64 (ind, INT64_C(2), err);
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 541; goto L_ret; };
             Print_ESeq (d, d_pool, m9a71, m9a72, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 541; goto L_ret; };
             }
             }
         } }
@@ -1849,157 +1907,165 @@ static void Print_EStmt (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
       i += 1;
     } }
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 545; goto L_ret; };
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s100, 3 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 546; goto L_ret; };
   } break;
   case INT64_C(53):
   {
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 548; goto L_ret; };
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s101, 6 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 549; goto L_ret; };
     { Ast_Node * e = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 550; goto L_ret; };
     if (e != NULL) {
       DynStr_AppendChar (d, d_pool, 32u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 551; goto L_ret; };
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a73 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 552; goto L_ret; };
       Print_E (d, d_pool, m9a73, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 552; goto L_ret; };
       }
     } }
   } break;
   case INT64_C(54):
   {
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 555; goto L_ret; };
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s102, 6 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 556; goto L_ret; };
     { Ast_Node * q = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 557; goto L_ret; };
     if (q != NULL) {
       Print_Qual (d, d_pool, q, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 557; goto L_ret; };
     } }
     { Ast_Node * ar = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 558; goto L_ret; };
     if (ar != NULL) {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s103, 2 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 559; goto L_ret; };
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a74 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 560; goto L_ret; };
       Print_Args (d, d_pool, m9a74, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 560; goto L_ret; };
       }
       DynStr_AppendChar (d, d_pool, 41u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 561; goto L_ret; };
     } }
   } break;
   case INT64_C(55):
   {
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 564; goto L_ret; };
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s104, 9 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 565; goto L_ret; };
     { Ast_Node * ds = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 566; goto L_ret; };
     if (ds != NULL) {
       Print_Desig (d, d_pool, ds, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 566; goto L_ret; };
     } }
     DynStr_AppendChar (d, d_pool, 41u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 567; goto L_ret; };
   } break;
   case INT64_C(56):
   {
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
-    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s105, 8 }), err);
-    if (err->exc) goto L_ret;
-    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a75 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
-    Print_E (d, d_pool, m9a75, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 569; goto L_ret; };
+    bool m9t5 = Text_EqUtf (n->au, ((m9_sl_UTF8){ (uint8_t *) m9s105, 4 }), err);
+    if (err->exc) { m9ln = 570; goto L_ret; };
+    if (m9t5) {
+      DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s106, 6 }), err);
+      if (err->exc) { m9ln = 570; goto L_ret; };
+    } else {
+      DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s107, 8 }), err);
+      if (err->exc) { m9ln = 571; goto L_ret; };
     }
-    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s106, 2 }), err);
-    if (err->exc) goto L_ret;
+    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a75 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+      if (err->exc) { m9ln = 572; goto L_ret; };
+    Print_E (d, d_pool, m9a75, err);
+    if (err->exc) { m9ln = 572; goto L_ret; };
+    }
+    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s108, 2 }), err);
+    if (err->exc) { m9ln = 573; goto L_ret; };
     { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a76 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 574; goto L_ret; };
     Print_E (d, d_pool, m9a76, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 574; goto L_ret; };
     }
     DynStr_AppendChar (d, d_pool, 41u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 575; goto L_ret; };
   } break;
   case INT64_C(57):
   {
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
-    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s107, 10 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 577; goto L_ret; };
+    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s109, 10 }), err);
+    if (err->exc) { m9ln = 578; goto L_ret; };
     { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a77 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 579; goto L_ret; };
     Print_E (d, d_pool, m9a77, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 579; goto L_ret; };
     }
-    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s108, 2 }), err);
-    if (err->exc) goto L_ret;
+    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s110, 2 }), err);
+    if (err->exc) { m9ln = 580; goto L_ret; };
     { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a78 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 581; goto L_ret; };
     Print_E (d, d_pool, m9a78, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 581; goto L_ret; };
     }
     DynStr_AppendChar (d, d_pool, 41u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 582; goto L_ret; };
   } break;
   case INT64_C(58):
   {
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
-    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s109, 6 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 584; goto L_ret; };
+    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s111, 6 }), err);
+    if (err->exc) { m9ln = 585; goto L_ret; };
     { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a79 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 586; goto L_ret; };
     Print_E (d, d_pool, m9a79, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 586; goto L_ret; };
     }
     DynStr_AppendChar (d, d_pool, 41u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 587; goto L_ret; };
   } break;
   case INT64_C(59):
   {
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
-    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s110, 8 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 589; goto L_ret; };
+    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s112, 8 }), err);
+    if (err->exc) { m9ln = 590; goto L_ret; };
     { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a80 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 591; goto L_ret; };
     Print_E (d, d_pool, m9a80, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 591; goto L_ret; };
     }
     DynStr_AppendChar (d, d_pool, 41u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 592; goto L_ret; };
   } break;
   case INT64_C(21):
   {
     Print_EBlock (d, d_pool, n, ind, true, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 594; goto L_ret; };
   } break;
   case INT64_C(38):
   {
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 596; goto L_ret; };
   } break;
   default: {
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
-    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s111, 6 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 598; goto L_ret; };
+    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s113, 6 }), err);
+    if (err->exc) { m9ln = 599; goto L_ret; };
   } break;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -2012,49 +2078,51 @@ static void Print_EParams (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * k, m
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Print.EParams"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   { Ast_Node * pl = k;
   if (pl != NULL) {
     { __typeof__(i) m9t1to;
     i = INT64_C(0);
     m9t1to = m9_sub_i64 (pl->nkids, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 693; goto L_ret; };
     if (i <= m9t1to) for (;;) {
       { Ast_Node * p = (*(Ast_Node * *) m9_at (pl->kids.p, i, pl->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 694; goto L_ret; };
       if (p != NULL) {
         if ((i > INT64_C(0))) {
-          DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s112, 3 }), err);
-          if (err->exc) goto L_ret;
+          DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s114, 3 }), err);
+          if (err->exc) { m9ln = 695; goto L_ret; };
         }
         if (p->f1) {
-          DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s113, 4 }), err);
-          if (err->exc) goto L_ret;
+          DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s115, 4 }), err);
+          if (err->exc) { m9ln = 696; goto L_ret; };
         }
         if (p->f2) {
-          DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s114, 4 }), err);
-          if (err->exc) goto L_ret;
+          DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s116, 4 }), err);
+          if (err->exc) { m9ln = 697; goto L_ret; };
         }
         if (p->f3) {
-          DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s115, 3 }), err);
-          if (err->exc) goto L_ret;
+          DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s117, 3 }), err);
+          if (err->exc) { m9ln = 698; goto L_ret; };
         }
         if (p->f4) {
-          DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s116, 5 }), err);
-          if (err->exc) goto L_ret;
+          DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s118, 5 }), err);
+          if (err->exc) { m9ln = 699; goto L_ret; };
         }
         { Ast_Node * ids = (*(Ast_Node * *) m9_at (p->kids.p, INT64_C(0), p->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 700; goto L_ret; };
         if (ids != NULL) {
           Print_Idents (d, d_pool, ids, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 700; goto L_ret; };
         } }
-        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s117, 2 }), err);
-        if (err->exc) goto L_ret;
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s119, 2 }), err);
+        if (err->exc) { m9ln = 701; goto L_ret; };
         { __typeof__((*(Ast_Node * *) m9_at (p->kids.p, INT64_C(1), p->kids.len, sizeof (Ast_Node *), err))) m9a81 = (*(Ast_Node * *) m9_at (p->kids.p, INT64_C(1), p->kids.len, sizeof (Ast_Node *), err));
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 702; goto L_ret; };
         Print_EType (d, d_pool, m9a81, INT64_C(0), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 702; goto L_ret; };
         }
       } }
       if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
@@ -2062,6 +2130,7 @@ static void Print_EParams (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * k, m
     } }
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -2074,58 +2143,60 @@ static void Print_EDecl (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Print.EDecl"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   { __typeof__(n->kind) m9t1 = n->kind;
   switch (m9t1) {
   case INT64_C(7):
   {
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
-    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s118, 5 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 802; goto L_ret; };
+    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s120, 5 }), err);
+    if (err->exc) { m9ln = 803; goto L_ret; };
     DynStr_AppendChar (d, d_pool, 10u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 804; goto L_ret; };
     { __typeof__(i) m9t2to;
     i = INT64_C(0);
     m9t2to = m9_sub_i64 (n->nkids, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 805; goto L_ret; };
     if (i <= m9t2to) for (;;) {
       { Ast_Node * c = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 806; goto L_ret; };
       if (c != NULL) {
         { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a82 = m9_add_i64 (ind, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 807; goto L_ret; };
         Print_Sp (d, d_pool, m9a82, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 807; goto L_ret; };
         }
         DynStr_Append (d, d_pool, c->au, err);
-        if (err->exc) goto L_ret;
-        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s119, 3 }), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 808; goto L_ret; };
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s121, 3 }), err);
+        if (err->exc) { m9ln = 809; goto L_ret; };
         { __typeof__((*(Ast_Node * *) m9_at (c->kids.p, INT64_C(0), c->kids.len, sizeof (Ast_Node *), err))) m9a83 = (*(Ast_Node * *) m9_at (c->kids.p, INT64_C(0), c->kids.len, sizeof (Ast_Node *), err));
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 810; goto L_ret; };
         bool m9t3 = Print_IsAggregate (m9a83, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 810; goto L_ret; };
         if (m9t3) {
           { __typeof__((*(Ast_Node * *) m9_at (c->kids.p, INT64_C(0), c->kids.len, sizeof (Ast_Node *), err))) m9a84 = (*(Ast_Node * *) m9_at (c->kids.p, INT64_C(0), c->kids.len, sizeof (Ast_Node *), err));
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 811; goto L_ret; };
           { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a85 = m9_add_i64 (ind, INT64_C(1), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 811; goto L_ret; };
           Print_EAggregate (d, d_pool, m9a84, m9a85, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 811; goto L_ret; };
           }
           }
         } else {
           { __typeof__((*(Ast_Node * *) m9_at (c->kids.p, INT64_C(0), c->kids.len, sizeof (Ast_Node *), err))) m9a86 = (*(Ast_Node * *) m9_at (c->kids.p, INT64_C(0), c->kids.len, sizeof (Ast_Node *), err));
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 813; goto L_ret; };
           Print_E (d, d_pool, m9a86, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 813; goto L_ret; };
           }
         } }
-        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s120, 2 }), err);
-        if (err->exc) goto L_ret;
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s122, 2 }), err);
+        if (err->exc) { m9ln = 815; goto L_ret; };
         DynStr_AppendChar (d, d_pool, 10u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 816; goto L_ret; };
       } }
       if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
@@ -2134,44 +2205,44 @@ static void Print_EDecl (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
   case INT64_C(8):
   {
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
-    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s121, 4 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 820; goto L_ret; };
+    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s123, 4 }), err);
+    if (err->exc) { m9ln = 821; goto L_ret; };
     DynStr_AppendChar (d, d_pool, 10u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 822; goto L_ret; };
     { __typeof__(i) m9t4to;
     i = INT64_C(0);
     m9t4to = m9_sub_i64 (n->nkids, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 823; goto L_ret; };
     if (i <= m9t4to) for (;;) {
       { Ast_Node * td = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 824; goto L_ret; };
       if (td != NULL) {
         { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a87 = m9_add_i64 (ind, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 825; goto L_ret; };
         Print_Sp (d, d_pool, m9a87, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 825; goto L_ret; };
         }
         DynStr_Append (d, d_pool, td->au, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 826; goto L_ret; };
         { Ast_Node * ty = (*(Ast_Node * *) m9_at (td->kids.p, INT64_C(0), td->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 827; goto L_ret; };
         if (ty != NULL) {
-          DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s122, 3 }), err);
-          if (err->exc) goto L_ret;
+          DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s124, 3 }), err);
+          if (err->exc) { m9ln = 828; goto L_ret; };
           { __typeof__((*(Ast_Node * *) m9_at (td->kids.p, INT64_C(0), td->kids.len, sizeof (Ast_Node *), err))) m9a88 = (*(Ast_Node * *) m9_at (td->kids.p, INT64_C(0), td->kids.len, sizeof (Ast_Node *), err));
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 829; goto L_ret; };
           { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a89 = m9_add_i64 (ind, INT64_C(1), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 829; goto L_ret; };
           Print_EType (d, d_pool, m9a88, m9a89, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 829; goto L_ret; };
           }
           }
         } }
-        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s123, 2 }), err);
-        if (err->exc) goto L_ret;
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s125, 2 }), err);
+        if (err->exc) { m9ln = 831; goto L_ret; };
         DynStr_AppendChar (d, d_pool, 10u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 832; goto L_ret; };
       } }
       if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
@@ -2180,48 +2251,48 @@ static void Print_EDecl (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
   case INT64_C(9):
   {
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
-    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s124, 3 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 836; goto L_ret; };
+    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s126, 3 }), err);
+    if (err->exc) { m9ln = 837; goto L_ret; };
     DynStr_AppendChar (d, d_pool, 10u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 838; goto L_ret; };
     { __typeof__(i) m9t5to;
     i = INT64_C(0);
     m9t5to = m9_sub_i64 (n->nkids, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 839; goto L_ret; };
     if (i <= m9t5to) for (;;) {
       { Ast_Node * vd = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 840; goto L_ret; };
       if (vd != NULL) {
         { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a90 = m9_add_i64 (ind, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 841; goto L_ret; };
         Print_Sp (d, d_pool, m9a90, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 841; goto L_ret; };
         }
         if (vd->f3) {
-          DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s125, 3 }), err);
-          if (err->exc) goto L_ret;
+          DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s127, 3 }), err);
+          if (err->exc) { m9ln = 842; goto L_ret; };
         }
         { Ast_Node * ids = (*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(0), vd->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 843; goto L_ret; };
         if (ids != NULL) {
           Print_Idents (d, d_pool, ids, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 843; goto L_ret; };
         } }
-        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s126, 3 }), err);
-        if (err->exc) goto L_ret;
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s128, 3 }), err);
+        if (err->exc) { m9ln = 844; goto L_ret; };
         { __typeof__((*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(1), vd->kids.len, sizeof (Ast_Node *), err))) m9a91 = (*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(1), vd->kids.len, sizeof (Ast_Node *), err));
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 845; goto L_ret; };
         { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a92 = m9_add_i64 (ind, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 845; goto L_ret; };
         Print_EType (d, d_pool, m9a91, m9a92, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 845; goto L_ret; };
         }
         }
-        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s127, 2 }), err);
-        if (err->exc) goto L_ret;
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s129, 2 }), err);
+        if (err->exc) { m9ln = 846; goto L_ret; };
         DynStr_AppendChar (d, d_pool, 10u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 847; goto L_ret; };
       } }
       if ((uint64_t) m9t5to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
@@ -2230,43 +2301,43 @@ static void Print_EDecl (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
   case INT64_C(10):
   {
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
-    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s128, 9 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 851; goto L_ret; };
+    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s130, 9 }), err);
+    if (err->exc) { m9ln = 852; goto L_ret; };
     DynStr_AppendChar (d, d_pool, 10u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 853; goto L_ret; };
     { __typeof__(i) m9t6to;
     i = INT64_C(0);
     m9t6to = m9_sub_i64 (n->nkids, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 854; goto L_ret; };
     if (i <= m9t6to) for (;;) {
       { Ast_Node * xd = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 855; goto L_ret; };
       if (xd != NULL) {
         { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a93 = m9_add_i64 (ind, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 856; goto L_ret; };
         Print_Sp (d, d_pool, m9a93, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 856; goto L_ret; };
         }
         DynStr_Append (d, d_pool, xd->au, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 857; goto L_ret; };
         { Ast_Node * xf = (*(Ast_Node * *) m9_at (xd->kids.p, INT64_C(0), xd->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 858; goto L_ret; };
         if (xf != NULL) {
-          DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s129, 2 }), err);
-          if (err->exc) goto L_ret;
+          DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s131, 2 }), err);
+          if (err->exc) { m9ln = 859; goto L_ret; };
           { __typeof__((*(Ast_Node * *) m9_at (xd->kids.p, INT64_C(0), xd->kids.len, sizeof (Ast_Node *), err))) m9a94 = (*(Ast_Node * *) m9_at (xd->kids.p, INT64_C(0), xd->kids.len, sizeof (Ast_Node *), err));
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 860; goto L_ret; };
           Print_FieldsInline (d, d_pool, m9a94, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 860; goto L_ret; };
           }
           DynStr_AppendChar (d, d_pool, 41u, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 861; goto L_ret; };
         } }
-        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s130, 2 }), err);
-        if (err->exc) goto L_ret;
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s132, 2 }), err);
+        if (err->exc) { m9ln = 863; goto L_ret; };
         DynStr_AppendChar (d, d_pool, 10u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 864; goto L_ret; };
       } }
       if ((uint64_t) m9t6to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
@@ -2275,12 +2346,13 @@ static void Print_EDecl (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
   case INT64_C(15):
   {
     Print_EProc (d, d_pool, n, ind, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 868; goto L_ret; };
   } break;
   default: {
   } break;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -2293,128 +2365,131 @@ static void Print_EProc (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Print.EProc"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   Print_Sp (d, d_pool, ind, err);
-  if (err->exc) goto L_ret;
-  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s131, 10 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 715; goto L_ret; };
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s133, 10 }), err);
+  if (err->exc) { m9ln = 716; goto L_ret; };
   DynStr_Append (d, d_pool, n->au, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 717; goto L_ret; };
   bool m9t1 = (Text_BLen (n->bu, err) > INT64_C(0));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 718; goto L_ret; };
   if (m9t1) {
-    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s132, 3 }), err);
-    if (err->exc) goto L_ret;
+    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s134, 3 }), err);
+    if (err->exc) { m9ln = 719; goto L_ret; };
     Print_Quoted (d, d_pool, n->bu, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 720; goto L_ret; };
   }
-  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s133, 2 }), err);
-  if (err->exc) goto L_ret;
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s135, 2 }), err);
+  if (err->exc) { m9ln = 722; goto L_ret; };
   { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a95 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 723; goto L_ret; };
   Print_EParams (d, d_pool, m9a95, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 723; goto L_ret; };
   }
   DynStr_AppendChar (d, d_pool, 41u, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 724; goto L_ret; };
   { Ast_Node * rt = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 725; goto L_ret; };
   if (rt != NULL) {
-    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s134, 3 }), err);
-    if (err->exc) goto L_ret;
+    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s136, 3 }), err);
+    if (err->exc) { m9ln = 726; goto L_ret; };
     if (n->f3) {
-      DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s135, 3 }), err);
-      if (err->exc) goto L_ret;
+      DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s137, 3 }), err);
+      if (err->exc) { m9ln = 727; goto L_ret; };
     }
     { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a96 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 728; goto L_ret; };
     Print_EType (d, d_pool, m9a96, ind, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 728; goto L_ret; };
     }
   } }
   { Ast_Node * rs = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(2), n->kids.len, sizeof (Ast_Node *), err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 730; goto L_ret; };
   if (rs != NULL) {
     DynStr_AppendChar (d, d_pool, 10u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 731; goto L_ret; };
     { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a97 = m9_add_i64 (ind, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 732; goto L_ret; };
     Print_Sp (d, d_pool, m9a97, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 732; goto L_ret; };
     }
-    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s136, 7 }), err);
-    if (err->exc) goto L_ret;
+    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s138, 7 }), err);
+    if (err->exc) { m9ln = 733; goto L_ret; };
     { __typeof__(i) m9t2to;
     i = INT64_C(0);
     m9t2to = m9_sub_i64 (rs->nkids, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 734; goto L_ret; };
     if (i <= m9t2to) for (;;) {
       if ((i > INT64_C(0))) {
-        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s137, 2 }), err);
-        if (err->exc) goto L_ret;
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s139, 2 }), err);
+        if (err->exc) { m9ln = 735; goto L_ret; };
       }
       { Ast_Node * q = (*(Ast_Node * *) m9_at (rs->kids.p, i, rs->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 736; goto L_ret; };
       if (q != NULL) {
         Print_Qual (d, d_pool, q, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 736; goto L_ret; };
       } }
       if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
     } }
   } }
   { Ast_Node * at = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(3), n->kids.len, sizeof (Ast_Node *), err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 739; goto L_ret; };
   if (at != NULL) {
-    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s138, 2 }), err);
-    if (err->exc) goto L_ret;
+    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s140, 2 }), err);
+    if (err->exc) { m9ln = 740; goto L_ret; };
     DynStr_Append (d, d_pool, at->au, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 741; goto L_ret; };
     DynStr_AppendChar (d, d_pool, 93u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 742; goto L_ret; };
   } }
   { Ast_Node * body = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(4), n->kids.len, sizeof (Ast_Node *), err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 744; goto L_ret; };
   if (body != NULL) {
-    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s139, 2 }), err);
-    if (err->exc) goto L_ret;
+    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s141, 2 }), err);
+    if (err->exc) { m9ln = 745; goto L_ret; };
     DynStr_AppendChar (d, d_pool, 10u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 746; goto L_ret; };
     { __typeof__(i) m9t3to;
     i = INT64_C(0);
     m9t3to = m9_sub_i64 (body->nkids, INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 747; goto L_ret; };
     if (i <= m9t3to) for (;;) {
       { Ast_Node * dc = (*(Ast_Node * *) m9_at (body->kids.p, i, body->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 748; goto L_ret; };
       if (dc != NULL) {
         Print_EDecl (d, d_pool, dc, ind, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 748; goto L_ret; };
       } }
       if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
     } }
     { Ast_Node * blk = (*(Ast_Node * *) m9_at (body->kids.p, m9_sub_i64 (body->nkids, INT64_C(1), err), body->kids.len, sizeof (Ast_Node *), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 750; goto L_ret; };
     if (blk != NULL) {
       Print_EBlock (d, d_pool, blk, ind, true, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 751; goto L_ret; };
     } }
     DynStr_AppendChar (d, d_pool, 32u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 753; goto L_ret; };
     DynStr_Append (d, d_pool, n->au, err);
-    if (err->exc) goto L_ret;
-    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s140, 2 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 754; goto L_ret; };
+    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s142, 2 }), err);
+    if (err->exc) { m9ln = 755; goto L_ret; };
     DynStr_AppendChar (d, d_pool, 10u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 756; goto L_ret; };
   } else {
-    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s141, 2 }), err);
-    if (err->exc) goto L_ret;
+    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s143, 2 }), err);
+    if (err->exc) { m9ln = 758; goto L_ret; };
     DynStr_AppendChar (d, d_pool, 10u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 759; goto L_ret; };
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -2427,6 +2502,8 @@ static bool Print_IsAggregate (Ast_Node * k, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Print.IsAggregate"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   { Ast_Node * n = k;
   if (n != NULL) {
@@ -2438,6 +2515,7 @@ static bool Print_IsAggregate (Ast_Node * k, m9_state *err)
   m9ret = false;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2449,45 +2527,48 @@ static void Print_EAggregate (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * k
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Print.EAggregate"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   { Ast_Node * n = k;
   if (n != NULL) {
     DynStr_AppendChar (d, d_pool, 91u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 783; goto L_ret; };
     DynStr_AppendChar (d, d_pool, 10u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 784; goto L_ret; };
     { __typeof__(i) m9t1to;
     i = INT64_C(0);
     m9t1to = m9_sub_i64 (n->nkids, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 785; goto L_ret; };
     if (i <= m9t1to) for (;;) {
       { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a98 = m9_add_i64 (ind, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 786; goto L_ret; };
       Print_Sp (d, d_pool, m9a98, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 786; goto L_ret; };
       }
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err))) m9a99 = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 787; goto L_ret; };
       Print_E (d, d_pool, m9a99, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 787; goto L_ret; };
       }
       bool m9t2 = (i < m9_sub_i64 (n->nkids, INT64_C(1), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 788; goto L_ret; };
       if (m9t2) {
         DynStr_AppendChar (d, d_pool, 44u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 788; goto L_ret; };
       }
       DynStr_AppendChar (d, d_pool, 10u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 789; goto L_ret; };
       if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
     } }
     Print_Sp (d, d_pool, ind, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 791; goto L_ret; };
     DynStr_AppendChar (d, d_pool, 93u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 792; goto L_ret; };
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -2500,56 +2581,58 @@ static void Print_EUnit (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * u, m9_
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Print.EUnit"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   int64_t j = 0; (void) j;
   if ((u->kind == Ast_NDefinition)) {
     if (u->f1) {
-      DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s142, 7 }), err);
-      if (err->exc) goto L_ret;
+      DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s144, 7 }), err);
+      if (err->exc) { m9ln = 878; goto L_ret; };
     }
     if (u->f2) {
-      DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s143, 9 }), err);
-      if (err->exc) goto L_ret;
+      DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s145, 9 }), err);
+      if (err->exc) { m9ln = 879; goto L_ret; };
     }
-    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s144, 18 }), err);
-    if (err->exc) goto L_ret;
+    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s146, 18 }), err);
+    if (err->exc) { m9ln = 880; goto L_ret; };
     bool m9t1 = (Text_BLen (u->bu, err) > INT64_C(0));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 881; goto L_ret; };
     if (m9t1) {
-      DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s145, 4 }), err);
-      if (err->exc) goto L_ret;
+      DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s147, 4 }), err);
+      if (err->exc) { m9ln = 882; goto L_ret; };
       Print_Quoted (d, d_pool, u->bu, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 883; goto L_ret; };
       DynStr_AppendChar (d, d_pool, 32u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 884; goto L_ret; };
     }
     DynStr_Append (d, d_pool, u->au, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 886; goto L_ret; };
     { __typeof__(i) m9t2to;
     i = INT64_C(0);
     m9t2to = m9_sub_i64 (u->nkids, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 888; goto L_ret; };
     if (i <= m9t2to) for (;;) {
       { Ast_Node * lk = (*(Ast_Node * *) m9_at (u->kids.p, i, u->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 889; goto L_ret; };
       if (lk != NULL) {
         if ((lk->kind == Ast_NLinkList)) {
-          DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s146, 6 }), err);
-          if (err->exc) goto L_ret;
+          DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s148, 6 }), err);
+          if (err->exc) { m9ln = 891; goto L_ret; };
           { __typeof__(j) m9t3to;
           j = INT64_C(0);
           m9t3to = m9_sub_i64 (lk->nkids, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 892; goto L_ret; };
           if (j <= m9t3to) for (;;) {
             { Ast_Node * ws = (*(Ast_Node * *) m9_at (lk->kids.p, j, lk->kids.len, sizeof (Ast_Node *), err));
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 893; goto L_ret; };
             if (ws != NULL) {
               if ((j > INT64_C(0))) {
-                DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s147, 2 }), err);
-                if (err->exc) goto L_ret;
+                DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s149, 2 }), err);
+                if (err->exc) { m9ln = 894; goto L_ret; };
               }
               Print_Quoted (d, d_pool, ws->au, err);
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 895; goto L_ret; };
             } }
             if ((uint64_t) m9t3to - (uint64_t) j < (uint64_t) 1) break;
             j += 1;
@@ -2559,104 +2642,105 @@ static void Print_EUnit (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * u, m9_
       if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
     } }
-    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s148, 2 }), err);
-    if (err->exc) goto L_ret;
+    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s150, 2 }), err);
+    if (err->exc) { m9ln = 901; goto L_ret; };
   } else {
     if ((u->kind == Ast_NImplementation)) {
       if (u->f1) {
-        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s149, 7 }), err);
-        if (err->exc) goto L_ret;
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s151, 7 }), err);
+        if (err->exc) { m9ln = 903; goto L_ret; };
       }
-      DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s150, 22 }), err);
-      if (err->exc) goto L_ret;
+      DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s152, 22 }), err);
+      if (err->exc) { m9ln = 904; goto L_ret; };
       DynStr_Append (d, d_pool, u->au, err);
-      if (err->exc) goto L_ret;
-      DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s151, 2 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 905; goto L_ret; };
+      DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s153, 2 }), err);
+      if (err->exc) { m9ln = 906; goto L_ret; };
   } else {
-    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s152, 7 }), err);
-    if (err->exc) goto L_ret;
+    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s154, 7 }), err);
+    if (err->exc) { m9ln = 908; goto L_ret; };
     DynStr_Append (d, d_pool, u->au, err);
-    if (err->exc) goto L_ret;
-    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s153, 2 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 909; goto L_ret; };
+    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s155, 2 }), err);
+    if (err->exc) { m9ln = 910; goto L_ret; };
   } }
   DynStr_AppendChar (d, d_pool, 10u, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 912; goto L_ret; };
   DynStr_AppendChar (d, d_pool, 10u, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 913; goto L_ret; };
   { __typeof__(i) m9t4to;
   i = INT64_C(0);
   m9t4to = m9_sub_i64 (u->nkids, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 914; goto L_ret; };
   if (i <= m9t4to) for (;;) {
     { Ast_Node * kd = (*(Ast_Node * *) m9_at (u->kids.p, i, u->kids.len, sizeof (Ast_Node *), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 915; goto L_ret; };
     if (kd != NULL) {
       if ((kd->kind == Ast_NFromImport)) {
-        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s154, 5 }), err);
-        if (err->exc) goto L_ret;
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s156, 5 }), err);
+        if (err->exc) { m9ln = 917; goto L_ret; };
         DynStr_Append (d, d_pool, kd->au, err);
-        if (err->exc) goto L_ret;
-        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s155, 8 }), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 918; goto L_ret; };
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s157, 8 }), err);
+        if (err->exc) { m9ln = 919; goto L_ret; };
         { Ast_Node * ids = (*(Ast_Node * *) m9_at (kd->kids.p, INT64_C(0), kd->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 920; goto L_ret; };
         if (ids != NULL) {
           Print_Idents (d, d_pool, ids, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 920; goto L_ret; };
         } }
-        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s156, 2 }), err);
-        if (err->exc) goto L_ret;
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s158, 2 }), err);
+        if (err->exc) { m9ln = 921; goto L_ret; };
         DynStr_AppendChar (d, d_pool, 10u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 922; goto L_ret; };
         DynStr_AppendChar (d, d_pool, 10u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 923; goto L_ret; };
       } else {
         if ((kd->kind == Ast_NImportList)) {
-          DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s157, 7 }), err);
-          if (err->exc) goto L_ret;
+          DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s159, 7 }), err);
+          if (err->exc) { m9ln = 925; goto L_ret; };
           { Ast_Node * ids = (*(Ast_Node * *) m9_at (kd->kids.p, INT64_C(0), kd->kids.len, sizeof (Ast_Node *), err));
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 926; goto L_ret; };
           if (ids != NULL) {
             Print_Idents (d, d_pool, ids, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 926; goto L_ret; };
           } }
-          DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s158, 2 }), err);
-          if (err->exc) goto L_ret;
+          DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s160, 2 }), err);
+          if (err->exc) { m9ln = 927; goto L_ret; };
           DynStr_AppendChar (d, d_pool, 10u, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 928; goto L_ret; };
           DynStr_AppendChar (d, d_pool, 10u, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 929; goto L_ret; };
       } else {
         if ((kd->kind == Ast_NModBody)) {
           { Ast_Node * blk2 = (*(Ast_Node * *) m9_at (kd->kids.p, INT64_C(0), kd->kids.len, sizeof (Ast_Node *), err));
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 932; goto L_ret; };
           if (blk2 != NULL) {
             Print_EBlock (d, d_pool, blk2, INT64_C(0), false, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 933; goto L_ret; };
           } }
       } else {
         if ((kd->kind == Ast_NLinkList)) {
       } else {
         Print_EDecl (d, d_pool, kd, INT64_C(0), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 938; goto L_ret; };
         DynStr_AppendChar (d, d_pool, 10u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 939; goto L_ret; };
       } } } }
     } }
     if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
-  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s159, 4 }), err);
-  if (err->exc) goto L_ret;
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s161, 4 }), err);
+  if (err->exc) { m9ln = 943; goto L_ret; };
   DynStr_Append (d, d_pool, u->au, err);
-  if (err->exc) goto L_ret;
-  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s160, 1 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 944; goto L_ret; };
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s162, 1 }), err);
+  if (err->exc) { m9ln = 945; goto L_ret; };
   DynStr_AppendChar (d, d_pool, 10u, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 946; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -2670,9 +2754,12 @@ void Print_m9init (m9_state *err)
   m9done = 1;
   m9_pool *m9prev = err->res;
   err->res = &m9mframe;
+  static const char m9pn[] = "Print (the module body)"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Ast_m9init (err); if (err->exc) goto L_ret;
   DynStr_m9init (err); if (err->exc) goto L_ret;
   Text_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9prev;
 }

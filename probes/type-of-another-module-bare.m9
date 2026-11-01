@@ -1,0 +1,23 @@
+(* EXPECT: unknown type: Box -- this module declares no such type; it is Lib's: write Lib.Box *)
+(* A bare type name means this module's type.  Box is Lib's, and Lib
+   is imported, so the program must write Lib.Box.  The checker took
+   the bare name, and cc refused the mangled `m_Box' (m9fun, with
+   DynStr's DString, 2026-11-01).  The legal forms come first: the
+   qualified name, this module's own type, and a builtin. *)
+DEFINITION MODULE Lib ;
+TYPE Box = RECORD n : I64 END ;
+END Lib.
+MODULE m ;
+IMPORT Lib ;
+TYPE Own = RECORD n : I64 END ;
+VAR
+  q : Lib.Box ;
+  own : Own ;
+  k : I64 ;
+  d : Box ;
+BEGIN
+  q.n := 1 ;
+  own.n := q.n ;
+  k := own.n ;
+  d := q
+END m.

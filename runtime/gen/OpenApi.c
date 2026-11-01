@@ -55,6 +55,8 @@ m9_sl_UTF8 OpenApi_Document (m9_sl_UTF8 title, m9_sl_UTF8 version, HttpServer_Ro
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "OpenApi.Document"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   m9_pool pool = {0}; (void) pool;
   DynStr_DString * d = NULL; (void) d;
@@ -64,83 +66,84 @@ m9_sl_UTF8 OpenApi_Document (m9_sl_UTF8 title, m9_sl_UTF8 version, HttpServer_Ro
   bool firstPath = false; (void) firstPath;
   bool firstOp = false; (void) firstOp;
   { __typeof__(d) m9v = DynStr_New (&(pool), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 88; goto L_ret; };
     d = m9v;
   }
   DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s0, 36 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 89; goto L_ret; };
   DynStr_Append (&(d), &(pool), title, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 90; goto L_ret; };
   DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s1, 13 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 91; goto L_ret; };
   DynStr_Append (&(d), &(pool), version, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 92; goto L_ret; };
   DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s2, 12 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 93; goto L_ret; };
   { __typeof__(n) m9v = HttpServer_RouteCount (r, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 94; goto L_ret; };
     n = m9v;
   }
   firstPath = true;
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 96; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     bool m9t2 = (!OpenApi_PathSeen (r, i, err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 97; goto L_ret; };
     if (m9t2) {
       if ((!firstPath)) {
         DynStr_AppendChar (&(d), &(pool), 44u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 101; goto L_ret; };
       }
       firstPath = false;
       DynStr_AppendChar (&(d), &(pool), 34u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 103; goto L_ret; };
       { __typeof__(HttpServer_RoutePath (r, i, err)) m9a1 = HttpServer_RoutePath (r, i, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 104; goto L_ret; };
       DynStr_Append (&(d), &(pool), m9a1, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 104; goto L_ret; };
       }
       DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s3, 3 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 105; goto L_ret; };
       firstOp = true;
       { __typeof__(j) m9t3to;
       j = i;
       m9t3to = m9_sub_i64 (n, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 107; goto L_ret; };
       if (j <= m9t3to) for (;;) {
         { __typeof__(HttpServer_RoutePath (r, j, err)) m9a2 = HttpServer_RoutePath (r, j, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 108; goto L_ret; };
         { __typeof__(HttpServer_RoutePath (r, i, err)) m9a3 = HttpServer_RoutePath (r, i, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 108; goto L_ret; };
         bool m9t4 = Text_EqUtf (m9a2, m9a3, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 108; goto L_ret; };
         if (m9t4) {
           if ((!firstOp)) {
             DynStr_AppendChar (&(d), &(pool), 44u, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 110; goto L_ret; };
           }
           firstOp = false;
           OpenApi_Operation (&(d), &(pool), r, j, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 112; goto L_ret; };
         } } }
         if ((uint64_t) m9t3to - (uint64_t) j < (uint64_t) 1) break;
         j += 1;
       } }
       DynStr_AppendChar (&(d), &(pool), 125u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 115; goto L_ret; };
     }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s4, 2 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 118; goto L_ret; };
   err->res = m9res;
   m9ret = DynStr_View (d, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 119; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9ret = m9_rehome_utf (&pool, m9res, m9ret, err);
@@ -155,19 +158,21 @@ static bool OpenApi_PathSeen (HttpServer_Router * r, int64_t i, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "OpenApi.PathSeen"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   int64_t j = 0; (void) j;
   { __typeof__(j) m9t1to;
   j = INT64_C(0);
   m9t1to = m9_sub_i64 (i, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 35; goto L_ret; };
   if (j <= m9t1to) for (;;) {
     { __typeof__(HttpServer_RoutePath (r, j, err)) m9a4 = HttpServer_RoutePath (r, j, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 36; goto L_ret; };
     { __typeof__(HttpServer_RoutePath (r, i, err)) m9a5 = HttpServer_RoutePath (r, i, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 36; goto L_ret; };
     bool m9t2 = Text_EqUtf (m9a4, m9a5, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 36; goto L_ret; };
     if (m9t2) {
       err->res = m9res;
       m9ret = true;
@@ -180,6 +185,7 @@ static bool OpenApi_PathSeen (HttpServer_Router * r, int64_t i, m9_state *err)
   m9ret = false;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -191,40 +197,43 @@ static void OpenApi_AppendMethod (DynStr_DString * *d, m9_pool *d_pool, m9_sl_UT
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "OpenApi.AppendMethod"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9t1 = Text_EqUtf (m, ((m9_sl_UTF8){ (uint8_t *) m9s5, 3 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 50; goto L_ret; };
   if (m9t1) {
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s6, 3 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 50; goto L_ret; };
   } else {
     bool m9t2 = Text_EqUtf (m, ((m9_sl_UTF8){ (uint8_t *) m9s7, 4 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 50; goto L_ret; };
     if (m9t2) {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s8, 4 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 51; goto L_ret; };
   } else {
     bool m9t3 = Text_EqUtf (m, ((m9_sl_UTF8){ (uint8_t *) m9s9, 3 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 51; goto L_ret; };
     if (m9t3) {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s10, 3 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 52; goto L_ret; };
   } else {
     bool m9t4 = Text_EqUtf (m, ((m9_sl_UTF8){ (uint8_t *) m9s11, 6 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 52; goto L_ret; };
     if (m9t4) {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s12, 6 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 53; goto L_ret; };
   } else {
     bool m9t5 = Text_EqUtf (m, ((m9_sl_UTF8){ (uint8_t *) m9s13, 4 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 53; goto L_ret; };
     if (m9t5) {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s14, 4 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 54; goto L_ret; };
   } else {
     DynStr_Append (d, d_pool, m, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 55; goto L_ret; };
   } } } } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -237,44 +246,47 @@ static void OpenApi_Operation (DynStr_DString * *d, m9_pool *d_pool, HttpServer_
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "OpenApi.Operation"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   DynStr_AppendChar (d, d_pool, 34u, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 65; goto L_ret; };
   { __typeof__(HttpServer_RouteMethod (r, j, err)) m9a6 = HttpServer_RouteMethod (r, j, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 66; goto L_ret; };
   OpenApi_AppendMethod (d, d_pool, m9a6, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 66; goto L_ret; };
   }
   DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s15, 14 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 67; goto L_ret; };
   { __typeof__(HttpServer_RouteSummary (r, j, err)) m9a7 = HttpServer_RouteSummary (r, j, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 68; goto L_ret; };
   DynStr_Append (d, d_pool, m9a7, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 68; goto L_ret; };
   }
   DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s16, 16 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 69; goto L_ret; };
   { __typeof__(HttpServer_RouteStatus (r, j, err)) m9a8 = HttpServer_RouteStatus (r, j, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 70; goto L_ret; };
   DynStr_AppendI64 (d, d_pool, m9a8, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 70; goto L_ret; };
   }
   DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s17, 18 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 71; goto L_ret; };
   { __typeof__(HttpServer_RouteSummary (r, j, err)) m9a9 = HttpServer_RouteSummary (r, j, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 72; goto L_ret; };
   DynStr_Append (d, d_pool, m9a9, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 72; goto L_ret; };
   }
   DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s18, 14 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 73; goto L_ret; };
   { __typeof__(HttpServer_RouteType (r, j, err)) m9a10 = HttpServer_RouteType (r, j, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 74; goto L_ret; };
   DynStr_Append (d, d_pool, m9a10, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 74; goto L_ret; };
   }
   DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s19, 8 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 75; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -288,9 +300,12 @@ void OpenApi_m9init (m9_state *err)
   m9done = 1;
   m9_pool *m9prev = err->res;
   err->res = &m9mframe;
+  static const char m9pn[] = "OpenApi (the module body)"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   HttpServer_m9init (err); if (err->exc) goto L_ret;
   DynStr_m9init (err); if (err->exc) goto L_ret;
   Text_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9prev;
 }

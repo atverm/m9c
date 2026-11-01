@@ -1,0 +1,10 @@
+(* EXPECT: use of p after it was moved into a TASK running Work *)
+(* An owned value handed to a TASK is moved, as one handed to a THREAD
+   is (thread-moves-its-argument is the twin). *)
+MODULE m ;
+TYPE Rec = RECORD n : I64 END ;
+VAR y : I64 ;
+PROCEDURE Work (OWN r: PTR Rec) = BEGIN y := r.n ; DISPOSE (r) END Work ;
+PROCEDURE F () = VAR p : PTR Rec ;
+BEGIN p := NEW (OWN, Rec) ; TASK (Work, p) ; p.n := 8 END F ;
+END m.

@@ -15,7 +15,8 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     ../gen/DynUtf.c ../gen/Print.c ../gen/Parse.c parsedump_m9.c -o parsedump_m9
 ( cd ../../host/fpc && fpc -O2 parsedump.pas >/dev/null )
 n=0
-for f in ../../corpus/*.m9 ../../museum/*.m9; do
+# tasktest.m9 holds TASK, which no corpus file uses yet.
+for f in ../../corpus/*.m9 ../../museum/*.m9 tasktest.m9 ../../probes/task-*.m9; do
   ../../host/fpc/parsedump "$f" > "$TG"/parse_fpc.txt
   ./parsedump_m9 "$f" > "$TG"/parse_m9.txt
   cmp "$TG"/parse_fpc.txt "$TG"/parse_m9.txt || { echo "DIVERGES: $f"; exit 1; }
@@ -38,7 +39,7 @@ echo "parsediff: $n files, print(parse()) byte-identical to the oracle"
 # the parser had messages printed the old bare count, and the gate
 # reported a divergence that was a year of nothing.  The path is
 # absolute, because the comparisons run from the repository root.
-M9CNEW=$(mktemp -d)
+M9CNEW=$(mktemp -d ./m9cnew.XXXXXX)
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter     -iquote .. -iquote ../gen ../m9rt.c $COMPILERC -o "$M9CNEW/m9c"
 # Replace m9c only when it differs.  So a gate in another lane running
 # m9c keeps its file, and --run's cache keeps its entries; that cache's

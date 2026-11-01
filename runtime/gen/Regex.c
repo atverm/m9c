@@ -1911,6 +1911,8 @@ Regex_Re * Regex_Compile (m9_pool *pool, m9_sl_UTF8 pattern, m9_sl_UTF8 flags, m
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Regex.Compile"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Regex_Re * m9ret = NULL;
   m9_pool scratch = {0}; (void) scratch;
   Regex_Re * re = NULL; (void) re;
@@ -1920,7 +1922,7 @@ Regex_Re * Regex_Compile (m9_pool *pool, m9_sl_UTF8 pattern, m9_sl_UTF8 flags, m
   int64_t j = 0; (void) j;
   uint32_t c = 0; (void) c;
   { __typeof__(re) m9v = Regex_NewRe (pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1369; goto L_ret; };
     re = m9v;
   }
   ps.p = pattern;
@@ -1932,10 +1934,10 @@ Regex_Re * Regex_Compile (m9_pool *pool, m9_sl_UTF8 pattern, m9_sl_UTF8 flags, m
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (Text_BLen (flags, err), INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1376; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     { __typeof__(c) m9v = Text_BChar (flags, i, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1377; goto L_ret; };
       c = m9v;
     }
     if ((c == 117u)) {
@@ -1953,6 +1955,7 @@ Regex_Re * Regex_Compile (m9_pool *pool, m9_sl_UTF8 pattern, m9_sl_UTF8 flags, m
       { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s0, 17 }), m9_utf_of_char (err->res, c, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s1, 26 }), err)) m9t2 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s0, 17 }), m9_utf_of_char (err->res, c, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s1, 26 }), err); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
       err->i[0] = m9_neg_i64 (INT64_C(1), err);
       m9_raise (err, &Regex_BadPattern);
+      m9_site (err, 1382, m9pn);
       goto L_ret;
     } } } }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
@@ -1962,43 +1965,46 @@ Regex_Re * Regex_Compile (m9_pool *pool, m9_sl_UTF8 pattern, m9_sl_UTF8 flags, m
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s2, 75 })) m9t3 = ((m9_sl_UTF8){ (uint8_t *) m9s2, 75 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     err->i[0] = m9_neg_i64 (INT64_C(1), err);
     m9_raise (err, &Regex_BadPattern);
+    m9_site (err, 1386, m9pn);
     goto L_ret;
   }
   { __typeof__(root) m9v = Regex_Alt (&(scratch), &(ps), err->res, &(re), &((*pool)), true, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1388; goto L_ret; };
     root = m9v;
   }
   bool m9t4 = (!Regex_AtEnd (&(ps), err->res, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1389; goto L_ret; };
   if (m9t4) {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s3, 22 })) m9t5 = ((m9_sl_UTF8){ (uint8_t *) m9s3, 22 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     err->i[0] = ps.pos;
     m9_raise (err, &Regex_BadPattern);
+    m9_site (err, 1390, m9pn);
     goto L_ret;
   }
   re->uni = ps.uni;
   { __typeof__(re->nslots) m9v = m9_mul_i64 (INT64_C(2), (m9_add_i64 (re->ngroups, INT64_C(1), err)), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1393; goto L_ret; };
     re->nslots = m9v;
   }
   { __typeof__(j) m9v = Regex_Emit (&(re), &((*pool)), Regex_OSave, INT64_C(0), INT64_C(0), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1394; goto L_ret; };
     j = m9v;
   }
   Regex_Gen (&(re), &((*pool)), root, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1395; goto L_ret; };
   { __typeof__(j) m9v = Regex_Emit (&(re), &((*pool)), Regex_OSave, INT64_C(1), INT64_C(0), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1396; goto L_ret; };
     j = m9v;
   }
   { __typeof__(j) m9v = Regex_Emit (&(re), &((*pool)), Regex_OMatch, INT64_C(0), INT64_C(0), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1397; goto L_ret; };
     j = m9v;
   }
   err->res = m9res;
   m9ret = re;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -2012,11 +2018,14 @@ int64_t Regex_Groups (Regex_Re * re, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.Groups"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   err->res = m9res;
   m9ret = re->ngroups;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2028,21 +2037,23 @@ int64_t Regex_GroupIndex (Regex_Re * re, m9_sl_UTF8 name, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.GroupIndex"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   int64_t i = 0; (void) i;
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (re->nnames, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1409; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     { __typeof__((*(m9_sl_UTF8 *) m9_at (re->names.p, i, re->names.len, sizeof (m9_sl_UTF8), err))) m9a1 = (*(m9_sl_UTF8 *) m9_at (re->names.p, i, re->names.len, sizeof (m9_sl_UTF8), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1410; goto L_ret; };
     bool m9t2 = Text_EqUtf (m9a1, name, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1410; goto L_ret; };
     if (m9t2) {
       err->res = m9res;
       m9ret = (*(int64_t *) m9_at (re->nameGroup.p, i, re->nameGroup.len, sizeof (int64_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1410; goto L_ret; };
       goto L_ret;
     } }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
@@ -2050,9 +2061,10 @@ int64_t Regex_GroupIndex (Regex_Re * re, m9_sl_UTF8 name, m9_state *err)
   } }
   err->res = m9res;
   m9ret = m9_neg_i64 (INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1412; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2064,12 +2076,15 @@ Regex_Found * Regex_Search (Regex_Re * re, m9_sl_UTF8 s, int64_t from, m9_state 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Regex.Search"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Regex_Found * m9ret = NULL;
   err->res = m9res;
   m9ret = Regex_Run (re, s, from, false, false, false, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1612; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -2082,12 +2097,15 @@ Regex_Found * Regex_Match (Regex_Re * re, m9_sl_UTF8 s, int64_t from, m9_state *
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Regex.Match"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Regex_Found * m9ret = NULL;
   err->res = m9res;
   m9ret = Regex_Run (re, s, from, true, false, false, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1617; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -2100,12 +2118,15 @@ Regex_Found * Regex_FullMatch (Regex_Re * re, m9_sl_UTF8 s, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Regex.FullMatch"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Regex_Found * m9ret = NULL;
   err->res = m9res;
   m9ret = Regex_Run (re, s, INT64_C(0), true, true, false, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1622; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -2118,12 +2139,15 @@ int64_t Regex_Start (Regex_Found * m, int64_t k, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.Start"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   err->res = m9res;
   m9ret = (*(int64_t *) m9_at (m->span.p, m9_mul_i64 (INT64_C(2), k, err), m->span.len, sizeof (int64_t), err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1627; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2135,12 +2159,15 @@ int64_t Regex_End (Regex_Found * m, int64_t k, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.End"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   err->res = m9res;
   m9ret = (*(int64_t *) m9_at (m->span.p, m9_add_i64 (m9_mul_i64 (INT64_C(2), k, err), INT64_C(1), err), m->span.len, sizeof (int64_t), err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1632; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2152,12 +2179,15 @@ bool Regex_Took (Regex_Found * m, int64_t k, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.Took"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   err->res = m9res;
   m9ret = ((*(int64_t *) m9_at (m->span.p, m9_mul_i64 (INT64_C(2), k, err), m->span.len, sizeof (int64_t), err)) >= INT64_C(0));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1637; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2169,15 +2199,17 @@ m9_sl_UTF8 Regex_Group (m9_sl_UTF8 s, Regex_Found * m, int64_t k, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.Group"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   int64_t a = 0; (void) a;
   int64_t b = 0; (void) b;
   { __typeof__(a) m9v = (*(int64_t *) m9_at (m->span.p, m9_mul_i64 (INT64_C(2), k, err), m->span.len, sizeof (int64_t), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1643; goto L_ret; };
     a = m9v;
   }
   { __typeof__(b) m9v = (*(int64_t *) m9_at (m->span.p, m9_add_i64 (m9_mul_i64 (INT64_C(2), k, err), INT64_C(1), err), m->span.len, sizeof (int64_t), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1644; goto L_ret; };
     b = m9v;
   }
   if ((a < INT64_C(0))) {
@@ -2187,9 +2219,10 @@ m9_sl_UTF8 Regex_Group (m9_sl_UTF8 s, Regex_Found * m, int64_t k, m9_state *err)
   }
   err->res = m9res;
   m9ret = m9_utf_slice (s, a, m9_sub_i64 (b, a, err), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1646; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -2202,6 +2235,8 @@ m9_sl_Regex_Foundp Regex_FindAll (Regex_Re * re, m9_sl_UTF8 s, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Regex.FindAll"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_Regex_Foundp m9ret = {0};
   m9_sl_Regex_Foundp all = {0}; (void) all;
   m9_sl_Regex_Foundp more = {0}; (void) more;
@@ -2211,7 +2246,7 @@ m9_sl_Regex_Foundp Regex_FindAll (Regex_Re * re, m9_sl_UTF8 s, m9_state *err)
   bool advance = false; (void) advance;
   Regex_Found * r = NULL; (void) r;
   { __typeof__(all) m9v = M9_POOL_SL (m9_sl_Regex_Foundp, Regex_Found *, err->res, INT64_C(4), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1656; goto L_ret; };
     all = m9v;
   }
   n = INT64_C(0);
@@ -2219,25 +2254,25 @@ m9_sl_Regex_Foundp Regex_FindAll (Regex_Re * re, m9_sl_UTF8 s, m9_state *err)
   advance = false;
   for (;;) {
     { __typeof__(r) m9v = Regex_Run (re, s, pos, false, false, advance, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1661; goto L_ret; };
       r = m9v;
     }
     { Regex_Found * m = r;
     if (m != NULL) {
       if ((n == (all).len)) {
         { __typeof__(more) m9v = M9_POOL_SL (m9_sl_Regex_Foundp, Regex_Found *, err->res, m9_mul_i64 (INT64_C(2), n, err), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1664; goto L_ret; };
           more = m9v;
         }
         { __typeof__(i) m9t1to;
         i = INT64_C(0);
         m9t1to = m9_sub_i64 (n, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1665; goto L_ret; };
         if (i <= m9t1to) for (;;) {
           { __typeof__((*(Regex_Found * *) m9_at (more.p, i, more.len, sizeof (Regex_Found *), err))) m9v = ({ __auto_type m9n = ((*(Regex_Found * *) m9_at (all.p, i, all.len, sizeof (Regex_Found *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1665; goto L_ret; };
             (*(Regex_Found * *) m9_at (more.p, i, more.len, sizeof (Regex_Found *), err)) = m9v;
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1665; goto L_ret; };
           }
           if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
           i += 1;
@@ -2245,17 +2280,17 @@ m9_sl_Regex_Foundp Regex_FindAll (Regex_Re * re, m9_sl_UTF8 s, m9_state *err)
         all = more;
       }
       (*(Regex_Found * *) m9_at (all.p, n, all.len, sizeof (Regex_Found *), err)) = m;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1668; goto L_ret; };
       { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1669; goto L_ret; };
         n = m9v;
       }
       { __typeof__(advance) m9v = ((*(int64_t *) m9_at (m->span.p, INT64_C(1), m->span.len, sizeof (int64_t), err)) == (*(int64_t *) m9_at (m->span.p, INT64_C(0), m->span.len, sizeof (int64_t), err)));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1670; goto L_ret; };
         advance = m9v;
       }
       { __typeof__(pos) m9v = (*(int64_t *) m9_at (m->span.p, INT64_C(1), m->span.len, sizeof (int64_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1671; goto L_ret; };
         pos = m9v;
       }
     } else {
@@ -2264,9 +2299,10 @@ m9_sl_Regex_Foundp Regex_FindAll (Regex_Re * re, m9_sl_UTF8 s, m9_state *err)
   }
   err->res = m9res;
   m9ret = ({ __auto_type m9t2 = all; int64_t m9t2a = INT64_C(0), m9t2n = n; int64_t m9t2o = m9_chk_slice (m9t2a, m9t2n, m9t2.len, err); (__typeof__(m9t2)){ m9t2.p + m9t2o, err->exc ? 0 : m9t2n }; });
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1676; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
@@ -2279,6 +2315,8 @@ m9_sl_UTF8 Regex_Sub (Regex_Re * re, m9_sl_UTF8 s, m9_sl_UTF8 repl, int64_t coun
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.Sub"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
@@ -2288,7 +2326,7 @@ m9_sl_UTF8 Regex_Sub (Regex_Re * re, m9_sl_UTF8 s, m9_sl_UTF8 repl, int64_t coun
   bool advance = false; (void) advance;
   Regex_Found * r = NULL; (void) r;
   { __typeof__(d) m9v = DynStr_New (&(scratch), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1767; goto L_ret; };
     d = m9v;
   }
   pos = INT64_C(0);
@@ -2300,32 +2338,32 @@ m9_sl_UTF8 Regex_Sub (Regex_Re * re, m9_sl_UTF8 s, m9_sl_UTF8 repl, int64_t coun
       break;
     }
     { __typeof__(r) m9v = Regex_Run (re, s, pos, false, false, advance, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1774; goto L_ret; };
       r = m9v;
     }
     { Regex_Found * m = r;
     if (m != NULL) {
       { __typeof__(m9_utf_slice (s, last, m9_sub_i64 ((*(int64_t *) m9_at (m->span.p, INT64_C(0), m->span.len, sizeof (int64_t), err)), last, err), err)) m9a2 = m9_utf_slice (s, last, m9_sub_i64 ((*(int64_t *) m9_at (m->span.p, INT64_C(0), m->span.len, sizeof (int64_t), err)), last, err), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1776; goto L_ret; };
       DynStr_Append (&(d), &(scratch), m9a2, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1776; goto L_ret; };
       }
       Regex_Expand (re, s, repl, m, &(d), &(scratch), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1777; goto L_ret; };
       { __typeof__(last) m9v = (*(int64_t *) m9_at (m->span.p, INT64_C(1), m->span.len, sizeof (int64_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1778; goto L_ret; };
         last = m9v;
       }
       { __typeof__(done) m9v = m9_add_i64 (done, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1779; goto L_ret; };
         done = m9v;
       }
       { __typeof__(advance) m9v = ((*(int64_t *) m9_at (m->span.p, INT64_C(1), m->span.len, sizeof (int64_t), err)) == (*(int64_t *) m9_at (m->span.p, INT64_C(0), m->span.len, sizeof (int64_t), err)));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1780; goto L_ret; };
         advance = m9v;
       }
       { __typeof__(pos) m9v = (*(int64_t *) m9_at (m->span.p, INT64_C(1), m->span.len, sizeof (int64_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1781; goto L_ret; };
         pos = m9v;
       }
     } else {
@@ -2333,15 +2371,16 @@ m9_sl_UTF8 Regex_Sub (Regex_Re * re, m9_sl_UTF8 s, m9_sl_UTF8 repl, int64_t coun
     } }
   }
   { __typeof__(m9_utf_slice (s, last, m9_sub_i64 (Text_BLen (s, err), last, err), err)) m9a3 = m9_utf_slice (s, last, m9_sub_i64 (Text_BLen (s, err), last, err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1786; goto L_ret; };
   DynStr_Append (&(d), &(scratch), m9a3, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1786; goto L_ret; };
   }
   err->res = m9res;
   m9ret = DynStr_View (d, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1787; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9ret = m9_rehome_utf (&scratch, m9res, m9ret, err);
@@ -2356,6 +2395,8 @@ m9_sl_m9_sl_UTF8 Regex_Split (Regex_Re * re, m9_sl_UTF8 s, int64_t maxsplit, m9_
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Regex.Split"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_m9_sl_UTF8 m9ret = {0};
   m9_sl_m9_sl_UTF8 out = {0}; (void) out;
   m9_sl_m9_sl_UTF8 more = {0}; (void) more;
@@ -2368,7 +2409,7 @@ m9_sl_m9_sl_UTF8 Regex_Split (Regex_Re * re, m9_sl_UTF8 s, int64_t maxsplit, m9_
   bool advance = false; (void) advance;
   Regex_Found * r = NULL; (void) r;
   { __typeof__(out) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, err->res, INT64_C(8), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1797; goto L_ret; };
     out = m9v;
   }
   n = INT64_C(0);
@@ -2381,27 +2422,27 @@ m9_sl_m9_sl_UTF8 Regex_Split (Regex_Re * re, m9_sl_UTF8 s, int64_t maxsplit, m9_
       break;
     }
     { __typeof__(r) m9v = Regex_Run (re, s, pos, false, false, advance, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1805; goto L_ret; };
       r = m9v;
     }
     { Regex_Found * m = r;
     if (m != NULL) {
       bool m9t1 = (m9_add_i64 (m9_add_i64 (n, re->ngroups, err), INT64_C(2), err) > (out).len);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1807; goto L_ret; };
       if (m9t1) {
         { __typeof__(more) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, err->res, m9_mul_i64 (INT64_C(2), (m9_add_i64 (m9_add_i64 (n, re->ngroups, err), INT64_C(2), err)), err), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1808; goto L_ret; };
           more = m9v;
         }
         { __typeof__(i) m9t2to;
         i = INT64_C(0);
         m9t2to = m9_sub_i64 (n, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1809; goto L_ret; };
         if (i <= m9t2to) for (;;) {
           { __typeof__((*(m9_sl_UTF8 *) m9_at (more.p, i, more.len, sizeof (m9_sl_UTF8), err))) m9v = (*(m9_sl_UTF8 *) m9_at (out.p, i, out.len, sizeof (m9_sl_UTF8), err));
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1809; goto L_ret; };
             (*(m9_sl_UTF8 *) m9_at (more.p, i, more.len, sizeof (m9_sl_UTF8), err)) = m9v;
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1809; goto L_ret; };
           }
           if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
           i += 1;
@@ -2409,12 +2450,12 @@ m9_sl_m9_sl_UTF8 Regex_Split (Regex_Re * re, m9_sl_UTF8 s, int64_t maxsplit, m9_
         out = more;
       }
       { __typeof__((*(m9_sl_UTF8 *) m9_at (out.p, n, out.len, sizeof (m9_sl_UTF8), err))) m9v = m9_utf_slice (s, last, m9_sub_i64 ((*(int64_t *) m9_at (m->span.p, INT64_C(0), m->span.len, sizeof (int64_t), err)), last, err), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1812; goto L_ret; };
         (*(m9_sl_UTF8 *) m9_at (out.p, n, out.len, sizeof (m9_sl_UTF8), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1812; goto L_ret; };
       }
       { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1813; goto L_ret; };
         n = m9v;
       }
       { __typeof__(g) m9t4to;
@@ -2422,37 +2463,37 @@ m9_sl_m9_sl_UTF8 Regex_Split (Regex_Re * re, m9_sl_UTF8 s, int64_t maxsplit, m9_
       m9t4to = re->ngroups;
       if (g <= m9t4to) for (;;) {
         (*(m9_sl_UTF8 *) m9_at (out.p, n, out.len, sizeof (m9_sl_UTF8), err)) = ((m9_sl_UTF8){ NULL, 0 });
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1815; goto L_ret; };
         bool m9t5 = ((*(int64_t *) m9_at (m->span.p, m9_mul_i64 (INT64_C(2), g, err), m->span.len, sizeof (int64_t), err)) >= INT64_C(0));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1816; goto L_ret; };
         if (m9t5) {
           { __typeof__((*(m9_sl_UTF8 *) m9_at (out.p, n, out.len, sizeof (m9_sl_UTF8), err))) m9v = m9_utf_slice (s, (*(int64_t *) m9_at (m->span.p, m9_mul_i64 (INT64_C(2), g, err), m->span.len, sizeof (int64_t), err)), m9_sub_i64 ((*(int64_t *) m9_at (m->span.p, m9_add_i64 (m9_mul_i64 (INT64_C(2), g, err), INT64_C(1), err), m->span.len, sizeof (int64_t), err)), (*(int64_t *) m9_at (m->span.p, m9_mul_i64 (INT64_C(2), g, err), m->span.len, sizeof (int64_t), err)), err), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1817; goto L_ret; };
             (*(m9_sl_UTF8 *) m9_at (out.p, n, out.len, sizeof (m9_sl_UTF8), err)) = m9v;
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1817; goto L_ret; };
           }
         }
         { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1819; goto L_ret; };
           n = m9v;
         }
         if ((uint64_t) m9t4to - (uint64_t) g < (uint64_t) 1) break;
         g += 1;
       } }
       { __typeof__(last) m9v = (*(int64_t *) m9_at (m->span.p, INT64_C(1), m->span.len, sizeof (int64_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1821; goto L_ret; };
         last = m9v;
       }
       { __typeof__(done) m9v = m9_add_i64 (done, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1822; goto L_ret; };
         done = m9v;
       }
       { __typeof__(advance) m9v = ((*(int64_t *) m9_at (m->span.p, INT64_C(1), m->span.len, sizeof (int64_t), err)) == (*(int64_t *) m9_at (m->span.p, INT64_C(0), m->span.len, sizeof (int64_t), err)));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1823; goto L_ret; };
         advance = m9v;
       }
       { __typeof__(pos) m9v = (*(int64_t *) m9_at (m->span.p, INT64_C(1), m->span.len, sizeof (int64_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1824; goto L_ret; };
         pos = m9v;
       }
     } else {
@@ -2460,21 +2501,21 @@ m9_sl_m9_sl_UTF8 Regex_Split (Regex_Re * re, m9_sl_UTF8 s, int64_t maxsplit, m9_
     } }
   }
   bool m9t7 = (m9_add_i64 (n, INT64_C(1), err) > (out).len);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1829; goto L_ret; };
   if (m9t7) {
     { __typeof__(more) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, err->res, m9_add_i64 (n, INT64_C(1), err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1830; goto L_ret; };
       more = m9v;
     }
     { __typeof__(i) m9t8to;
     i = INT64_C(0);
     m9t8to = m9_sub_i64 (n, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1831; goto L_ret; };
     if (i <= m9t8to) for (;;) {
       { __typeof__((*(m9_sl_UTF8 *) m9_at (more.p, i, more.len, sizeof (m9_sl_UTF8), err))) m9v = (*(m9_sl_UTF8 *) m9_at (out.p, i, out.len, sizeof (m9_sl_UTF8), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1831; goto L_ret; };
         (*(m9_sl_UTF8 *) m9_at (more.p, i, more.len, sizeof (m9_sl_UTF8), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1831; goto L_ret; };
       }
       if ((uint64_t) m9t8to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
@@ -2482,15 +2523,16 @@ m9_sl_m9_sl_UTF8 Regex_Split (Regex_Re * re, m9_sl_UTF8 s, int64_t maxsplit, m9_
     out = more;
   }
   { __typeof__((*(m9_sl_UTF8 *) m9_at (out.p, n, out.len, sizeof (m9_sl_UTF8), err))) m9v = m9_utf_slice (s, last, m9_sub_i64 (Text_BLen (s, err), last, err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1834; goto L_ret; };
     (*(m9_sl_UTF8 *) m9_at (out.p, n, out.len, sizeof (m9_sl_UTF8), err)) = m9v;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1834; goto L_ret; };
   }
   err->res = m9res;
   m9ret = ({ __auto_type m9t10 = out; int64_t m9t10a = INT64_C(0), m9t10n = m9_add_i64 (n, INT64_C(1), err); int64_t m9t10o = m9_chk_slice (m9t10a, m9t10n, m9t10.len, err); (__typeof__(m9t10)){ m9t10.p + m9t10o, err->exc ? 0 : m9t10n }; });
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1835; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
@@ -2503,16 +2545,19 @@ static void Regex_SetNew (m9_pool *sp, Regex_Set *st, m9_pool *st_pool, m9_state
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.SetNew"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   { __typeof__((*st).lo) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &((*sp)), INT64_C(8), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 377; goto L_ret; };
     (*st).lo = m9v;
   }
   { __typeof__((*st).hi) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &((*sp)), INT64_C(8), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 378; goto L_ret; };
     (*st).hi = m9v;
   }
   (*st).n = INT64_C(0);
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, st_pool, (*st).lo.p);
   m9_adopt_if (&m9frame, st_pool, (*st).hi.p);
@@ -2526,32 +2571,34 @@ static void Regex_SetAdd (m9_pool *sp, Regex_Set *st, m9_pool *st_pool, int64_t 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.SetAdd"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_I64 nl = {0}; (void) nl;
   m9_sl_I64 nh = {0}; (void) nh;
   int64_t i = 0; (void) i;
   if (((*st).n == ((*st).lo).len)) {
     { __typeof__(nl) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &((*sp)), m9_mul_i64 (INT64_C(2), ((*st).lo).len, err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 388; goto L_ret; };
       nl = m9v;
     }
     { __typeof__(nh) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &((*sp)), m9_mul_i64 (INT64_C(2), ((*st).lo).len, err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 389; goto L_ret; };
       nh = m9v;
     }
     { __typeof__(i) m9t1to;
     i = INT64_C(0);
     m9t1to = m9_sub_i64 ((*st).n, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 390; goto L_ret; };
     if (i <= m9t1to) for (;;) {
       { __typeof__((*(int64_t *) m9_at (nl.p, i, nl.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at ((*st).lo.p, i, (*st).lo.len, sizeof (int64_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 390; goto L_ret; };
         (*(int64_t *) m9_at (nl.p, i, nl.len, sizeof (int64_t), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 390; goto L_ret; };
       }
       { __typeof__((*(int64_t *) m9_at (nh.p, i, nh.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at ((*st).hi.p, i, (*st).hi.len, sizeof (int64_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 390; goto L_ret; };
         (*(int64_t *) m9_at (nh.p, i, nh.len, sizeof (int64_t), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 390; goto L_ret; };
       }
       if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
@@ -2560,14 +2607,15 @@ static void Regex_SetAdd (m9_pool *sp, Regex_Set *st, m9_pool *st_pool, int64_t 
     (*st).hi = nh;
   }
   (*(int64_t *) m9_at ((*st).lo.p, (*st).n, (*st).lo.len, sizeof (int64_t), err)) = lo;
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 394; goto L_ret; };
   (*(int64_t *) m9_at ((*st).hi.p, (*st).n, (*st).hi.len, sizeof (int64_t), err)) = hi;
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 395; goto L_ret; };
   { __typeof__((*st).n) m9v = m9_add_i64 ((*st).n, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 396; goto L_ret; };
     (*st).n = m9v;
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, st_pool, (*st).lo.p);
   m9_adopt_if (&m9frame, st_pool, (*st).hi.p);
@@ -2581,24 +2629,27 @@ static void Regex_SetAddTable (m9_pool *sp, Regex_Set *st, m9_pool *st_pool, m9_
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.SetAddTable"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((lo).len, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 403; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     { __typeof__((*(int64_t *) m9_at (lo.p, i, lo.len, sizeof (int64_t), err))) m9a4 = (*(int64_t *) m9_at (lo.p, i, lo.len, sizeof (int64_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 403; goto L_ret; };
     { __typeof__((*(int64_t *) m9_at (hi.p, i, hi.len, sizeof (int64_t), err))) m9a5 = (*(int64_t *) m9_at (hi.p, i, hi.len, sizeof (int64_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 403; goto L_ret; };
     Regex_SetAdd (sp, st, st_pool, m9a4, m9a5, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 403; goto L_ret; };
     }
     }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, st_pool, (*st).lo.p);
   m9_adopt_if (&m9frame, st_pool, (*st).hi.p);
@@ -2612,6 +2663,8 @@ static void Regex_SetNormal (Regex_Set *st, m9_pool *st_pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.SetNormal"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   int64_t j = 0; (void) j;
   int64_t k = 0; (void) k;
@@ -2620,43 +2673,43 @@ static void Regex_SetNormal (Regex_Set *st, m9_pool *st_pool, m9_state *err)
   { __typeof__(i) m9t1to;
   i = INT64_C(1);
   m9t1to = m9_sub_i64 ((*st).n, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 411; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     { __typeof__(a) m9v = (*(int64_t *) m9_at ((*st).lo.p, i, (*st).lo.len, sizeof (int64_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 412; goto L_ret; };
       a = m9v;
     }
     { __typeof__(b) m9v = (*(int64_t *) m9_at ((*st).hi.p, i, (*st).hi.len, sizeof (int64_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 413; goto L_ret; };
       b = m9v;
     }
     { __typeof__(j) m9v = m9_sub_i64 (i, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 414; goto L_ret; };
       j = m9v;
     }
     for (;;) {
       bool m9t2 = ((j >= INT64_C(0)) && ((*(int64_t *) m9_at ((*st).lo.p, j, (*st).lo.len, sizeof (int64_t), err)) > a));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 415; goto L_ret; };
       if (!(m9t2)) break;
       { __typeof__((*(int64_t *) m9_at ((*st).lo.p, m9_add_i64 (j, INT64_C(1), err), (*st).lo.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at ((*st).lo.p, j, (*st).lo.len, sizeof (int64_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 416; goto L_ret; };
         (*(int64_t *) m9_at ((*st).lo.p, m9_add_i64 (j, INT64_C(1), err), (*st).lo.len, sizeof (int64_t), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 416; goto L_ret; };
       }
       { __typeof__((*(int64_t *) m9_at ((*st).hi.p, m9_add_i64 (j, INT64_C(1), err), (*st).hi.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at ((*st).hi.p, j, (*st).hi.len, sizeof (int64_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 417; goto L_ret; };
         (*(int64_t *) m9_at ((*st).hi.p, m9_add_i64 (j, INT64_C(1), err), (*st).hi.len, sizeof (int64_t), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 417; goto L_ret; };
       }
       { __typeof__(j) m9v = m9_sub_i64 (j, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 418; goto L_ret; };
         j = m9v;
       }
     }
     (*(int64_t *) m9_at ((*st).lo.p, m9_add_i64 (j, INT64_C(1), err), (*st).lo.len, sizeof (int64_t), err)) = a;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 420; goto L_ret; };
     (*(int64_t *) m9_at ((*st).hi.p, m9_add_i64 (j, INT64_C(1), err), (*st).hi.len, sizeof (int64_t), err)) = b;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 421; goto L_ret; };
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
@@ -2664,33 +2717,33 @@ static void Regex_SetNormal (Regex_Set *st, m9_pool *st_pool, m9_state *err)
   { __typeof__(i) m9t3to;
   i = INT64_C(0);
   m9t3to = m9_sub_i64 ((*st).n, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 424; goto L_ret; };
   if (i <= m9t3to) for (;;) {
     bool m9t4 = ((k > INT64_C(0)) && ((*(int64_t *) m9_at ((*st).lo.p, i, (*st).lo.len, sizeof (int64_t), err)) <= m9_add_i64 ((*(int64_t *) m9_at ((*st).hi.p, m9_sub_i64 (k, INT64_C(1), err), (*st).hi.len, sizeof (int64_t), err)), INT64_C(1), err)));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 425; goto L_ret; };
     if (m9t4) {
       bool m9t5 = ((*(int64_t *) m9_at ((*st).hi.p, i, (*st).hi.len, sizeof (int64_t), err)) > (*(int64_t *) m9_at ((*st).hi.p, m9_sub_i64 (k, INT64_C(1), err), (*st).hi.len, sizeof (int64_t), err)));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 426; goto L_ret; };
       if (m9t5) {
         { __typeof__((*(int64_t *) m9_at ((*st).hi.p, m9_sub_i64 (k, INT64_C(1), err), (*st).hi.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at ((*st).hi.p, i, (*st).hi.len, sizeof (int64_t), err));
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 426; goto L_ret; };
           (*(int64_t *) m9_at ((*st).hi.p, m9_sub_i64 (k, INT64_C(1), err), (*st).hi.len, sizeof (int64_t), err)) = m9v;
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 426; goto L_ret; };
         }
       }
     } else {
       { __typeof__((*(int64_t *) m9_at ((*st).lo.p, k, (*st).lo.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at ((*st).lo.p, i, (*st).lo.len, sizeof (int64_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 428; goto L_ret; };
         (*(int64_t *) m9_at ((*st).lo.p, k, (*st).lo.len, sizeof (int64_t), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 428; goto L_ret; };
       }
       { __typeof__((*(int64_t *) m9_at ((*st).hi.p, k, (*st).hi.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at ((*st).hi.p, i, (*st).hi.len, sizeof (int64_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 429; goto L_ret; };
         (*(int64_t *) m9_at ((*st).hi.p, k, (*st).hi.len, sizeof (int64_t), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 429; goto L_ret; };
       }
       { __typeof__(k) m9v = m9_add_i64 (k, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 430; goto L_ret; };
         k = m9v;
       }
     }
@@ -2699,6 +2752,7 @@ static void Regex_SetNormal (Regex_Set *st, m9_pool *st_pool, m9_state *err)
   } }
   (*st).n = k;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, st_pool, (*st).lo.p);
   m9_adopt_if (&m9frame, st_pool, (*st).hi.p);
@@ -2712,28 +2766,30 @@ static void Regex_SetNegate (m9_pool *sp, Regex_Set *st, m9_pool *st_pool, m9_st
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.SetNegate"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Regex_Set out = {0}; (void) out;
   int64_t i = 0; (void) i;
   int64_t next = 0; (void) next;
   Regex_SetNew (sp, &(out), err->res, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 443; goto L_ret; };
   next = INT64_C(0);
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((*st).n, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 445; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     bool m9t2 = ((*(int64_t *) m9_at ((*st).lo.p, i, (*st).lo.len, sizeof (int64_t), err)) > next);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 446; goto L_ret; };
     if (m9t2) {
       { __typeof__(m9_sub_i64 ((*(int64_t *) m9_at ((*st).lo.p, i, (*st).lo.len, sizeof (int64_t), err)), INT64_C(1), err)) m9a6 = m9_sub_i64 ((*(int64_t *) m9_at ((*st).lo.p, i, (*st).lo.len, sizeof (int64_t), err)), INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 446; goto L_ret; };
       Regex_SetAdd (sp, &(out), err->res, next, m9a6, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 446; goto L_ret; };
       }
     }
     { __typeof__(next) m9v = m9_add_i64 ((*(int64_t *) m9_at ((*st).hi.p, i, (*st).hi.len, sizeof (int64_t), err)), INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 447; goto L_ret; };
       next = m9v;
     }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
@@ -2741,10 +2797,11 @@ static void Regex_SetNegate (m9_pool *sp, Regex_Set *st, m9_pool *st_pool, m9_st
   } }
   if ((next <= Regex_MaxCode)) {
     Regex_SetAdd (sp, &(out), err->res, next, Regex_MaxCode, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 449; goto L_ret; };
   }
   (*st) = out;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, st_pool, (*st).lo.p);
   m9_adopt_if (&m9frame, st_pool, (*st).hi.p);
@@ -2758,6 +2815,8 @@ static void Regex_SetCaseless (m9_pool *sp, Regex_Set *st, m9_pool *st_pool, m9_
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.SetCaseless"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   int64_t n = 0; (void) n;
   int64_t a = 0; (void) a;
@@ -2766,14 +2825,14 @@ static void Regex_SetCaseless (m9_pool *sp, Regex_Set *st, m9_pool *st_pool, m9_
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 458; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     { __typeof__(a) m9v = (*(int64_t *) m9_at ((*st).lo.p, i, (*st).lo.len, sizeof (int64_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 459; goto L_ret; };
       a = m9v;
     }
     { __typeof__(b) m9v = (*(int64_t *) m9_at ((*st).hi.p, i, (*st).hi.len, sizeof (int64_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 460; goto L_ret; };
       b = m9v;
     }
     if ((a < INT64_C(97))) {
@@ -2784,20 +2843,20 @@ static void Regex_SetCaseless (m9_pool *sp, Regex_Set *st, m9_pool *st_pool, m9_
     }
     if ((a <= b)) {
       { __typeof__(m9_sub_i64 (a, INT64_C(32), err)) m9a7 = m9_sub_i64 (a, INT64_C(32), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 463; goto L_ret; };
       { __typeof__(m9_sub_i64 (b, INT64_C(32), err)) m9a8 = m9_sub_i64 (b, INT64_C(32), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 463; goto L_ret; };
       Regex_SetAdd (sp, st, st_pool, m9a7, m9a8, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 463; goto L_ret; };
       }
       }
     }
     { __typeof__(a) m9v = (*(int64_t *) m9_at ((*st).lo.p, i, (*st).lo.len, sizeof (int64_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 464; goto L_ret; };
       a = m9v;
     }
     { __typeof__(b) m9v = (*(int64_t *) m9_at ((*st).hi.p, i, (*st).hi.len, sizeof (int64_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 465; goto L_ret; };
       b = m9v;
     }
     if ((a < INT64_C(65))) {
@@ -2808,11 +2867,11 @@ static void Regex_SetCaseless (m9_pool *sp, Regex_Set *st, m9_pool *st_pool, m9_
     }
     if ((a <= b)) {
       { __typeof__(m9_add_i64 (a, INT64_C(32), err)) m9a9 = m9_add_i64 (a, INT64_C(32), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 468; goto L_ret; };
       { __typeof__(m9_add_i64 (b, INT64_C(32), err)) m9a10 = m9_add_i64 (b, INT64_C(32), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 468; goto L_ret; };
       Regex_SetAdd (sp, st, st_pool, m9a9, m9a10, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 468; goto L_ret; };
       }
       }
     }
@@ -2820,6 +2879,7 @@ static void Regex_SetCaseless (m9_pool *sp, Regex_Set *st, m9_pool *st_pool, m9_
     i += 1;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, st_pool, (*st).lo.p);
   m9_adopt_if (&m9frame, st_pool, (*st).hi.p);
@@ -2833,34 +2893,36 @@ static bool Regex_InTable (m9_sl_I64 lo, m9_sl_I64 hi, int64_t at, int64_t n, in
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.InTable"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   int64_t a = 0; (void) a;
   int64_t b = 0; (void) b;
   int64_t m = 0; (void) m;
   a = at;
   { __typeof__(b) m9v = m9_sub_i64 (m9_add_i64 (at, n, err), INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 479; goto L_ret; };
     b = m9v;
   }
   for (;;) {
     if (!((a <= b))) break;
     { __typeof__(m) m9v = m9_div_i64 ((m9_add_i64 (a, b, err)), INT64_C(2), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 481; goto L_ret; };
       m = m9v;
     }
     bool m9t1 = (c < (*(int64_t *) m9_at (lo.p, m, lo.len, sizeof (int64_t), err)));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 482; goto L_ret; };
     if (m9t1) {
       { __typeof__(b) m9v = m9_sub_i64 (m, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 482; goto L_ret; };
         b = m9v;
       }
     } else {
       bool m9t2 = (c > (*(int64_t *) m9_at (hi.p, m, hi.len, sizeof (int64_t), err)));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 482; goto L_ret; };
       if (m9t2) {
         { __typeof__(a) m9v = m9_add_i64 (m, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 483; goto L_ret; };
           a = m9v;
         }
     } else {
@@ -2873,6 +2935,7 @@ static bool Regex_InTable (m9_sl_I64 lo, m9_sl_I64 hi, int64_t at, int64_t n, in
   m9ret = false;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2884,6 +2947,8 @@ static bool Regex_IsWord (int64_t c, bool uni, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.IsWord"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   if ((c < INT64_C(128))) {
     err->res = m9res;
@@ -2897,9 +2962,10 @@ static bool Regex_IsWord (int64_t c, bool uni, m9_state *err)
   }
   err->res = m9res;
   m9ret = Regex_InTable (((m9_sl_I64){ ((*UWordLo)).v, INT64_C(771) }), ((m9_sl_I64){ ((*UWordHi)).v, INT64_C(771) }), INT64_C(0), INT64_C(771), c, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 497; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2911,58 +2977,61 @@ static void Regex_SetAddEscape (m9_pool *sp, Regex_Set *st, m9_pool *st_pool, ui
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.SetAddEscape"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Regex_Set one = {0}; (void) one;
   Regex_SetNew (sp, &(one), err->res, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 504; goto L_ret; };
   if (((e == 100u) || (e == 68u))) {
     if (uni) {
       Regex_SetAddTable (sp, &(one), err->res, ((m9_sl_I64){ ((*UDigitLo)).v, INT64_C(71) }), ((m9_sl_I64){ ((*UDigitHi)).v, INT64_C(71) }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 506; goto L_ret; };
     } else {
       Regex_SetAdd (sp, &(one), err->res, INT64_C(48), INT64_C(57), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 507; goto L_ret; };
     }
   } else {
     if (((e == 115u) || (e == 83u))) {
       if (uni) {
         Regex_SetAddTable (sp, &(one), err->res, ((m9_sl_I64){ ((*USpaceLo)).v, INT64_C(10) }), ((m9_sl_I64){ ((*USpaceHi)).v, INT64_C(10) }), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 510; goto L_ret; };
       } else {
         Regex_SetAdd (sp, &(one), err->res, INT64_C(9), INT64_C(13), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 512; goto L_ret; };
         Regex_SetAdd (sp, &(one), err->res, INT64_C(32), INT64_C(32), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 513; goto L_ret; };
       }
   } else {
     if (uni) {
       Regex_SetAddTable (sp, &(one), err->res, ((m9_sl_I64){ ((*UWordLo)).v, INT64_C(771) }), ((m9_sl_I64){ ((*UWordHi)).v, INT64_C(771) }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 516; goto L_ret; };
     } else {
       Regex_SetAdd (sp, &(one), err->res, INT64_C(48), INT64_C(57), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 518; goto L_ret; };
       Regex_SetAdd (sp, &(one), err->res, INT64_C(65), INT64_C(90), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 519; goto L_ret; };
       Regex_SetAdd (sp, &(one), err->res, INT64_C(95), INT64_C(95), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 520; goto L_ret; };
       Regex_SetAdd (sp, &(one), err->res, INT64_C(97), INT64_C(122), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 521; goto L_ret; };
     }
   } }
   Regex_SetNormal (&(one), err->res, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 524; goto L_ret; };
   if ((((e == 68u) || (e == 83u)) || (e == 87u))) {
     Regex_SetNegate (sp, &(one), err->res, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 525; goto L_ret; };
   }
   { __typeof__(({ __auto_type m9t1 = one.lo; int64_t m9t1a = INT64_C(0), m9t1n = one.n; int64_t m9t1o = m9_chk_slice (m9t1a, m9t1n, m9t1.len, err); (__typeof__(m9t1)){ m9t1.p + m9t1o, err->exc ? 0 : m9t1n }; })) m9a11 = ({ __auto_type m9t1 = one.lo; int64_t m9t1a = INT64_C(0), m9t1n = one.n; int64_t m9t1o = m9_chk_slice (m9t1a, m9t1n, m9t1.len, err); (__typeof__(m9t1)){ m9t1.p + m9t1o, err->exc ? 0 : m9t1n }; });
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 526; goto L_ret; };
   { __typeof__(({ __auto_type m9t2 = one.hi; int64_t m9t2a = INT64_C(0), m9t2n = one.n; int64_t m9t2o = m9_chk_slice (m9t2a, m9t2n, m9t2.len, err); (__typeof__(m9t2)){ m9t2.p + m9t2o, err->exc ? 0 : m9t2n }; })) m9a12 = ({ __auto_type m9t2 = one.hi; int64_t m9t2a = INT64_C(0), m9t2n = one.n; int64_t m9t2o = m9_chk_slice (m9t2a, m9t2n, m9t2.len, err); (__typeof__(m9t2)){ m9t2.p + m9t2o, err->exc ? 0 : m9t2n }; });
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 526; goto L_ret; };
   Regex_SetAddTable (sp, st, st_pool, m9a11, m9a12, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 526; goto L_ret; };
   }
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, st_pool, (*st).lo.p);
   m9_adopt_if (&m9frame, st_pool, (*st).hi.p);
@@ -2976,51 +3045,53 @@ static Regex_Re * Regex_NewRe (m9_pool *pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Regex.NewRe"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Regex_Re * m9ret = NULL;
   Regex_Re * re = NULL; (void) re;
   { __typeof__(re) m9v = (Regex_Re *) m9_pool_alloc (&((*pool)), sizeof (Regex_Re), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 534; goto L_ret; };
     re = m9v;
   }
   { __typeof__(re->op) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), INT64_C(64), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 535; goto L_ret; };
     re->op = m9v;
   }
   { __typeof__(re->x) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), INT64_C(64), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 536; goto L_ret; };
     re->x = m9v;
   }
   { __typeof__(re->y) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), INT64_C(64), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 537; goto L_ret; };
     re->y = m9v;
   }
   re->n = INT64_C(0);
   { __typeof__(re->lo) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), INT64_C(16), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 539; goto L_ret; };
     re->lo = m9v;
   }
   { __typeof__(re->hi) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), INT64_C(16), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 540; goto L_ret; };
     re->hi = m9v;
   }
   re->nr = INT64_C(0);
   { __typeof__(re->clsAt) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), INT64_C(8), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 542; goto L_ret; };
     re->clsAt = m9v;
   }
   { __typeof__(re->clsLen) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), INT64_C(8), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 543; goto L_ret; };
     re->clsLen = m9v;
   }
   re->nc = INT64_C(0);
   re->ngroups = INT64_C(0);
   re->nslots = INT64_C(0);
   { __typeof__(re->names) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), INT64_C(4), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 547; goto L_ret; };
     re->names = m9v;
   }
   { __typeof__(re->nameGroup) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), INT64_C(4), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 548; goto L_ret; };
     re->nameGroup = m9v;
   }
   re->nnames = INT64_C(0);
@@ -3029,6 +3100,7 @@ static Regex_Re * Regex_NewRe (m9_pool *pool, m9_state *err)
   m9ret = re;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -3041,6 +3113,8 @@ static int64_t Regex_AddClass (Regex_Re * *re, m9_pool *re_pool, Regex_Set *st, 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.AddClass"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   m9_sl_I64 nl = {0}; (void) nl;
   m9_sl_I64 nh = {0}; (void) nh;
@@ -3049,43 +3123,43 @@ static int64_t Regex_AddClass (Regex_Re * *re, m9_pool *re_pool, Regex_Set *st, 
   int64_t i = 0; (void) i;
   int64_t cap = 0; (void) cap;
   bool m9t1 = (m9_add_i64 (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nr, (*st).n, err) > (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->lo).len);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 561; goto L_ret; };
   if (m9t1) {
     { __typeof__(cap) m9v = m9_mul_i64 (INT64_C(2), (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->lo).len, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 562; goto L_ret; };
       cap = m9v;
     }
     for (;;) {
       bool m9t2 = (cap < m9_add_i64 (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nr, (*st).n, err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 563; goto L_ret; };
       if (!(m9t2)) break;
       { __typeof__(cap) m9v = m9_mul_i64 (INT64_C(2), cap, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 563; goto L_ret; };
         cap = m9v;
       }
     }
     { __typeof__(nl) m9v = M9_POOL_SL (m9_sl_I64, int64_t, re_pool, cap, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 564; goto L_ret; };
       nl = m9v;
     }
     { __typeof__(nh) m9v = M9_POOL_SL (m9_sl_I64, int64_t, re_pool, cap, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 565; goto L_ret; };
       nh = m9v;
     }
     { __typeof__(i) m9t3to;
     i = INT64_C(0);
     m9t3to = m9_sub_i64 (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nr, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 566; goto L_ret; };
     if (i <= m9t3to) for (;;) {
       { __typeof__((*(int64_t *) m9_at (nl.p, i, nl.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->lo.p, i, ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->lo.len, sizeof (int64_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 566; goto L_ret; };
         (*(int64_t *) m9_at (nl.p, i, nl.len, sizeof (int64_t), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 566; goto L_ret; };
       }
       { __typeof__((*(int64_t *) m9_at (nh.p, i, nh.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->hi.p, i, ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->hi.len, sizeof (int64_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 566; goto L_ret; };
         (*(int64_t *) m9_at (nh.p, i, nh.len, sizeof (int64_t), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 566; goto L_ret; };
       }
       if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
@@ -3095,27 +3169,27 @@ static int64_t Regex_AddClass (Regex_Re * *re, m9_pool *re_pool, Regex_Set *st, 
   }
   if ((({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nc == (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->clsAt).len)) {
     { __typeof__(na) m9v = M9_POOL_SL (m9_sl_I64, int64_t, re_pool, m9_mul_i64 (INT64_C(2), ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nc, err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 571; goto L_ret; };
       na = m9v;
     }
     { __typeof__(nn) m9v = M9_POOL_SL (m9_sl_I64, int64_t, re_pool, m9_mul_i64 (INT64_C(2), ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nc, err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 572; goto L_ret; };
       nn = m9v;
     }
     { __typeof__(i) m9t4to;
     i = INT64_C(0);
     m9t4to = m9_sub_i64 (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nc, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 573; goto L_ret; };
     if (i <= m9t4to) for (;;) {
       { __typeof__((*(int64_t *) m9_at (na.p, i, na.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->clsAt.p, i, ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->clsAt.len, sizeof (int64_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 573; goto L_ret; };
         (*(int64_t *) m9_at (na.p, i, na.len, sizeof (int64_t), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 573; goto L_ret; };
       }
       { __typeof__((*(int64_t *) m9_at (nn.p, i, nn.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->clsLen.p, i, ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->clsLen.len, sizeof (int64_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 573; goto L_ret; };
         (*(int64_t *) m9_at (nn.p, i, nn.len, sizeof (int64_t), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 573; goto L_ret; };
       }
       if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
@@ -3124,40 +3198,41 @@ static int64_t Regex_AddClass (Regex_Re * *re, m9_pool *re_pool, Regex_Set *st, 
     ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->clsLen = nn;
   }
   (*(int64_t *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->clsAt.p, ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nc, ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->clsAt.len, sizeof (int64_t), err)) = ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nr;
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 577; goto L_ret; };
   (*(int64_t *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->clsLen.p, ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nc, ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->clsLen.len, sizeof (int64_t), err)) = (*st).n;
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 578; goto L_ret; };
   { __typeof__(i) m9t5to;
   i = INT64_C(0);
   m9t5to = m9_sub_i64 ((*st).n, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 579; goto L_ret; };
   if (i <= m9t5to) for (;;) {
     { __typeof__((*(int64_t *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->lo.p, m9_add_i64 (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nr, i, err), ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->lo.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at ((*st).lo.p, i, (*st).lo.len, sizeof (int64_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 580; goto L_ret; };
       (*(int64_t *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->lo.p, m9_add_i64 (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nr, i, err), ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->lo.len, sizeof (int64_t), err)) = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 580; goto L_ret; };
     }
     { __typeof__((*(int64_t *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->hi.p, m9_add_i64 (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nr, i, err), ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->hi.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at ((*st).hi.p, i, (*st).hi.len, sizeof (int64_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 581; goto L_ret; };
       (*(int64_t *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->hi.p, m9_add_i64 (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nr, i, err), ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->hi.len, sizeof (int64_t), err)) = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 581; goto L_ret; };
     }
     if ((uint64_t) m9t5to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   { __typeof__(({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nr) m9v = m9_add_i64 (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nr, (*st).n, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 583; goto L_ret; };
     ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nr = m9v;
   }
   { __typeof__(({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nc) m9v = m9_add_i64 (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nc, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 584; goto L_ret; };
     ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nc = m9v;
   }
   err->res = m9res;
   m9ret = m9_sub_i64 (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nc, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 585; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, re_pool, (*re));
   m9_pool_free (&m9frame);
@@ -3170,32 +3245,34 @@ static void Regex_AddName (Regex_Re * *re, m9_pool *re_pool, m9_sl_UTF8 name, in
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.AddName"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_m9_sl_UTF8 nn = {0}; (void) nn;
   m9_sl_I64 ng = {0}; (void) ng;
   int64_t i = 0; (void) i;
   if ((({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nnames == (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->names).len)) {
     { __typeof__(nn) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, re_pool, m9_mul_i64 (INT64_C(2), ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nnames, err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 595; goto L_ret; };
       nn = m9v;
     }
     { __typeof__(ng) m9v = M9_POOL_SL (m9_sl_I64, int64_t, re_pool, m9_mul_i64 (INT64_C(2), ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nnames, err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 596; goto L_ret; };
       ng = m9v;
     }
     { __typeof__(i) m9t1to;
     i = INT64_C(0);
     m9t1to = m9_sub_i64 (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nnames, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 597; goto L_ret; };
     if (i <= m9t1to) for (;;) {
       { __typeof__((*(m9_sl_UTF8 *) m9_at (nn.p, i, nn.len, sizeof (m9_sl_UTF8), err))) m9v = (*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->names.p, i, ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->names.len, sizeof (m9_sl_UTF8), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 597; goto L_ret; };
         (*(m9_sl_UTF8 *) m9_at (nn.p, i, nn.len, sizeof (m9_sl_UTF8), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 597; goto L_ret; };
       }
       { __typeof__((*(int64_t *) m9_at (ng.p, i, ng.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nameGroup.p, i, ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nameGroup.len, sizeof (int64_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 597; goto L_ret; };
         (*(int64_t *) m9_at (ng.p, i, ng.len, sizeof (int64_t), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 597; goto L_ret; };
       }
       if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
@@ -3204,17 +3281,18 @@ static void Regex_AddName (Regex_Re * *re, m9_pool *re_pool, m9_sl_UTF8 name, in
     ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nameGroup = ng;
   }
   { __typeof__((*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->names.p, ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nnames, ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->names.len, sizeof (m9_sl_UTF8), err))) m9v = m9_utf_from_bytes (re_pool, m9_utf_octets (name), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 601; goto L_ret; };
     (*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->names.p, ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nnames, ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->names.len, sizeof (m9_sl_UTF8), err)) = m9v;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 601; goto L_ret; };
   }
   (*(int64_t *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nameGroup.p, ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nnames, ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nameGroup.len, sizeof (int64_t), err)) = group;
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 602; goto L_ret; };
   { __typeof__(({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nnames) m9v = m9_add_i64 (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nnames, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 603; goto L_ret; };
     ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nnames = m9v;
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, re_pool, (*re));
   m9_pool_free (&m9frame);
@@ -3227,6 +3305,8 @@ static int64_t Regex_Emit (Regex_Re * *re, m9_pool *re_pool, int64_t op, int64_t
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.Emit"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   m9_sl_I64 no = {0}; (void) no;
   m9_sl_I64 nx = {0}; (void) nx;
@@ -3236,40 +3316,41 @@ static int64_t Regex_Emit (Regex_Re * *re, m9_pool *re_pool, int64_t op, int64_t
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s4, 55 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s4, 55 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     err->i[0] = INT64_C(0);
     m9_raise (err, &Regex_BadPattern);
+    m9_site (err, 612, m9pn);
     goto L_ret;
   }
   if ((({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n == (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->op).len)) {
     { __typeof__(no) m9v = M9_POOL_SL (m9_sl_I64, int64_t, re_pool, m9_mul_i64 (INT64_C(2), ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 615; goto L_ret; };
       no = m9v;
     }
     { __typeof__(nx) m9v = M9_POOL_SL (m9_sl_I64, int64_t, re_pool, m9_mul_i64 (INT64_C(2), ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 616; goto L_ret; };
       nx = m9v;
     }
     { __typeof__(ny) m9v = M9_POOL_SL (m9_sl_I64, int64_t, re_pool, m9_mul_i64 (INT64_C(2), ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 617; goto L_ret; };
       ny = m9v;
     }
     { __typeof__(i) m9t2to;
     i = INT64_C(0);
     m9t2to = m9_sub_i64 (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 618; goto L_ret; };
     if (i <= m9t2to) for (;;) {
       { __typeof__((*(int64_t *) m9_at (no.p, i, no.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->op.p, i, ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->op.len, sizeof (int64_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 618; goto L_ret; };
         (*(int64_t *) m9_at (no.p, i, no.len, sizeof (int64_t), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 618; goto L_ret; };
       }
       { __typeof__((*(int64_t *) m9_at (nx.p, i, nx.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->x.p, i, ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->x.len, sizeof (int64_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 618; goto L_ret; };
         (*(int64_t *) m9_at (nx.p, i, nx.len, sizeof (int64_t), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 618; goto L_ret; };
       }
       { __typeof__((*(int64_t *) m9_at (ny.p, i, ny.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->y.p, i, ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->y.len, sizeof (int64_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 618; goto L_ret; };
         (*(int64_t *) m9_at (ny.p, i, ny.len, sizeof (int64_t), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 618; goto L_ret; };
       }
       if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
@@ -3279,20 +3360,21 @@ static int64_t Regex_Emit (Regex_Re * *re, m9_pool *re_pool, int64_t op, int64_t
     ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->y = ny;
   }
   (*(int64_t *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->op.p, ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->op.len, sizeof (int64_t), err)) = op;
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 623; goto L_ret; };
   (*(int64_t *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->x.p, ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->x.len, sizeof (int64_t), err)) = x;
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 624; goto L_ret; };
   (*(int64_t *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->y.p, ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->y.len, sizeof (int64_t), err)) = y;
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 625; goto L_ret; };
   { __typeof__(({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n) m9v = m9_add_i64 (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 626; goto L_ret; };
     ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n = m9v;
   }
   err->res = m9res;
   m9ret = m9_sub_i64 (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 627; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, re_pool, (*re));
   m9_pool_free (&m9frame);
@@ -3305,10 +3387,12 @@ static Regex_Node * Regex_Mk (m9_pool *sp, int64_t kind, int64_t v, m9_state *er
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Regex.Mk"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Regex_Node * m9ret = NULL;
   Regex_Node * nd = NULL; (void) nd;
   { __typeof__(nd) m9v = (Regex_Node *) m9_pool_alloc (&((*sp)), sizeof (Regex_Node), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 635; goto L_ret; };
     nd = m9v;
   }
   nd->kind = kind;
@@ -3317,7 +3401,7 @@ static Regex_Node * Regex_Mk (m9_pool *sp, int64_t kind, int64_t v, m9_state *er
   nd->max = INT64_C(0);
   nd->greedy = true;
   { __typeof__(nd->kids) m9v = M9_POOL_SL (m9_sl_Regex_Nodep, Regex_Node *, &((*sp)), INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 641; goto L_ret; };
     nd->kids = m9v;
   }
   nd->nk = INT64_C(0);
@@ -3325,6 +3409,7 @@ static Regex_Node * Regex_Mk (m9_pool *sp, int64_t kind, int64_t v, m9_state *er
   m9ret = nd;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -3337,22 +3422,24 @@ static void Regex_AddKid (m9_pool *sp, Regex_Node * *nd, m9_pool *nd_pool, Regex
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.AddKid"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_Regex_Nodep nk = {0}; (void) nk;
   int64_t i = 0; (void) i;
   if ((({ __auto_type m9g = ((*nd)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nk == (({ __auto_type m9g = ((*nd)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->kids).len)) {
     { __typeof__(nk) m9v = M9_POOL_SL (m9_sl_Regex_Nodep, Regex_Node *, &((*sp)), m9_mul_i64 (INT64_C(2), ({ __auto_type m9g = ((*nd)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nk, err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 652; goto L_ret; };
       nk = m9v;
     }
     { __typeof__(i) m9t1to;
     i = INT64_C(0);
     m9t1to = m9_sub_i64 (({ __auto_type m9g = ((*nd)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nk, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 653; goto L_ret; };
     if (i <= m9t1to) for (;;) {
       { __typeof__((*(Regex_Node * *) m9_at (nk.p, i, nk.len, sizeof (Regex_Node *), err))) m9v = ({ __auto_type m9n = ((*(Regex_Node * *) m9_at (({ __auto_type m9g = ((*nd)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->kids.p, i, ({ __auto_type m9g = ((*nd)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->kids.len, sizeof (Regex_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 653; goto L_ret; };
         (*(Regex_Node * *) m9_at (nk.p, i, nk.len, sizeof (Regex_Node *), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 653; goto L_ret; };
       }
       if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
@@ -3360,12 +3447,13 @@ static void Regex_AddKid (m9_pool *sp, Regex_Node * *nd, m9_pool *nd_pool, Regex
     ({ __auto_type m9g = ((*nd)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->kids = nk;
   }
   (*(Regex_Node * *) m9_at (({ __auto_type m9g = ((*nd)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->kids.p, ({ __auto_type m9g = ((*nd)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nk, ({ __auto_type m9g = ((*nd)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->kids.len, sizeof (Regex_Node *), err)) = kid;
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 656; goto L_ret; };
   { __typeof__(({ __auto_type m9g = ((*nd)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nk) m9v = m9_add_i64 (({ __auto_type m9g = ((*nd)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nk, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 657; goto L_ret; };
     ({ __auto_type m9g = ((*nd)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nk = m9v;
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, nd_pool, (*nd));
   m9_pool_free (&m9frame);
@@ -3378,11 +3466,15 @@ static void Regex_Fail (Regex_Parser *ps, m9_pool *ps_pool, m9_sl_UTF8 msg, int6
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.Fail"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   { __typeof__(msg) m9t1 = msg; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
   err->i[0] = at;
   m9_raise (err, &Regex_BadPattern);
+  m9_site (err, 662, m9pn);
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, ps_pool, (*ps).p.p);
   m9_pool_free (&m9frame);
@@ -3395,12 +3487,15 @@ static bool Regex_AtEnd (Regex_Parser *ps, m9_pool *ps_pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.AtEnd"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   err->res = m9res;
   m9ret = ((*ps).pos >= Text_BLen ((*ps).p, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 667; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, ps_pool, (*ps).p.p);
   m9_pool_free (&m9frame);
@@ -3413,10 +3508,12 @@ static uint32_t Regex_Cur (Regex_Parser *ps, m9_pool *ps_pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.Cur"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   uint32_t m9ret = 0;
   int64_t at = 0; (void) at;
   bool m9t1 = ((*ps).pos >= Text_BLen ((*ps).p, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 679; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
     m9ret = 0u;
@@ -3425,9 +3522,10 @@ static uint32_t Regex_Cur (Regex_Parser *ps, m9_pool *ps_pool, m9_state *err)
   at = (*ps).pos;
   err->res = m9res;
   m9ret = Text_NextCp ((*ps).p, &(at), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 681; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, ps_pool, (*ps).p.p);
   m9_pool_free (&m9frame);
@@ -3440,6 +3538,8 @@ static uint32_t Regex_At (Regex_Parser *ps, m9_pool *ps_pool, int64_t k, m9_stat
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.At"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   uint32_t m9ret = 0;
   int64_t at = 0; (void) at;
   int64_t j = 0; (void) j;
@@ -3451,14 +3551,14 @@ static uint32_t Regex_At (Regex_Parser *ps, m9_pool *ps_pool, int64_t k, m9_stat
   m9t3to = k;
   if (j <= m9t3to) for (;;) {
     bool m9t4 = (at >= Text_BLen ((*ps).p, err));
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 692; goto L_hdl_m9t1; };
     if (m9t4) {
       err->res = m9res;
       m9ret = 0u;
       goto L_ret;
     }
     { __typeof__(c) m9v = Text_NextCp ((*ps).p, &(at), err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 693; goto L_hdl_m9t1; };
       c = m9v;
     }
     if ((uint64_t) m9t3to - (uint64_t) j < (uint64_t) 1) break;
@@ -3479,6 +3579,7 @@ L_hdl_m9t1: ;
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, ps_pool, (*ps).p.p);
   m9_pool_free (&m9frame);
@@ -3491,19 +3592,22 @@ static void Regex_Advance (Regex_Parser *ps, m9_pool *ps_pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.Advance"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t at = 0; (void) at;
   uint32_t c = 0; (void) c;
   bool m9t1 = ((*ps).pos < Text_BLen ((*ps).p, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 706; goto L_ret; };
   if (m9t1) {
     at = (*ps).pos;
     { __typeof__(c) m9v = Text_NextCp ((*ps).p, &(at), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 708; goto L_ret; };
       c = m9v;
     }
     (*ps).pos = at;
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, ps_pool, (*ps).p.p);
   m9_pool_free (&m9frame);
@@ -3516,32 +3620,35 @@ static int64_t Regex_CpBefore (m9_sl_UTF8 s, int64_t pos, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.CpBefore"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   int64_t at = 0; (void) at;
   if ((pos <= INT64_C(0))) {
     err->res = m9res;
     m9ret = m9_neg_i64 (INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 718; goto L_ret; };
     goto L_ret;
   }
   { __typeof__(at) m9v = m9_sub_i64 (pos, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 719; goto L_ret; };
     at = m9v;
   }
   for (;;) {
     bool m9t1 = (((at > INT64_C(0)) && ((int64_t)(Text_BAt (s, at, err)) >= INT64_C(128))) && ((int64_t)(Text_BAt (s, at, err)) < INT64_C(192)));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 721; goto L_ret; };
     if (!(m9t1)) break;
     { __typeof__(at) m9v = m9_sub_i64 (at, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 721; goto L_ret; };
       at = m9v;
     }
   }
   err->res = m9res;
   m9ret = (int64_t)(Text_NextCp (s, &(at), err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 722; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -3553,21 +3660,24 @@ static int64_t Regex_CpAt (m9_sl_UTF8 s, int64_t pos, int64_t *next, m9_state *e
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.CpAt"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   (*next) = pos;
   bool m9t1 = (pos >= Text_BLen (s, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 730; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
     m9ret = m9_neg_i64 (INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 730; goto L_ret; };
     goto L_ret;
   }
   err->res = m9res;
   m9ret = (int64_t)(Text_NextCp (s, next, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 731; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -3579,11 +3689,14 @@ static bool Regex_IsDigit (uint32_t c, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.IsDigit"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   err->res = m9res;
   m9ret = ((c >= 48u) && (c <= 57u));
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -3595,11 +3708,14 @@ static bool Regex_IsOct (uint32_t c, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.IsOct"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   err->res = m9res;
   m9ret = ((c >= 48u) && (c <= 55u));
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -3611,30 +3727,33 @@ static int64_t Regex_HexVal (uint32_t c, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.HexVal"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   if (((c >= 48u) && (c <= 57u))) {
     err->res = m9res;
     m9ret = m9_sub_i64 ((int64_t)(c), INT64_C(48), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 747; goto L_ret; };
     goto L_ret;
   }
   if (((c >= 97u) && (c <= 102u))) {
     err->res = m9res;
     m9ret = m9_sub_i64 ((int64_t)(c), INT64_C(87), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 748; goto L_ret; };
     goto L_ret;
   }
   if (((c >= 65u) && (c <= 70u))) {
     err->res = m9res;
     m9ret = m9_sub_i64 ((int64_t)(c), INT64_C(55), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 749; goto L_ret; };
     goto L_ret;
   }
   err->res = m9res;
   m9ret = m9_neg_i64 (INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 750; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -3646,11 +3765,14 @@ static bool Regex_IsAsciiLetter (uint32_t c, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.IsAsciiLetter"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   err->res = m9res;
   m9ret = ((((c >= 97u) && (c <= 122u))) || (((c >= 65u) && (c <= 90u))));
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -3662,6 +3784,8 @@ static int64_t Regex_Hex (Regex_Parser *ps, m9_pool *ps_pool, int64_t n, int64_t
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.Hex"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   int64_t i = 0; (void) i;
   int64_t v = 0; (void) v;
@@ -3672,37 +3796,38 @@ static int64_t Regex_Hex (Regex_Parser *ps, m9_pool *ps_pool, int64_t n, int64_t
   m9t1to = n;
   if (i <= m9t1to) for (;;) {
     { __typeof__(Regex_Cur (ps, ps_pool, err)) m9a13 = Regex_Cur (ps, ps_pool, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 764; goto L_ret; };
     { __typeof__(d) m9v = Regex_HexVal (m9a13, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 764; goto L_ret; };
       d = m9v;
     }
     }
     if ((d < INT64_C(0))) {
       Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s5, 17 }), at, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 765; goto L_ret; };
     }
     { __typeof__(v) m9v = m9_add_i64 (m9_mul_i64 (v, INT64_C(16), err), d, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 766; goto L_ret; };
       v = m9v;
     }
     Regex_Advance (ps, ps_pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 767; goto L_ret; };
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   if ((v > Regex_MaxCode)) {
     Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s6, 25 }), at, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 769; goto L_ret; };
   }
   if (((v >= INT64_C(0xD800)) && (v <= INT64_C(0xDFFF)))) {
     Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s7, 61 }), at, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 771; goto L_ret; };
   }
   err->res = m9res;
   m9ret = v;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, ps_pool, (*ps).p.p);
   m9_pool_free (&m9frame);
@@ -3715,6 +3840,8 @@ static bool Regex_CharEscape (Regex_Parser *ps, m9_pool *ps_pool, uint32_t c, in
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.CharEscape"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   int64_t v = 0; (void) v;
   if ((c == 97u)) {
@@ -3737,50 +3864,50 @@ static bool Regex_CharEscape (Regex_Parser *ps, m9_pool *ps_pool, uint32_t c, in
   } else {
     if ((c == 120u)) {
       { __typeof__((*code)) m9v = Regex_Hex (ps, ps_pool, INT64_C(2), at, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 789; goto L_ret; };
         (*code) = m9v;
       }
   } else {
     if ((c == 117u)) {
       { __typeof__((*code)) m9v = Regex_Hex (ps, ps_pool, INT64_C(4), at, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 790; goto L_ret; };
         (*code) = m9v;
       }
   } else {
     if ((c == 85u)) {
       { __typeof__((*code)) m9v = Regex_Hex (ps, ps_pool, INT64_C(8), at, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 791; goto L_ret; };
         (*code) = m9v;
       }
   } else {
     if ((c == 78u)) {
       Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s8, 56 }), at, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 793; goto L_ret; };
   } else {
     if ((c == 48u)) {
       v = INT64_C(0);
       { __typeof__(Regex_Cur (ps, ps_pool, err)) m9a14 = Regex_Cur (ps, ps_pool, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 797; goto L_ret; };
       bool m9t1 = Regex_IsOct (m9a14, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 797; goto L_ret; };
       if (m9t1) {
         { __typeof__(v) m9v = m9_sub_i64 ((int64_t)(Regex_Cur (ps, ps_pool, err)), INT64_C(48), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 798; goto L_ret; };
           v = m9v;
         }
         Regex_Advance (ps, ps_pool, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 799; goto L_ret; };
         { __typeof__(Regex_Cur (ps, ps_pool, err)) m9a15 = Regex_Cur (ps, ps_pool, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 800; goto L_ret; };
         bool m9t2 = Regex_IsOct (m9a15, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 800; goto L_ret; };
         if (m9t2) {
           { __typeof__(v) m9v = m9_sub_i64 (m9_add_i64 (m9_mul_i64 (v, INT64_C(8), err), (int64_t)(Regex_Cur (ps, ps_pool, err)), err), INT64_C(48), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 801; goto L_ret; };
             v = m9v;
           }
           Regex_Advance (ps, ps_pool, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 802; goto L_ret; };
         } }
       } }
       (*code) = v;
@@ -3793,6 +3920,7 @@ static bool Regex_CharEscape (Regex_Parser *ps, m9_pool *ps_pool, uint32_t c, in
   m9ret = true;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, ps_pool, (*ps).p.p);
   m9_pool_free (&m9frame);
@@ -3805,30 +3933,33 @@ static Regex_Node * Regex_CharNode (m9_pool *sp, Regex_Parser *ps, m9_pool *ps_p
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Regex.CharNode"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Regex_Node * m9ret = NULL;
   Regex_Set st = {0}; (void) st;
   if (((*ps).ci && (((((code >= INT64_C(65)) && (code <= INT64_C(90)))) || (((code >= INT64_C(97)) && (code <= INT64_C(122)))))))) {
     Regex_SetNew (sp, &(st), err->res, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 819; goto L_ret; };
     Regex_SetAdd (sp, &(st), err->res, code, code, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 820; goto L_ret; };
     Regex_SetCaseless (sp, &(st), err->res, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 821; goto L_ret; };
     Regex_SetNormal (&(st), err->res, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 822; goto L_ret; };
     err->res = m9res;
     { __typeof__(Regex_AddClass (re, re_pool, &(st), err)) m9a16 = Regex_AddClass (re, re_pool, &(st), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 823; goto L_ret; };
     m9ret = Regex_Mk (sp, Regex_NClass, m9a16, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 823; goto L_ret; };
     }
     goto L_ret;
   }
   err->res = m9res;
   m9ret = Regex_Mk (sp, Regex_NChar, code, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 825; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_adopt_if (&m9frame, ps_pool, (*ps).p.p);
@@ -3843,6 +3974,8 @@ static Regex_Node * Regex_Escape (m9_pool *sp, Regex_Parser *ps, m9_pool *ps_poo
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Regex.Escape"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Regex_Node * m9ret = NULL;
   int64_t at = 0; (void) at;
   int64_t code = 0; (void) code;
@@ -3851,104 +3984,105 @@ static Regex_Node * Regex_Escape (m9_pool *sp, Regex_Parser *ps, m9_pool *ps_poo
   Regex_Set st = {0}; (void) st;
   at = (*ps).pos;
   Regex_Advance (ps, ps_pool, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 837; goto L_ret; };
   bool m9t1 = Regex_AtEnd (ps, ps_pool, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 838; goto L_ret; };
   if (m9t1) {
     Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s9, 27 }), at, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 838; goto L_ret; };
   }
   { __typeof__(c) m9v = Regex_Cur (ps, ps_pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 839; goto L_ret; };
     c = m9v;
   }
   Regex_Advance (ps, ps_pool, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 840; goto L_ret; };
   if ((c == 65u)) {
     err->res = m9res;
     m9ret = Regex_Mk (sp, Regex_NAssert, Regex_ABot, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 841; goto L_ret; };
     goto L_ret;
   }
   if ((c == 90u)) {
     err->res = m9res;
     m9ret = Regex_Mk (sp, Regex_NAssert, Regex_AEot, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 842; goto L_ret; };
     goto L_ret;
   }
   if ((c == 98u)) {
     err->res = m9res;
     m9ret = Regex_Mk (sp, Regex_NAssert, Regex_AWord, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 843; goto L_ret; };
     goto L_ret;
   }
   if ((c == 66u)) {
     err->res = m9res;
     m9ret = Regex_Mk (sp, Regex_NAssert, Regex_ANotWord, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 844; goto L_ret; };
     goto L_ret;
   }
   if (((((((c == 100u) || (c == 68u)) || (c == 115u)) || (c == 83u)) || (c == 119u)) || (c == 87u))) {
     Regex_SetNew (sp, &(st), err->res, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 846; goto L_ret; };
     Regex_SetAddEscape (sp, &(st), err->res, c, (*ps).uni, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 847; goto L_ret; };
     Regex_SetNormal (&(st), err->res, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 848; goto L_ret; };
     err->res = m9res;
     { __typeof__(Regex_AddClass (re, re_pool, &(st), err)) m9a17 = Regex_AddClass (re, re_pool, &(st), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 849; goto L_ret; };
     m9ret = Regex_Mk (sp, Regex_NClass, m9a17, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 849; goto L_ret; };
     }
     goto L_ret;
   }
   bool m9t2 = Regex_CharEscape (ps, ps_pool, c, at, &(code), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 851; goto L_ret; };
   if (m9t2) {
     err->res = m9res;
     m9ret = Regex_CharNode (sp, ps, ps_pool, re, re_pool, code, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 851; goto L_ret; };
     goto L_ret;
   }
   if (((c >= 49u) && (c <= 57u))) {
-    bool m9t5 = ({ bool m9t4 = ({ bool m9t3 = Regex_IsOct (c, err); if (m9t3) { { __typeof__(Regex_Cur (ps, ps_pool, err)) m9a18 = Regex_Cur (ps, ps_pool, err);   if (err->exc) goto L_ret; m9t3 = (Regex_IsOct (m9a18, err)); } } m9t3; }); if (m9t4) { { __typeof__(Regex_At (ps, ps_pool, INT64_C(1), err)) m9a19 = Regex_At (ps, ps_pool, INT64_C(1), err);   if (err->exc) goto L_ret; m9t4 = (Regex_IsOct (m9a19, err)); } } m9t4; });
-    if (err->exc) goto L_ret;
+    bool m9t5 = ({ bool m9t4 = ({ bool m9t3 = Regex_IsOct (c, err); if (m9t3) { { __typeof__(Regex_Cur (ps, ps_pool, err)) m9a18 = Regex_Cur (ps, ps_pool, err);   if (err->exc) { m9ln = 854; goto L_ret; }; m9t3 = (Regex_IsOct (m9a18, err)); } } m9t3; }); if (m9t4) { { __typeof__(Regex_At (ps, ps_pool, INT64_C(1), err)) m9a19 = Regex_At (ps, ps_pool, INT64_C(1), err);   if (err->exc) { m9ln = 854; goto L_ret; }; m9t4 = (Regex_IsOct (m9a19, err)); } } m9t4; });
+    if (err->exc) { m9ln = 854; goto L_ret; };
     if (m9t5) {
       { __typeof__(v) m9v = m9_sub_i64 (m9_add_i64 (m9_add_i64 (m9_mul_i64 ((m9_sub_i64 ((int64_t)(c), INT64_C(48), err)), INT64_C(64), err), m9_mul_i64 ((m9_sub_i64 ((int64_t)(Regex_Cur (ps, ps_pool, err)), INT64_C(48), err)), INT64_C(8), err), err), (int64_t)(Regex_At (ps, ps_pool, INT64_C(1), err)), err), INT64_C(48), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 855; goto L_ret; };
         v = m9v;
       }
       Regex_Advance (ps, ps_pool, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 856; goto L_ret; };
       Regex_Advance (ps, ps_pool, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 856; goto L_ret; };
       if ((v > INT64_C(255))) {
         Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s10, 43 }), at, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 857; goto L_ret; };
       }
       err->res = m9res;
       m9ret = Regex_CharNode (sp, ps, ps_pool, re, re_pool, v, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 858; goto L_ret; };
       goto L_ret;
     }
     Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s11, 69 }), at, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 860; goto L_ret; };
   }
   bool m9t6 = Regex_IsAsciiLetter (c, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 862; goto L_ret; };
   if (m9t6) {
     { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s12, 12 }), m9_utf_of_char (err->res, c, err), err)) m9a20 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s12, 12 }), m9_utf_of_char (err->res, c, err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 862; goto L_ret; };
     Regex_Fail (ps, ps_pool, m9a20, at, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 862; goto L_ret; };
     }
   }
   err->res = m9res;
   m9ret = Regex_CharNode (sp, ps, ps_pool, re, re_pool, (int64_t)(c), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 863; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_adopt_if (&m9frame, ps_pool, (*ps).p.p);
@@ -3963,16 +4097,18 @@ static bool Regex_ClassItem (m9_pool *sp, Regex_Parser *ps, m9_pool *ps_pool, Re
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.ClassItem"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   int64_t at = 0; (void) at;
   uint32_t c = 0; (void) c;
   at = (*ps).pos;
   { __typeof__(c) m9v = Regex_Cur (ps, ps_pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 876; goto L_ret; };
     c = m9v;
   }
   Regex_Advance (ps, ps_pool, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 877; goto L_ret; };
   if ((c != 92u)) {
     (*code) = (int64_t)(c);
     err->res = m9res;
@@ -3980,22 +4116,22 @@ static bool Regex_ClassItem (m9_pool *sp, Regex_Parser *ps, m9_pool *ps_pool, Re
     goto L_ret;
   }
   bool m9t1 = Regex_AtEnd (ps, ps_pool, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 879; goto L_ret; };
   if (m9t1) {
     Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s13, 27 }), at, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 879; goto L_ret; };
   }
   { __typeof__(c) m9v = Regex_Cur (ps, ps_pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 880; goto L_ret; };
     c = m9v;
   }
   Regex_Advance (ps, ps_pool, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 881; goto L_ret; };
   if (((((((c == 100u) || (c == 68u)) || (c == 115u)) || (c == 83u)) || (c == 119u)) || (c == 87u))) {
     Regex_SetNew (sp, one, one_pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 883; goto L_ret; };
     Regex_SetAddEscape (sp, one, one_pool, c, (*ps).uni, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 884; goto L_ret; };
     err->res = m9res;
     m9ret = false;
     goto L_ret;
@@ -4008,55 +4144,55 @@ static bool Regex_ClassItem (m9_pool *sp, Regex_Parser *ps, m9_pool *ps_pool, Re
   }
   if (((c >= 49u) && (c <= 55u))) {
     { __typeof__((*code)) m9v = m9_sub_i64 ((int64_t)(c), INT64_C(48), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 890; goto L_ret; };
       (*code) = m9v;
     }
     { __typeof__(Regex_Cur (ps, ps_pool, err)) m9a21 = Regex_Cur (ps, ps_pool, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 891; goto L_ret; };
     bool m9t2 = Regex_IsOct (m9a21, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 891; goto L_ret; };
     if (m9t2) {
       { __typeof__((*code)) m9v = m9_sub_i64 (m9_add_i64 (m9_mul_i64 ((*code), INT64_C(8), err), (int64_t)(Regex_Cur (ps, ps_pool, err)), err), INT64_C(48), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 892; goto L_ret; };
         (*code) = m9v;
       }
       Regex_Advance (ps, ps_pool, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 893; goto L_ret; };
       { __typeof__(Regex_Cur (ps, ps_pool, err)) m9a22 = Regex_Cur (ps, ps_pool, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 894; goto L_ret; };
       bool m9t3 = Regex_IsOct (m9a22, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 894; goto L_ret; };
       if (m9t3) {
         { __typeof__((*code)) m9v = m9_sub_i64 (m9_add_i64 (m9_mul_i64 ((*code), INT64_C(8), err), (int64_t)(Regex_Cur (ps, ps_pool, err)), err), INT64_C(48), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 895; goto L_ret; };
           (*code) = m9v;
         }
         Regex_Advance (ps, ps_pool, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 896; goto L_ret; };
       } }
     } }
     if (((*code) > INT64_C(255))) {
       Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s14, 43 }), at, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 899; goto L_ret; };
     }
     err->res = m9res;
     m9ret = true;
     goto L_ret;
   }
   bool m9t4 = Regex_CharEscape (ps, ps_pool, c, at, code, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 902; goto L_ret; };
   if (m9t4) {
     err->res = m9res;
     m9ret = true;
     goto L_ret;
   }
   bool m9t5 = (Regex_IsAsciiLetter (c, err) || Regex_IsDigit (c, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 903; goto L_ret; };
   if (m9t5) {
     { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s15, 12 }), m9_utf_of_char (err->res, c, err), err)) m9a23 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s15, 12 }), m9_utf_of_char (err->res, c, err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 903; goto L_ret; };
     Regex_Fail (ps, ps_pool, m9a23, at, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 903; goto L_ret; };
     }
   }
   (*code) = (int64_t)(c);
@@ -4064,6 +4200,7 @@ static bool Regex_ClassItem (m9_pool *sp, Regex_Parser *ps, m9_pool *ps_pool, Re
   m9ret = true;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, ps_pool, (*ps).p.p);
   m9_adopt_if (&m9frame, one_pool, (*one).lo.p);
@@ -4078,6 +4215,8 @@ static Regex_Node * Regex_ParseClass (m9_pool *sp, Regex_Parser *ps, m9_pool *ps
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Regex.ParseClass"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Regex_Node * m9ret = NULL;
   Regex_Set st = {0}; (void) st;
   Regex_Set one = {0}; (void) one;
@@ -4090,115 +4229,116 @@ static Regex_Node * Regex_ParseClass (m9_pool *sp, Regex_Parser *ps, m9_pool *ps
   bool single2 = false; (void) single2;
   at = (*ps).pos;
   Regex_Advance (ps, ps_pool, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 918; goto L_ret; };
   neg = false;
   bool m9t1 = (Regex_Cur (ps, ps_pool, err) == 94u);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 920; goto L_ret; };
   if (m9t1) {
     neg = true;
     Regex_Advance (ps, ps_pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 920; goto L_ret; };
   }
   Regex_SetNew (sp, &(st), err->res, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 921; goto L_ret; };
   for (;;) {
     bool m9t2 = Regex_AtEnd (ps, ps_pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 923; goto L_ret; };
     if (m9t2) {
       Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s16, 26 }), at, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 923; goto L_ret; };
     }
     bool m9t3 = ((Regex_Cur (ps, ps_pool, err) == 93u) && (st.n > INT64_C(0)));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 925; goto L_ret; };
     if (m9t3) {
       Regex_Advance (ps, ps_pool, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 925; goto L_ret; };
       break;
     }
     { __typeof__(single1) m9v = Regex_ClassItem (sp, ps, ps_pool, &(one), err->res, &(a), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 926; goto L_ret; };
       single1 = m9v;
     }
     bool m9t4 = (Regex_Cur (ps, ps_pool, err) == 45u);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 927; goto L_ret; };
     if (m9t4) {
       Regex_Advance (ps, ps_pool, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 928; goto L_ret; };
       bool m9t5 = Regex_AtEnd (ps, ps_pool, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 929; goto L_ret; };
       if (m9t5) {
         Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s17, 26 }), at, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 929; goto L_ret; };
       }
       bool m9t6 = (Regex_Cur (ps, ps_pool, err) == 93u);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 930; goto L_ret; };
       if (m9t6) {
         if (single1) {
           Regex_SetAdd (sp, &(st), err->res, a, a, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 931; goto L_ret; };
         } else {
           { __typeof__(({ __auto_type m9t7 = one.lo; int64_t m9t7a = INT64_C(0), m9t7n = one.n; int64_t m9t7o = m9_chk_slice (m9t7a, m9t7n, m9t7.len, err); (__typeof__(m9t7)){ m9t7.p + m9t7o, err->exc ? 0 : m9t7n }; })) m9a24 = ({ __auto_type m9t7 = one.lo; int64_t m9t7a = INT64_C(0), m9t7n = one.n; int64_t m9t7o = m9_chk_slice (m9t7a, m9t7n, m9t7.len, err); (__typeof__(m9t7)){ m9t7.p + m9t7o, err->exc ? 0 : m9t7n }; });
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 932; goto L_ret; };
           { __typeof__(({ __auto_type m9t8 = one.hi; int64_t m9t8a = INT64_C(0), m9t8n = one.n; int64_t m9t8o = m9_chk_slice (m9t8a, m9t8n, m9t8.len, err); (__typeof__(m9t8)){ m9t8.p + m9t8o, err->exc ? 0 : m9t8n }; })) m9a25 = ({ __auto_type m9t8 = one.hi; int64_t m9t8a = INT64_C(0), m9t8n = one.n; int64_t m9t8o = m9_chk_slice (m9t8a, m9t8n, m9t8.len, err); (__typeof__(m9t8)){ m9t8.p + m9t8o, err->exc ? 0 : m9t8n }; });
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 932; goto L_ret; };
           Regex_SetAddTable (sp, &(st), err->res, m9a24, m9a25, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 932; goto L_ret; };
           }
           }
         }
         Regex_SetAdd (sp, &(st), err->res, INT64_C(45), INT64_C(45), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 934; goto L_ret; };
         Regex_Advance (ps, ps_pool, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 935; goto L_ret; };
         break;
       }
       { __typeof__(single2) m9v = Regex_ClassItem (sp, ps, ps_pool, &(two), err->res, &(b), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 938; goto L_ret; };
         single2 = m9v;
       }
       if (((!single1) || (!single2))) {
         Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s18, 19 }), at, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 939; goto L_ret; };
       }
       if ((b < a)) {
         Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s19, 19 }), at, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 940; goto L_ret; };
       }
       Regex_SetAdd (sp, &(st), err->res, a, b, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 941; goto L_ret; };
     } else {
       if (single1) {
         Regex_SetAdd (sp, &(st), err->res, a, a, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 943; goto L_ret; };
     } else {
       { __typeof__(({ __auto_type m9t9 = one.lo; int64_t m9t9a = INT64_C(0), m9t9n = one.n; int64_t m9t9o = m9_chk_slice (m9t9a, m9t9n, m9t9.len, err); (__typeof__(m9t9)){ m9t9.p + m9t9o, err->exc ? 0 : m9t9n }; })) m9a26 = ({ __auto_type m9t9 = one.lo; int64_t m9t9a = INT64_C(0), m9t9n = one.n; int64_t m9t9o = m9_chk_slice (m9t9a, m9t9n, m9t9.len, err); (__typeof__(m9t9)){ m9t9.p + m9t9o, err->exc ? 0 : m9t9n }; });
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 945; goto L_ret; };
       { __typeof__(({ __auto_type m9t10 = one.hi; int64_t m9t10a = INT64_C(0), m9t10n = one.n; int64_t m9t10o = m9_chk_slice (m9t10a, m9t10n, m9t10.len, err); (__typeof__(m9t10)){ m9t10.p + m9t10o, err->exc ? 0 : m9t10n }; })) m9a27 = ({ __auto_type m9t10 = one.hi; int64_t m9t10a = INT64_C(0), m9t10n = one.n; int64_t m9t10o = m9_chk_slice (m9t10a, m9t10n, m9t10.len, err); (__typeof__(m9t10)){ m9t10.p + m9t10o, err->exc ? 0 : m9t10n }; });
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 945; goto L_ret; };
       Regex_SetAddTable (sp, &(st), err->res, m9a26, m9a27, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 945; goto L_ret; };
       }
       }
     } }
   }
   if ((*ps).ci) {
     Regex_SetCaseless (sp, &(st), err->res, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 948; goto L_ret; };
   }
   Regex_SetNormal (&(st), err->res, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 949; goto L_ret; };
   if (neg) {
     Regex_SetNegate (sp, &(st), err->res, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 950; goto L_ret; };
   }
   err->res = m9res;
   { __typeof__(Regex_AddClass (re, re_pool, &(st), err)) m9a28 = Regex_AddClass (re, re_pool, &(st), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 951; goto L_ret; };
   m9ret = Regex_Mk (sp, Regex_NClass, m9a28, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 951; goto L_ret; };
   }
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_adopt_if (&m9frame, ps_pool, (*ps).p.p);
@@ -4213,10 +4353,12 @@ static void Regex_Flags (Regex_Parser *ps, m9_pool *ps_pool, uint32_t c, bool on
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.Flags"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   if ((c == 105u)) {
     if ((on && (*ps).uni)) {
       Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s20, 75 }), at, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 960; goto L_ret; };
     }
     (*ps).ci = on;
   } else {
@@ -4229,22 +4371,23 @@ static void Regex_Flags (Regex_Parser *ps, m9_pool *ps_pool, uint32_t c, bool on
     if (((c == 97u) || (c == 117u))) {
       if ((scoped || (!on))) {
         Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s21, 61 }), at, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 966; goto L_ret; };
       }
       (*ps).uni = (c == 117u);
       if (((*ps).uni && (*ps).ci)) {
         Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s22, 75 }), at, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 969; goto L_ret; };
       }
   } else {
     if ((c == 120u)) {
       Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s23, 59 }), at, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 972; goto L_ret; };
   } else {
     Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s24, 12 }), at, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 974; goto L_ret; };
   } } } } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, ps_pool, (*ps).p.p);
   m9_pool_free (&m9frame);
@@ -4257,51 +4400,54 @@ static m9_sl_UTF8 Regex_GroupName (Regex_Parser *ps, m9_pool *ps_pool, int64_t a
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.GroupName"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   m9_sl_UTF8 s = {0}; (void) s;
   uint32_t c = 0; (void) c;
   s = ((m9_sl_UTF8){ NULL, 0 });
   for (;;) {
     bool m9t1 = Regex_AtEnd (ps, ps_pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 987; goto L_ret; };
     if (m9t1) {
       Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s25, 28 }), at, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 987; goto L_ret; };
     }
     { __typeof__(c) m9v = Regex_Cur (ps, ps_pool, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 988; goto L_ret; };
       c = m9v;
     }
     Regex_Advance (ps, ps_pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 989; goto L_ret; };
     if ((c == 62u)) {
       break;
     }
     bool m9t2 = (!(((Regex_IsAsciiLetter (c, err) || (c == 95u)) || ((Regex_IsDigit (c, err) && (Text_BLen (s, err) > INT64_C(0)))))));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 991; goto L_ret; };
     if (m9t2) {
       if (((int64_t)(c) > INT64_C(127))) {
         Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s26, 54 }), at, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 993; goto L_ret; };
       }
       Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s27, 27 }), at, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 995; goto L_ret; };
     }
     { __typeof__(s) m9v = m9_utf_cat (err->res, s, m9_utf_of_char (err->res, c, err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 997; goto L_ret; };
       s = m9v;
     }
   }
   bool m9t3 = (Text_BLen (s, err) == INT64_C(0));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 999; goto L_ret; };
   if (m9t3) {
     Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s28, 18 }), at, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 999; goto L_ret; };
   }
   err->res = m9res;
   m9ret = s;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_adopt_if (&m9frame, ps_pool, (*ps).p.p);
@@ -4315,6 +4461,8 @@ static Regex_Node * Regex_ParseGroup (m9_pool *sp, Regex_Parser *ps, m9_pool *ps
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Regex.ParseGroup"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Regex_Node * m9ret = NULL;
   int64_t at = 0; (void) at;
   int64_t k = 0; (void) k;
@@ -4327,164 +4475,164 @@ static Regex_Node * Regex_ParseGroup (m9_pool *sp, Regex_Parser *ps, m9_pool *ps
   bool off = false; (void) off;
   at = (*ps).pos;
   Regex_Advance (ps, ps_pool, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1016; goto L_ret; };
   (*some) = true;
   { __typeof__(k) m9v = m9_neg_i64 (INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1018; goto L_ret; };
     k = m9v;
   }
   bool m9t1 = (Regex_Cur (ps, ps_pool, err) == 63u);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1019; goto L_ret; };
   if (m9t1) {
     Regex_Advance (ps, ps_pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1020; goto L_ret; };
     { __typeof__(c) m9v = Regex_Cur (ps, ps_pool, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1021; goto L_ret; };
       c = m9v;
     }
     if ((c == 58u)) {
       Regex_Advance (ps, ps_pool, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1023; goto L_ret; };
     } else {
       bool m9t2 = ((c == 80u) && (Regex_At (ps, ps_pool, INT64_C(1), err) == 60u));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1023; goto L_ret; };
       if (m9t2) {
         Regex_Advance (ps, ps_pool, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1025; goto L_ret; };
         Regex_Advance (ps, ps_pool, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1025; goto L_ret; };
         { __typeof__(name) m9v = Regex_GroupName (ps, ps_pool, at, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1026; goto L_ret; };
           name = m9v;
         }
         { __typeof__(i) m9t3to;
         i = INT64_C(0);
         m9t3to = m9_sub_i64 (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nnames, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1027; goto L_ret; };
         if (i <= m9t3to) for (;;) {
           { __typeof__((*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->names.p, i, ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->names.len, sizeof (m9_sl_UTF8), err))) m9a29 = (*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->names.p, i, ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->names.len, sizeof (m9_sl_UTF8), err));
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1028; goto L_ret; };
           bool m9t4 = Text_EqUtf (m9a29, name, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1028; goto L_ret; };
           if (m9t4) {
             Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s29, 26 }), at, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1028; goto L_ret; };
           } }
           if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
           i += 1;
         } }
         { __typeof__(({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ngroups) m9v = m9_add_i64 (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ngroups, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1030; goto L_ret; };
           ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ngroups = m9v;
         }
         k = ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ngroups;
         Regex_AddName (re, re_pool, name, k, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1032; goto L_ret; };
     } else {
       bool m9t5 = ((c == 80u) && (Regex_At (ps, ps_pool, INT64_C(1), err) == 61u));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1032; goto L_ret; };
       if (m9t5) {
         Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s30, 69 }), at, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1034; goto L_ret; };
     } else {
       if (((c == 61u) || (c == 33u))) {
         Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s31, 65 }), at, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1036; goto L_ret; };
     } else {
       bool m9t6 = ((c == 60u) && (((Regex_At (ps, ps_pool, INT64_C(1), err) == 61u) || (Regex_At (ps, ps_pool, INT64_C(1), err) == 33u))));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1036; goto L_ret; };
       if (m9t6) {
         Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s32, 66 }), at, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1038; goto L_ret; };
     } else {
       if ((c == 62u)) {
         Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s33, 69 }), at, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1040; goto L_ret; };
     } else {
       if ((c == 40u)) {
         Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s34, 73 }), at, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1042; goto L_ret; };
     } else {
       if ((c == 35u)) {
         for (;;) {
           bool m9t7 = ((!Regex_AtEnd (ps, ps_pool, err)) && (Regex_Cur (ps, ps_pool, err) != 41u));
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1044; goto L_ret; };
           if (!(m9t7)) break;
           Regex_Advance (ps, ps_pool, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1044; goto L_ret; };
         }
         bool m9t8 = Regex_AtEnd (ps, ps_pool, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1045; goto L_ret; };
         if (m9t8) {
           Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s35, 31 }), at, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1045; goto L_ret; };
         }
         Regex_Advance (ps, ps_pool, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1046; goto L_ret; };
         (*some) = false;
         err->res = m9res;
         m9ret = Regex_Mk (sp, Regex_NEmpty, INT64_C(0), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1048; goto L_ret; };
         goto L_ret;
     } else {
       bool m9t9 = (Regex_IsAsciiLetter (c, err) || (c == 45u));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1048; goto L_ret; };
       if (m9t9) {
         save = (*ps);
         off = false;
         for (;;) {
           bool m9t10 = Regex_AtEnd (ps, ps_pool, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1056; goto L_ret; };
           if (m9t10) {
             Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s36, 17 }), at, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1056; goto L_ret; };
           }
           { __typeof__(c) m9v = Regex_Cur (ps, ps_pool, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1057; goto L_ret; };
             c = m9v;
           }
           Regex_Advance (ps, ps_pool, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1058; goto L_ret; };
           if (((c == 41u) || (c == 58u))) {
             break;
           }
           if ((c == 45u)) {
             if (off) {
               Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s37, 12 }), at, err);
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 1061; goto L_ret; };
             }
             off = true;
           } else {
             bool m9t11 = (!Regex_IsAsciiLetter (c, err));
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1062; goto L_ret; };
             if (m9t11) {
               Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s38, 12 }), at, err);
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 1064; goto L_ret; };
           } }
         }
         if (((c == 41u) && off)) {
           Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s39, 9 }), at, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1067; goto L_ret; };
         }
         if (((c == 41u) && (!first))) {
           Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s40, 47 }), at, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1069; goto L_ret; };
         }
         off = false;
         { __typeof__(i) m9t12to;
         i = m9_add_i64 (at, INT64_C(2), err);
         m9t12to = m9_sub_i64 ((*ps).pos, INT64_C(2), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1072; goto L_ret; };
         if (i <= m9t12to) for (;;) {
           bool m9t13 = Text_BIs ((*ps).p, i, 45u, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1073; goto L_ret; };
           if (m9t13) {
             off = true;
           } else {
             { __typeof__(Text_BChar ((*ps).p, i, err)) m9a30 = Text_BChar ((*ps).p, i, err);
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 1074; goto L_ret; };
             Regex_Flags (ps, ps_pool, m9a30, (!off), at, (c == 58u), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1074; goto L_ret; };
             }
           }
           if ((uint64_t) m9t12to - (uint64_t) i < (uint64_t) 1) break;
@@ -4494,73 +4642,74 @@ static Regex_Node * Regex_ParseGroup (m9_pool *sp, Regex_Parser *ps, m9_pool *ps
           (*some) = false;
           err->res = m9res;
           m9ret = Regex_Mk (sp, Regex_NEmpty, INT64_C(0), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1079; goto L_ret; };
           goto L_ret;
         }
         { __typeof__(body) m9v = Regex_Alt (sp, ps, ps_pool, re, re_pool, false, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1081; goto L_ret; };
           body = m9v;
         }
         bool m9t14 = (Regex_Cur (ps, ps_pool, err) != 41u);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1082; goto L_ret; };
         if (m9t14) {
           Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s41, 34 }), at, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1082; goto L_ret; };
         }
         Regex_Advance (ps, ps_pool, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1083; goto L_ret; };
         (*ps).ci = save.ci;
         (*ps).ml = save.ml;
         (*ps).da = save.da;
         (*ps).uni = save.uni;
         { __typeof__(m9_neg_i64 (INT64_C(1), err)) m9a31 = m9_neg_i64 (INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1085; goto L_ret; };
         { __typeof__(g) m9v = Regex_Mk (sp, Regex_NGroup, m9a31, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1085; goto L_ret; };
           g = m9v;
         }
         }
         Regex_AddKid (sp, &(g), &((*sp)), body, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1086; goto L_ret; };
         err->res = m9res;
         m9ret = g;
         goto L_ret;
     } else {
       { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s42, 19 }), m9_utf_of_char (err->res, c, err), err)) m9a32 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s42, 19 }), m9_utf_of_char (err->res, c, err), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1089; goto L_ret; };
       Regex_Fail (ps, ps_pool, m9a32, at, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1089; goto L_ret; };
       }
     } } } } } } } } }
   } else {
     { __typeof__(({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ngroups) m9v = m9_add_i64 (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ngroups, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1092; goto L_ret; };
       ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ngroups = m9v;
     }
     k = ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ngroups;
   }
   { __typeof__(body) m9v = Regex_Alt (sp, ps, ps_pool, re, re_pool, false, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1095; goto L_ret; };
     body = m9v;
   }
   bool m9t15 = ((Regex_Cur (ps, ps_pool, err) != 41u) || Regex_AtEnd (ps, ps_pool, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1096; goto L_ret; };
   if (m9t15) {
     Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s43, 34 }), at, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1096; goto L_ret; };
   }
   Regex_Advance (ps, ps_pool, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1097; goto L_ret; };
   { __typeof__(g) m9v = Regex_Mk (sp, Regex_NGroup, k, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1098; goto L_ret; };
     g = m9v;
   }
   Regex_AddKid (sp, &(g), &((*sp)), body, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1099; goto L_ret; };
   err->res = m9res;
   m9ret = g;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_adopt_if (&m9frame, ps_pool, (*ps).p.p);
@@ -4575,6 +4724,8 @@ static bool Regex_Quant (Regex_Parser *ps, m9_pool *ps_pool, int64_t *min, int64
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.Quant"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   uint32_t c = 0; (void) c;
   int64_t i = 0; (void) i;
@@ -4584,11 +4735,11 @@ static bool Regex_Quant (Regex_Parser *ps, m9_pool *ps_pool, int64_t *min, int64
   bool hasHi = false; (void) hasHi;
   bool comma = false; (void) comma;
   { __typeof__(c) m9v = Regex_Cur (ps, ps_pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1111; goto L_ret; };
     c = m9v;
   }
   bool m9t1 = Regex_AtEnd (ps, ps_pool, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1112; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
     m9ret = false;
@@ -4597,7 +4748,7 @@ static bool Regex_Quant (Regex_Parser *ps, m9_pool *ps_pool, int64_t *min, int64
   if ((c == 42u)) {
     (*min) = INT64_C(0);
     { __typeof__((*max)) m9v = m9_neg_i64 (INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1113; goto L_ret; };
       (*max) = m9v;
     }
     (*width) = INT64_C(1);
@@ -4608,7 +4759,7 @@ static bool Regex_Quant (Regex_Parser *ps, m9_pool *ps_pool, int64_t *min, int64
   if ((c == 43u)) {
     (*min) = INT64_C(1);
     { __typeof__((*max)) m9v = m9_neg_i64 (INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1114; goto L_ret; };
       (*max) = m9v;
     }
     (*width) = INT64_C(1);
@@ -4630,7 +4781,7 @@ static bool Regex_Quant (Regex_Parser *ps, m9_pool *ps_pool, int64_t *min, int64
     goto L_ret;
   }
   { __typeof__(i) m9v = m9_add_i64 ((*ps).pos, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1117; goto L_ret; };
     i = m9v;
   }
   lo = INT64_C(0);
@@ -4639,55 +4790,55 @@ static bool Regex_Quant (Regex_Parser *ps, m9_pool *ps_pool, int64_t *min, int64
   hasHi = false;
   comma = false;
   for (;;) {
-    bool m9t3 = ({ bool m9t2 = (i < Text_BLen ((*ps).p, err)); if (m9t2) { { __typeof__(Text_BChar ((*ps).p, i, err)) m9a33 = Text_BChar ((*ps).p, i, err);   if (err->exc) goto L_ret; m9t2 = (Regex_IsDigit (m9a33, err)); } } m9t2; });
-    if (err->exc) goto L_ret;
+    bool m9t3 = ({ bool m9t2 = (i < Text_BLen ((*ps).p, err)); if (m9t2) { { __typeof__(Text_BChar ((*ps).p, i, err)) m9a33 = Text_BChar ((*ps).p, i, err);   if (err->exc) { m9ln = 1123; goto L_ret; }; m9t2 = (Regex_IsDigit (m9a33, err)); } } m9t2; });
+    if (err->exc) { m9ln = 1123; goto L_ret; };
     if (!(m9t3)) break;
     if ((lo < INT64_C(100000000))) {
       { __typeof__(lo) m9v = m9_sub_i64 (m9_add_i64 (m9_mul_i64 (lo, INT64_C(10), err), (int64_t)(Text_BAt ((*ps).p, i, err)), err), INT64_C(48), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1124; goto L_ret; };
         lo = m9v;
       }
     }
     hasLo = true;
     { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1126; goto L_ret; };
       i = m9v;
     }
   }
   bool m9t4 = ((i < Text_BLen ((*ps).p, err)) && Text_BIs ((*ps).p, i, 44u, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1128; goto L_ret; };
   if (m9t4) {
     comma = true;
     { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1130; goto L_ret; };
       i = m9v;
     }
     for (;;) {
-      bool m9t6 = ({ bool m9t5 = (i < Text_BLen ((*ps).p, err)); if (m9t5) { { __typeof__(Text_BChar ((*ps).p, i, err)) m9a34 = Text_BChar ((*ps).p, i, err);   if (err->exc) goto L_ret; m9t5 = (Regex_IsDigit (m9a34, err)); } } m9t5; });
-      if (err->exc) goto L_ret;
+      bool m9t6 = ({ bool m9t5 = (i < Text_BLen ((*ps).p, err)); if (m9t5) { { __typeof__(Text_BChar ((*ps).p, i, err)) m9a34 = Text_BChar ((*ps).p, i, err);   if (err->exc) { m9ln = 1131; goto L_ret; }; m9t5 = (Regex_IsDigit (m9a34, err)); } } m9t5; });
+      if (err->exc) { m9ln = 1131; goto L_ret; };
       if (!(m9t6)) break;
       if ((hi < INT64_C(100000000))) {
         { __typeof__(hi) m9v = m9_sub_i64 (m9_add_i64 (m9_mul_i64 (hi, INT64_C(10), err), (int64_t)(Text_BAt ((*ps).p, i, err)), err), INT64_C(48), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1132; goto L_ret; };
           hi = m9v;
         }
       }
       hasHi = true;
       { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1134; goto L_ret; };
         i = m9v;
       }
     }
   }
   bool m9t7 = ((i >= Text_BLen ((*ps).p, err)) || (!Text_BIs ((*ps).p, i, 125u, err)));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1137; goto L_ret; };
   if (m9t7) {
     err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
   bool m9t8 = (i == m9_add_i64 ((*ps).pos, INT64_C(1), err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1138; goto L_ret; };
   if (m9t8) {
     err->res = m9res;
     m9ret = false;
@@ -4699,7 +4850,7 @@ static bool Regex_Quant (Regex_Parser *ps, m9_pool *ps_pool, int64_t *min, int64
   }
   if (comma) {
     { __typeof__((*max)) m9v = m9_neg_i64 (INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1142; goto L_ret; };
       (*max) = m9v;
     }
     if (hasHi) {
@@ -4709,13 +4860,14 @@ static bool Regex_Quant (Regex_Parser *ps, m9_pool *ps_pool, int64_t *min, int64
     (*max) = (*min);
   }
   { __typeof__((*width)) m9v = m9_add_i64 (m9_sub_i64 (i, (*ps).pos, err), INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1147; goto L_ret; };
     (*width) = m9v;
   }
   err->res = m9res;
   m9ret = true;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, ps_pool, (*ps).p.p);
   m9_pool_free (&m9frame);
@@ -4728,6 +4880,8 @@ static Regex_Node * Regex_Seq (m9_pool *sp, Regex_Parser *ps, m9_pool *ps_pool, 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Regex.Seq"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Regex_Node * m9ret = NULL;
   Regex_Node * cat = NULL; (void) cat;
   Regex_Node * item = NULL; (void) item;
@@ -4740,17 +4894,17 @@ static Regex_Node * Regex_Seq (m9_pool *sp, Regex_Parser *ps, m9_pool *ps_pool, 
   bool some = false; (void) some;
   bool lazy = false; (void) lazy;
   { __typeof__(cat) m9v = Regex_Mk (sp, Regex_NCat, INT64_C(0), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1161; goto L_ret; };
     cat = m9v;
   }
   for (;;) {
     bool m9t1 = Regex_AtEnd (ps, ps_pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1163; goto L_ret; };
     if (m9t1) {
       break;
     }
     { __typeof__(c) m9v = Regex_Cur (ps, ps_pool, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1164; goto L_ret; };
       c = m9v;
     }
     if (((c == 124u) || (c == 41u))) {
@@ -4760,21 +4914,21 @@ static Regex_Node * Regex_Seq (m9_pool *sp, Regex_Parser *ps, m9_pool *ps_pool, 
     some = true;
     if ((c == 40u)) {
       { __typeof__(item) m9v = Regex_ParseGroup (sp, ps, ps_pool, re, re_pool, (top && (cat->nk == INT64_C(0))), &(some), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1169; goto L_ret; };
         item = m9v;
       }
     } else {
       if ((c == 91u)) {
         { __typeof__(item) m9v = Regex_ParseClass (sp, ps, ps_pool, re, re_pool, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1171; goto L_ret; };
           item = m9v;
         }
     } else {
       if ((c == 46u)) {
         Regex_Advance (ps, ps_pool, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1173; goto L_ret; };
         { __typeof__(item) m9v = Regex_Mk (sp, Regex_NAny, INT64_C(0), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1174; goto L_ret; };
           item = m9v;
         }
         if ((*ps).da) {
@@ -4783,133 +4937,135 @@ static Regex_Node * Regex_Seq (m9_pool *sp, Regex_Parser *ps, m9_pool *ps_pool, 
     } else {
       if ((c == 94u)) {
         Regex_Advance (ps, ps_pool, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1177; goto L_ret; };
         if ((*ps).ml) {
           { __typeof__(item) m9v = Regex_Mk (sp, Regex_NAssert, Regex_ABol, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1178; goto L_ret; };
             item = m9v;
           }
         } else {
           { __typeof__(item) m9v = Regex_Mk (sp, Regex_NAssert, Regex_ABot, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1178; goto L_ret; };
             item = m9v;
           }
         }
     } else {
       if ((c == 36u)) {
         Regex_Advance (ps, ps_pool, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1180; goto L_ret; };
         if ((*ps).ml) {
           { __typeof__(item) m9v = Regex_Mk (sp, Regex_NAssert, Regex_AEol, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1181; goto L_ret; };
             item = m9v;
           }
         } else {
           { __typeof__(item) m9v = Regex_Mk (sp, Regex_NAssert, Regex_AEotNl, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1181; goto L_ret; };
             item = m9v;
           }
         }
     } else {
       if ((c == 92u)) {
         { __typeof__(item) m9v = Regex_Escape (sp, ps, ps_pool, re, re_pool, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1183; goto L_ret; };
           item = m9v;
         }
     } else {
       bool m9t2 = Regex_Quant (ps, ps_pool, &(min), &(max), &(width), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1183; goto L_ret; };
       if (m9t2) {
         { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s44, 17 })) m9t3 = ((m9_sl_UTF8){ (uint8_t *) m9s44, 17 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
         err->i[0] = at;
         m9_raise (err, &Regex_BadPattern);
+        m9_site (err, 1188, m9pn);
         goto L_ret;
     } else {
       Regex_Advance (ps, ps_pool, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1190; goto L_ret; };
       { __typeof__(item) m9v = Regex_CharNode (sp, ps, ps_pool, re, re_pool, (int64_t)(c), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1191; goto L_ret; };
         item = m9v;
       }
     } } } } } } }
     bool m9t4 = Regex_Quant (ps, ps_pool, &(min), &(max), &(width), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1193; goto L_ret; };
     if (m9t4) {
       if (((!some) || (item->kind == Regex_NAssert))) {
         Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s45, 17 }), (*ps).pos, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1194; goto L_ret; };
       }
       at = (*ps).pos;
       { __typeof__((*ps).pos) m9v = m9_add_i64 ((*ps).pos, width, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1196; goto L_ret; };
         (*ps).pos = m9v;
       }
       if (((max >= INT64_C(0)) && (max < min))) {
         { __typeof__(m9_add_i64 (at, INT64_C(1), err)) m9a35 = m9_add_i64 (at, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1197; goto L_ret; };
         Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s46, 34 }), m9a35, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1197; goto L_ret; };
         }
       }
       if (((min > Regex_MaxRepeat) || (max > Regex_MaxRepeat))) {
         { __typeof__(m9_add_i64 (at, INT64_C(1), err)) m9a36 = m9_add_i64 (at, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1199; goto L_ret; };
         Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s47, 29 }), m9a36, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1199; goto L_ret; };
         }
       }
       lazy = false;
       bool m9t5 = ((Regex_Cur (ps, ps_pool, err) == 63u) && (!Regex_AtEnd (ps, ps_pool, err)));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1202; goto L_ret; };
       if (m9t5) {
         lazy = true;
         Regex_Advance (ps, ps_pool, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1202; goto L_ret; };
       } else {
         bool m9t6 = ((Regex_Cur (ps, ps_pool, err) == 43u) && (!Regex_AtEnd (ps, ps_pool, err)));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1202; goto L_ret; };
         if (m9t6) {
           Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s48, 77 }), at, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1204; goto L_ret; };
       } }
       bool m9t7 = Regex_Quant (ps, ps_pool, &(min), &(max), &(width), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1206; goto L_ret; };
       if (m9t7) {
         Regex_Fail (ps, ps_pool, ((m9_sl_UTF8){ (uint8_t *) m9s49, 15 }), (*ps).pos, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1206; goto L_ret; };
       }
       { __typeof__(rep) m9v = Regex_Mk (sp, Regex_NRep, INT64_C(0), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1207; goto L_ret; };
         rep = m9v;
       }
       rep->min = min;
       rep->max = max;
       rep->greedy = (!lazy);
       Regex_AddKid (sp, &(rep), &((*sp)), item, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1211; goto L_ret; };
       item = rep;
     }
     if (some) {
       Regex_AddKid (sp, &(cat), &((*sp)), item, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1214; goto L_ret; };
     }
   }
   if ((cat->nk == INT64_C(0))) {
     err->res = m9res;
     m9ret = Regex_Mk (sp, Regex_NEmpty, INT64_C(0), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1216; goto L_ret; };
     goto L_ret;
   }
   if ((cat->nk == INT64_C(1))) {
     err->res = m9res;
     m9ret = ({ __auto_type m9n = ((*(Regex_Node * *) m9_at (cat->kids.p, INT64_C(0), cat->kids.len, sizeof (Regex_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1217; goto L_ret; };
     goto L_ret;
   }
   err->res = m9res;
   m9ret = cat;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_adopt_if (&m9frame, ps_pool, (*ps).p.p);
@@ -4924,42 +5080,45 @@ static Regex_Node * Regex_Alt (m9_pool *sp, Regex_Parser *ps, m9_pool *ps_pool, 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Regex.Alt"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Regex_Node * m9ret = NULL;
   Regex_Node * first = NULL; (void) first;
   Regex_Node * alt = NULL; (void) alt;
   { __typeof__(first) m9v = Regex_Seq (sp, ps, ps_pool, re, re_pool, top, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1226; goto L_ret; };
     first = m9v;
   }
   bool m9t1 = ((Regex_Cur (ps, ps_pool, err) != 124u) || Regex_AtEnd (ps, ps_pool, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1227; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
     m9ret = first;
     goto L_ret;
   }
   { __typeof__(alt) m9v = Regex_Mk (sp, Regex_NAlt, INT64_C(0), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1228; goto L_ret; };
     alt = m9v;
   }
   Regex_AddKid (sp, &(alt), &((*sp)), first, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1229; goto L_ret; };
   for (;;) {
     bool m9t2 = ((Regex_Cur (ps, ps_pool, err) == 124u) && (!Regex_AtEnd (ps, ps_pool, err)));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1230; goto L_ret; };
     if (!(m9t2)) break;
     Regex_Advance (ps, ps_pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1231; goto L_ret; };
     { __typeof__(Regex_Seq (sp, ps, ps_pool, re, re_pool, false, err)) m9a37 = Regex_Seq (sp, ps, ps_pool, re, re_pool, false, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1232; goto L_ret; };
     Regex_AddKid (sp, &(alt), &((*sp)), m9a37, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1232; goto L_ret; };
     }
   }
   err->res = m9res;
   m9ret = alt;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_adopt_if (&m9frame, ps_pool, (*ps).p.p);
@@ -4974,6 +5133,8 @@ static bool Regex_Nullable (Regex_Node * nd, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.Nullable"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   int64_t i = 0; (void) i;
   if (((nd->kind == Regex_NEmpty) || (nd->kind == Regex_NAssert))) {
@@ -4990,12 +5151,12 @@ static bool Regex_Nullable (Regex_Node * nd, m9_state *err)
     { __typeof__(i) m9t1to;
     i = INT64_C(0);
     m9t1to = m9_sub_i64 (nd->nk, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1246; goto L_ret; };
     if (i <= m9t1to) for (;;) {
       { __typeof__(({ __auto_type m9n = ((*(Regex_Node * *) m9_at (nd->kids.p, i, nd->kids.len, sizeof (Regex_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a38 = ({ __auto_type m9n = ((*(Regex_Node * *) m9_at (nd->kids.p, i, nd->kids.len, sizeof (Regex_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1247; goto L_ret; };
       bool m9t2 = (!Regex_Nullable (m9a38, err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1247; goto L_ret; };
       if (m9t2) {
         err->res = m9res;
         m9ret = false;
@@ -5012,12 +5173,12 @@ static bool Regex_Nullable (Regex_Node * nd, m9_state *err)
     { __typeof__(i) m9t3to;
     i = INT64_C(0);
     m9t3to = m9_sub_i64 (nd->nk, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1252; goto L_ret; };
     if (i <= m9t3to) for (;;) {
       { __typeof__(({ __auto_type m9n = ((*(Regex_Node * *) m9_at (nd->kids.p, i, nd->kids.len, sizeof (Regex_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a39 = ({ __auto_type m9n = ((*(Regex_Node * *) m9_at (nd->kids.p, i, nd->kids.len, sizeof (Regex_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1253; goto L_ret; };
       bool m9t4 = Regex_Nullable (m9a39, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1253; goto L_ret; };
       if (m9t4) {
         err->res = m9res;
         m9ret = true;
@@ -5033,17 +5194,18 @@ static bool Regex_Nullable (Regex_Node * nd, m9_state *err)
   if ((nd->kind == Regex_NGroup)) {
     err->res = m9res;
     { __typeof__(({ __auto_type m9n = ((*(Regex_Node * *) m9_at (nd->kids.p, INT64_C(0), nd->kids.len, sizeof (Regex_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a40 = ({ __auto_type m9n = ((*(Regex_Node * *) m9_at (nd->kids.p, INT64_C(0), nd->kids.len, sizeof (Regex_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1257; goto L_ret; };
     m9ret = Regex_Nullable (m9a40, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1257; goto L_ret; };
     }
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = ({ bool m9t5 = (nd->min == INT64_C(0)); if (!m9t5) { { __typeof__(({ __auto_type m9n = ((*(Regex_Node * *) m9_at (nd->kids.p, INT64_C(0), nd->kids.len, sizeof (Regex_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a41 = ({ __auto_type m9n = ((*(Regex_Node * *) m9_at (nd->kids.p, INT64_C(0), nd->kids.len, sizeof (Regex_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });   if (err->exc) goto L_ret; m9t5 = (Regex_Nullable (m9a41, err)); } } m9t5; });
-  if (err->exc) goto L_ret;
+  m9ret = ({ bool m9t5 = (nd->min == INT64_C(0)); if (!m9t5) { { __typeof__(({ __auto_type m9n = ((*(Regex_Node * *) m9_at (nd->kids.p, INT64_C(0), nd->kids.len, sizeof (Regex_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a41 = ({ __auto_type m9n = ((*(Regex_Node * *) m9_at (nd->kids.p, INT64_C(0), nd->kids.len, sizeof (Regex_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });   if (err->exc) { m9ln = 1258; goto L_ret; }; m9t5 = (Regex_Nullable (m9a41, err)); } } m9t5; });
+  if (err->exc) { m9ln = 1258; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -5055,6 +5217,8 @@ static void Regex_Gen (Regex_Re * *re, m9_pool *re_pool, Regex_Node * nd, m9_sta
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.Gen"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   int64_t j = 0; (void) j;
   int64_t sp = 0; (void) sp;
@@ -5065,7 +5229,7 @@ static void Regex_Gen (Regex_Re * *re, m9_pool *re_pool, Regex_Node * nd, m9_sta
   }
   if ((nd->kind == Regex_NChar)) {
     { __typeof__(j) m9v = Regex_Emit (re, re_pool, Regex_OChar, nd->v, INT64_C(0), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1267; goto L_ret; };
       j = m9v;
     }
     goto L_ret;
@@ -5073,12 +5237,12 @@ static void Regex_Gen (Regex_Re * *re, m9_pool *re_pool, Regex_Node * nd, m9_sta
   if ((nd->kind == Regex_NAny)) {
     if ((nd->v == INT64_C(1))) {
       { __typeof__(j) m9v = Regex_Emit (re, re_pool, Regex_OAnyNl, INT64_C(0), INT64_C(0), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1269; goto L_ret; };
         j = m9v;
       }
     } else {
       { __typeof__(j) m9v = Regex_Emit (re, re_pool, Regex_OAny, INT64_C(0), INT64_C(0), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1269; goto L_ret; };
         j = m9v;
       }
     }
@@ -5086,14 +5250,14 @@ static void Regex_Gen (Regex_Re * *re, m9_pool *re_pool, Regex_Node * nd, m9_sta
   }
   if ((nd->kind == Regex_NClass)) {
     { __typeof__(j) m9v = Regex_Emit (re, re_pool, Regex_OClass, nd->v, INT64_C(0), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1272; goto L_ret; };
       j = m9v;
     }
     goto L_ret;
   }
   if ((nd->kind == Regex_NAssert)) {
     { __typeof__(j) m9v = Regex_Emit (re, re_pool, Regex_OAssert, nd->v, INT64_C(0), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1273; goto L_ret; };
       j = m9v;
     }
     goto L_ret;
@@ -5102,12 +5266,12 @@ static void Regex_Gen (Regex_Re * *re, m9_pool *re_pool, Regex_Node * nd, m9_sta
     { __typeof__(i) m9t1to;
     i = INT64_C(0);
     m9t1to = m9_sub_i64 (nd->nk, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1275; goto L_ret; };
     if (i <= m9t1to) for (;;) {
       { __typeof__(({ __auto_type m9n = ((*(Regex_Node * *) m9_at (nd->kids.p, i, nd->kids.len, sizeof (Regex_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a42 = ({ __auto_type m9n = ((*(Regex_Node * *) m9_at (nd->kids.p, i, nd->kids.len, sizeof (Regex_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1275; goto L_ret; };
       Regex_Gen (re, re_pool, m9a42, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1275; goto L_ret; };
       }
       if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
@@ -5116,48 +5280,48 @@ static void Regex_Gen (Regex_Re * *re, m9_pool *re_pool, Regex_Node * nd, m9_sta
   }
   if ((nd->kind == Regex_NAlt)) {
     { __typeof__(jumps) m9v = M9_POOL_SL (m9_sl_I64, int64_t, err->res, nd->nk, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1281; goto L_ret; };
       jumps = m9v;
     }
     { __typeof__(i) m9t2to;
     i = INT64_C(0);
     m9t2to = m9_sub_i64 (nd->nk, INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1282; goto L_ret; };
     if (i <= m9t2to) for (;;) {
       { __typeof__(sp) m9v = Regex_Emit (re, re_pool, Regex_OSplit, INT64_C(0), INT64_C(0), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1283; goto L_ret; };
         sp = m9v;
       }
       (*(int64_t *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->x.p, sp, ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->x.len, sizeof (int64_t), err)) = ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1284; goto L_ret; };
       { __typeof__(({ __auto_type m9n = ((*(Regex_Node * *) m9_at (nd->kids.p, i, nd->kids.len, sizeof (Regex_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a43 = ({ __auto_type m9n = ((*(Regex_Node * *) m9_at (nd->kids.p, i, nd->kids.len, sizeof (Regex_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1285; goto L_ret; };
       Regex_Gen (re, re_pool, m9a43, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1285; goto L_ret; };
       }
       { __typeof__((*(int64_t *) m9_at (jumps.p, i, jumps.len, sizeof (int64_t), err))) m9v = Regex_Emit (re, re_pool, Regex_OJmp, INT64_C(0), INT64_C(0), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1286; goto L_ret; };
         (*(int64_t *) m9_at (jumps.p, i, jumps.len, sizeof (int64_t), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1286; goto L_ret; };
       }
       (*(int64_t *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->y.p, sp, ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->y.len, sizeof (int64_t), err)) = ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1287; goto L_ret; };
       if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
     } }
     { __typeof__(({ __auto_type m9n = ((*(Regex_Node * *) m9_at (nd->kids.p, m9_sub_i64 (nd->nk, INT64_C(1), err), nd->kids.len, sizeof (Regex_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a44 = ({ __auto_type m9n = ((*(Regex_Node * *) m9_at (nd->kids.p, m9_sub_i64 (nd->nk, INT64_C(1), err), nd->kids.len, sizeof (Regex_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1289; goto L_ret; };
     Regex_Gen (re, re_pool, m9a44, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1289; goto L_ret; };
     }
     last = ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n;
     { __typeof__(i) m9t3to;
     i = INT64_C(0);
     m9t3to = m9_sub_i64 (nd->nk, INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1291; goto L_ret; };
     if (i <= m9t3to) for (;;) {
       (*(int64_t *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->x.p, (*(int64_t *) m9_at (jumps.p, i, jumps.len, sizeof (int64_t), err)), ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->x.len, sizeof (int64_t), err)) = last;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1291; goto L_ret; };
       if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
     } }
@@ -5166,23 +5330,23 @@ static void Regex_Gen (Regex_Re * *re, m9_pool *re_pool, Regex_Node * nd, m9_sta
   if ((nd->kind == Regex_NGroup)) {
     if ((nd->v >= INT64_C(0))) {
       { __typeof__(m9_mul_i64 (INT64_C(2), nd->v, err)) m9a45 = m9_mul_i64 (INT64_C(2), nd->v, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1295; goto L_ret; };
       { __typeof__(j) m9v = Regex_Emit (re, re_pool, Regex_OSave, m9a45, INT64_C(0), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1295; goto L_ret; };
         j = m9v;
       }
       }
     }
     { __typeof__(({ __auto_type m9n = ((*(Regex_Node * *) m9_at (nd->kids.p, INT64_C(0), nd->kids.len, sizeof (Regex_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a46 = ({ __auto_type m9n = ((*(Regex_Node * *) m9_at (nd->kids.p, INT64_C(0), nd->kids.len, sizeof (Regex_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1296; goto L_ret; };
     Regex_Gen (re, re_pool, m9a46, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1296; goto L_ret; };
     }
     if ((nd->v >= INT64_C(0))) {
       { __typeof__(m9_add_i64 (m9_mul_i64 (INT64_C(2), nd->v, err), INT64_C(1), err)) m9a47 = m9_add_i64 (m9_mul_i64 (INT64_C(2), nd->v, err), INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1297; goto L_ret; };
       { __typeof__(j) m9v = Regex_Emit (re, re_pool, Regex_OSave, m9a47, INT64_C(0), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1297; goto L_ret; };
         j = m9v;
       }
       }
@@ -5190,8 +5354,9 @@ static void Regex_Gen (Regex_Re * *re, m9_pool *re_pool, Regex_Node * nd, m9_sta
     goto L_ret;
   }
   Regex_GenRep (re, re_pool, nd, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1300; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, re_pool, (*re));
   m9_pool_free (&m9frame);
@@ -5204,6 +5369,8 @@ static void Regex_GenRep (Regex_Re * *re, m9_pool *re_pool, Regex_Node * nd, m9_
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.GenRep"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   int64_t j = 0; (void) j;
   int64_t slot = 0; (void) slot;
@@ -5221,9 +5388,9 @@ static void Regex_GenRep (Regex_Re * *re, m9_pool *re_pool, Regex_Node * nd, m9_
   m9t1to = nd->min;
   if (i <= m9t1to) for (;;) {
     { __typeof__(({ __auto_type m9n = ((*(Regex_Node * *) m9_at (nd->kids.p, INT64_C(0), nd->kids.len, sizeof (Regex_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a48 = ({ __auto_type m9n = ((*(Regex_Node * *) m9_at (nd->kids.p, INT64_C(0), nd->kids.len, sizeof (Regex_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1321; goto L_ret; };
     Regex_Gen (re, re_pool, m9a48, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1321; goto L_ret; };
     }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
@@ -5232,26 +5399,26 @@ static void Regex_GenRep (Regex_Re * *re, m9_pool *re_pool, Regex_Node * nd, m9_
     goto L_ret;
   }
   { __typeof__(({ __auto_type m9n = ((*(Regex_Node * *) m9_at (nd->kids.p, INT64_C(0), nd->kids.len, sizeof (Regex_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a49 = ({ __auto_type m9n = ((*(Regex_Node * *) m9_at (nd->kids.p, INT64_C(0), nd->kids.len, sizeof (Regex_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1323; goto L_ret; };
   { __typeof__(null) m9v = Regex_Nullable (m9a49, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1323; goto L_ret; };
     null = m9v;
   }
   }
   { __typeof__(slot) m9v = m9_neg_i64 (INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1324; goto L_ret; };
     slot = m9v;
   }
   if (null) {
     slot = ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nslots;
     { __typeof__(({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nslots) m9v = m9_add_i64 (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nslots, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1327; goto L_ret; };
       ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nslots = m9v;
     }
   }
   if ((nd->max > INT64_C(0))) {
     { __typeof__(k) m9v = m9_sub_i64 (nd->max, nd->min, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1329; goto L_ret; };
       k = m9v;
     }
   } else {
@@ -5261,66 +5428,66 @@ static void Regex_GenRep (Regex_Re * *re, m9_pool *re_pool, Regex_Node * nd, m9_
     k = INT64_C(1);
   } }
   { __typeof__(splits) m9v = M9_POOL_SL (m9_sl_I64, int64_t, err->res, k, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1333; goto L_ret; };
     splits = m9v;
   }
   { __typeof__(checks) m9v = M9_POOL_SL (m9_sl_I64, int64_t, err->res, k, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1334; goto L_ret; };
     checks = m9v;
   }
   { __typeof__(tops) m9v = M9_POOL_SL (m9_sl_I64, int64_t, err->res, k, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1335; goto L_ret; };
     tops = m9v;
   }
   { __typeof__(i) m9t2to;
   i = INT64_C(0);
   m9t2to = m9_sub_i64 (k, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1336; goto L_ret; };
   if (i <= m9t2to) for (;;) {
     { __typeof__((*(int64_t *) m9_at (checks.p, i, checks.len, sizeof (int64_t), err))) m9v = m9_neg_i64 (INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1337; goto L_ret; };
       (*(int64_t *) m9_at (checks.p, i, checks.len, sizeof (int64_t), err)) = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1337; goto L_ret; };
     }
     (*(int64_t *) m9_at (tops.p, i, tops.len, sizeof (int64_t), err)) = ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1338; goto L_ret; };
     { __typeof__((*(int64_t *) m9_at (splits.p, i, splits.len, sizeof (int64_t), err))) m9v = Regex_Emit (re, re_pool, Regex_OSplit, INT64_C(0), INT64_C(0), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1339; goto L_ret; };
       (*(int64_t *) m9_at (splits.p, i, splits.len, sizeof (int64_t), err)) = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1339; goto L_ret; };
     }
     body = ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n;
     if (null) {
       { __typeof__(j) m9v = Regex_Emit (re, re_pool, Regex_OMark, slot, INT64_C(0), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1341; goto L_ret; };
         j = m9v;
       }
     }
     { __typeof__(({ __auto_type m9n = ((*(Regex_Node * *) m9_at (nd->kids.p, INT64_C(0), nd->kids.len, sizeof (Regex_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a50 = ({ __auto_type m9n = ((*(Regex_Node * *) m9_at (nd->kids.p, INT64_C(0), nd->kids.len, sizeof (Regex_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1342; goto L_ret; };
     Regex_Gen (re, re_pool, m9a50, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1342; goto L_ret; };
     }
     if (null) {
       { __typeof__((*(int64_t *) m9_at (checks.p, i, checks.len, sizeof (int64_t), err))) m9v = Regex_Emit (re, re_pool, Regex_OCheck, slot, INT64_C(0), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1343; goto L_ret; };
         (*(int64_t *) m9_at (checks.p, i, checks.len, sizeof (int64_t), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1343; goto L_ret; };
       }
     }
     bool m9t3 = ((nd->max < INT64_C(0)) && (i == m9_sub_i64 (k, INT64_C(1), err)));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1345; goto L_ret; };
     if (m9t3) {
       { __typeof__((*(int64_t *) m9_at (tops.p, INT64_C(0), tops.len, sizeof (int64_t), err))) m9a51 = (*(int64_t *) m9_at (tops.p, INT64_C(0), tops.len, sizeof (int64_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1345; goto L_ret; };
       { __typeof__(j) m9v = Regex_Emit (re, re_pool, Regex_OJmp, m9a51, INT64_C(0), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1345; goto L_ret; };
         j = m9v;
       }
       }
     }
     (*(int64_t *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->y.p, (*(int64_t *) m9_at (splits.p, i, splits.len, sizeof (int64_t), err)), ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->y.len, sizeof (int64_t), err)) = body;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1347; goto L_ret; };
     if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
@@ -5328,33 +5495,34 @@ static void Regex_GenRep (Regex_Re * *re, m9_pool *re_pool, Regex_Node * nd, m9_
   { __typeof__(i) m9t4to;
   i = INT64_C(0);
   m9t4to = m9_sub_i64 (k, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1350; goto L_ret; };
   if (i <= m9t4to) for (;;) {
     { __typeof__(body) m9v = (*(int64_t *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->y.p, (*(int64_t *) m9_at (splits.p, i, splits.len, sizeof (int64_t), err)), ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->y.len, sizeof (int64_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1351; goto L_ret; };
       body = m9v;
     }
     if (nd->greedy) {
       (*(int64_t *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->x.p, (*(int64_t *) m9_at (splits.p, i, splits.len, sizeof (int64_t), err)), ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->x.len, sizeof (int64_t), err)) = body;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1352; goto L_ret; };
       (*(int64_t *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->y.p, (*(int64_t *) m9_at (splits.p, i, splits.len, sizeof (int64_t), err)), ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->y.len, sizeof (int64_t), err)) = exit;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1352; goto L_ret; };
     } else {
       (*(int64_t *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->x.p, (*(int64_t *) m9_at (splits.p, i, splits.len, sizeof (int64_t), err)), ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->x.len, sizeof (int64_t), err)) = exit;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1353; goto L_ret; };
       (*(int64_t *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->y.p, (*(int64_t *) m9_at (splits.p, i, splits.len, sizeof (int64_t), err)), ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->y.len, sizeof (int64_t), err)) = body;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1353; goto L_ret; };
     }
     bool m9t5 = ((*(int64_t *) m9_at (checks.p, i, checks.len, sizeof (int64_t), err)) >= INT64_C(0));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1355; goto L_ret; };
     if (m9t5) {
       (*(int64_t *) m9_at (({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->y.p, (*(int64_t *) m9_at (checks.p, i, checks.len, sizeof (int64_t), err)), ({ __auto_type m9g = ((*re)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->y.len, sizeof (int64_t), err)) = exit;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1355; goto L_ret; };
     }
     if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, re_pool, (*re));
   m9_pool_free (&m9frame);
@@ -5367,13 +5535,15 @@ static bool Regex_Holds (Regex_Re * re, m9_sl_UTF8 s, int64_t pos, int64_t kind,
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.Holds"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   int64_t n = 0; (void) n;
   int64_t nx = 0; (void) nx;
   bool a = false; (void) a;
   bool b = false; (void) b;
   { __typeof__(n) m9v = Text_BLen (s, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1439; goto L_ret; };
     n = m9v;
   }
   if ((kind == Regex_ABot)) {
@@ -5383,8 +5553,8 @@ static bool Regex_Holds (Regex_Re * re, m9_sl_UTF8 s, int64_t pos, int64_t kind,
   }
   if ((kind == Regex_ABol)) {
     err->res = m9res;
-    m9ret = ({ bool m9t1 = (pos == INT64_C(0)); if (!m9t1) { { __typeof__(m9_sub_i64 (pos, INT64_C(1), err)) m9a52 = m9_sub_i64 (pos, INT64_C(1), err);   if (err->exc) goto L_ret; m9t1 = (Text_BIs (s, m9a52, 10u, err)); } } m9t1; });
-    if (err->exc) goto L_ret;
+    m9ret = ({ bool m9t1 = (pos == INT64_C(0)); if (!m9t1) { { __typeof__(m9_sub_i64 (pos, INT64_C(1), err)) m9a52 = m9_sub_i64 (pos, INT64_C(1), err);   if (err->exc) { m9ln = 1441; goto L_ret; }; m9t1 = (Text_BIs (s, m9a52, 10u, err)); } } m9t1; });
+    if (err->exc) { m9ln = 1441; goto L_ret; };
     goto L_ret;
   }
   if ((kind == Regex_AEot)) {
@@ -5395,21 +5565,21 @@ static bool Regex_Holds (Regex_Re * re, m9_sl_UTF8 s, int64_t pos, int64_t kind,
   if ((kind == Regex_AEotNl)) {
     err->res = m9res;
     m9ret = ((pos == n) || (((pos == m9_sub_i64 (n, INT64_C(1), err)) && Text_BIs (s, pos, 10u, err))));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1443; goto L_ret; };
     goto L_ret;
   }
   if ((kind == Regex_AEol)) {
     err->res = m9res;
     m9ret = ((pos == n) || Text_BIs (s, pos, 10u, err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1444; goto L_ret; };
     goto L_ret;
   }
-  { __typeof__(a) m9v = ({ bool m9t2 = (pos > INT64_C(0)); if (m9t2) { { __typeof__(Regex_CpBefore (s, pos, err)) m9a53 = Regex_CpBefore (s, pos, err);   if (err->exc) goto L_ret; m9t2 = (Regex_IsWord (m9a53, re->uni, err)); } } m9t2; });
-    if (err->exc) goto L_ret;
+  { __typeof__(a) m9v = ({ bool m9t2 = (pos > INT64_C(0)); if (m9t2) { { __typeof__(Regex_CpBefore (s, pos, err)) m9a53 = Regex_CpBefore (s, pos, err);   if (err->exc) { m9ln = 1445; goto L_ret; }; m9t2 = (Regex_IsWord (m9a53, re->uni, err)); } } m9t2; });
+    if (err->exc) { m9ln = 1445; goto L_ret; };
     a = m9v;
   }
-  { __typeof__(b) m9v = ({ bool m9t3 = (pos < n); if (m9t3) { { __typeof__(Regex_CpAt (s, pos, &(nx), err)) m9a54 = Regex_CpAt (s, pos, &(nx), err);   if (err->exc) goto L_ret; m9t3 = (Regex_IsWord (m9a54, re->uni, err)); } } m9t3; });
-    if (err->exc) goto L_ret;
+  { __typeof__(b) m9v = ({ bool m9t3 = (pos < n); if (m9t3) { { __typeof__(Regex_CpAt (s, pos, &(nx), err)) m9a54 = Regex_CpAt (s, pos, &(nx), err);   if (err->exc) { m9ln = 1446; goto L_ret; }; m9t3 = (Regex_IsWord (m9a54, re->uni, err)); } } m9t3; });
+    if (err->exc) { m9ln = 1446; goto L_ret; };
     b = m9v;
   }
   if ((kind == Regex_AWord)) {
@@ -5421,6 +5591,7 @@ static bool Regex_Holds (Regex_Re * re, m9_sl_UTF8 s, int64_t pos, int64_t kind,
   m9ret = (a == b);
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -5432,6 +5603,8 @@ static void Regex_AddThread (Regex_Re * re, m9_sl_UTF8 s, Regex_Vm *vm, m9_pool 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.AddThread"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t sp = 0; (void) sp;
   int64_t pc = 0; (void) pc;
   int64_t slot = 0; (void) slot;
@@ -5440,131 +5613,131 @@ static void Regex_AddThread (Regex_Re * re, m9_sl_UTF8 s, Regex_Vm *vm, m9_pool 
   ns = re->nslots;
   sp = INT64_C(0);
   (*(int64_t *) m9_at ((*vm).jobPc.p, INT64_C(0), (*vm).jobPc.len, sizeof (int64_t), err)) = pc0;
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1462; goto L_ret; };
   sp = INT64_C(1);
   for (;;) {
     if (!((sp > INT64_C(0)))) break;
     { __typeof__(sp) m9v = m9_sub_i64 (sp, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1465; goto L_ret; };
       sp = m9v;
     }
     { __typeof__(pc) m9v = (*(int64_t *) m9_at ((*vm).jobPc.p, sp, (*vm).jobPc.len, sizeof (int64_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1466; goto L_ret; };
       pc = m9v;
     }
     if ((pc < INT64_C(0))) {
       { __typeof__((*(int64_t *) m9_at ((*vm).work.p, (*(int64_t *) m9_at ((*vm).jobSlot.p, sp, (*vm).jobSlot.len, sizeof (int64_t), err)), (*vm).work.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at ((*vm).jobVal.p, sp, (*vm).jobVal.len, sizeof (int64_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1468; goto L_ret; };
         (*(int64_t *) m9_at ((*vm).work.p, (*(int64_t *) m9_at ((*vm).jobSlot.p, sp, (*vm).jobSlot.len, sizeof (int64_t), err)), (*vm).work.len, sizeof (int64_t), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1468; goto L_ret; };
       }
     } else {
       for (;;) {
         bool m9t1 = ((*(int64_t *) m9_at ((*vm).seen.p, pc, (*vm).seen.len, sizeof (int64_t), err)) == (*l).stamp);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1471; goto L_ret; };
         if (m9t1) {
           break;
         }
         (*(int64_t *) m9_at ((*vm).seen.p, pc, (*vm).seen.len, sizeof (int64_t), err)) = (*l).stamp;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1472; goto L_ret; };
         { __typeof__(k) m9v = (*(int64_t *) m9_at (re->op.p, pc, re->op.len, sizeof (int64_t), err));
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1473; goto L_ret; };
           k = m9v;
         }
         if ((k == Regex_OJmp)) {
           { __typeof__(pc) m9v = (*(int64_t *) m9_at (re->x.p, pc, re->x.len, sizeof (int64_t), err));
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1475; goto L_ret; };
             pc = m9v;
           }
         } else {
           if ((k == Regex_OSplit)) {
             { __typeof__((*(int64_t *) m9_at ((*vm).jobPc.p, sp, (*vm).jobPc.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at (re->y.p, pc, re->y.len, sizeof (int64_t), err));
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 1477; goto L_ret; };
               (*(int64_t *) m9_at ((*vm).jobPc.p, sp, (*vm).jobPc.len, sizeof (int64_t), err)) = m9v;
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 1477; goto L_ret; };
             }
             { __typeof__(sp) m9v = m9_add_i64 (sp, INT64_C(1), err);
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 1478; goto L_ret; };
               sp = m9v;
             }
             { __typeof__(pc) m9v = (*(int64_t *) m9_at (re->x.p, pc, re->x.len, sizeof (int64_t), err));
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 1479; goto L_ret; };
               pc = m9v;
             }
         } else {
           if (((k == Regex_OSave) || (k == Regex_OMark))) {
             { __typeof__(slot) m9v = (*(int64_t *) m9_at (re->x.p, pc, re->x.len, sizeof (int64_t), err));
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 1481; goto L_ret; };
               slot = m9v;
             }
             { __typeof__((*(int64_t *) m9_at ((*vm).jobPc.p, sp, (*vm).jobPc.len, sizeof (int64_t), err))) m9v = m9_neg_i64 (INT64_C(1), err);
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 1482; goto L_ret; };
               (*(int64_t *) m9_at ((*vm).jobPc.p, sp, (*vm).jobPc.len, sizeof (int64_t), err)) = m9v;
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 1482; goto L_ret; };
             }
             (*(int64_t *) m9_at ((*vm).jobSlot.p, sp, (*vm).jobSlot.len, sizeof (int64_t), err)) = slot;
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1483; goto L_ret; };
             { __typeof__((*(int64_t *) m9_at ((*vm).jobVal.p, sp, (*vm).jobVal.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at ((*vm).work.p, slot, (*vm).work.len, sizeof (int64_t), err));
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 1484; goto L_ret; };
               (*(int64_t *) m9_at ((*vm).jobVal.p, sp, (*vm).jobVal.len, sizeof (int64_t), err)) = m9v;
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 1484; goto L_ret; };
             }
             { __typeof__(sp) m9v = m9_add_i64 (sp, INT64_C(1), err);
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 1485; goto L_ret; };
               sp = m9v;
             }
             (*(int64_t *) m9_at ((*vm).work.p, slot, (*vm).work.len, sizeof (int64_t), err)) = pos;
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1486; goto L_ret; };
             { __typeof__(pc) m9v = m9_add_i64 (pc, INT64_C(1), err);
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 1487; goto L_ret; };
               pc = m9v;
             }
         } else {
           if ((k == Regex_OCheck)) {
             bool m9t2 = ((*(int64_t *) m9_at ((*vm).work.p, (*(int64_t *) m9_at (re->x.p, pc, re->x.len, sizeof (int64_t), err)), (*vm).work.len, sizeof (int64_t), err)) == pos);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1489; goto L_ret; };
             if (m9t2) {
               { __typeof__(pc) m9v = (*(int64_t *) m9_at (re->y.p, pc, re->y.len, sizeof (int64_t), err));
-                if (err->exc) goto L_ret;
+                if (err->exc) { m9ln = 1489; goto L_ret; };
                 pc = m9v;
               }
             } else {
               { __typeof__(pc) m9v = m9_add_i64 (pc, INT64_C(1), err);
-                if (err->exc) goto L_ret;
+                if (err->exc) { m9ln = 1489; goto L_ret; };
                 pc = m9v;
               }
             }
         } else {
           if ((k == Regex_OAssert)) {
             { __typeof__((*(int64_t *) m9_at (re->x.p, pc, re->x.len, sizeof (int64_t), err))) m9a55 = (*(int64_t *) m9_at (re->x.p, pc, re->x.len, sizeof (int64_t), err));
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 1491; goto L_ret; };
             bool m9t3 = (!Regex_Holds (re, s, pos, m9a55, err));
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1491; goto L_ret; };
             if (m9t3) {
               break;
             } }
             { __typeof__(pc) m9v = m9_add_i64 (pc, INT64_C(1), err);
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 1492; goto L_ret; };
               pc = m9v;
             }
         } else {
           (*(int64_t *) m9_at ((*l).pc.p, (*l).n, (*l).pc.len, sizeof (int64_t), err)) = pc;
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1494; goto L_ret; };
           { __typeof__(slot) m9t4to;
           slot = INT64_C(0);
           m9t4to = m9_sub_i64 (ns, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1495; goto L_ret; };
           if (slot <= m9t4to) for (;;) {
             { __typeof__((*(int64_t *) m9_at ((*l).caps.p, m9_add_i64 (m9_mul_i64 ((*l).n, ns, err), slot, err), (*l).caps.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at ((*vm).work.p, slot, (*vm).work.len, sizeof (int64_t), err));
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 1495; goto L_ret; };
               (*(int64_t *) m9_at ((*l).caps.p, m9_add_i64 (m9_mul_i64 ((*l).n, ns, err), slot, err), (*l).caps.len, sizeof (int64_t), err)) = m9v;
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 1495; goto L_ret; };
             }
             if ((uint64_t) m9t4to - (uint64_t) slot < (uint64_t) 1) break;
             slot += 1;
           } }
           { __typeof__((*l).n) m9v = m9_add_i64 ((*l).n, INT64_C(1), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1496; goto L_ret; };
             (*l).n = m9v;
           }
           break;
@@ -5573,6 +5746,7 @@ static void Regex_AddThread (Regex_Re * re, m9_sl_UTF8 s, Regex_Vm *vm, m9_pool 
     }
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, vm_pool, (*vm).seen.p);
   m9_adopt_if (&m9frame, vm_pool, (*vm).work.p);
@@ -5591,17 +5765,19 @@ static bool Regex_Step (Regex_Re * re, int64_t pc, int64_t c, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.Step"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   int64_t k = 0; (void) k;
   int64_t at = 0; (void) at;
   { __typeof__(k) m9v = (*(int64_t *) m9_at (re->op.p, pc, re->op.len, sizeof (int64_t), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1508; goto L_ret; };
     k = m9v;
   }
   if ((k == Regex_OChar)) {
     err->res = m9res;
     m9ret = (c == (*(int64_t *) m9_at (re->x.p, pc, re->x.len, sizeof (int64_t), err)));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1509; goto L_ret; };
     goto L_ret;
   }
   if ((k == Regex_OAny)) {
@@ -5616,16 +5792,16 @@ static bool Regex_Step (Regex_Re * re, int64_t pc, int64_t c, m9_state *err)
   }
   if ((k == Regex_OClass)) {
     { __typeof__(at) m9v = (*(int64_t *) m9_at (re->x.p, pc, re->x.len, sizeof (int64_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1513; goto L_ret; };
       at = m9v;
     }
     err->res = m9res;
     { __typeof__((*(int64_t *) m9_at (re->clsAt.p, at, re->clsAt.len, sizeof (int64_t), err))) m9a56 = (*(int64_t *) m9_at (re->clsAt.p, at, re->clsAt.len, sizeof (int64_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1514; goto L_ret; };
     { __typeof__((*(int64_t *) m9_at (re->clsLen.p, at, re->clsLen.len, sizeof (int64_t), err))) m9a57 = (*(int64_t *) m9_at (re->clsLen.p, at, re->clsLen.len, sizeof (int64_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1514; goto L_ret; };
     m9ret = Regex_InTable (re->lo, re->hi, m9a56, m9a57, c, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1514; goto L_ret; };
     }
     }
     goto L_ret;
@@ -5634,6 +5810,7 @@ static bool Regex_Step (Regex_Re * re, int64_t pc, int64_t c, m9_state *err)
   m9ret = false;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -5645,6 +5822,8 @@ static Regex_Found * Regex_Run (Regex_Re * re, m9_sl_UTF8 s, int64_t from, bool 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Regex.Run"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Regex_Found * m9ret = NULL;
   m9_pool scratch = {0}; (void) scratch;
   Regex_Vm vm = {0}; (void) vm;
@@ -5664,7 +5843,7 @@ static Regex_Found * Regex_Run (Regex_Re * re, m9_sl_UTF8 s, int64_t from, bool 
   bool matched = false; (void) matched;
   Regex_Found * m = NULL; (void) m;
   { __typeof__(n) m9v = Text_BLen (s, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1534; goto L_ret; };
     n = m9v;
   }
   f = from;
@@ -5676,53 +5855,53 @@ static Regex_Found * Regex_Run (Regex_Re * re, m9_sl_UTF8 s, int64_t from, bool 
   }
   ns = re->nslots;
   { __typeof__(vm.seen) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(scratch), re->n, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1539; goto L_ret; };
     vm.seen = m9v;
   }
   vm.stamps = INT64_C(0);
   { __typeof__(vm.work) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(scratch), ns, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1541; goto L_ret; };
     vm.work = m9v;
   }
   { __typeof__(vm.jobPc) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(scratch), m9_add_i64 (m9_mul_i64 (INT64_C(2), re->n, err), INT64_C(2), err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1542; goto L_ret; };
     vm.jobPc = m9v;
   }
   { __typeof__(vm.jobSlot) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(scratch), m9_add_i64 (m9_mul_i64 (INT64_C(2), re->n, err), INT64_C(2), err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1543; goto L_ret; };
     vm.jobSlot = m9v;
   }
   { __typeof__(vm.jobVal) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(scratch), m9_add_i64 (m9_mul_i64 (INT64_C(2), re->n, err), INT64_C(2), err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1544; goto L_ret; };
     vm.jobVal = m9v;
   }
   { __typeof__(cl.pc) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(scratch), re->n, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1545; goto L_ret; };
     cl.pc = m9v;
   }
   { __typeof__(cl.caps) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(scratch), m9_mul_i64 (re->n, ns, err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1546; goto L_ret; };
     cl.caps = m9v;
   }
   { __typeof__(nl.pc) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(scratch), re->n, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1547; goto L_ret; };
     nl.pc = m9v;
   }
   { __typeof__(nl.caps) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(scratch), m9_mul_i64 (re->n, ns, err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1548; goto L_ret; };
     nl.caps = m9v;
   }
   { __typeof__(best) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(scratch), ns, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1549; goto L_ret; };
     best = m9v;
   }
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (re->n, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1550; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     (*(int64_t *) m9_at (vm.seen.p, i, vm.seen.len, sizeof (int64_t), err)) = INT64_C(0);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1550; goto L_ret; };
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
@@ -5736,36 +5915,36 @@ static Regex_Found * Regex_Run (Regex_Re * re, m9_sl_UTF8 s, int64_t from, bool 
       { __typeof__(j) m9t2to;
       j = INT64_C(0);
       m9t2to = m9_sub_i64 (ns, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1558; goto L_ret; };
       if (j <= m9t2to) for (;;) {
         { __typeof__((*(int64_t *) m9_at (vm.work.p, j, vm.work.len, sizeof (int64_t), err))) m9v = m9_neg_i64 (INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1558; goto L_ret; };
           (*(int64_t *) m9_at (vm.work.p, j, vm.work.len, sizeof (int64_t), err)) = m9v;
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1558; goto L_ret; };
         }
         if ((uint64_t) m9t2to - (uint64_t) j < (uint64_t) 1) break;
         j += 1;
       } }
       Regex_AddThread (re, s, &(vm), err->res, &(cl), err->res, INT64_C(0), pos, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1559; goto L_ret; };
     }
     if (((cl.n == INT64_C(0)) && ((matched || anchored)))) {
       break;
     }
     { __typeof__(vm.stamps) m9v = m9_add_i64 (vm.stamps, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1563; goto L_ret; };
       vm.stamps = m9v;
     }
     nl.n = INT64_C(0);
     nl.stamp = vm.stamps;
     nx = pos;
     { __typeof__(c) m9v = m9_neg_i64 (INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1571; goto L_ret; };
       c = m9v;
     }
     if ((pos < n)) {
       { __typeof__(c) m9v = Regex_CpAt (s, pos, &(nx), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1572; goto L_ret; };
         c = m9v;
       }
     }
@@ -5773,11 +5952,11 @@ static Regex_Found * Regex_Run (Regex_Re * re, m9_sl_UTF8 s, int64_t from, bool 
     for (;;) {
       if (!((i < cl.n))) break;
       { __typeof__(pc) m9v = (*(int64_t *) m9_at (cl.pc.p, i, cl.pc.len, sizeof (int64_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1575; goto L_ret; };
         pc = m9v;
       }
       bool m9t3 = ((*(int64_t *) m9_at (re->op.p, pc, re->op.len, sizeof (int64_t), err)) == Regex_OMatch);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1576; goto L_ret; };
       if (m9t3) {
         if ((((full && (pos != n))) || ((advance && (pos == f))))) {
         } else {
@@ -5785,12 +5964,12 @@ static Regex_Found * Regex_Run (Regex_Re * re, m9_sl_UTF8 s, int64_t from, bool 
           { __typeof__(j) m9t4to;
           j = INT64_C(0);
           m9t4to = m9_sub_i64 (ns, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1581; goto L_ret; };
           if (j <= m9t4to) for (;;) {
             { __typeof__((*(int64_t *) m9_at (best.p, j, best.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at (cl.caps.p, m9_add_i64 (m9_mul_i64 (i, ns, err), j, err), cl.caps.len, sizeof (int64_t), err));
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 1581; goto L_ret; };
               (*(int64_t *) m9_at (best.p, j, best.len, sizeof (int64_t), err)) = m9v;
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 1581; goto L_ret; };
             }
             if ((uint64_t) m9t4to - (uint64_t) j < (uint64_t) 1) break;
             j += 1;
@@ -5799,29 +5978,29 @@ static Regex_Found * Regex_Run (Regex_Re * re, m9_sl_UTF8 s, int64_t from, bool 
         }
       } else {
         bool m9t5 = ((c >= INT64_C(0)) && Regex_Step (re, pc, c, err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1582; goto L_ret; };
         if (m9t5) {
           { __typeof__(j) m9t6to;
           j = INT64_C(0);
           m9t6to = m9_sub_i64 (ns, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1585; goto L_ret; };
           if (j <= m9t6to) for (;;) {
             { __typeof__((*(int64_t *) m9_at (vm.work.p, j, vm.work.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at (cl.caps.p, m9_add_i64 (m9_mul_i64 (i, ns, err), j, err), cl.caps.len, sizeof (int64_t), err));
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 1585; goto L_ret; };
               (*(int64_t *) m9_at (vm.work.p, j, vm.work.len, sizeof (int64_t), err)) = m9v;
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 1585; goto L_ret; };
             }
             if ((uint64_t) m9t6to - (uint64_t) j < (uint64_t) 1) break;
             j += 1;
           } }
           { __typeof__(m9_add_i64 (pc, INT64_C(1), err)) m9a58 = m9_add_i64 (pc, INT64_C(1), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1586; goto L_ret; };
           Regex_AddThread (re, s, &(vm), err->res, &(nl), err->res, m9a58, nx, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1586; goto L_ret; };
           }
       } }
       { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1588; goto L_ret; };
         i = m9v;
       }
     }
@@ -5839,22 +6018,22 @@ static Regex_Found * Regex_Run (Regex_Re * re, m9_sl_UTF8 s, int64_t from, bool 
     goto L_ret;
   }
   { __typeof__(m) m9v = (Regex_Found *) m9_pool_alloc (err->res, sizeof (Regex_Found), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1597; goto L_ret; };
     m = m9v;
   }
   { __typeof__(m->span) m9v = M9_POOL_SL (m9_sl_I64, int64_t, err->res, m9_mul_i64 (INT64_C(2), (m9_add_i64 (re->ngroups, INT64_C(1), err)), err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1598; goto L_ret; };
     m->span = m9v;
   }
   { __typeof__(j) m9t7to;
   j = INT64_C(0);
   m9t7to = m9_add_i64 (m9_mul_i64 (INT64_C(2), re->ngroups, err), INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1599; goto L_ret; };
   if (j <= m9t7to) for (;;) {
     { __typeof__((*(int64_t *) m9_at (m->span.p, j, m->span.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at (best.p, j, best.len, sizeof (int64_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1599; goto L_ret; };
       (*(int64_t *) m9_at (m->span.p, j, m->span.len, sizeof (int64_t), err)) = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1599; goto L_ret; };
     }
     if ((uint64_t) m9t7to - (uint64_t) j < (uint64_t) 1) break;
     j += 1;
@@ -5864,17 +6043,17 @@ static Regex_Found * Regex_Run (Regex_Re * re, m9_sl_UTF8 s, int64_t from, bool 
   m9t8to = re->ngroups;
   if (j <= m9t8to) for (;;) {
     bool m9t9 = (((*(int64_t *) m9_at (m->span.p, m9_mul_i64 (INT64_C(2), j, err), m->span.len, sizeof (int64_t), err)) < INT64_C(0)) || ((*(int64_t *) m9_at (m->span.p, m9_add_i64 (m9_mul_i64 (INT64_C(2), j, err), INT64_C(1), err), m->span.len, sizeof (int64_t), err)) < INT64_C(0)));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1602; goto L_ret; };
     if (m9t9) {
       { __typeof__((*(int64_t *) m9_at (m->span.p, m9_mul_i64 (INT64_C(2), j, err), m->span.len, sizeof (int64_t), err))) m9v = m9_neg_i64 (INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1603; goto L_ret; };
         (*(int64_t *) m9_at (m->span.p, m9_mul_i64 (INT64_C(2), j, err), m->span.len, sizeof (int64_t), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1603; goto L_ret; };
       }
       { __typeof__((*(int64_t *) m9_at (m->span.p, m9_add_i64 (m9_mul_i64 (INT64_C(2), j, err), INT64_C(1), err), m->span.len, sizeof (int64_t), err))) m9v = m9_neg_i64 (INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1604; goto L_ret; };
         (*(int64_t *) m9_at (m->span.p, m9_add_i64 (m9_mul_i64 (INT64_C(2), j, err), INT64_C(1), err), m->span.len, sizeof (int64_t), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1604; goto L_ret; };
       }
     }
     if ((uint64_t) m9t8to - (uint64_t) j < (uint64_t) 1) break;
@@ -5884,6 +6063,7 @@ static Regex_Found * Regex_Run (Regex_Re * re, m9_sl_UTF8 s, int64_t from, bool 
   m9ret = m;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -5897,6 +6077,8 @@ static void Regex_Expand (Regex_Re * re, m9_sl_UTF8 s, m9_sl_UTF8 repl, Regex_Fo
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Regex.Expand"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   int64_t k = 0; (void) k;
   int64_t g = 0; (void) g;
@@ -5908,113 +6090,118 @@ static void Regex_Expand (Regex_Re * re, m9_sl_UTF8 s, m9_sl_UTF8 repl, Regex_Fo
   from = INT64_C(0);
   for (;;) {
     bool m9t1 = (i < Text_BLen (repl, err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1696; goto L_ret; };
     if (!(m9t1)) break;
     bool m9t2 = (!Text_BIs (repl, i, 92u, err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1697; goto L_ret; };
     if (m9t2) {
       { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1698; goto L_ret; };
         i = m9v;
       }
     } else {
       bool m9t3 = (m9_add_i64 (i, INT64_C(1), err) >= Text_BLen (repl, err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1698; goto L_ret; };
       if (m9t3) {
         { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s50, 46 })) m9t4 = ((m9_sl_UTF8){ (uint8_t *) m9s50, 46 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
         err->i[0] = m9_neg_i64 (INT64_C(1), err);
         m9_raise (err, &Regex_BadPattern);
+        m9_site (err, 1700, m9pn);
         goto L_ret;
     } else {
       { __typeof__(m9_utf_slice (repl, from, m9_sub_i64 (i, from, err), err)) m9a59 = m9_utf_slice (repl, from, m9_sub_i64 (i, from, err), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1702; goto L_ret; };
       DynStr_Append (d, d_pool, m9a59, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1702; goto L_ret; };
       }
       { __typeof__(at) m9v = m9_add_i64 (i, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1703; goto L_ret; };
         at = m9v;
       }
       { __typeof__(c) m9v = Text_NextCp (repl, &(at), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1704; goto L_ret; };
         c = m9v;
       }
       i = at;
       { __typeof__(g) m9v = m9_neg_i64 (INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1706; goto L_ret; };
         g = m9v;
       }
       if ((c == 103u)) {
         bool m9t6 = ((i >= Text_BLen (repl, err)) || (!Text_BIs (repl, i, 60u, err)));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1708; goto L_ret; };
         if (m9t6) {
           { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s51, 28 })) m9t7 = ((m9_sl_UTF8){ (uint8_t *) m9s51, 28 }); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
           err->i[0] = m9_neg_i64 (INT64_C(1), err);
           m9_raise (err, &Regex_BadPattern);
+          m9_site (err, 1709, m9pn);
           goto L_ret;
         }
         { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1711; goto L_ret; };
           i = m9v;
         }
         at = i;
         for (;;) {
           bool m9t8 = ((i < Text_BLen (repl, err)) && (!Text_BIs (repl, i, 62u, err)));
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1713; goto L_ret; };
           if (!(m9t8)) break;
           { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1713; goto L_ret; };
             i = m9v;
           }
         }
         { __typeof__(name) m9v = m9_utf_slice (repl, at, m9_sub_i64 (i, at, err), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1714; goto L_ret; };
           name = m9v;
         }
         bool m9t10 = (i >= Text_BLen (repl, err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1715; goto L_ret; };
         if (m9t10) {
           { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s52, 28 })) m9t11 = ((m9_sl_UTF8){ (uint8_t *) m9s52, 28 }); err->s[0].p = m9t11.p; err->s[0].len = m9t11.len; m9_pay_keep (err, 0, sizeof (*m9t11.p)); }
           err->i[0] = m9_neg_i64 (INT64_C(1), err);
           m9_raise (err, &Regex_BadPattern);
+          m9_site (err, 1715, m9pn);
           goto L_ret;
         }
         { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1716; goto L_ret; };
           i = m9v;
         }
         bool m9t12 = (Text_BLen (name, err) == INT64_C(0));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1717; goto L_ret; };
         if (m9t12) {
           { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s53, 37 })) m9t13 = ((m9_sl_UTF8){ (uint8_t *) m9s53, 37 }); err->s[0].p = m9t13.p; err->s[0].len = m9t13.len; m9_pay_keep (err, 0, sizeof (*m9t13.p)); }
           err->i[0] = m9_neg_i64 (INT64_C(1), err);
           m9_raise (err, &Regex_BadPattern);
+          m9_site (err, 1717, m9pn);
           goto L_ret;
         }
         { __typeof__(Text_BChar (name, INT64_C(0), err)) m9a60 = Text_BChar (name, INT64_C(0), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1718; goto L_ret; };
         bool m9t14 = Regex_IsDigit (m9a60, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1718; goto L_ret; };
         if (m9t14) {
           g = INT64_C(0);
           { __typeof__(k) m9t15to;
           k = INT64_C(0);
           m9t15to = m9_sub_i64 (Text_BLen (name, err), INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1720; goto L_ret; };
           if (k <= m9t15to) for (;;) {
             { __typeof__(Text_BChar (name, k, err)) m9a61 = Text_BChar (name, k, err);
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 1721; goto L_ret; };
             bool m9t16 = (!Regex_IsDigit (m9a61, err));
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1721; goto L_ret; };
             if (m9t16) {
               { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s54, 28 }), name, err)) m9t17 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s54, 28 }), name, err); err->s[0].p = m9t17.p; err->s[0].len = m9t17.len; m9_pay_keep (err, 0, sizeof (*m9t17.p)); }
               err->i[0] = m9_neg_i64 (INT64_C(1), err);
               m9_raise (err, &Regex_BadPattern);
+              m9_site (err, 1722, m9pn);
               goto L_ret;
             } }
             if ((g < INT64_C(100000))) {
               { __typeof__(g) m9v = m9_sub_i64 (m9_add_i64 (m9_mul_i64 (g, INT64_C(10), err), (int64_t)(Text_BAt (name, k, err)), err), INT64_C(48), err);
-                if (err->exc) goto L_ret;
+                if (err->exc) { m9ln = 1724; goto L_ret; };
                 g = m9v;
               }
             }
@@ -6023,80 +6210,83 @@ static void Regex_Expand (Regex_Re * re, m9_sl_UTF8 s, m9_sl_UTF8 repl, Regex_Fo
           } }
         } else {
           { __typeof__(g) m9v = Regex_GroupIndex (re, name, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1727; goto L_ret; };
             g = m9v;
           }
           if ((g < INT64_C(0))) {
             { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s55, 19 }), name, err)) m9t18 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s55, 19 }), name, err); err->s[0].p = m9t18.p; err->s[0].len = m9t18.len; m9_pay_keep (err, 0, sizeof (*m9t18.p)); }
             err->i[0] = m9_neg_i64 (INT64_C(1), err);
             m9_raise (err, &Regex_BadPattern);
+            m9_site (err, 1728, m9pn);
             goto L_ret;
           }
         } }
       } else {
         bool m9t19 = (Regex_IsDigit (c, err) && (c != 48u));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1728; goto L_ret; };
         if (m9t19) {
           { __typeof__(g) m9v = m9_sub_i64 ((int64_t)(c), INT64_C(48), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1731; goto L_ret; };
             g = m9v;
           }
-          bool m9t21 = ({ bool m9t20 = (i < Text_BLen (repl, err)); if (m9t20) { { __typeof__(Text_BChar (repl, i, err)) m9a62 = Text_BChar (repl, i, err);   if (err->exc) goto L_ret; m9t20 = (Regex_IsDigit (m9a62, err)); } } m9t20; });
-          if (err->exc) goto L_ret;
+          bool m9t21 = ({ bool m9t20 = (i < Text_BLen (repl, err)); if (m9t20) { { __typeof__(Text_BChar (repl, i, err)) m9a62 = Text_BChar (repl, i, err);   if (err->exc) { m9ln = 1732; goto L_ret; }; m9t20 = (Regex_IsDigit (m9a62, err)); } } m9t20; });
+          if (err->exc) { m9ln = 1732; goto L_ret; };
           if (m9t21) {
             { __typeof__(g) m9v = m9_sub_i64 (m9_add_i64 (m9_mul_i64 (g, INT64_C(10), err), (int64_t)(Text_BAt (repl, i, err)), err), INT64_C(48), err);
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 1733; goto L_ret; };
               g = m9v;
             }
             { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-              if (err->exc) goto L_ret;
+              if (err->exc) { m9ln = 1734; goto L_ret; };
               i = m9v;
             }
           }
       } else {
         if ((c == 110u)) {
           DynStr_AppendChar (d, d_pool, 10u, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1736; goto L_ret; };
       } else {
         if ((c == 116u)) {
           DynStr_AppendChar (d, d_pool, 9u, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1737; goto L_ret; };
       } else {
         if ((c == 114u)) {
           DynStr_AppendChar (d, d_pool, 13u, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1738; goto L_ret; };
       } else {
         if ((c == 92u)) {
           DynStr_AppendChar (d, d_pool, 92u, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1739; goto L_ret; };
       } else {
         bool m9t22 = (Regex_IsAsciiLetter (c, err) || (c == 48u));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1739; goto L_ret; };
         if (m9t22) {
           { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s56, 12 }), m9_utf_of_char (err->res, c, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s57, 19 }), err)) m9t23 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s56, 12 }), m9_utf_of_char (err->res, c, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s57, 19 }), err); err->s[0].p = m9t23.p; err->s[0].len = m9t23.len; m9_pay_keep (err, 0, sizeof (*m9t23.p)); }
           err->i[0] = m9_neg_i64 (INT64_C(1), err);
           m9_raise (err, &Regex_BadPattern);
+          m9_site (err, 1741, m9pn);
           goto L_ret;
       } else {
         DynStr_AppendChar (d, d_pool, 92u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1743; goto L_ret; };
         DynStr_AppendChar (d, d_pool, c, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1744; goto L_ret; };
       } } } } } } }
       if ((g >= INT64_C(0))) {
         if ((g > re->ngroups)) {
           { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s58, 42 })) m9t24 = ((m9_sl_UTF8){ (uint8_t *) m9s58, 42 }); err->s[0].p = m9t24.p; err->s[0].len = m9t24.len; m9_pay_keep (err, 0, sizeof (*m9t24.p)); }
           err->i[0] = m9_neg_i64 (INT64_C(1), err);
           m9_raise (err, &Regex_BadPattern);
+          m9_site (err, 1747, m9pn);
           goto L_ret;
         }
         bool m9t25 = ((*(int64_t *) m9_at (m->span.p, m9_mul_i64 (INT64_C(2), g, err), m->span.len, sizeof (int64_t), err)) >= INT64_C(0));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1748; goto L_ret; };
         if (m9t25) {
           { __typeof__(m9_utf_slice (s, (*(int64_t *) m9_at (m->span.p, m9_mul_i64 (INT64_C(2), g, err), m->span.len, sizeof (int64_t), err)), m9_sub_i64 ((*(int64_t *) m9_at (m->span.p, m9_add_i64 (m9_mul_i64 (INT64_C(2), g, err), INT64_C(1), err), m->span.len, sizeof (int64_t), err)), (*(int64_t *) m9_at (m->span.p, m9_mul_i64 (INT64_C(2), g, err), m->span.len, sizeof (int64_t), err)), err), err)) m9a63 = m9_utf_slice (s, (*(int64_t *) m9_at (m->span.p, m9_mul_i64 (INT64_C(2), g, err), m->span.len, sizeof (int64_t), err)), m9_sub_i64 ((*(int64_t *) m9_at (m->span.p, m9_add_i64 (m9_mul_i64 (INT64_C(2), g, err), INT64_C(1), err), m->span.len, sizeof (int64_t), err)), (*(int64_t *) m9_at (m->span.p, m9_mul_i64 (INT64_C(2), g, err), m->span.len, sizeof (int64_t), err)), err), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 1749; goto L_ret; };
           DynStr_Append (d, d_pool, m9a63, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1749; goto L_ret; };
           }
         }
       }
@@ -6104,11 +6294,12 @@ static void Regex_Expand (Regex_Re * re, m9_sl_UTF8 s, m9_sl_UTF8 repl, Regex_Fo
     } }
   }
   { __typeof__(m9_utf_slice (repl, from, m9_sub_i64 (i, from, err), err)) m9a64 = m9_utf_slice (repl, from, m9_sub_i64 (i, from, err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1755; goto L_ret; };
   DynStr_Append (d, d_pool, m9a64, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1755; goto L_ret; };
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -6122,8 +6313,11 @@ void Regex_m9init (m9_state *err)
   m9done = 1;
   m9_pool *m9prev = err->res;
   err->res = &m9mframe;
+  static const char m9pn[] = "Regex (the module body)"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   DynStr_m9init (err); if (err->exc) goto L_ret;
   Text_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9prev;
 }

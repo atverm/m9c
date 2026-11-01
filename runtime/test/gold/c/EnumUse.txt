@@ -83,6 +83,8 @@ static m9_sl_UTF8 EnumUse_Nm (Palette_Hue x, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "EnumUse.Nm"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   { __typeof__(x) m9t1 = x;
   switch (m9t1.tag) {
@@ -107,6 +109,7 @@ static m9_sl_UTF8 EnumUse_Nm (Palette_Hue x, m9_state *err)
   default: m9_trap_tag ();
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -119,12 +122,15 @@ static void EnumUse_Round (int64_t i, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "EnumUse.Round"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   { __typeof__((int64_t)((((Palette_Hue){ .tag = m9_enum ((int64_t)(i), INT64_C(3), err) })).tag)) m9a1 = (int64_t)((((Palette_Hue){ .tag = m9_enum ((int64_t)(i), INT64_C(3), err) })).tag);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 30; goto L_ret; };
   Io_WriteI64 (m9a1, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 30; goto L_ret; };
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -136,15 +142,18 @@ static void EnumUse_AllHues (m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "EnumUse.AllHues"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Palette_Hue c = {0}; (void) c;
   { int32_t m9t1to;
   c.tag = (((Palette_Hue){ .tag = Palette_Hue_Warm })).tag;
   m9t1to = (((Palette_Hue){ .tag = Palette_Hue_Neutral })).tag;
   for (; c.tag <= m9t1to; c.tag++) {
     Io_WriteLineUtf ((Palette_Hue_names[(c).tag]), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 40; goto L_ret; };
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -156,6 +165,8 @@ static void EnumUse_Tables (m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "EnumUse.Tables"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_arr_3_int64_t bw = {0}; (void) bw;
   m9_arr_3_int64_t hw = {0}; (void) hw;
   EnumUse_Band b = {0}; (void) b;
@@ -171,28 +182,29 @@ static void EnumUse_Tables (m9_state *err)
   m9t1to = (((EnumUse_Band){ .tag = EnumUse_Band_Hi })).tag;
   for (; b.tag <= m9t1to; b.tag++) {
     Io_WriteI64 ((bw.v[(b).tag]), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 63; goto L_ret; };
   } }
   Io_WriteLineUtf (((m9_sl_UTF8){ NULL, 0 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 65; goto L_ret; };
   { int32_t m9t2to;
   h2.tag = (((Palette_Hue){ .tag = Palette_Hue_Warm })).tag;
   m9t2to = (((Palette_Hue){ .tag = Palette_Hue_Neutral })).tag;
   for (; h2.tag <= m9t2to; h2.tag++) {
     Io_WriteI64 ((hw.v[(h2).tag]), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 67; goto L_ret; };
   } }
   Io_WriteLineUtf (((m9_sl_UTF8){ NULL, 0 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 69; goto L_ret; };
   Io_WriteUtf (((m9_sl_UTF8){ (uint8_t *) m9s3, 5 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 70; goto L_ret; };
   Io_WriteI64 (INT64_C(3), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 71; goto L_ret; };
   Io_WriteI64 (INT64_C(3), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 72; goto L_ret; };
   Io_WriteLineUtf (((m9_sl_UTF8){ NULL, 0 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 73; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -204,20 +216,23 @@ static void EnumUse_CrossField (m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "EnumUse.CrossField"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Palette_Weights wt = {0}; (void) wt;
   Palette_Hue hh = {0}; (void) hh;
   { __typeof__(wt) m9v = Palette_MakeWeights (err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 79; goto L_ret; };
     wt = m9v;
   }
   hh = ((Palette_Hue){ .tag = Palette_Hue_Neutral });
   Io_WriteUtf (((m9_sl_UTF8){ (uint8_t *) m9s4, 6 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 81; goto L_ret; };
   Io_WriteI64 ((wt.w.v[(hh).tag]), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 82; goto L_ret; };
   Io_WriteLineUtf (((m9_sl_UTF8){ NULL, 0 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 83; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -228,58 +243,61 @@ int main (int argc, char **argv)
   m9_state errv = {0};
   m9_state *err = &errv;
   err->res = &m9mframe;
+  static const char m9pn[] = "EnumUse (the module body)"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_args (argc, argv);
   Palette_m9init (err); if (err->exc) goto L_ret;
   Io_m9init (err); if (err->exc) goto L_ret;
   h = ((Palette_Hue){ .tag = Palette_Hue_Cool });
   { __typeof__(EnumUse_Nm (h, err)) m9a2 = EnumUse_Nm (h, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 88; goto L_hdl_m9t1; };
   Io_WriteLineUtf (m9a2, err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 88; goto L_hdl_m9t1; };
   }
   { __typeof__(Palette_Warmest (err)) m9a3 = Palette_Warmest (err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 89; goto L_hdl_m9t1; };
   { __typeof__(EnumUse_Nm (m9a3, err)) m9a4 = EnumUse_Nm (m9a3, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 89; goto L_hdl_m9t1; };
   Io_WriteLineUtf (m9a4, err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 89; goto L_hdl_m9t1; };
   }
   }
   Io_WriteI64 ((int64_t)((h).tag), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 90; goto L_hdl_m9t1; };
   EnumUse_Round (INT64_C(2), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 91; goto L_hdl_m9t1; };
   Io_WriteLineUtf (((m9_sl_UTF8){ NULL, 0 }), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 92; goto L_hdl_m9t1; };
   Io_WriteLineUtf ((Palette_Hue_names[(h).tag]), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 93; goto L_hdl_m9t1; };
   Io_WriteLineUtf ((Palette_Hue_names[(((Palette_Hue){ .tag = Palette_Hue_Warm })).tag]), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 94; goto L_hdl_m9t1; };
   EnumUse_AllHues (err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 95; goto L_hdl_m9t1; };
   EnumUse_Tables (err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 96; goto L_hdl_m9t1; };
   if (((h).tag == (((Palette_Hue){ .tag = Palette_Hue_Cool })).tag)) {
     Io_WriteLineUtf (((m9_sl_UTF8){ (uint8_t *) m9s5, 9 }), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 98; goto L_hdl_m9t1; };
   }
   if (((h).tag != (((Palette_Hue){ .tag = Palette_Hue_Warm })).tag)) {
     Io_WriteLineUtf (((m9_sl_UTF8){ (uint8_t *) m9s6, 13 }), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 99; goto L_hdl_m9t1; };
   }
   EnumUse_CrossField (err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 103; goto L_hdl_m9t1; };
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
     Io_WriteLineUtf (((m9_sl_UTF8){ (uint8_t *) m9s7, 12 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 105; goto L_ret; };
     goto L_dn_m9t2;
   }
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   m9_pool_free (&m9mframe);
   return m9_exit (err);
 }

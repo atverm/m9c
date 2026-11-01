@@ -1970,7 +1970,7 @@ PROCEDURE PathMatches (rt: PTR Route ; RO path: STR) : BOOL =
 BEGIN
   IF rt.prefix THEN
     RETURN Text.BLen (path) >= Text.BLen (rt.path) AND
-           Text.Eq (SLICE (path, 0, Text.BLen (rt.path)), rt.path)
+           Text.StartsWith (path, rt.path)
   END ;
   RETURN Text.Eq (path, rt.path)
 END PathMatches ;
@@ -2144,7 +2144,7 @@ BEGIN
   IF NOT IsToken (q.method) THEN
     RETURN Refuse (w, c, 400, 'malformed request line')
   END ;
-  IF Text.BLen (version) # 8 OR NOT Text.Eq (SLICE (version, 0, 5), 'HTTP/') OR
+  IF Text.BLen (version) # 8 OR NOT Text.StartsWith (version, 'HTTP/') OR
      NOT Text.BIs (version, 6, '.') OR I64 (Text.BAt (version, 5)) < ORD ('0') OR I64 (Text.BAt (version, 5)) > ORD ('9') OR
      I64 (Text.BAt (version, 7)) < ORD ('0') OR I64 (Text.BAt (version, 7)) > ORD ('9') THEN
     RETURN Refuse (w, c, 400, 'malformed request line')

@@ -1,0 +1,30 @@
+MODULE GfBareName ;
+
+(* WANT: size 6 kid 7 *)
+
+(* A bare name in this module never names an imported type (M14's
+   siblings, 2026-11-01).  This module's own Kid hid GfBnA.Kid in
+   GfBnA.Get's answer, and the IS SOME was `form unsupported'.  The
+   procedure Size was taken for a conversion to GfBnA.Size, an alias
+   of I64, and printed 3. *)
+
+IMPORT GfBnA ;
+IMPORT Io, Fmt ;
+
+TYPE
+  Kid = I64 ;
+
+VAR
+  pool : POOL ;
+  k : Kid ;
+
+PROCEDURE Size (x: I64) : I64 =
+BEGIN
+  RETURN 2 * x
+END Size ;
+
+BEGIN
+  k := 0 ;
+  IF GfBnA.Get (pool, 7) IS SOME p THEN k := p.v END ;
+  Io.WriteLine ('size ' + Fmt.I64Str (Size (3)) + ' kid ' + Fmt.I64Str (k))
+END GfBareName.

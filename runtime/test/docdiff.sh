@@ -2,8 +2,7 @@
 # This gate holds the generated reference documentation against what
 # is checked in.
 #
-# docs/modules/NAME.md is a GOLDEN, exactly as host/fpc/lextest.golden
-# and runtime/gen are.  It must regenerate byte-identically.  So a
+# docs/modules/NAME.md is a GOLDEN, exactly as runtime/gen is.  It must regenerate byte-identically.  So a
 # comment edited without regenerating shows up as a diff rather than
 # as documentation that quietly stopped matching the code.
 #
@@ -24,7 +23,7 @@ set -e
 cd "$(dirname "$0")"
 . ./lib/gen.sh          # runtime/gen is BUILT here, not found
 
-M9CNEW=$(mktemp -d)
+M9CNEW=$(mktemp -d ./m9cnew.XXXXXX)
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label \
     -Wno-unused-parameter -Wno-unused-function \
     -iquote .. -iquote ../gen ../m9rt.c $COMPILERC -o "$M9CNEW/m9c"

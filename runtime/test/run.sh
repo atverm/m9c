@@ -198,6 +198,16 @@ export M9CACHE="$RW/cache"
   # second item, is REFUSED since 2026-10-25: probes
   # for-variable-assigned and for-variable-var-arg, museum
   # for-variable-past-bound.m9)
+  # An exception nothing handles says what was refused and where: the
+  # procedure, the line and the runtime's reason with its numbers.
+  # It said only "m9: unhandled IndexError" until 2026-11-01 (zarrm9).
+  cp "$FIX/Unhandled.m9" src/
+  got=$("$M9C" --run src/Unhandled.m9 cut < /dev/null 2>&1)
+  echo "$got" | grep -q "unhandled IndexError in Unhandled.Citation, line 13: a slice (start 0, length 8) that cuts inside a character, in a text of 15 bytes" ||
+    { echo "FAIL: an unhandled cut inside a character lost its context:"; echo "$got" | head -3; exit 1; }
+  got=$("$M9C" --run src/Unhandled.m9 index < /dev/null 2>&1)
+  echo "$got" | grep -q "unhandled IndexError in Unhandled.Pick, line 18: index 5 outside a length of 3" ||
+    { echo "FAIL: an unhandled index lost its context:"; echo "$got" | head -3; exit 1; }
   # With --out-dir the C goes where it is told, and nowhere else.
   mkdir -p gen && "$M9C" --out-dir gen src/RunHelper.m9
   [ -f gen/RunHelper.c ] && [ -f gen/RunHelper.h ] && [ ! -f RunHelper.c ] ||

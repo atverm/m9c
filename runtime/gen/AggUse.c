@@ -142,6 +142,8 @@ static int64_t AggUse_Sum (m9_sl_I64 xs, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "AggUse.Sum"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   int64_t i = 0; (void) i;
   int64_t t = 0; (void) t;
@@ -149,10 +151,10 @@ static int64_t AggUse_Sum (m9_sl_I64 xs, m9_state *err)
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((xs).len, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 54; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     { __typeof__(t) m9v = m9_add_i64 (t, (*(int64_t *) m9_at (xs.p, i, xs.len, sizeof (int64_t), err)), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 54; goto L_ret; };
       t = m9v;
     }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
@@ -162,6 +164,7 @@ static int64_t AggUse_Sum (m9_sl_I64 xs, m9_state *err)
   m9ret = t;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -173,19 +176,21 @@ static m9_sl_UTF8 AggUse_Reason (int64_t code, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "AggUse.Reason"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   int64_t i = 0; (void) i;
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (INT64_C(3), INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 63; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     bool m9t2 = ((*(int64_t *) m9_at ((*Codes).v, i, INT64_C(3), sizeof (int64_t), err)) == code);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 64; goto L_ret; };
     if (m9t2) {
       err->res = m9res;
       m9ret = (*(m9_sl_UTF8 *) m9_at ((*Texts).v, i, INT64_C(3), sizeof (m9_sl_UTF8), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 64; goto L_ret; };
       goto L_ret;
     }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
@@ -195,6 +200,7 @@ static m9_sl_UTF8 AggUse_Reason (int64_t code, m9_state *err)
   m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s0, 1 });
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -207,19 +213,21 @@ static m9_sl_UTF8 AggUse_Lookup (int64_t code, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "AggUse.Lookup"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   int64_t i = 0; (void) i;
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (INT64_C(3), INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 75; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     bool m9t2 = ((*(AggUse_Status *) m9_at ((*Statuses).v, i, INT64_C(3), sizeof (AggUse_Status), err)).code == code);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 76; goto L_ret; };
     if (m9t2) {
       err->res = m9res;
       m9ret = (*(AggUse_Status *) m9_at ((*Statuses).v, i, INT64_C(3), sizeof (AggUse_Status), err)).text;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 76; goto L_ret; };
       goto L_ret;
     }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
@@ -229,6 +237,7 @@ static m9_sl_UTF8 AggUse_Lookup (int64_t code, m9_state *err)
   m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s1, 1 });
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -241,17 +250,20 @@ static m9_sl_UTF8 AggUse_Line (AggUse_Status *s, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "AggUse.Line"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   if ((*s).fatal) {
     err->res = m9res;
     m9ret = m9_utf_cat (err->res, m9_utf_cat (err->res, (*Ok).text, ((m9_sl_UTF8){ (uint8_t *) m9s2, 8 }), err), (*s).text, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 83; goto L_ret; };
     goto L_ret;
   }
   err->res = m9res;
   m9ret = (*s).text;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -264,12 +276,15 @@ static double AggUse_Shadow (m9_sl_F64 Primes, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "AggUse.Shadow"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   double m9ret = 0;
   err->res = m9res;
   m9ret = (*(double *) m9_at (Primes.p, INT64_C(0), Primes.len, sizeof (double), err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 91; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -281,12 +296,15 @@ static int64_t AggUse_Past (int64_t i, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "AggUse.Past"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   err->res = m9res;
   m9ret = (*(int64_t *) m9_at ((*Primes).v, i, INT64_C(5), sizeof (int64_t), err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 96; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -297,84 +315,86 @@ int main (int argc, char **argv)
   m9_state errv = {0};
   m9_state *err = &errv;
   err->res = &m9mframe;
+  static const char m9pn[] = "AggUse (the module body)"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_args (argc, argv);
   Io_m9init (err); if (err->exc) goto L_ret;
   Text_m9init (err); if (err->exc) goto L_ret;
   Io_WriteI64 (INT64_C(5), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 104; goto L_hdl_m9t1; };
   Io_WriteLineUtf (((m9_sl_UTF8){ NULL, 0 }), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 105; goto L_hdl_m9t1; };
   { __typeof__((*(int64_t *) m9_at ((*Primes).v, INT64_C(4), INT64_C(5), sizeof (int64_t), err))) m9a1 = (*(int64_t *) m9_at ((*Primes).v, INT64_C(4), INT64_C(5), sizeof (int64_t), err));
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 106; goto L_hdl_m9t1; };
   Io_WriteI64 (m9a1, err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 106; goto L_hdl_m9t1; };
   }
   Io_WriteLineUtf (((m9_sl_UTF8){ NULL, 0 }), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 107; goto L_hdl_m9t1; };
   { __typeof__(AggUse_Sum (((m9_sl_I64){ ((*Primes)).v, INT64_C(5) }), err)) m9a2 = AggUse_Sum (((m9_sl_I64){ ((*Primes)).v, INT64_C(5) }), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 108; goto L_hdl_m9t1; };
   Io_WriteI64 (m9a2, err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 108; goto L_hdl_m9t1; };
   }
   Io_WriteLineUtf (((m9_sl_UTF8){ NULL, 0 }), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 109; goto L_hdl_m9t1; };
   { __typeof__(AggUse_Sum (((m9_sl_I64){ ((*Offsets)).v, INT64_C(3) }), err)) m9a3 = AggUse_Sum (((m9_sl_I64){ ((*Offsets)).v, INT64_C(3) }), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 110; goto L_hdl_m9t1; };
   Io_WriteI64 (m9a3, err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 110; goto L_hdl_m9t1; };
   }
   Io_WriteLineUtf (((m9_sl_UTF8){ NULL, 0 }), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 111; goto L_hdl_m9t1; };
   bool m9t3 = ((*(double *) m9_at ((*Halves).v, INT64_C(1), INT64_C(3), sizeof (double), err)) == (- 1.5));
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 112; goto L_hdl_m9t1; };
   if (m9t3) {
     Io_WriteLineUtf (((m9_sl_UTF8){ (uint8_t *) m9s3, 6 }), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 112; goto L_hdl_m9t1; };
   }
   bool m9t4 = (AggUse_Shadow (((m9_sl_F64){ ((*Halves)).v, INT64_C(3) }), err) == 0.5);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 113; goto L_hdl_m9t1; };
   if (m9t4) {
     Io_WriteLineUtf (((m9_sl_UTF8){ (uint8_t *) m9s4, 6 }), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 113; goto L_hdl_m9t1; };
   }
   { __typeof__(i) m9t5to;
   i = INT64_C(0);
   m9t5to = m9_sub_i64 (INT64_C(4), INT64_C(1), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 114; goto L_hdl_m9t1; };
   if (i <= m9t5to) for (;;) {
     { __typeof__((*(m9_sl_UTF8 *) m9_at ((*Names).v, i, INT64_C(4), sizeof (m9_sl_UTF8), err))) m9a4 = (*(m9_sl_UTF8 *) m9_at ((*Names).v, i, INT64_C(4), sizeof (m9_sl_UTF8), err));
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 115; goto L_hdl_m9t1; };
     { __typeof__(Text_BLen (m9a4, err)) m9a5 = Text_BLen (m9a4, err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 115; goto L_hdl_m9t1; };
     Io_WriteI64 (m9a5, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 115; goto L_hdl_m9t1; };
     }
     }
     { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s5, 2 }), (*(m9_sl_UTF8 *) m9_at ((*Names).v, i, INT64_C(4), sizeof (m9_sl_UTF8), err)), err), ((m9_sl_UTF8){ (uint8_t *) m9s6, 1 }), err)) m9a6 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s5, 2 }), (*(m9_sl_UTF8 *) m9_at ((*Names).v, i, INT64_C(4), sizeof (m9_sl_UTF8), err)), err), ((m9_sl_UTF8){ (uint8_t *) m9s6, 1 }), err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 116; goto L_hdl_m9t1; };
     Io_WriteLineUtf (m9a6, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 116; goto L_hdl_m9t1; };
     }
     if ((uint64_t) m9t5to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   bool m9t6 = ((*(uint32_t *) m9_at ((*Marks).v, INT64_C(1), INT64_C(2), sizeof (uint32_t), err)) == 43u);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 118; goto L_hdl_m9t1; };
   if (m9t6) {
     Io_WriteLineUtf (((m9_sl_UTF8){ (uint8_t *) m9s7, 5 }), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 118; goto L_hdl_m9t1; };
   }
   n = INT64_C(0);
   { __typeof__(i) m9t7to;
   i = INT64_C(0);
   m9t7to = m9_sub_i64 (INT64_C(3), INT64_C(1), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 120; goto L_hdl_m9t1; };
   if (i <= m9t7to) for (;;) {
     bool m9t8 = (*(bool *) m9_at ((*Flags).v, i, INT64_C(3), sizeof (bool), err));
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 121; goto L_hdl_m9t1; };
     if (m9t8) {
       { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
-        if (err->exc) goto L_hdl_m9t1;
+        if (err->exc) { m9ln = 121; goto L_hdl_m9t1; };
         n = m9v;
       }
     }
@@ -382,35 +402,35 @@ int main (int argc, char **argv)
     i += 1;
   } }
   Io_WriteI64 (n, err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 123; goto L_hdl_m9t1; };
   Io_WriteLineUtf (((m9_sl_UTF8){ NULL, 0 }), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 124; goto L_hdl_m9t1; };
   { __typeof__(AggUse_Reason (INT64_C(404), err)) m9a7 = AggUse_Reason (INT64_C(404), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 125; goto L_hdl_m9t1; };
   Io_WriteLineUtf (m9a7, err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 125; goto L_hdl_m9t1; };
   }
   { __typeof__(AggUse_Reason (INT64_C(999), err)) m9a8 = AggUse_Reason (INT64_C(999), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 126; goto L_hdl_m9t1; };
   Io_WriteLineUtf (m9a8, err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 126; goto L_hdl_m9t1; };
   }
   { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, AggUse_Lookup (INT64_C(404), err), ((m9_sl_UTF8){ (uint8_t *) m9s8, 3 }), err), AggUse_Lookup (INT64_C(1), err), err)) m9a9 = m9_utf_cat (err->res, m9_utf_cat (err->res, AggUse_Lookup (INT64_C(404), err), ((m9_sl_UTF8){ (uint8_t *) m9s8, 3 }), err), AggUse_Lookup (INT64_C(1), err), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 127; goto L_hdl_m9t1; };
   Io_WriteLineUtf (m9a9, err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 127; goto L_hdl_m9t1; };
   }
   n = INT64_C(0);
   { __typeof__(i) m9t9to;
   i = INT64_C(0);
   m9t9to = m9_sub_i64 (INT64_C(3), INT64_C(1), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 129; goto L_hdl_m9t1; };
   if (i <= m9t9to) for (;;) {
     bool m9t10 = (*(AggUse_Status *) m9_at ((*Statuses).v, i, INT64_C(3), sizeof (AggUse_Status), err)).fatal;
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 130; goto L_hdl_m9t1; };
     if (m9t10) {
       { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
-        if (err->exc) goto L_hdl_m9t1;
+        if (err->exc) { m9ln = 130; goto L_hdl_m9t1; };
         n = m9v;
       }
     }
@@ -418,40 +438,41 @@ int main (int argc, char **argv)
     i += 1;
   } }
   Io_WriteI64 (n, err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 132; goto L_hdl_m9t1; };
   Io_WriteLineUtf (((m9_sl_UTF8){ NULL, 0 }), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 133; goto L_hdl_m9t1; };
   { __typeof__(made) m9v = ((AggUse_Status){ m9_add_i64 ((*(AggUse_Status *) m9_at ((*Statuses).v, INT64_C(2), INT64_C(3), sizeof (AggUse_Status), err)).code, INT64_C(3), err), ((m9_sl_UTF8){ (uint8_t *) m9s9, 4 }), true });
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 134; goto L_hdl_m9t1; };
     made = m9v;
   }
   Io_WriteI64 (made.code, err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 135; goto L_hdl_m9t1; };
   { __typeof__((*Ok)) m9a10 = (*Ok);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 136; goto L_hdl_m9t1; };
   { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s10, 1 }), AggUse_Line (&(made), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s11, 3 }), err), AggUse_Line (&m9a10, err), err)) m9a11 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s10, 1 }), AggUse_Line (&(made), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s11, 3 }), err), AggUse_Line (&m9a10, err), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 136; goto L_hdl_m9t1; };
   Io_WriteLineUtf (m9a11, err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 136; goto L_hdl_m9t1; };
   }
   }
   { __typeof__(n) m9v = AggUse_Past (INT64_C(5), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 137; goto L_hdl_m9t1; };
     n = m9v;
   }
   Io_WriteLineUtf (((m9_sl_UTF8){ (uint8_t *) m9s12, 11 }), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 138; goto L_hdl_m9t1; };
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
     Io_WriteLineUtf (((m9_sl_UTF8){ (uint8_t *) m9s13, 10 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 140; goto L_ret; };
     goto L_dn_m9t2;
   }
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   m9_pool_free (&m9mframe);
   return m9_exit (err);
 }

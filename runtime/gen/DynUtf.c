@@ -18,21 +18,24 @@ DynUtf_DString * DynUtf_New (m9_pool *pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "DynUtf.New"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   DynUtf_DString * m9ret = NULL;
   DynUtf_DString * d = NULL; (void) d;
   { __typeof__(d) m9v = (DynUtf_DString *) m9_pool_alloc (&((*pool)), sizeof (DynUtf_DString), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 98; goto L_ret; };
     d = m9v;
   }
   d->len = INT64_C(0);
   { __typeof__(d->buf) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), INT64_C(16), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 100; goto L_ret; };
     d->buf = m9v;
   }
   err->res = m9res;
   m9ret = d;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -45,19 +48,22 @@ void DynUtf_Append (DynUtf_DString * *d, m9_pool *d_pool, m9_sl_UTF8 s, m9_state
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "DynUtf.Append"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_BYTE o = {0}; (void) o;
   int64_t n = 0; (void) n;
   o = m9_utf_octets (s);
   n = (o).len;
   DynUtf_Room (d, d_pool, n, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 127; goto L_ret; };
   ({ __typeof__ (({ __auto_type m9t1 = ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->buf; int64_t m9t1a = ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->len, m9t1n = n; int64_t m9t1o = m9_chk_slice (m9t1a, m9t1n, m9t1.len, err); (__typeof__(m9t1)){ m9t1.p + m9t1o, err->exc ? 0 : m9t1n }; })) m9cdq = (({ __auto_type m9t1 = ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->buf; int64_t m9t1a = ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->len, m9t1n = n; int64_t m9t1o = m9_chk_slice (m9t1a, m9t1n, m9t1.len, err); (__typeof__(m9t1)){ m9t1.p + m9t1o, err->exc ? 0 : m9t1n }; })); __typeof__ (m9cdq.p) m9cdp = m9cdq.p; int64_t m9cdn = m9cdq.len; __typeof__ (o) m9csq = (o); __typeof__ (m9csq.p) m9csp = m9csq.p; int64_t m9csn = m9csq.len; m9_copy ((void *) m9cdp, m9cdn, (const void *) m9csp, m9csn, sizeof (*m9cdp), err); });
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 130; goto L_ret; };
   { __typeof__(({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->len) m9v = m9_add_i64 (({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->len, n, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 131; goto L_ret; };
     ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->len = m9v;
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -70,71 +76,74 @@ void DynUtf_AppendChar (DynUtf_DString * *d, m9_pool *d_pool, uint32_t ch, m9_st
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "DynUtf.AppendChar"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t v = 0; (void) v;
   v = (int64_t)(ch);
   if ((v < INT64_C(128))) {
     DynUtf_Room (d, d_pool, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 150; goto L_ret; };
     DynUtf_Put (d, d_pool, v, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 151; goto L_ret; };
   } else {
     if ((v < INT64_C(2048))) {
       DynUtf_Room (d, d_pool, INT64_C(2), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 153; goto L_ret; };
       { __typeof__(m9_add_i64 (INT64_C(192), m9_div_i64 (v, INT64_C(64), err), err)) m9a1 = m9_add_i64 (INT64_C(192), m9_div_i64 (v, INT64_C(64), err), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 154; goto L_ret; };
       DynUtf_Put (d, d_pool, m9a1, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 154; goto L_ret; };
       }
       { __typeof__(m9_add_i64 (INT64_C(128), m9_mod_i64 (v, INT64_C(64), err), err)) m9a2 = m9_add_i64 (INT64_C(128), m9_mod_i64 (v, INT64_C(64), err), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 155; goto L_ret; };
       DynUtf_Put (d, d_pool, m9a2, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 155; goto L_ret; };
       }
   } else {
     if ((v < INT64_C(65536))) {
       DynUtf_Room (d, d_pool, INT64_C(3), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 157; goto L_ret; };
       { __typeof__(m9_add_i64 (INT64_C(224), m9_div_i64 (v, INT64_C(4096), err), err)) m9a3 = m9_add_i64 (INT64_C(224), m9_div_i64 (v, INT64_C(4096), err), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 158; goto L_ret; };
       DynUtf_Put (d, d_pool, m9a3, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 158; goto L_ret; };
       }
       { __typeof__(m9_add_i64 (INT64_C(128), m9_mod_i64 ((m9_div_i64 (v, INT64_C(64), err)), INT64_C(64), err), err)) m9a4 = m9_add_i64 (INT64_C(128), m9_mod_i64 ((m9_div_i64 (v, INT64_C(64), err)), INT64_C(64), err), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 159; goto L_ret; };
       DynUtf_Put (d, d_pool, m9a4, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 159; goto L_ret; };
       }
       { __typeof__(m9_add_i64 (INT64_C(128), m9_mod_i64 (v, INT64_C(64), err), err)) m9a5 = m9_add_i64 (INT64_C(128), m9_mod_i64 (v, INT64_C(64), err), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 160; goto L_ret; };
       DynUtf_Put (d, d_pool, m9a5, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 160; goto L_ret; };
       }
   } else {
     DynUtf_Room (d, d_pool, INT64_C(4), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 162; goto L_ret; };
     { __typeof__(m9_add_i64 (INT64_C(240), m9_div_i64 (v, INT64_C(262144), err), err)) m9a6 = m9_add_i64 (INT64_C(240), m9_div_i64 (v, INT64_C(262144), err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 163; goto L_ret; };
     DynUtf_Put (d, d_pool, m9a6, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 163; goto L_ret; };
     }
     { __typeof__(m9_add_i64 (INT64_C(128), m9_mod_i64 ((m9_div_i64 (v, INT64_C(4096), err)), INT64_C(64), err), err)) m9a7 = m9_add_i64 (INT64_C(128), m9_mod_i64 ((m9_div_i64 (v, INT64_C(4096), err)), INT64_C(64), err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 164; goto L_ret; };
     DynUtf_Put (d, d_pool, m9a7, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 164; goto L_ret; };
     }
     { __typeof__(m9_add_i64 (INT64_C(128), m9_mod_i64 ((m9_div_i64 (v, INT64_C(64), err)), INT64_C(64), err), err)) m9a8 = m9_add_i64 (INT64_C(128), m9_mod_i64 ((m9_div_i64 (v, INT64_C(64), err)), INT64_C(64), err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 165; goto L_ret; };
     DynUtf_Put (d, d_pool, m9a8, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 165; goto L_ret; };
     }
     { __typeof__(m9_add_i64 (INT64_C(128), m9_mod_i64 (v, INT64_C(64), err), err)) m9a9 = m9_add_i64 (INT64_C(128), m9_mod_i64 (v, INT64_C(64), err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 166; goto L_ret; };
     DynUtf_Put (d, d_pool, m9a9, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 166; goto L_ret; };
     }
   } } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -147,21 +156,23 @@ void DynUtf_AppendI64 (DynUtf_DString * *d, m9_pool *d_pool, int64_t v, m9_state
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "DynUtf.AppendI64"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_arr_20_int64_t tmp = {0}; (void) tmp;
   int64_t n = 0; (void) n;
   int64_t x = 0; (void) x;
   if ((v == INT64_C(0))) {
     DynUtf_AppendChar (d, d_pool, 48u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 175; goto L_ret; };
     goto L_ret;
   }
   if ((v < INT64_C(0))) {
     DynUtf_AppendChar (d, d_pool, 45u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 178; goto L_ret; };
     x = v;
   } else {
     { __typeof__(x) m9v = m9_sub_i64 (INT64_C(0), v, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 178; goto L_ret; };
       x = m9v;
     }
   }
@@ -169,34 +180,35 @@ void DynUtf_AppendI64 (DynUtf_DString * *d, m9_pool *d_pool, int64_t v, m9_state
   for (;;) {
     if (!((x != INT64_C(0)))) break;
     { __typeof__((*(int64_t *) m9_at (tmp.v, n, INT64_C(20), sizeof (int64_t), err))) m9v = m9_sub_i64 (INT64_C(0), (m9_mod_i64 (x, INT64_C(10), err)), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 181; goto L_ret; };
       (*(int64_t *) m9_at (tmp.v, n, INT64_C(20), sizeof (int64_t), err)) = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 181; goto L_ret; };
     }
     { __typeof__(x) m9v = m9_div_i64 (x, INT64_C(10), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 182; goto L_ret; };
       x = m9v;
     }
     { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 183; goto L_ret; };
       n = m9v;
     }
   }
   DynUtf_Room (d, d_pool, n, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 185; goto L_ret; };
   for (;;) {
     if (!((n > INT64_C(0)))) break;
     { __typeof__(n) m9v = m9_sub_i64 (n, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 187; goto L_ret; };
       n = m9v;
     }
     { __typeof__(m9_add_i64 (INT64_C(48), (*(int64_t *) m9_at (tmp.v, n, INT64_C(20), sizeof (int64_t), err)), err)) m9a10 = m9_add_i64 (INT64_C(48), (*(int64_t *) m9_at (tmp.v, n, INT64_C(20), sizeof (int64_t), err)), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 188; goto L_ret; };
     DynUtf_Put (d, d_pool, m9a10, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 188; goto L_ret; };
     }
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -209,13 +221,16 @@ void DynUtf_AppendStr (DynUtf_DString * *d, m9_pool *d_pool, m9_sl_UTF8 s, m9_st
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "DynUtf.AppendStr"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   uint32_t c = 0; (void) c;
   { __typeof__(s) m9t1s = s;
   for (int64_t m9t1i = 0; m9t1i < m9t1s.len; ) { c = m9_utf_next (m9t1s, &m9t1i);
     DynUtf_AppendChar (d, d_pool, c, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 195; goto L_ret; };
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -228,11 +243,14 @@ int64_t DynUtf_BLen (DynUtf_DString * d, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "DynUtf.BLen"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   err->res = m9res;
   m9ret = d->len;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -244,10 +262,12 @@ m9_sl_UTF8 DynUtf_View (DynUtf_DString * d, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "DynUtf.View"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   err->res = m9res;
   m9ret = m9_utf_from_bytes (err->res, ({ __auto_type m9t3 = d->buf; int64_t m9t3a = INT64_C(0), m9t3n = d->len; int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; }), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 205; goto L_hdl_m9t1; };
   goto L_ret;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -256,12 +276,14 @@ L_hdl_m9t1: ;
     err->i[0] = INT64_C(0);
     err->i[1] = d->len;
     m9_raise (err, &m9_exc_IndexError);
+    m9_site (err, 207, m9pn);
     goto L_ret;
     goto L_dn_m9t2;
   }
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -274,10 +296,12 @@ m9_sl_UTF8 DynUtf_ViewIn (m9_pool *pool, DynUtf_DString * d, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "DynUtf.ViewIn"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   err->res = m9res;
   m9ret = m9_utf_from_bytes (&((*pool)), ({ __auto_type m9t3 = d->buf; int64_t m9t3a = INT64_C(0), m9t3n = d->len; int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; }), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 212; goto L_hdl_m9t1; };
   goto L_ret;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -286,12 +310,14 @@ L_hdl_m9t1: ;
     err->i[0] = INT64_C(0);
     err->i[1] = d->len;
     m9_raise (err, &m9_exc_IndexError);
+    m9_site (err, 214, m9pn);
     goto L_ret;
     goto L_dn_m9t2;
   }
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -304,12 +330,15 @@ m9_sl_BYTE DynUtf_Octets (DynUtf_DString * d, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "DynUtf.Octets"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_BYTE m9ret = {0};
   err->res = m9res;
   m9ret = ({ __auto_type m9t1 = d->buf; int64_t m9t1a = INT64_C(0), m9t1n = d->len; int64_t m9t1o = m9_chk_slice (m9t1a, m9t1n, m9t1.len, err); (__typeof__(m9t1)){ m9t1.p + m9t1o, err->exc ? 0 : m9t1n }; });
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 219; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
@@ -322,6 +351,8 @@ bool DynUtf_Equal (DynUtf_DString * d, m9_sl_UTF8 s, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "DynUtf.Equal"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   m9_sl_BYTE o = {0}; (void) o;
   int64_t i = 0; (void) i;
@@ -334,10 +365,10 @@ bool DynUtf_Equal (DynUtf_DString * d, m9_sl_UTF8 s, m9_state *err)
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (d->len, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 229; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     bool m9t2 = ((*(uint8_t *) m9_at (o.p, i, o.len, sizeof (uint8_t), err)) != (*(uint8_t *) m9_at (d->buf.p, i, d->buf.len, sizeof (uint8_t), err)));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 230; goto L_ret; };
     if (m9t2) {
       err->res = m9res;
       m9ret = false;
@@ -350,6 +381,7 @@ bool DynUtf_Equal (DynUtf_DString * d, m9_sl_UTF8 s, m9_state *err)
   m9ret = true;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -361,6 +393,8 @@ m9_sl_BYTE DynUtf_Bytes (m9_pool *pool, m9_sl_UTF8 u, bool zeroTerm, m9_state *e
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "DynUtf.Bytes"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_BYTE m9ret = {0};
   m9_sl_BYTE b = {0}; (void) b;
   uint32_t c = 0; (void) c;
@@ -370,30 +404,30 @@ m9_sl_BYTE DynUtf_Bytes (m9_pool *pool, m9_sl_UTF8 u, bool zeroTerm, m9_state *e
   { __typeof__(u) m9t1s = u;
   for (int64_t m9t1i = 0; m9t1i < m9t1s.len; ) { c = m9_utf_next (m9t1s, &m9t1i);
     { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 243; goto L_ret; };
       n = m9v;
     }
   } }
   if (zeroTerm) {
     { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 244; goto L_ret; };
       n = m9v;
     }
   }
   { __typeof__(b) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), n, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 245; goto L_ret; };
     b = m9v;
   }
   i = INT64_C(0);
   { __typeof__(u) m9t2s = u;
   for (int64_t m9t2i = 0; m9t2i < m9t2s.len; ) { c = m9_utf_next (m9t2s, &m9t2i);
     { __typeof__((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) m9v = m9_byte ((int64_t)(c), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 248; goto L_ret; };
       (*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)) = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 248; goto L_ret; };
     }
     { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 249; goto L_ret; };
       i = m9v;
     }
   } }
@@ -401,6 +435,7 @@ m9_sl_BYTE DynUtf_Bytes (m9_pool *pool, m9_sl_UTF8 u, bool zeroTerm, m9_state *e
   m9ret = b;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
@@ -413,33 +448,36 @@ m9_sl_UTF8 DynUtf_Chars (m9_pool *pool, m9_sl_BYTE b, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "DynUtf.Chars"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   DynUtf_DString * d = NULL; (void) d;
   int64_t i = 0; (void) i;
   { __typeof__(d) m9v = DynUtf_New (pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 260; goto L_ret; };
     d = m9v;
   }
   DynUtf_Room (&(d), &((*pool)), (b).len, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 261; goto L_ret; };
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((b).len, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 262; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     { __typeof__(m9_chr ((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))), err)) m9a11 = m9_chr ((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 263; goto L_ret; };
     DynUtf_AppendChar (&(d), &((*pool)), m9a11, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 263; goto L_ret; };
     }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   err->res = m9res;
   m9ret = DynUtf_ViewIn (pool, d, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 265; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -452,34 +490,37 @@ static void DynUtf_Room (DynUtf_DString * *d, m9_pool *d_pool, int64_t n, m9_sta
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "DynUtf.Room"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_BYTE nb = {0}; (void) nb;
   int64_t cap = 0; (void) cap;
   bool m9t1 = (m9_add_i64 (({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->len, n, err) <= (({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->buf).len);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 111; goto L_ret; };
   if (m9t1) {
     goto L_ret;
   }
   { __typeof__(cap) m9v = m9_mul_i64 (INT64_C(2), (({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->buf).len, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 112; goto L_ret; };
     cap = m9v;
   }
   for (;;) {
     bool m9t2 = (cap < m9_add_i64 (({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->len, n, err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 113; goto L_ret; };
     if (!(m9t2)) break;
     { __typeof__(cap) m9v = m9_mul_i64 (INT64_C(2), cap, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 113; goto L_ret; };
       cap = m9v;
     }
   }
   { __typeof__(nb) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, d_pool, cap, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 114; goto L_ret; };
     nb = m9v;
   }
   ({ __typeof__ (({ __auto_type m9t3 = nb; int64_t m9t3a = INT64_C(0), m9t3n = ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->len; int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; })) m9cdq = (({ __auto_type m9t3 = nb; int64_t m9t3a = INT64_C(0), m9t3n = ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->len; int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; })); __typeof__ (m9cdq.p) m9cdp = m9cdq.p; int64_t m9cdn = m9cdq.len; __typeof__ (({ __auto_type m9t4 = ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->buf; int64_t m9t4a = INT64_C(0), m9t4n = ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->len; int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; })) m9csq = (({ __auto_type m9t4 = ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->buf; int64_t m9t4a = INT64_C(0), m9t4n = ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->len; int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; })); __typeof__ (m9csq.p) m9csp = m9csq.p; int64_t m9csn = m9csq.len; m9_copy ((void *) m9cdp, m9cdn, (const void *) m9csp, m9csn, sizeof (*m9cdp), err); });
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 115; goto L_ret; };
   ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->buf = nb;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -492,13 +533,15 @@ static void DynUtf_Put (DynUtf_DString * *d, m9_pool *d_pool, int64_t v, m9_stat
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "DynUtf.Put"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   { __typeof__((*(uint8_t *) m9_at (({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->buf.p, ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->len, ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->buf.len, sizeof (uint8_t), err))) m9v = m9_byte (v, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 139; goto L_hdl_m9t1; };
     (*(uint8_t *) m9_at (({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->buf.p, ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->len, ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->buf.len, sizeof (uint8_t), err)) = m9v;
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 139; goto L_hdl_m9t1; };
   }
   { __typeof__(({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->len) m9v = m9_add_i64 (({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->len, INT64_C(1), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 140; goto L_hdl_m9t1; };
     ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->len = m9v;
   }
   goto L_dn_m9t2;
@@ -508,12 +551,14 @@ L_hdl_m9t1: ;
     err->i[0] = v;
     err->i[1] = INT64_C(256);
     m9_raise (err, &m9_exc_IndexError);
+    m9_site (err, 142, m9pn);
     goto L_ret;
     goto L_dn_m9t2;
   }
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -527,6 +572,9 @@ void DynUtf_m9init (m9_state *err)
   m9done = 1;
   m9_pool *m9prev = err->res;
   err->res = &m9mframe;
+  static const char m9pn[] = "DynUtf (the module body)"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9prev;
 }

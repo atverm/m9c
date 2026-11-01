@@ -10,6 +10,9 @@ PROVED BY THE CHECKER -- examined, and nothing refused
   THREAD arguments                                0
   CASE over variants, proved total                0
 
+CAN TRAP AT RUN TIME -- a byte cut a character can straddle
+  text compared through a byte cut                4   StartsWith: write Text.StartsWith (s, lit), EndsWith: write Text.Find, or octets compared with Text.BAt, Find: write Text.Find, or octets compared with Text.BAt, Replace: write Text.Find, or octets compared with Text.BAt
+
 DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
   local pools                                     0

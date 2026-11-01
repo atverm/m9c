@@ -22,6 +22,8 @@ float LibmGate_Zero (m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "LibmGate.Zero"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   float m9ret = 0;
   float acos_ = 0; (void) acos_;
   float acosf_ = 0; (void) acosf_;
@@ -121,9 +123,10 @@ float LibmGate_Zero (m9_state *err)
   float truncf_ = 0; (void) truncf_;
   err->res = m9res;
   m9ret = m9_f32_f64 (0.0, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 34; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -136,6 +139,9 @@ void LibmGate_m9init (m9_state *err)
   m9done = 1;
   m9_pool *m9prev = err->res;
   err->res = &m9mframe;
+  static const char m9pn[] = "LibmGate (the module body)"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9prev;
 }

@@ -1,0 +1,277 @@
+MODULE BoidsTsk ;
+
+(* BoidsTsk is Boids.m9's per-core shape on Tsk.For, the library form
+   of docs/task-plan.md's parallel loop.
+
+     BoidsTsk N STEPS THREADS
+
+   The kernel below is Boids.m9's, copied unchanged (wip/task-plan,
+   bench/Boids.m9 at f6aefab5): Init, BuildGrid, StepRange, Report.
+   So the line printed must be Boids.m9's, bit for bit, for every N,
+   STEPS and THREADS.  THREADS 0 asks Tsk.Workers for the crew, the
+   cores.
+
+   Boids.m9 writes its two monitors, their eight bound procedures and
+   the worker loop by hand.  Here Tsk holds them.  The worker is the
+   loop around Tsk.Next.  A step is BuildGrid, then one Tsk.For with
+   the buffer to read as its op.  The birds are cut as Tsk.Chunk cuts
+   them, not as Boids.m9's t * N / THREADS.  The cut cannot change the
+   numbers: a bird's new state depends on the old states only. *)
+
+IMPORT Io ;
+IMPORT Fmt ;
+IMPORT Math ;
+IMPORT Faults ;
+IMPORT Tsk ;
+
+CONST
+  Density = 2.0 ;                (* birds per unit area *)
+  Radius = 2.0 ;                 (* the neighbourhood, and the cell side *)
+  R2 = 4.0 ;                     (* Radius squared *)
+  Sep2 = 0.25 ;                  (* the separation radius, 0.5, squared *)
+  Coh = 0.01 ;
+  Ali = 0.05 ;
+  Sep = 0.05 ;
+  VMax = 1.0 ;
+  VMin = 0.2 ;
+  Dt = 0.5 ;
+  Modulus = 2147483648 ;         (* 2^31: the generator's state stays below it *)
+
+TYPE
+  World = RECORD
+    n : I64 ;                    (* birds *)
+    g : I64 ;                    (* cells per side *)
+    side : F64 ;                 (* the torus is side by side; side = g * Radius *)
+    px, py, vx, vy : GRID 2 OF F64 ;   (* [buffer, bird] *)
+    cstart : SLICE OF I64 ;      (* g * g + 1: cell k holds cidx[cstart[k] .. cstart[k+1] - 1] *)
+    cidx : SLICE OF I64 ;        (* n: the birds, cell by cell *)
+    fill : SLICE OF I64 ;        (* g * g: BuildGrid's cursor per cell *)
+  END ;
+
+  Job = RECORD
+    crew : Tsk.Crew ;
+    w : World ;                  (* every worker writes its own birds of buffer 1 - cur *)
+  END [SHARABLE] ;
+
+(* ---- the world and one step's kernel ---- *)
+
+PROCEDURE Next (VAR s: I64) : F64 =
+BEGIN
+  (* s < 2^31, so the product stays below 2^62 and cannot trap. *)
+  s := (s * 1103515245 + 12345) MOD Modulus ;
+  RETURN F64 (s) / 2147483648.0
+END Next ;
+
+(* Init places n birds with a fixed generator into buffer 0. *)
+PROCEDURE Init (VAR pool: POOL ; VAR w: World ; n: I64) RAISES ValueRange, IndexError =
+VAR
+  i, s : I64 ;
+BEGIN
+  w.n := n ;
+  w.g := I64 (Math.Sqrt (F64 (n) / Density) / Radius) ;
+  IF w.g < 3 THEN w.g := 3 END ;
+  w.side := F64 (w.g) * Radius ;
+  w.px := NEW (pool, F64, 2, n) ;
+  w.py := NEW (pool, F64, 2, n) ;
+  w.vx := NEW (pool, F64, 2, n) ;
+  w.vy := NEW (pool, F64, 2, n) ;
+  w.cstart := NEW (pool, I64, w.g * w.g + 1) ;
+  w.cidx := NEW (pool, I64, n) ;
+  w.fill := NEW (pool, I64, w.g * w.g) ;
+  s := 42 ;
+  FOR i := 0 TO n - 1 DO
+    w.px[0, i] := w.side * Next (s) ;
+    w.py[0, i] := w.side * Next (s) ;
+    w.vx[0, i] := Next (s) - 0.5 ;
+    w.vy[0, i] := Next (s) - 0.5
+  END
+END Init ;
+
+PROCEDURE CellOf (RO w: World ; x: F64) : I64 RAISES ValueRange =
+VAR c : I64 ;
+BEGIN
+  c := I64 (x / Radius) ;
+  IF c >= w.g THEN c := w.g - 1 END ;
+  IF c < 0 THEN c := 0 END ;
+  RETURN c
+END CellOf ;
+
+(* BuildGrid sorts the birds of buffer cur into their cells. *)
+PROCEDURE BuildGrid (VAR w: World ; cur: I64) RAISES ValueRange, IndexError =
+VAR
+  i, k, cells, at : I64 ;
+BEGIN
+  cells := w.g * w.g ;
+  FOR k := 0 TO cells DO w.cstart[k] := 0 END ;
+  FOR i := 0 TO w.n - 1 DO
+    k := CellOf (w, w.py[cur, i]) * w.g + CellOf (w, w.px[cur, i]) ;
+    w.cstart[k + 1] := w.cstart[k + 1] + 1
+  END ;
+  FOR k := 1 TO cells DO w.cstart[k] := w.cstart[k] + w.cstart[k - 1] END ;
+  FOR k := 0 TO cells - 1 DO w.fill[k] := w.cstart[k] END ;
+  FOR i := 0 TO w.n - 1 DO
+    k := CellOf (w, w.py[cur, i]) * w.g + CellOf (w, w.px[cur, i]) ;
+    at := w.fill[k] ;
+    w.cidx[at] := i ;
+    w.fill[k] := at + 1
+  END
+END BuildGrid ;
+
+(* Wrap gives the shortest signed distance d on a torus of this side. *)
+PROCEDURE Wrap (d, side: F64) : F64 =
+BEGIN
+  IF d > 0.5 * side THEN RETURN d - side END ;
+  IF d < -0.5 * side THEN RETURN d + side END ;
+  RETURN d
+END Wrap ;
+
+(* StepRange moves birds lo .. hi - 1 from buffer cur into buffer
+   1 - cur.  It reads the grid BuildGrid made from buffer cur. *)
+PROCEDURE StepRange (VAR w: World ; cur, lo, hi: I64) RAISES ValueRange, IndexError =
+VAR
+  i, nx, ny, ox, oy, cx, cy, k, m, jj, cnt, g : I64 ;
+  x, y, vx, vy, dx, dy, d2, ax, ay, hx, hy, sx, sy, nvx, nvy, sp, f, side : F64 ;
+BEGIN
+  g := w.g ;
+  side := w.side ;
+  nx := 1 - cur ;
+  FOR i := lo TO hi - 1 DO
+    x := w.px[cur, i] ;
+    y := w.py[cur, i] ;
+    vx := w.vx[cur, i] ;
+    vy := w.vy[cur, i] ;
+    cx := CellOf (w, x) ;
+    cy := CellOf (w, y) ;
+    cnt := 0 ;
+    ax := 0.0 ; ay := 0.0 ;
+    hx := 0.0 ; hy := 0.0 ;
+    sx := 0.0 ; sy := 0.0 ;
+    FOR oy := -1 TO 1 DO
+      ny := (cy + oy + g) MOD g ;
+      FOR ox := -1 TO 1 DO
+        k := ny * g + (cx + ox + g) MOD g ;
+        FOR m := w.cstart[k] TO w.cstart[k + 1] - 1 DO
+          jj := w.cidx[m] ;
+          IF jj # i THEN
+            dx := Wrap (w.px[cur, jj] - x, side) ;
+            dy := Wrap (w.py[cur, jj] - y, side) ;
+            d2 := dx * dx + dy * dy ;
+            IF (d2 < R2) AND (d2 > 0.0) THEN
+              cnt := cnt + 1 ;
+              ax := ax + w.vx[cur, jj] ;
+              ay := ay + w.vy[cur, jj] ;
+              hx := hx + dx ;
+              hy := hy + dy ;
+              IF d2 < Sep2 THEN
+                sx := sx - dx / d2 ;
+                sy := sy - dy / d2
+              END
+            END
+          END
+        END
+      END
+    END ;
+    nvx := vx + Sep * sx ;
+    nvy := vy + Sep * sy ;
+    IF cnt > 0 THEN
+      f := 1.0 / F64 (cnt) ;
+      nvx := nvx + Coh * hx * f + Ali * (ax * f - vx) ;
+      nvy := nvy + Coh * hy * f + Ali * (ay * f - vy)
+    END ;
+    sp := Math.Sqrt (nvx * nvx + nvy * nvy) ;
+    IF sp > VMax THEN
+      nvx := nvx * (VMax / sp) ;
+      nvy := nvy * (VMax / sp)
+    ELSIF (sp < VMin) AND (sp > 0.0) THEN
+      nvx := nvx * (VMin / sp) ;
+      nvy := nvy * (VMin / sp)
+    END ;
+    x := x + nvx * Dt ;
+    y := y + nvy * Dt ;
+    IF x >= side THEN x := x - side ELSIF x < 0.0 THEN x := x + side END ;
+    IF y >= side THEN y := y - side ELSIF y < 0.0 THEN y := y + side END ;
+    w.px[nx, i] := x ;
+    w.py[nx, i] := y ;
+    w.vx[nx, i] := nvx ;
+    w.vy[nx, i] := nvy
+  END
+END StepRange ;
+
+(* Report prints n and the sums of the positions in buffer cur, in
+   bird order, as the shortest round-trip decimals. *)
+PROCEDURE Report (RO w: World ; cur: I64) RAISES ValueRange, IndexError =
+VAR
+  i : I64 ;
+  sx, sy : F64 ;
+BEGIN
+  sx := 0.0 ;
+  sy := 0.0 ;
+  FOR i := 0 TO w.n - 1 DO
+    sx := sx + w.px[cur, i] ;
+    sy := sy + w.py[cur, i]
+  END ;
+  Io.WriteLine ('n=' + Fmt.I64Str (w.n) + ' sumx=' + Fmt.Short (sx) + ' sumy=' + Fmt.Short (sy))
+END Report ;
+
+(* ---- the worker, on Tsk ---- *)
+
+(* Worker moves its chunk of the birds each round.  The round's op is
+   the buffer to read, cur. *)
+PROCEDURE Worker (VAR j: Job) =
+VAR
+  s : Tsk.Seat ;
+BEGIN
+  s := Tsk.Join (j.crew) ;
+  WHILE Tsk.Next (j.crew, s) DO
+    BEGIN
+      StepRange (j.w, s.op, s.lo, s.hi)
+    EXCEPT
+    | ValueRange : s.failed := TRUE
+    | IndexError : s.failed := TRUE
+    END
+  END
+END Worker ;
+
+VAR
+  pool : POOL ;
+  j : PTR Job ;
+  n, steps, threads, s, t, cur : I64 ;
+
+BEGIN
+  IF Io.ArgCount () < 4 THEN
+    Io.ErrLine ('usage: BoidsTsk N STEPS THREADS (0: the cores)') ;
+    Io.Halt (2)
+  END ;
+  n := Io.ParseI64 (Io.Arg (pool, 1)) ;
+  steps := Io.ParseI64 (Io.Arg (pool, 2)) ;
+  threads := Io.ParseI64 (Io.Arg (pool, 3)) ;
+  IF threads < 1 THEN threads := Tsk.Workers (n) END ;
+  j := NEW (pool, Job) ;
+  Init (pool, j.w, n) ;
+  Tsk.Start (j.crew, threads) ;
+  FOR t := 1 TO threads DO THREAD (Worker, j) END ;
+  cur := 0 ;
+  FOR s := 1 TO steps DO
+    BuildGrid (j.w, cur) ;
+    Tsk.For (j.crew, n, cur) ;
+    cur := 1 - cur
+  END ;
+  Tsk.Stop (j.crew) ;
+  Report (j.w, cur)
+EXCEPT
+| Tsk.Failed :
+    Io.ErrLine ('BoidsTsk: a worker raised in a step') ;
+    Io.Halt (1)
+| Faults.BadArg (w) :
+    Io.ErrLine ('BoidsTsk: ' + w) ;
+    Io.Halt (2)
+| ValueRange :
+    Io.ErrLine ('BoidsTsk: ValueRange') ;
+    Io.Halt (2)
+| IndexError :
+    Io.ErrLine ('BoidsTsk: IndexError') ;
+    Io.Halt (2)
+| OutOfMemory :
+    Io.ErrLine ('BoidsTsk: a THREAD could not start (OutOfMemory)') ;
+    Io.Halt (3)
+END BoidsTsk.

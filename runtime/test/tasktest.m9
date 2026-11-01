@@ -1,0 +1,58 @@
+MODULE TaskTest ;
+
+(* TASK and MONITOR, end to end (docs/task-plan.md, stage 1).  N tasks
+   each park in WAIT on one monitor.  The module body, itself a task,
+   waits until all have parked, opens the gate with one SIGNAL and
+   waits until all have left.  Both counts are printed, so a task lost
+   or run twice would show. *)
+
+IMPORT Io ;
+
+CONST N = 100000 ;
+
+TYPE
+  Gate = MONITOR RECORD
+    go : BOOL ;
+    parked, out : I64 ;
+  END ;
+
+PROCEDURE Park (VAR g: Gate) =
+BEGIN
+  g.parked := g.parked + 1 ;
+  SIGNAL (g) ;
+  WHILE NOT g.go DO WAIT (g) END ;
+  g.out := g.out + 1 ;
+  SIGNAL (g)
+END Park ;
+
+PROCEDURE AllParked (VAR g: Gate ; n: I64) : I64 =
+BEGIN
+  WHILE g.parked < n DO WAIT (g) END ;
+  RETURN g.parked
+END AllParked ;
+
+PROCEDURE Open (VAR g: Gate) =
+BEGIN
+  g.go := TRUE ;
+  SIGNAL (g)
+END Open ;
+
+PROCEDURE AllOut (VAR g: Gate ; n: I64) : I64 =
+BEGIN
+  WHILE g.out < n DO WAIT (g) END ;
+  RETURN g.out
+END AllOut ;
+
+VAR
+  g : Gate ;
+  i : I64 ;
+
+BEGIN
+  FOR i := 1 TO N DO TASK (Park, g) END ;
+  Io.Write ('parked ') ;
+  Io.WriteI64 (AllParked (g, N)) ;
+  Open (g) ;
+  Io.Write (', out ') ;
+  Io.WriteI64 (AllOut (g, N)) ;
+  Io.WriteLine ('')
+END TaskTest.

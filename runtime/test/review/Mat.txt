@@ -10,6 +10,9 @@ PROVED BY THE CHECKER -- examined, and nothing refused
   THREAD arguments                                3
   CASE over variants, proved total                2
 
+CAN TRAP AT RUN TIME -- a byte cut a character can straddle
+  text compared through a byte cut                0
+
 DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
   local pools                                    12   InvBand.wpool, CholeskyT.scratch, CholInverse.scratch, AddNormal.scratch, Solve.scratch, Det.scratch, +6 more

@@ -124,19 +124,17 @@ _(documented with the group below)_
 
 _(documented with the group below)_
 
-### Name (VAR pool: POOL ; t: PTR Table ; c: I64) : STR RAISES IndexError, ValueRange
+### Name (VAR pool: POOL ; t: PTR Table ; c: I64) : UTF RAISES IndexError, ValueRange
 
-**Deprecated** (the UTF transition): NameUtf is its UTF form.
+Since 0.26 a call of Name is NameUtf, whose heading this is.
 
 _(documented with the group below)_
 
-### Find (t: PTR Table ; RO name: STR) : I64
+### Find (t: PTR Table ; RO name: UTF) : I64
 
-**Deprecated** (the UTF transition): FindUtf is its UTF form.
+Since 0.26 a call of Find is FindUtf, whose heading this is.
 
-Find answers the column index, or -1.  That is not an error: a
-caller choosing between conventions needs the question, not the
-diagnosis.
+_(undocumented)_
 
 ### SetKind (VAR t: PTR Table ; c: I64 ; k: Kind) RAISES IndexError
 
@@ -217,13 +215,11 @@ _(documented with the group below)_
 
 _(documented with the group below)_
 
-### TextAt (VAR pool: POOL ; t: PTR Table ; c, row: I64) : STR RAISES IndexError, ValueRange
+### TextAt (VAR pool: POOL ; t: PTR Table ; c, row: I64) : UTF RAISES IndexError, ValueRange
 
-**Deprecated** (the UTF transition): TextAtUtf is its UTF form.
+Since 0.26 a call of TextAt is TextAtUtf, whose heading this is.
 
-TextAt answers a text field, built on demand out of the file
-still in memory: a table of a hundred thousand rows does not want
-a hundred thousand strings nobody asked for.
+_(undocumented)_
 
 ### NameUtf (VAR pool: POOL ; t: PTR Table ; c: I64) : UTF RAISES IndexError, ValueRange
 

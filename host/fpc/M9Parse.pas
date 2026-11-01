@@ -1085,9 +1085,15 @@ begin
       end;
     tkBEGIN :
       Result := PBlock;
-    tkTHREAD, tkTRANSFER :
+    tkTHREAD, tkTASK, tkTRANSFER :
       begin
+        { A TASK is a THREAD node with a = 'TASK', as in Parse.m9. }
         if cur.kind = tkTHREAD then Result := NewNode (nkThread)
+        else if cur.kind = tkTASK then
+        begin
+          Result := NewNode (nkThread);
+          Result.a := 'TASK';
+        end
         else Result := NewNode (nkTransfer);
         Bump;
         Expect (tkLParen, '(');

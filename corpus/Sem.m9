@@ -1119,6 +1119,33 @@ BEGIN
   RETURN FALSE
 END ArrayCountBad ;
 
+(* TypeElsewhere answers the module that declares nm when nm, bare, is
+   not this module's type but another module's: a builtin, a TYPE of
+   this module, an opaque one of it and a procedure's own TYPE answer
+   empty.  A bare name means this module's type, so `VAR d : PTR
+   DString' with DynStr imported named nothing in the program.  The
+   checker took it, and cc refused `Probe_DString' (m9fun, 2026-11-01). *)
+PROCEDURE TypeElsewhere (RO nm: UTF) : UTF =
+VAR i, m : I64 ;
+BEGIN
+  IF IsBuiltinTy (nm) OR Text.Eq (nm, 'STR') OR Text.Eq (nm, 'UTF') OR
+     Text.Eq (nm, 'POOL') THEN
+    RETURN ''
+  END ;
+  m := FindMod (curMod) ;
+  IF m < 0 THEN RETURN '' END ;
+  IF FindTypeIn (m, nm) IS SOME t THEN RETURN '' END ;
+  IF IsOpaqueIn (m, nm) OR HasExcIn (m, nm) THEN RETURN '' END ;
+  IF NxFind (localTyIx, nm) >= 0 THEN RETURN '' END ;
+  FOR i := 0 TO nmods - 1 DO
+    IF i # m THEN
+      IF FindTypeIn (i, nm) IS SOME t2 THEN RETURN mods[i].name END ;
+      IF IsOpaqueIn (i, nm) THEN RETURN mods[i].name END
+    END
+  END ;
+  RETURN ''
+END TypeElsewhere ;
+
 (* TypeNowhere is TRUE when nm, bare, is no type anywhere: no builtin,
    no TYPE of a loaded module, no opaque one, no exception (ExcNotType
    says those). *)
@@ -1190,6 +1217,10 @@ BEGIN
           ErrN (n, ctx, S3 ('unknown type: ', n.au,
             S3 (' -- no module declares it; declare it, or write the module it is in (Mod.',
                 n.au, ') and IMPORT that module')))
+        ELSIF Text.BLen (n.bu) = 0 AND Text.BLen (TypeElsewhere (n.au)) > 0 THEN
+          ErrN (n, ctx, S3 ('unknown type: ', n.au,
+            S5 (' -- this module declares no such type; it is ', TypeElsewhere (n.au),
+                "'s: write ", TypeElsewhere (n.au), Cat ('.', n.au))))
         END
     | Ast.NPtrType : CheckTypeNode (n.kids[0], ctx)
     | Ast.NOptType :
@@ -12283,31 +12314,46 @@ END ThreadOwnTarget ;
 (* ThreadOwnArg checks THREAD's argument for a target whose parameter
    is OWN.  It applies CheckArg's OWN rules, one by one, worded for
    the thread. *)
+(* StmtWord answers the statement as written, THREAD or TASK.  The
+   checker holds both to the same rules by the same code, and a
+   message names the one the program wrote. *)
+PROCEDURE StmtWord (st: PTR Ast.Node) : UTF =
+BEGIN
+  IF Text.Eq (st.au, 'TASK') THEN RETURN 'TASK' END ;
+  RETURN 'THREAD'
+END StmtWord ;
+
+PROCEDURE StmtOpen (st: PTR Ast.Node) : UTF =
+BEGIN
+  IF Text.Eq (st.au, 'TASK') THEN RETURN 'TASK (' END ;
+  RETURN 'THREAD ('
+END StmtOpen ;
+
 PROCEDURE ThreadOwnArg (st: PTR Ast.Node ; RO ctx: UTF ; RO name: UTF ; an: Ast.Kid) =
 VAR amode : UTF ;
 BEGIN
   IF an IS SOME a THEN
     IF a.kind # Ast.NDesignator THEN RETURN END ;
     IF a.nkids > 0 THEN
-      ErrN (st, ctx, S5 ('THREAD (', name, '): cannot move through a selector of ', a.au,
+      ErrN (st, ctx, S5 (StmtOpen (st), name, '): cannot move through a selector of ', a.au,
         ' into its OWN parameter: a move takes a name that owns its pointer, and ownership is not followed into a field or an element (par 4.2)')) ;
       RETURN
     END ;
     amode := ScopeMode (a.au) ;
     IF Text.Eq (amode, ModeVal) OR Text.Eq (amode, ModeVar) OR
        Text.Eq (amode, ModeBinder) OR Text.Eq (amode, ModeRo) THEN
-      ErrN (st, ctx, S5 ('THREAD (', name, '): cannot move borrowed ', a.au,
+      ErrN (st, ctx, S5 (StmtOpen (st), name, '): cannot move borrowed ', a.au,
         ' into its OWN parameter (par 4.2)'))
     ELSIF Text.Eq (amode, ModeModule) AND NOT ownModule AND OwnedPtrTy (a.au) THEN
-      ErrN (st, ctx, S5 ('THREAD (', name, '): cannot move the module variable ', a.au,
+      ErrN (st, ctx, S5 (StmtOpen (st), name, '): cannot move the module variable ', a.au,
         ' into its OWN parameter in a procedure: the module owns it, and its body reads it after the call -- move it in the module body, or keep the owned value in a local (par 4.2)'))
     ELSIF OwnsNothing (a.au) THEN
-      ErrN (st, ctx, S5 ('THREAD (', name, '): cannot move ', a.au,
+      ErrN (st, ctx, S5 (StmtOpen (st), name, '): cannot move ', a.au,
         ' into its OWN parameter: nothing here gives it an owned pointer -- only NEW (OWN, T), an owned name moved in or a call that does not answer what it was lent does (par 4.2)'))
     ELSIF ResolveType (ScopeType (a.au)) IS SOME ares THEN
       IF ares.kind = Ast.NPtrType THEN
         IF ares.kids[1] IS SOME poolName THEN
-          ErrN (st, ctx, S5 ('THREAD (', name, '): the pool owns ', a.au, ' (par 4.3)'))
+          ErrN (st, ctx, S5 (StmtOpen (st), name, '): the pool owns ', a.au, ' (par 4.3)'))
         END
       END
     END
@@ -12335,7 +12381,7 @@ BEGIN
     dot := Text.FindChar (name, '.') ;
     IF dot > 0 THEN
       IF NOT Text.Eq (SLICE (name, 0, dot), curMod) THEN
-        ErrN (st, ctx, S5 ('THREAD (', name, '): the target must be a procedure of this module, not ',
+        ErrN (st, ctx, S5 (StmtOpen (st), name, '): the target must be a procedure of this module, not ',
           SLICE (name, 0, dot), "'s -- start it from a procedure declared here (par 6)")) ;
         RETURN
       END
@@ -12371,7 +12417,7 @@ BEGIN
     IF Text.BLen (pTy) > 0 AND Text.BLen (aTy) > 0 THEN
       IF NOT (Compat (pTy, aTy) OR Compat (Cat ('PTR ', pTy), aTy) OR
               Compat (Cat ('SHARED PTR ', pTy), aTy)) THEN
-        ErrN (st, ctx, S5 ('THREAD (', name, '): cannot pass ',
+        ErrN (st, ctx, S5 (StmtOpen (st), name, '): cannot pass ',
           TyName (aTy), S3 (' where ', TyName (pTy), ' is expected')))
       ELSIF NOT varTarget AND NOT Compat (pTy, aTy) THEN
         (* The pointer reaches the record only through a VAR parameter,
@@ -12379,7 +12425,7 @@ BEGIN
            the record itself, and the C compiler refused the thread's
            thunk (the second review's N7, soundfuzz.owed,
            2026-10-29). *)
-        ErrN (st, ctx, S5 ('THREAD (', name, '): the target takes its ',
+        ErrN (st, ctx, S5 (StmtOpen (st), name, '): the target takes its ',
           TyName (pTy), S3 (' by value, and a thread is handed ', TyName (aTy),
           S3 (' -- declare the parameter VAR, or of type ', TyName (aTy), ' (par 6)'))))
       END
@@ -12394,7 +12440,7 @@ BEGIN
          thread receives the pool through the thunk, and Mat.AddNormal
          WAITs for its workers before the pool dies.  It is held to
          SHARABLE below, like the rest. *)
-      ErrN (st, ctx, S5 ('THREAD (', name, '): cannot hand ', what,
+      ErrN (st, ctx, S5 (StmtOpen (st), name, '): cannot hand ', what,
         ' to a thread -- it dies with this frame; allocate it with OWN (par 4.3)'))
     END ;
     IF ParenCore (st.kids[1]) IS SOME an THEN
@@ -12413,7 +12459,7 @@ BEGIN
                    it. *)
                 IF NOT pooled AND OwnedCandKind (an.au) > 0 AND
                    NOT FvalHas (an.au) AND NOT PvalHas (an.au) THEN
-                  OwnMark (an.au, Cat ('moved into a THREAD running ', name),
+                  OwnMark (an.au, Cat (Cat ('moved into a ', StmtWord (st)), Cat (' running ', name)),
                            st) ;
                   moved := TRUE
                 END
@@ -12430,14 +12476,14 @@ BEGIN
     IF moved THEN
       sh := SharedFieldWhy (aTy) ;
       IF Text.BLen (sh) > 0 THEN
-        ErrN (st, ctx, S5 ('THREAD (', name, '): the value moved in holds a SHARED handle to ', sh,
+        ErrN (st, ctx, S5 (StmtOpen (st), name, '): the value moved in holds a SHARED handle to ', sh,
           " which the starting thread may still hold, and it is neither a MONITOR nor a RECORD marked [SHARABLE] (par 6)"))
       END
     END ;
     IF NOT moved THEN
       sh := ShareWhy (aTy, FALSE) ;
       IF Text.BLen (sh) > 0 THEN
-        ErrN (st, ctx, S5 ('THREAD (', name, '): both threads hold the ', sh,
+        ErrN (st, ctx, S5 (StmtOpen (st), name, '): both threads hold the ', sh,
           " handed over, and it is neither a MONITOR nor a RECORD marked [SHARABLE] -- mark it RECORD ... END [SHARABLE] if the threads' writes to it are disjoint, or move an owned value in (par 6)"))
       ELSIF found AND Text.BLen (ShareWhy (aTy, TRUE)) > 0 THEN
         (* Both threads carve a shared record's pool at once.  The
@@ -12459,7 +12505,7 @@ BEGIN
         pooled := AllocsThrough (pr, 0) ;
         allocNoPool := FALSE ;
         IF pooled THEN
-          ErrN (st, ctx, S3 ('THREAD (', name, "): the target allocates through its parameter, in the pool of the record both threads hold, and the pool takes no lock -- give the worker a POOL of its own to allocate in, or move an owned value in (par 6)"))
+          ErrN (st, ctx, S3 (StmtOpen (st), name, "): the target allocates through its parameter, in the pool of the record both threads hold, and the pool takes no lock -- give the worker a POOL of its own to allocate in, or move an owned value in (par 6)"))
         END
       END
     END

@@ -64,7 +64,7 @@ COMPILER="DynStr Io Lex Ast Parse Print Text System Sem Gen Doc DynUtf Review M9
 # no Lsp.m9: the claim had no gate.  debian/tests/compile-a-program
 # builds both now.
 LIBRARY="DynStr Io Lex Ast Parse Print Text Fmt Sem Gen \
-         Json JsonUtf Chars DynUtf Dict Faults Mat Math Bits Sort Seq Check Arrays Numeric Png Time Logger Syslog Http HttpServer OpenApi ApiSpec \
+         Json JsonUtf Chars DynUtf Tsk Dict Faults Mat Math Bits Sort Seq Check Arrays Numeric Png Time Logger Syslog Http HttpServer OpenApi ApiSpec \
          Arrow Doc Review \
          NetCDF Grib Csv Delim Zip Pg Sparql Rdf Regex Xml Hash Smtp Rsa Map Stats System Frame Parquet NbCells NbShow \
          Plot ZarrStore Zarr Diag Lsp M9fmt M9elide"

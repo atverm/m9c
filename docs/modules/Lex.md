@@ -33,13 +33,12 @@ cannot put them back.
 
 _(undocumented)_
 
-### Init (VAR lx: Lexer ; RO src: STR)
+### Init (VAR lx: Lexer ; RO src: UTF)
 
-**Deprecated** (the UTF transition): InitUtf is its UTF form.
+Since 0.26 a call of Init is InitUtf, whose heading this is.
 
-Init encodes src into the lexer's own pool: the STR form, for a
-caller that has not moved to UTF.  Lex.Init (lx, u) with a UTF is
-InitUtf.
+The lexer keeps the source; keep it alive while lexing.  That is
+the Json.Parse contract again.  Nothing is copied.
 
 ### InitUtf (VAR lx: Lexer ; RO src: UTF)
 
@@ -61,7 +60,7 @@ mistake in a file in one pass, which is what lextest does.
        this is called once per token; the caller reuses one.
 
 Comments leave no trace here at all: they cost zero tokens, so
-the count lextest.golden records is a count of code.
+a file's token count is a count of code.
 
 ### KindName (k: I64) : STR
 

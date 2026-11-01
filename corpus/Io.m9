@@ -23,10 +23,10 @@ PROCEDURE WriteI64 (v: I64) ;
      below flushes them.  That is why Halt is the only way out of a
      program that has written anything.
 
-       s -- CHARs are Unicode scalars and go out as octets; a scalar
-            past 255 is the CHAR/octet boundary and belongs to
-            DynStr.Bytes, not here.  Nothing in this module raises,
-            so these three cannot be the call that fails.         *)
+       u -- the text, written as its UTF-8 octets.  Since 0.26 a
+            call of WriteLine or Write is WriteLineUtf's or
+            WriteUtf's.  Nothing in this module raises, so these
+            three cannot be the call that fails.                  *)
 
 PROCEDURE WriteBytes (RO b: SLICE OF BYTE) ;
   (* WriteBytes writes octets to STDOUT as they are (a stored object,

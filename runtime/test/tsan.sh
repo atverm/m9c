@@ -55,7 +55,7 @@ fail=0 ; n=0
 for spec in "thrtest.m9 $HERE" "IoPar.m9 $HERE" "ExecPar.m9 $HERE" \
             "docs/tutorial/examples/C16Hash.m9 $ROOT/docs/tutorial/examples" \
             "docs/tutorial/examples/C16Mat.m9 $ROOT/docs/tutorial/examples" \
-            "corpus/MatTest.m9 $ROOT"; do
+            "corpus/MatTest.m9 $ROOT" "corpus/TskTest.m9 $ROOT"; do
   set -- $spec
   f=$1 ; dir=$2
   case $f in /*) src=$f ;; *.m9) [ -f "$HERE/$f" ] && src="$HERE/$f" || src="$ROOT/$f" ;; esac

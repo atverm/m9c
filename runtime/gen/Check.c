@@ -181,15 +181,18 @@ void Check_That (Check_T *t, m9_sl_UTF8 label, bool ok, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Check.That"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   { __typeof__((*t).checks) m9v = m9_add_i64 ((*t).checks, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 258; goto L_ret; };
     (*t).checks = m9v;
   }
   if ((!ok)) {
     Check_Bad (t, label, ((m9_sl_UTF8){ NULL, 0 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 259; goto L_ret; };
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -201,18 +204,21 @@ void Check_EqI64 (Check_T *t, m9_sl_UTF8 label, int64_t got, int64_t want, m9_st
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Check.EqI64"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   { __typeof__((*t).checks) m9v = m9_add_i64 ((*t).checks, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 264; goto L_ret; };
     (*t).checks = m9v;
   }
   if ((got != want)) {
     { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s0, 4 }), Fmt_I64Str (got, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s1, 7 }), err), Fmt_I64Str (want, err), err)) m9a1 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s0, 4 }), Fmt_I64Str (got, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s1, 7 }), err), Fmt_I64Str (want, err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 266; goto L_ret; };
     Check_Bad (t, label, m9a1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 266; goto L_ret; };
     }
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -224,18 +230,21 @@ void Check_EqBool (Check_T *t, m9_sl_UTF8 label, bool got, bool want, m9_state *
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Check.EqBool"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   { __typeof__((*t).checks) m9v = m9_add_i64 ((*t).checks, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 273; goto L_ret; };
     (*t).checks = m9v;
   }
   if ((got != want)) {
     { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s2, 4 }), Check_BoolStr (got, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s3, 7 }), err), Check_BoolStr (want, err), err)) m9a2 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s2, 4 }), Check_BoolStr (got, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s3, 7 }), err), Check_BoolStr (want, err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 275; goto L_ret; };
     Check_Bad (t, label, m9a2, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 275; goto L_ret; };
     }
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -247,20 +256,23 @@ void Check_EqStr (Check_T *t, m9_sl_UTF8 label, m9_sl_UTF8 got, m9_sl_UTF8 want,
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Check.EqStr"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   { __typeof__((*t).checks) m9v = m9_add_i64 ((*t).checks, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 281; goto L_ret; };
     (*t).checks = m9v;
   }
   bool m9t1 = (!Text_EqUtf (got, want, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 282; goto L_ret; };
   if (m9t1) {
     { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s4, 4 }), Check_Quote (got, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s5, 7 }), err), Check_Quote (want, err), err)) m9a3 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s4, 4 }), Check_Quote (got, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s5, 7 }), err), Check_Quote (want, err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 283; goto L_ret; };
     Check_Bad (t, label, m9a3, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 283; goto L_ret; };
     }
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -272,20 +284,23 @@ void Check_EqF64 (Check_T *t, m9_sl_UTF8 label, double got, double want, m9_stat
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Check.EqF64"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   { __typeof__((*t).checks) m9v = m9_add_i64 ((*t).checks, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 289; goto L_ret; };
     (*t).checks = m9v;
   }
   bool m9t1 = (!Check_SameF64 (got, want, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 290; goto L_ret; };
   if (m9t1) {
     { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s6, 4 }), Check_Shown (got, want, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s7, 7 }), err), Check_Shown (want, got, err), err)) m9a4 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s6, 4 }), Check_Shown (got, want, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s7, 7 }), err), Check_Shown (want, got, err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 291; goto L_ret; };
     Check_Bad (t, label, m9a4, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 291; goto L_ret; };
     }
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -297,20 +312,23 @@ void Check_Near (Check_T *t, m9_sl_UTF8 label, double got, double want, double a
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Check.Near"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   { __typeof__((*t).checks) m9v = m9_add_i64 ((*t).checks, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 299; goto L_ret; };
     (*t).checks = m9v;
   }
   bool m9t1 = (!Check_IsNear (got, want, absTol, relTol, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 300; goto L_ret; };
   if (m9t1) {
     { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s8, 4 }), Check_Shown (got, want, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s9, 7 }), err), Check_Shown (want, got, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s10, 8 }), err), Check_Num (absTol, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s11, 3 }), err), Check_Num (relTol, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s12, 6 }), err)) m9a5 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s8, 4 }), Check_Shown (got, want, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s9, 7 }), err), Check_Shown (want, got, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s10, 8 }), err), Check_Num (absTol, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s11, 3 }), err), Check_Num (relTol, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s12, 6 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 301; goto L_ret; };
     Check_Bad (t, label, m9a5, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 301; goto L_ret; };
     }
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -322,34 +340,36 @@ void Check_EqI64s (Check_T *t, m9_sl_UTF8 label, m9_sl_I64 got, m9_sl_I64 want, 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Check.EqI64s"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   int64_t n = 0; (void) n;
   int64_t first = 0; (void) first;
   { __typeof__((*t).checks) m9v = m9_add_i64 ((*t).checks, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 329; goto L_ret; };
     (*t).checks = m9v;
   }
   bool m9t1 = Check_Lengths (t, label, (got).len, (want).len, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 330; goto L_ret; };
   if (m9t1) {
     n = INT64_C(0);
     { __typeof__(first) m9v = m9_neg_i64 (INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 332; goto L_ret; };
       first = m9v;
     }
     { __typeof__(i) m9t2to;
     i = INT64_C(0);
     m9t2to = m9_sub_i64 ((want).len, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 333; goto L_ret; };
     if (i <= m9t2to) for (;;) {
       bool m9t3 = ((*(int64_t *) m9_at (got.p, i, got.len, sizeof (int64_t), err)) != (*(int64_t *) m9_at (want.p, i, want.len, sizeof (int64_t), err)));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 334; goto L_ret; };
       if (m9t3) {
         if ((n == INT64_C(0))) {
           first = i;
         }
         { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 336; goto L_ret; };
           n = m9v;
         }
       }
@@ -358,15 +378,15 @@ void Check_EqI64s (Check_T *t, m9_sl_UTF8 label, m9_sl_I64 got, m9_sl_I64 want, 
     } }
     if ((n > INT64_C(0))) {
       { __typeof__((*(int64_t *) m9_at (got.p, first, got.len, sizeof (int64_t), err))) m9a6 = (*(int64_t *) m9_at (got.p, first, got.len, sizeof (int64_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 340; goto L_ret; };
       { __typeof__(Fmt_I64Str (m9a6, err)) m9a7 = Fmt_I64Str (m9a6, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 340; goto L_ret; };
       { __typeof__((*(int64_t *) m9_at (want.p, first, want.len, sizeof (int64_t), err))) m9a8 = (*(int64_t *) m9_at (want.p, first, want.len, sizeof (int64_t), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 340; goto L_ret; };
       { __typeof__(Fmt_I64Str (m9a8, err)) m9a9 = Fmt_I64Str (m9a8, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 340; goto L_ret; };
       Check_Differ (t, label, n, (want).len, first, m9a7, m9a9, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 340; goto L_ret; };
       }
       }
       }
@@ -374,6 +394,7 @@ void Check_EqI64s (Check_T *t, m9_sl_UTF8 label, m9_sl_I64 got, m9_sl_I64 want, 
     }
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -385,38 +406,40 @@ void Check_EqStrs (Check_T *t, m9_sl_UTF8 label, m9_sl_m9_sl_UTF8 got, m9_sl_m9_
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Check.EqStrs"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   int64_t n = 0; (void) n;
   int64_t first = 0; (void) first;
   { __typeof__((*t).checks) m9v = m9_add_i64 ((*t).checks, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 350; goto L_ret; };
     (*t).checks = m9v;
   }
   bool m9t1 = Check_Lengths (t, label, (got).len, (want).len, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 351; goto L_ret; };
   if (m9t1) {
     n = INT64_C(0);
     { __typeof__(first) m9v = m9_neg_i64 (INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 353; goto L_ret; };
       first = m9v;
     }
     { __typeof__(i) m9t2to;
     i = INT64_C(0);
     m9t2to = m9_sub_i64 ((want).len, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 354; goto L_ret; };
     if (i <= m9t2to) for (;;) {
       { __typeof__((*(m9_sl_UTF8 *) m9_at (got.p, i, got.len, sizeof (m9_sl_UTF8), err))) m9a10 = (*(m9_sl_UTF8 *) m9_at (got.p, i, got.len, sizeof (m9_sl_UTF8), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 355; goto L_ret; };
       { __typeof__((*(m9_sl_UTF8 *) m9_at (want.p, i, want.len, sizeof (m9_sl_UTF8), err))) m9a11 = (*(m9_sl_UTF8 *) m9_at (want.p, i, want.len, sizeof (m9_sl_UTF8), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 355; goto L_ret; };
       bool m9t3 = (!Text_EqUtf (m9a10, m9a11, err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 355; goto L_ret; };
       if (m9t3) {
         if ((n == INT64_C(0))) {
           first = i;
         }
         { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 357; goto L_ret; };
           n = m9v;
         }
       } } }
@@ -425,15 +448,15 @@ void Check_EqStrs (Check_T *t, m9_sl_UTF8 label, m9_sl_m9_sl_UTF8 got, m9_sl_m9_
     } }
     if ((n > INT64_C(0))) {
       { __typeof__((*(m9_sl_UTF8 *) m9_at (got.p, first, got.len, sizeof (m9_sl_UTF8), err))) m9a12 = (*(m9_sl_UTF8 *) m9_at (got.p, first, got.len, sizeof (m9_sl_UTF8), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 361; goto L_ret; };
       { __typeof__(Check_Quote (m9a12, err)) m9a13 = Check_Quote (m9a12, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 361; goto L_ret; };
       { __typeof__((*(m9_sl_UTF8 *) m9_at (want.p, first, want.len, sizeof (m9_sl_UTF8), err))) m9a14 = (*(m9_sl_UTF8 *) m9_at (want.p, first, want.len, sizeof (m9_sl_UTF8), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 361; goto L_ret; };
       { __typeof__(Check_Quote (m9a14, err)) m9a15 = Check_Quote (m9a14, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 361; goto L_ret; };
       Check_Differ (t, label, n, (want).len, first, m9a13, m9a15, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 361; goto L_ret; };
       }
       }
       }
@@ -441,6 +464,7 @@ void Check_EqStrs (Check_T *t, m9_sl_UTF8 label, m9_sl_m9_sl_UTF8 got, m9_sl_m9_
     }
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -452,34 +476,36 @@ void Check_EqBools (Check_T *t, m9_sl_UTF8 label, m9_sl_BOOL got, m9_sl_BOOL wan
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Check.EqBools"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   int64_t n = 0; (void) n;
   int64_t first = 0; (void) first;
   { __typeof__((*t).checks) m9v = m9_add_i64 ((*t).checks, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 371; goto L_ret; };
     (*t).checks = m9v;
   }
   bool m9t1 = Check_Lengths (t, label, (got).len, (want).len, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 372; goto L_ret; };
   if (m9t1) {
     n = INT64_C(0);
     { __typeof__(first) m9v = m9_neg_i64 (INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 374; goto L_ret; };
       first = m9v;
     }
     { __typeof__(i) m9t2to;
     i = INT64_C(0);
     m9t2to = m9_sub_i64 ((want).len, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 375; goto L_ret; };
     if (i <= m9t2to) for (;;) {
       bool m9t3 = ((*(bool *) m9_at (got.p, i, got.len, sizeof (bool), err)) != (*(bool *) m9_at (want.p, i, want.len, sizeof (bool), err)));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 376; goto L_ret; };
       if (m9t3) {
         if ((n == INT64_C(0))) {
           first = i;
         }
         { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 378; goto L_ret; };
           n = m9v;
         }
       }
@@ -488,15 +514,15 @@ void Check_EqBools (Check_T *t, m9_sl_UTF8 label, m9_sl_BOOL got, m9_sl_BOOL wan
     } }
     if ((n > INT64_C(0))) {
       { __typeof__((*(bool *) m9_at (got.p, first, got.len, sizeof (bool), err))) m9a16 = (*(bool *) m9_at (got.p, first, got.len, sizeof (bool), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 382; goto L_ret; };
       { __typeof__(Check_BoolStr (m9a16, err)) m9a17 = Check_BoolStr (m9a16, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 382; goto L_ret; };
       { __typeof__((*(bool *) m9_at (want.p, first, want.len, sizeof (bool), err))) m9a18 = (*(bool *) m9_at (want.p, first, want.len, sizeof (bool), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 382; goto L_ret; };
       { __typeof__(Check_BoolStr (m9a18, err)) m9a19 = Check_BoolStr (m9a18, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 382; goto L_ret; };
       Check_Differ (t, label, n, (want).len, first, m9a17, m9a19, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 382; goto L_ret; };
       }
       }
       }
@@ -504,6 +530,7 @@ void Check_EqBools (Check_T *t, m9_sl_UTF8 label, m9_sl_BOOL got, m9_sl_BOOL wan
     }
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -515,38 +542,40 @@ void Check_NearF64s (Check_T *t, m9_sl_UTF8 label, m9_sl_F64 got, m9_sl_F64 want
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Check.NearF64s"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   int64_t n = 0; (void) n;
   int64_t first = 0; (void) first;
   { __typeof__((*t).checks) m9v = m9_add_i64 ((*t).checks, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 392; goto L_ret; };
     (*t).checks = m9v;
   }
   bool m9t1 = Check_Lengths (t, label, (got).len, (want).len, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 393; goto L_ret; };
   if (m9t1) {
     n = INT64_C(0);
     { __typeof__(first) m9v = m9_neg_i64 (INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 395; goto L_ret; };
       first = m9v;
     }
     { __typeof__(i) m9t2to;
     i = INT64_C(0);
     m9t2to = m9_sub_i64 ((want).len, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 396; goto L_ret; };
     if (i <= m9t2to) for (;;) {
       { __typeof__((*(double *) m9_at (got.p, i, got.len, sizeof (double), err))) m9a20 = (*(double *) m9_at (got.p, i, got.len, sizeof (double), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 397; goto L_ret; };
       { __typeof__((*(double *) m9_at (want.p, i, want.len, sizeof (double), err))) m9a21 = (*(double *) m9_at (want.p, i, want.len, sizeof (double), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 397; goto L_ret; };
       bool m9t3 = (!Check_IsNear (m9a20, m9a21, absTol, relTol, err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 397; goto L_ret; };
       if (m9t3) {
         if ((n == INT64_C(0))) {
           first = i;
         }
         { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 399; goto L_ret; };
           n = m9v;
         }
       } } }
@@ -555,19 +584,19 @@ void Check_NearF64s (Check_T *t, m9_sl_UTF8 label, m9_sl_F64 got, m9_sl_F64 want
     } }
     if ((n > INT64_C(0))) {
       { __typeof__((*(double *) m9_at (got.p, first, got.len, sizeof (double), err))) m9a22 = (*(double *) m9_at (got.p, first, got.len, sizeof (double), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 403; goto L_ret; };
       { __typeof__((*(double *) m9_at (want.p, first, want.len, sizeof (double), err))) m9a23 = (*(double *) m9_at (want.p, first, want.len, sizeof (double), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 403; goto L_ret; };
       { __typeof__(Check_Shown (m9a22, m9a23, err)) m9a24 = Check_Shown (m9a22, m9a23, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 403; goto L_ret; };
       { __typeof__((*(double *) m9_at (want.p, first, want.len, sizeof (double), err))) m9a25 = (*(double *) m9_at (want.p, first, want.len, sizeof (double), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 403; goto L_ret; };
       { __typeof__((*(double *) m9_at (got.p, first, got.len, sizeof (double), err))) m9a26 = (*(double *) m9_at (got.p, first, got.len, sizeof (double), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 403; goto L_ret; };
       { __typeof__(Check_Shown (m9a25, m9a26, err)) m9a27 = Check_Shown (m9a25, m9a26, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 403; goto L_ret; };
       Check_Differ (t, label, n, (want).len, first, m9a24, m9a27, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 403; goto L_ret; };
       }
       }
       }
@@ -577,6 +606,7 @@ void Check_NearF64s (Check_T *t, m9_sl_UTF8 label, m9_sl_F64 got, m9_sl_F64 want
     }
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -588,28 +618,31 @@ void Check_Raises (Check_T *t, m9_sl_UTF8 label, Check_Action act, m9_sl_UTF8 wa
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Check.Raises"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 did = {0}; (void) did;
   { __typeof__((*t).checks) m9v = m9_add_i64 ((*t).checks, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 437; goto L_ret; };
     (*t).checks = m9v;
   }
   bool m9t1 = (!Text_OneOfUtf (want, ((m9_sl_m9_sl_UTF8){ ((*Known)).v, INT64_C(3) }), err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 438; goto L_ret; };
   if (m9t1) {
     { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s13, 46 }), ((m9_sl_UTF8){ (uint8_t *) m9s14, 16 }), err), Check_Quote (want, err), err)) m9a28 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s13, 46 }), ((m9_sl_UTF8){ (uint8_t *) m9s14, 16 }), err), Check_Quote (want, err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 439; goto L_ret; };
     Check_Bad (t, label, m9a28, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 439; goto L_ret; };
     }
   } else {
     { __typeof__(did) m9v = Check_Outcome (act, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 442; goto L_ret; };
       did = m9v;
     }
     Check_Raised (t, label, did, want, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 443; goto L_ret; };
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -621,9 +654,12 @@ void Check_RaisesValueRange (Check_T *t, m9_sl_UTF8 label, Check_Action act, m9_
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Check.RaisesValueRange"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Check_Raises (t, label, act, ((m9_sl_UTF8){ (uint8_t *) m9s15, 10 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 449; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -635,19 +671,21 @@ m9_sl_UTF8 Check_GoldPath (m9_sl_UTF8 file, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Check.GoldPath"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   bool m9t3 = (Io_ArgCount (err) > INT64_C(1));
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 459; goto L_hdl_m9t1; };
   if (m9t3) {
     err->res = m9res;
     m9ret = m9_utf_cat (err->res, m9_utf_cat (err->res, Io_ArgUtf (&(scratch), INT64_C(1), err), ((m9_sl_UTF8){ (uint8_t *) m9s16, 1 }), err), file, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 460; goto L_hdl_m9t1; };
     goto L_ret;
   }
   err->res = m9res;
   m9ret = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s17, 17 }), ((m9_sl_UTF8){ (uint8_t *) m9s18, 1 }), err), file, err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 462; goto L_hdl_m9t1; };
   goto L_ret;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -655,13 +693,14 @@ L_hdl_m9t1: ;
     err->exc = NULL;
     err->res = m9res;
     m9ret = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s19, 17 }), ((m9_sl_UTF8){ (uint8_t *) m9s20, 1 }), err), file, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 464; goto L_ret; };
     goto L_ret;
     goto L_dn_m9t2;
   }
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9ret = m9_rehome_utf (&scratch, m9res, m9ret, err);
@@ -676,36 +715,38 @@ m9_sl_F64 Check_GoldF64s (Check_T *t, m9_sl_UTF8 path, m9_sl_UTF8 name, m9_state
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Check.GoldF64s"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_F64 m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_m9_sl_UTF8 f = {0}; (void) f;
   m9_sl_F64 out = {0}; (void) out;
   int64_t i = 0; (void) i;
   { __typeof__(f) m9v = Check_GoldLine (t, &(scratch), path, name, ((m9_sl_UTF8){ (uint8_t *) m9s21, 3 }), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 546; goto L_hdl_m9t1; };
     f = m9v;
   }
   if (((f).len < INT64_C(3))) {
     err->res = m9res;
     m9ret = M9_POOL_SL (m9_sl_F64, double, err->res, INT64_C(0), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 547; goto L_hdl_m9t1; };
     goto L_ret;
   }
   { __typeof__(out) m9v = M9_POOL_SL (m9_sl_F64, double, err->res, m9_sub_i64 ((f).len, INT64_C(3), err), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 548; goto L_hdl_m9t1; };
     out = m9v;
   }
   { __typeof__(i) m9t3to;
   i = INT64_C(3);
   m9t3to = m9_sub_i64 ((f).len, INT64_C(1), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 549; goto L_hdl_m9t1; };
   if (i <= m9t3to) for (;;) {
     { __typeof__((*(m9_sl_UTF8 *) m9_at (f.p, i, f.len, sizeof (m9_sl_UTF8), err))) m9a29 = (*(m9_sl_UTF8 *) m9_at (f.p, i, f.len, sizeof (m9_sl_UTF8), err));
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 550; goto L_hdl_m9t1; };
     { __typeof__((*(double *) m9_at (out.p, m9_sub_i64 (i, INT64_C(3), err), out.len, sizeof (double), err))) m9v = Fmt_ParseBitsUtf (m9a29, err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 550; goto L_hdl_m9t1; };
       (*(double *) m9_at (out.p, m9_sub_i64 (i, INT64_C(3), err), out.len, sizeof (double), err)) = m9v;
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 550; goto L_hdl_m9t1; };
     }
     }
     if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
@@ -719,19 +760,20 @@ L_hdl_m9t1: ;
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
     { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s22, 33 }), path, err)) m9a30 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s22, 33 }), path, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 555; goto L_ret; };
     Check_Fault (t, name, m9a30, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 555; goto L_ret; };
     }
     err->res = m9res;
     m9ret = M9_POOL_SL (m9_sl_F64, double, err->res, INT64_C(0), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 556; goto L_ret; };
     goto L_ret;
     goto L_dn_m9t2;
   }
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
@@ -745,6 +787,8 @@ m9_sl_I64 Check_GoldI64s (Check_T *t, m9_sl_UTF8 path, m9_sl_UTF8 name, m9_state
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Check.GoldI64s"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_I64 m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_m9_sl_UTF8 f = {0}; (void) f;
@@ -752,41 +796,41 @@ m9_sl_I64 Check_GoldI64s (Check_T *t, m9_sl_UTF8 path, m9_sl_UTF8 name, m9_state
   int64_t i = 0; (void) i;
   bool ok = false; (void) ok;
   { __typeof__(f) m9v = Check_GoldLine (t, &(scratch), path, name, ((m9_sl_UTF8){ (uint8_t *) m9s23, 3 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 568; goto L_ret; };
     f = m9v;
   }
   if (((f).len < INT64_C(3))) {
     err->res = m9res;
     m9ret = M9_POOL_SL (m9_sl_I64, int64_t, err->res, INT64_C(0), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 569; goto L_ret; };
     goto L_ret;
   }
   { __typeof__(out) m9v = M9_POOL_SL (m9_sl_I64, int64_t, err->res, m9_sub_i64 ((f).len, INT64_C(3), err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 570; goto L_ret; };
     out = m9v;
   }
   { __typeof__(i) m9t1to;
   i = INT64_C(3);
   m9t1to = m9_sub_i64 ((f).len, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 571; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     { __typeof__((*(m9_sl_UTF8 *) m9_at (f.p, i, f.len, sizeof (m9_sl_UTF8), err))) m9a31 = (*(m9_sl_UTF8 *) m9_at (f.p, i, f.len, sizeof (m9_sl_UTF8), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 572; goto L_ret; };
     { __typeof__((*(int64_t *) m9_at (out.p, m9_sub_i64 (i, INT64_C(3), err), out.len, sizeof (int64_t), err))) m9v = Check_Int (m9a31, &(ok), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 572; goto L_ret; };
       (*(int64_t *) m9_at (out.p, m9_sub_i64 (i, INT64_C(3), err), out.len, sizeof (int64_t), err)) = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 572; goto L_ret; };
     }
     }
     if ((!ok)) {
       { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s24, 30 }), path, err)) m9a32 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s24, 30 }), path, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 574; goto L_ret; };
       Check_Fault (t, name, m9a32, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 574; goto L_ret; };
       }
       err->res = m9res;
       m9ret = M9_POOL_SL (m9_sl_I64, int64_t, err->res, INT64_C(0), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 575; goto L_ret; };
       goto L_ret;
     }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
@@ -796,6 +840,7 @@ m9_sl_I64 Check_GoldI64s (Check_T *t, m9_sl_UTF8 path, m9_sl_UTF8 name, m9_state
   m9ret = out;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
@@ -809,54 +854,56 @@ m9_sl_BOOL Check_GoldBools (Check_T *t, m9_sl_UTF8 path, m9_sl_UTF8 name, m9_sta
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Check.GoldBools"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_BOOL m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_m9_sl_UTF8 f = {0}; (void) f;
   m9_sl_BOOL out = {0}; (void) out;
   int64_t i = 0; (void) i;
   { __typeof__(f) m9v = Check_GoldLine (t, &(scratch), path, name, ((m9_sl_UTF8){ (uint8_t *) m9s25, 4 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 589; goto L_ret; };
     f = m9v;
   }
   if (((f).len < INT64_C(3))) {
     err->res = m9res;
     m9ret = M9_POOL_SL (m9_sl_BOOL, bool, err->res, INT64_C(0), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 590; goto L_ret; };
     goto L_ret;
   }
   { __typeof__(out) m9v = M9_POOL_SL (m9_sl_BOOL, bool, err->res, m9_sub_i64 ((f).len, INT64_C(3), err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 591; goto L_ret; };
     out = m9v;
   }
   { __typeof__(i) m9t1to;
   i = INT64_C(3);
   m9t1to = m9_sub_i64 ((f).len, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 592; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     { __typeof__((*(m9_sl_UTF8 *) m9_at (f.p, i, f.len, sizeof (m9_sl_UTF8), err))) m9a33 = (*(m9_sl_UTF8 *) m9_at (f.p, i, f.len, sizeof (m9_sl_UTF8), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 593; goto L_ret; };
     bool m9t2 = Text_EqUtf (m9a33, ((m9_sl_UTF8){ (uint8_t *) m9s26, 1 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 593; goto L_ret; };
     if (m9t2) {
       (*(bool *) m9_at (out.p, m9_sub_i64 (i, INT64_C(3), err), out.len, sizeof (bool), err)) = true;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 594; goto L_ret; };
     } else {
       { __typeof__((*(m9_sl_UTF8 *) m9_at (f.p, i, f.len, sizeof (m9_sl_UTF8), err))) m9a34 = (*(m9_sl_UTF8 *) m9_at (f.p, i, f.len, sizeof (m9_sl_UTF8), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 594; goto L_ret; };
       bool m9t3 = Text_EqUtf (m9a34, ((m9_sl_UTF8){ (uint8_t *) m9s27, 1 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 594; goto L_ret; };
       if (m9t3) {
         (*(bool *) m9_at (out.p, m9_sub_i64 (i, INT64_C(3), err), out.len, sizeof (bool), err)) = false;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 596; goto L_ret; };
     } else {
       { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s28, 31 }), path, err)) m9a35 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s28, 31 }), path, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 598; goto L_ret; };
       Check_Fault (t, name, m9a35, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 598; goto L_ret; };
       }
       err->res = m9res;
       m9ret = M9_POOL_SL (m9_sl_BOOL, bool, err->res, INT64_C(0), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 599; goto L_ret; };
       goto L_ret;
     } } } }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
@@ -866,6 +913,7 @@ m9_sl_BOOL Check_GoldBools (Check_T *t, m9_sl_UTF8 path, m9_sl_UTF8 name, m9_sta
   m9ret = out;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
@@ -879,42 +927,44 @@ m9_sl_m9_sl_UTF8 Check_GoldStrs (Check_T *t, m9_sl_UTF8 path, m9_sl_UTF8 name, m
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Check.GoldStrs"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_m9_sl_UTF8 m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_m9_sl_UTF8 f = {0}; (void) f;
   m9_sl_m9_sl_UTF8 out = {0}; (void) out;
   int64_t i = 0; (void) i;
   { __typeof__(f) m9v = Check_GoldLine (t, &(scratch), path, name, ((m9_sl_UTF8){ (uint8_t *) m9s29, 3 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 612; goto L_ret; };
     f = m9v;
   }
   if (((f).len < INT64_C(3))) {
     err->res = m9res;
     m9ret = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, err->res, INT64_C(0), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 613; goto L_ret; };
     goto L_ret;
   }
   { __typeof__(out) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, err->res, m9_sub_i64 ((f).len, INT64_C(3), err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 614; goto L_ret; };
     out = m9v;
   }
   { __typeof__(i) m9t1to;
   i = INT64_C(3);
   m9t1to = m9_sub_i64 ((f).len, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 615; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     { __typeof__((*(m9_sl_UTF8 *) m9_at (f.p, i, f.len, sizeof (m9_sl_UTF8), err))) m9a36 = (*(m9_sl_UTF8 *) m9_at (f.p, i, f.len, sizeof (m9_sl_UTF8), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 618; goto L_ret; };
     bool m9t2 = Text_EqUtf (m9a36, ((m9_sl_UTF8){ (uint8_t *) m9s30, 2 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 618; goto L_ret; };
     if (m9t2) {
       (*(m9_sl_UTF8 *) m9_at (out.p, m9_sub_i64 (i, INT64_C(3), err), out.len, sizeof (m9_sl_UTF8), err)) = ((m9_sl_UTF8){ NULL, 0 });
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 618; goto L_ret; };
     } else {
       { __typeof__((*(m9_sl_UTF8 *) m9_at (out.p, m9_sub_i64 (i, INT64_C(3), err), out.len, sizeof (m9_sl_UTF8), err))) m9v = m9_utf_cat (err->res, (*(m9_sl_UTF8 *) m9_at (f.p, i, f.len, sizeof (m9_sl_UTF8), err)), ((m9_sl_UTF8){ NULL, 0 }), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 618; goto L_ret; };
         (*(m9_sl_UTF8 *) m9_at (out.p, m9_sub_i64 (i, INT64_C(3), err), out.len, sizeof (m9_sl_UTF8), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 618; goto L_ret; };
       }
     } }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
@@ -924,6 +974,7 @@ m9_sl_m9_sl_UTF8 Check_GoldStrs (Check_T *t, m9_sl_UTF8 path, m9_sl_UTF8 name, m
   m9ret = out;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
@@ -937,10 +988,12 @@ double Check_GoldF64 (Check_T *t, m9_sl_UTF8 path, m9_sl_UTF8 name, m9_state *er
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Check.GoldF64"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   double m9ret = 0;
   m9_sl_F64 v = {0}; (void) v;
   { __typeof__(v) m9v = Check_GoldF64s (t, path, name, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 626; goto L_ret; };
     v = m9v;
   }
   if (((v).len == INT64_C(0))) {
@@ -950,9 +1003,10 @@ double Check_GoldF64 (Check_T *t, m9_sl_UTF8 path, m9_sl_UTF8 name, m9_state *er
   }
   err->res = m9res;
   m9ret = (*(double *) m9_at (v.p, INT64_C(0), v.len, sizeof (double), err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 628; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -964,10 +1018,12 @@ int64_t Check_GoldI64 (Check_T *t, m9_sl_UTF8 path, m9_sl_UTF8 name, m9_state *e
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Check.GoldI64"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   m9_sl_I64 v = {0}; (void) v;
   { __typeof__(v) m9v = Check_GoldI64s (t, path, name, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 634; goto L_ret; };
     v = m9v;
   }
   if (((v).len == INT64_C(0))) {
@@ -977,9 +1033,10 @@ int64_t Check_GoldI64 (Check_T *t, m9_sl_UTF8 path, m9_sl_UTF8 name, m9_state *e
   }
   err->res = m9res;
   m9ret = (*(int64_t *) m9_at (v.p, INT64_C(0), v.len, sizeof (int64_t), err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 636; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -991,12 +1048,14 @@ int64_t Check_Done (Check_T *t, m9_sl_UTF8 name, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Check.Done"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   if (((*t).checks == INT64_C(0))) {
     { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s31, 31 }), name, err)) m9a37 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s31, 31 }), name, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 642; goto L_ret; };
     Io_WriteLineUtf (m9a37, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 642; goto L_ret; };
     }
     err->res = m9res;
     m9ret = INT64_C(1);
@@ -1004,23 +1063,24 @@ int64_t Check_Done (Check_T *t, m9_sl_UTF8 name, m9_state *err)
   }
   if (((*t).failed > INT64_C(0))) {
     { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s32, 7 }), Fmt_I64Str ((*t).failed, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s33, 4 }), err), Fmt_I64Str ((*t).checks, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s34, 4 }), err), name, err)) m9a38 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s32, 7 }), Fmt_I64Str ((*t).failed, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s33, 4 }), err), Fmt_I64Str ((*t).checks, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s34, 4 }), err), name, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 646; goto L_ret; };
     Io_WriteLineUtf (m9a38, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 646; goto L_ret; };
     }
     err->res = m9res;
     m9ret = INT64_C(1);
     goto L_ret;
   }
   { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s35, 6 }), Fmt_I64Str ((*t).checks, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s36, 12 }), err), name, err)) m9a39 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s35, 6 }), Fmt_I64Str ((*t).checks, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s36, 12 }), err), name, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 650; goto L_ret; };
   Io_WriteLineUtf (m9a39, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 650; goto L_ret; };
   }
   err->res = m9res;
   m9ret = INT64_C(0);
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -1032,26 +1092,29 @@ static void Check_Bad (Check_T *t, m9_sl_UTF8 label, m9_sl_UTF8 detail, m9_state
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Check.Bad"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   { __typeof__((*t).failed) m9v = m9_add_i64 ((*t).failed, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 185; goto L_ret; };
     (*t).failed = m9v;
   }
   bool m9t1 = Text_EqUtf (detail, ((m9_sl_UTF8){ NULL, 0 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 189; goto L_ret; };
   if (m9t1) {
     { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s37, 5 }), label, err)) m9a40 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s37, 5 }), label, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 190; goto L_ret; };
     Io_WriteLineUtf (m9a40, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 190; goto L_ret; };
     }
   } else {
     { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s38, 5 }), label, err), ((m9_sl_UTF8){ (uint8_t *) m9s39, 2 }), err), detail, err)) m9a41 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s38, 5 }), label, err), ((m9_sl_UTF8){ (uint8_t *) m9s39, 2 }), err), detail, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 192; goto L_ret; };
     Io_WriteLineUtf (m9a41, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 192; goto L_ret; };
     }
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -1063,16 +1126,18 @@ static m9_sl_UTF8 Check_Num (double v, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Check.Num"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   bool m9t3 = Math_IsNaN (v, err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 205; goto L_hdl_m9t1; };
   if (m9t3) {
     err->res = m9res;
     m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s40, 3 });
     goto L_ret;
   }
   bool m9t4 = (!Math_IsFinite (v, err));
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 206; goto L_hdl_m9t1; };
   if (m9t4) {
     if ((v > 0.0)) {
       err->res = m9res;
@@ -1085,7 +1150,7 @@ static m9_sl_UTF8 Check_Num (double v, m9_state *err)
   }
   err->res = m9res;
   m9ret = Fmt_Sci (v, INT64_C(14), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 210; goto L_hdl_m9t1; };
   goto L_ret;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -1099,6 +1164,7 @@ L_hdl_m9t1: ;
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -1111,24 +1177,27 @@ static m9_sl_UTF8 Check_Shown (double v, double other, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Check.Shown"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   { __typeof__(Check_Num (v, err)) m9a42 = Check_Num (v, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 220; goto L_ret; };
   { __typeof__(Check_Num (other, err)) m9a43 = Check_Num (other, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 220; goto L_ret; };
   bool m9t1 = (Text_EqUtf (m9a42, m9a43, err) && (v != other));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 220; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
     m9ret = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, Check_Num (v, err), ((m9_sl_UTF8){ (uint8_t *) m9s44, 7 }), err), Fmt_Bits (v, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s45, 1 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 221; goto L_ret; };
     goto L_ret;
   } } }
   err->res = m9res;
   m9ret = Check_Num (v, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 223; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -1141,12 +1210,15 @@ static m9_sl_UTF8 Check_Quote (m9_sl_UTF8 s, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Check.Quote"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   err->res = m9res;
   m9ret = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s46, 1 }), s, err), ((m9_sl_UTF8){ (uint8_t *) m9s47, 1 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 228; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -1159,6 +1231,8 @@ static m9_sl_UTF8 Check_BoolStr (bool b, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Check.BoolStr"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   if (b) {
     err->res = m9res;
@@ -1169,6 +1243,7 @@ static m9_sl_UTF8 Check_BoolStr (bool b, m9_state *err)
   m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s49, 5 });
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -1181,19 +1256,22 @@ static bool Check_SameF64 (double a, double b, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Check.SameF64"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   bool m9t1 = (Math_IsNaN (a, err) || Math_IsNaN (b, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 239; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
     m9ret = (Math_IsNaN (a, err) && Math_IsNaN (b, err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 240; goto L_ret; };
     goto L_ret;
   }
   err->res = m9res;
   m9ret = (a == b);
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -1205,17 +1283,19 @@ static bool Check_IsNear (double a, double b, double absTol, double relTol, m9_s
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Check.IsNear"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   bool m9t1 = (Math_IsNaN (a, err) || Math_IsNaN (b, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 247; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
     m9ret = (Math_IsNaN (a, err) && Math_IsNaN (b, err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 248; goto L_ret; };
     goto L_ret;
   }
   bool m9t2 = ((!Math_IsFinite (a, err)) || (!Math_IsFinite (b, err)));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 250; goto L_ret; };
   if (m9t2) {
     err->res = m9res;
     m9ret = (a == b);
@@ -1223,9 +1303,10 @@ static bool Check_IsNear (double a, double b, double absTol, double relTol, m9_s
   }
   err->res = m9res;
   m9ret = (Math_Fabs ((a - b), err) <= (absTol + (relTol * Math_Fabs (b, err))));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 253; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -1237,12 +1318,15 @@ static void Check_Differ (Check_T *t, m9_sl_UTF8 label, int64_t n, int64_t total
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Check.Differ"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, Fmt_I64Str (n, err), ((m9_sl_UTF8){ (uint8_t *) m9s50, 4 }), err), Fmt_I64Str (total, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s51, 19 }), err), Fmt_I64Str (first, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s52, 7 }), err), got, err), ((m9_sl_UTF8){ (uint8_t *) m9s53, 7 }), err), want, err)) m9a44 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, Fmt_I64Str (n, err), ((m9_sl_UTF8){ (uint8_t *) m9s50, 4 }), err), Fmt_I64Str (total, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s51, 19 }), err), Fmt_I64Str (first, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s52, 7 }), err), got, err), ((m9_sl_UTF8){ (uint8_t *) m9s53, 7 }), err), want, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 312; goto L_ret; };
   Check_Bad (t, label, m9a44, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 312; goto L_ret; };
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -1254,6 +1338,8 @@ static bool Check_Lengths (Check_T *t, m9_sl_UTF8 label, int64_t got, int64_t wa
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Check.Lengths"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   if ((got == want)) {
     err->res = m9res;
@@ -1261,14 +1347,15 @@ static bool Check_Lengths (Check_T *t, m9_sl_UTF8 label, int64_t got, int64_t wa
     goto L_ret;
   }
   { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s54, 7 }), Fmt_I64Str (got, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s55, 7 }), err), Fmt_I64Str (want, err), err)) m9a45 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s54, 7 }), Fmt_I64Str (got, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s55, 7 }), err), Fmt_I64Str (want, err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 320; goto L_ret; };
   Check_Bad (t, label, m9a45, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 320; goto L_ret; };
   }
   err->res = m9res;
   m9ret = false;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -1280,9 +1367,11 @@ static m9_sl_UTF8 Check_Outcome (Check_Action act, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Check.Outcome"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   act (err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 414; goto L_hdl_m9t1; };
   err->res = m9res;
   m9ret = ((m9_sl_UTF8){ NULL, 0 });
   goto L_ret;
@@ -1312,6 +1401,7 @@ L_hdl_m9t1: ;
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -1324,26 +1414,29 @@ static void Check_Raised (Check_T *t, m9_sl_UTF8 label, m9_sl_UTF8 did, m9_sl_UT
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Check.Raised"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9t1 = (!Text_EqUtf (did, want, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 424; goto L_ret; };
   if (m9t1) {
     bool m9t2 = Text_EqUtf (did, ((m9_sl_UTF8){ NULL, 0 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 425; goto L_ret; };
     if (m9t2) {
       { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s59, 21 }), want, err)) m9a46 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s59, 21 }), want, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 426; goto L_ret; };
       Check_Bad (t, label, m9a46, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 426; goto L_ret; };
       }
     } else {
       { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s60, 7 }), did, err), ((m9_sl_UTF8){ (uint8_t *) m9s61, 7 }), err), want, err)) m9a47 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s60, 7 }), did, err), ((m9_sl_UTF8){ (uint8_t *) m9s61, 7 }), err), want, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 428; goto L_ret; };
       Check_Bad (t, label, m9a47, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 428; goto L_ret; };
       }
     }
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -1355,13 +1448,16 @@ static void Check_Fault (Check_T *t, m9_sl_UTF8 name, m9_sl_UTF8 detail, m9_stat
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Check.Fault"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   { __typeof__((*t).checks) m9v = m9_add_i64 ((*t).checks, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 471; goto L_ret; };
     (*t).checks = m9v;
   }
   Check_Bad (t, name, detail, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 472; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -1373,11 +1469,13 @@ static int64_t Check_Int (m9_sl_UTF8 s, bool *ok, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Check.Int"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   (*ok) = true;
   err->res = m9res;
   m9ret = Io_ParseI64Utf (s, err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 485; goto L_hdl_m9t1; };
   goto L_ret;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -1400,6 +1498,7 @@ L_hdl_m9t1: ;
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -1411,6 +1510,8 @@ static m9_sl_m9_sl_UTF8 Check_GoldLine (Check_T *t, m9_pool *scratch, m9_sl_UTF8
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Check.GoldLine"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_m9_sl_UTF8 m9ret = {0};
   m9_sl_UTF8 text = {0}; (void) text;
   m9_sl_m9_sl_UTF8 lines = {0}; (void) lines;
@@ -1419,75 +1520,75 @@ static m9_sl_m9_sl_UTF8 Check_GoldLine (Check_T *t, m9_pool *scratch, m9_sl_UTF8
   int64_t n = 0; (void) n;
   bool ok = false; (void) ok;
   { __typeof__(path) m9a48 = path;
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 504; goto L_hdl_m9t1; };
   { __typeof__(text) m9v = Io_ReadFileUtf (m9a48, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 504; goto L_hdl_m9t1; };
     text = m9v;
   }
   }
   { __typeof__(lines) m9v = Text_SplitUtf (text, 10u, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 505; goto L_hdl_m9t1; };
     lines = m9v;
   }
   { __typeof__(i) m9t3to;
   i = INT64_C(0);
   m9t3to = m9_sub_i64 ((lines).len, INT64_C(1), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 506; goto L_hdl_m9t1; };
   if (i <= m9t3to) for (;;) {
     { __typeof__((*(m9_sl_UTF8 *) m9_at (lines.p, i, lines.len, sizeof (m9_sl_UTF8), err))) m9a49 = (*(m9_sl_UTF8 *) m9_at (lines.p, i, lines.len, sizeof (m9_sl_UTF8), err));
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 507; goto L_hdl_m9t1; };
     bool m9t4 = Text_StartsWithUtf (m9a49, name, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 507; goto L_hdl_m9t1; };
     if (m9t4) {
       { __typeof__((*(m9_sl_UTF8 *) m9_at (lines.p, i, lines.len, sizeof (m9_sl_UTF8), err))) m9a50 = (*(m9_sl_UTF8 *) m9_at (lines.p, i, lines.len, sizeof (m9_sl_UTF8), err));
-        if (err->exc) goto L_hdl_m9t1;
+        if (err->exc) { m9ln = 508; goto L_hdl_m9t1; };
       { __typeof__(f) m9v = Text_FieldsUtf (m9a50, 32u, err);
-        if (err->exc) goto L_hdl_m9t1;
+        if (err->exc) { m9ln = 508; goto L_hdl_m9t1; };
         f = m9v;
       }
       }
       if (((f).len >= INT64_C(3))) {
         { __typeof__((*(m9_sl_UTF8 *) m9_at (f.p, INT64_C(0), f.len, sizeof (m9_sl_UTF8), err))) m9a51 = (*(m9_sl_UTF8 *) m9_at (f.p, INT64_C(0), f.len, sizeof (m9_sl_UTF8), err));
-          if (err->exc) goto L_hdl_m9t1;
+          if (err->exc) { m9ln = 510; goto L_hdl_m9t1; };
         bool m9t5 = Text_EqUtf (m9a51, name, err);
-        if (err->exc) goto L_hdl_m9t1;
+        if (err->exc) { m9ln = 510; goto L_hdl_m9t1; };
         if (m9t5) {
           { __typeof__((*(m9_sl_UTF8 *) m9_at (f.p, INT64_C(1), f.len, sizeof (m9_sl_UTF8), err))) m9a52 = (*(m9_sl_UTF8 *) m9_at (f.p, INT64_C(1), f.len, sizeof (m9_sl_UTF8), err));
-            if (err->exc) goto L_hdl_m9t1;
+            if (err->exc) { m9ln = 511; goto L_hdl_m9t1; };
           bool m9t6 = (!Text_EqUtf (m9a52, kind, err));
-          if (err->exc) goto L_hdl_m9t1;
+          if (err->exc) { m9ln = 511; goto L_hdl_m9t1; };
           if (m9t6) {
             { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s62, 3 }), (*(m9_sl_UTF8 *) m9_at (f.p, INT64_C(1), f.len, sizeof (m9_sl_UTF8), err)), err), ((m9_sl_UTF8){ (uint8_t *) m9s63, 4 }), err), path, err), ((m9_sl_UTF8){ (uint8_t *) m9s64, 15 }), err), kind, err)) m9a53 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s62, 3 }), (*(m9_sl_UTF8 *) m9_at (f.p, INT64_C(1), f.len, sizeof (m9_sl_UTF8), err)), err), ((m9_sl_UTF8){ (uint8_t *) m9s63, 4 }), err), path, err), ((m9_sl_UTF8){ (uint8_t *) m9s64, 15 }), err), kind, err);
-              if (err->exc) goto L_hdl_m9t1;
+              if (err->exc) { m9ln = 512; goto L_hdl_m9t1; };
             Check_Fault (t, name, m9a53, err);
-            if (err->exc) goto L_hdl_m9t1;
+            if (err->exc) { m9ln = 512; goto L_hdl_m9t1; };
             }
             err->res = m9res;
             m9ret = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, err->res, INT64_C(0), err);
-            if (err->exc) goto L_hdl_m9t1;
+            if (err->exc) { m9ln = 514; goto L_hdl_m9t1; };
             goto L_ret;
           } }
           { __typeof__((*(m9_sl_UTF8 *) m9_at (f.p, INT64_C(2), f.len, sizeof (m9_sl_UTF8), err))) m9a54 = (*(m9_sl_UTF8 *) m9_at (f.p, INT64_C(2), f.len, sizeof (m9_sl_UTF8), err));
-            if (err->exc) goto L_hdl_m9t1;
+            if (err->exc) { m9ln = 516; goto L_hdl_m9t1; };
           { __typeof__(n) m9v = Check_Int (m9a54, &(ok), err);
-            if (err->exc) goto L_hdl_m9t1;
+            if (err->exc) { m9ln = 516; goto L_hdl_m9t1; };
             n = m9v;
           }
           }
           bool m9t7 = ((!ok) || (n != m9_sub_i64 ((f).len, INT64_C(3), err)));
-          if (err->exc) goto L_hdl_m9t1;
+          if (err->exc) { m9ln = 517; goto L_hdl_m9t1; };
           if (m9t7) {
             { __typeof__(m9_sub_i64 ((f).len, INT64_C(3), err)) m9a55 = m9_sub_i64 ((f).len, INT64_C(3), err);
-              if (err->exc) goto L_hdl_m9t1;
+              if (err->exc) { m9ln = 518; goto L_hdl_m9t1; };
             { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s65, 5 }), (*(m9_sl_UTF8 *) m9_at (f.p, INT64_C(2), f.len, sizeof (m9_sl_UTF8), err)), err), ((m9_sl_UTF8){ (uint8_t *) m9s66, 18 }), err), Fmt_I64Str (m9a55, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s67, 4 }), err), path, err)) m9a56 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s65, 5 }), (*(m9_sl_UTF8 *) m9_at (f.p, INT64_C(2), f.len, sizeof (m9_sl_UTF8), err)), err), ((m9_sl_UTF8){ (uint8_t *) m9s66, 18 }), err), Fmt_I64Str (m9a55, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s67, 4 }), err), path, err);
-              if (err->exc) goto L_hdl_m9t1;
+              if (err->exc) { m9ln = 518; goto L_hdl_m9t1; };
             Check_Fault (t, name, m9a56, err);
-            if (err->exc) goto L_hdl_m9t1;
+            if (err->exc) { m9ln = 518; goto L_hdl_m9t1; };
             }
             }
             err->res = m9res;
             m9ret = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, err->res, INT64_C(0), err);
-            if (err->exc) goto L_hdl_m9t1;
+            if (err->exc) { m9ln = 520; goto L_hdl_m9t1; };
             goto L_ret;
           }
           err->res = m9res;
@@ -1500,45 +1601,46 @@ static m9_sl_m9_sl_UTF8 Check_GoldLine (Check_T *t, m9_pool *scratch, m9_sl_UTF8
     i += 1;
   } }
   { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s68, 18 }), path, err)) m9a57 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s68, 18 }), path, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 527; goto L_hdl_m9t1; };
   Check_Fault (t, name, m9a57, err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 527; goto L_hdl_m9t1; };
   }
   err->res = m9res;
   m9ret = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, err->res, INT64_C(0), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 528; goto L_hdl_m9t1; };
   goto L_ret;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Io_IOError) {
     err->exc = NULL;
     { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s69, 12 }), path, err)) m9a58 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s69, 12 }), path, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 531; goto L_ret; };
     Check_Fault (t, name, m9a58, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 531; goto L_ret; };
     }
     err->res = m9res;
     m9ret = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, err->res, INT64_C(0), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 532; goto L_ret; };
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
     { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s70, 12 }), path, err)) m9a59 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s70, 12 }), path, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 534; goto L_ret; };
     Check_Fault (t, name, m9a59, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 534; goto L_ret; };
     }
     err->res = m9res;
     m9ret = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, err->res, INT64_C(0), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 535; goto L_ret; };
     goto L_ret;
     goto L_dn_m9t2;
   }
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
@@ -1552,10 +1654,13 @@ void Check_m9init (m9_state *err)
   m9done = 1;
   m9_pool *m9prev = err->res;
   err->res = &m9mframe;
+  static const char m9pn[] = "Check (the module body)"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Io_m9init (err); if (err->exc) goto L_ret;
   Fmt_m9init (err); if (err->exc) goto L_ret;
   Math_m9init (err); if (err->exc) goto L_ret;
   Text_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9prev;
 }

@@ -77,6 +77,16 @@ typedef struct m9_state {
      than a silent overwrite. */
   int32_t     line;                /* raise site, under -g (0 = none) */
   const char *file;                /* raise site's source, under -g */
+  /* The failure's context, always kept, and printed when nothing
+     handles it.  why is a static text a runtime raise sets ("a slice
+     that cuts inside a character"), with its numbers in i[].  sproc
+     and sline are the first site the exception passed: the generator
+     records them on the error path only, so the path that does not
+     raise pays nothing.  A production build died with only
+     "IndexError" before these (zarrm9, 2026-11-01). */
+  const char *why;
+  const char *sproc;               /* "Module.Procedure" */
+  int32_t     sline;
   struct m9_pool *res;             /* res is the CALLER's frame
                                       arena, where a result that
                                       outlives this frame is
@@ -96,6 +106,16 @@ extern const m9_exc m9_exc_ValueRange;
 static inline void m9_raise (m9_state *err, const m9_exc *e)
 {
   err->exc = e;
+  err->why = NULL;
+  err->sproc = NULL;
+  err->sline = 0;
+}
+
+/* m9_site records where an exception was first seen, once: a callee's
+   site stands while its callers' error tests pass the exception on. */
+static inline void m9_site (m9_state *err, int32_t line, const char *proc)
+{
+  if (err->sproc == NULL) { err->sproc = proc; err->sline = line; }
 }
 
 /* ---- slices (one struct per element type; layout identical) ---- */
@@ -169,8 +189,9 @@ static inline void *m9_at (void *p, int64_t i, int64_t len,
                            size_t sz, m9_state *err)
 {
   if ((uint64_t) i >= (uint64_t) len) {
-    err->i[0] = i; err->i[1] = len;
     m9_raise (err, &m9_exc_IndexError);
+    err->i[0] = i; err->i[1] = len;
+    err->why = "index %lld outside a length of %lld";
     return M9_POISON_CELL (sz);
   }
   return (unsigned char *) p + (uint64_t) i * sz;
@@ -344,8 +365,11 @@ static inline m9_sl_UTF8 m9_utf_slice (m9_sl_UTF8 u, int64_t start,
   if (start < 0 || len < 0 || start > u.len - len ||
       (start < u.len && (u.p[start] & 0xC0) == 0x80) ||
       (start + len < u.len && (u.p[start + len] & 0xC0) == 0x80)) {
-    err->i[0] = start; err->i[1] = len;
     m9_raise (err, &m9_exc_IndexError);
+    err->i[0] = start; err->i[1] = len; err->i[2] = u.len;
+    err->why = (start < 0 || len < 0 || start > u.len - len)
+      ? "a slice (start %lld, length %lld) outside a text of %lld bytes"
+      : "a slice (start %lld, length %lld) that cuts inside a character, in a text of %lld bytes";
     return r;
   }
   r.p = u.p + start;
@@ -728,6 +752,17 @@ static inline uint64_t m9_u64 (int64_t v, m9_state *err)
 void m9_mon_hold (void *m);
 void m9_mon_drop (void *m);
 
+#ifndef _WIN32
+/* A MONITOR ALSO QUEUES TASKS (TASK, docs/task-plan.md, stage 1).  A
+   task does not sleep in the pthread mutex or condition, which would
+   stop its whole carrier.  It parks on tq to enter and on wq in WAIT.
+   All are zero when fresh, as the rest of the monitor is.  A program
+   without TASK finds both queues empty, and its fast paths are a
+   trylock where a lock was and a fence after each unlock.  WAIT is
+   out of line: it must ask whether the thread carries tasks. */
+#define M9_MON_TASKS void *tq; void *tqt; void *wq; int tspin;
+#endif
+
 #ifdef _WIN32
 typedef struct {
   void *mu;                     /* SRWLOCK, exclusive mode      */
@@ -764,40 +799,48 @@ typedef struct {
   pthread_mutex_t mu;
   pthread_cond_t  cv;
   int             made;         /* 0 as carved; 1 once mu and cv are */
+  M9_MON_TASKS
 } m9_mon;
 
 void m9_mon_make (m9_mon *m);
+void m9_mon_enter_slow (m9_mon *m);
+void m9_mon_leave_slow (m9_mon *m);
+void m9_mon_wait (m9_mon *m);
+void m9_mon_signal_tasks (m9_mon *m);
 
 static inline void m9_mon_enter (m9_mon *m)
 {
   if (!__atomic_load_n (&m->made, __ATOMIC_ACQUIRE)) m9_mon_make (m);
   m9_mon_hold (m);
-  pthread_mutex_lock (&m->mu);
+  if (pthread_mutex_trylock (&m->mu) != 0) m9_mon_enter_slow (m);
 }
-
-static inline void m9_mon_leave (m9_mon *m)
-{ m9_mon_drop (m); pthread_mutex_unlock (&m->mu); }
-
-static inline void m9_mon_wait (m9_mon *m)
-{ pthread_cond_wait (&m->cv, &m->mu); }
-
-/* BROADCAST, for the reason given on the POSIX side below */
-static inline void m9_mon_signal (m9_mon *m)
-{ pthread_cond_broadcast (&m->cv); }
 #else
 typedef struct {
   pthread_mutex_t mu;
   pthread_cond_t  cv;
+  M9_MON_TASKS
 } m9_mon;
 
+void m9_mon_enter_slow (m9_mon *m);
+void m9_mon_leave_slow (m9_mon *m);
+void m9_mon_wait (m9_mon *m);
+void m9_mon_signal_tasks (m9_mon *m);
+
 static inline void m9_mon_enter (m9_mon *m)
-{ m9_mon_hold (m); pthread_mutex_lock (&m->mu); }
+{ m9_mon_hold (m); if (pthread_mutex_trylock (&m->mu) != 0) m9_mon_enter_slow (m); }
+#endif
 
+#ifndef _WIN32
+/* LEAVE LOOKS FOR A TASK WAITING TO ENTER after it unlocks.  The fence
+   pairs with the one in m9rt.c's m9_mon_take: either the task's
+   trylock finds the lock free, or this load finds the task. */
 static inline void m9_mon_leave (m9_mon *m)
-{ m9_mon_drop (m); pthread_mutex_unlock (&m->mu); }
-
-static inline void m9_mon_wait (m9_mon *m)
-{ pthread_cond_wait (&m->cv, &m->mu); }
+{
+  m9_mon_drop (m);
+  pthread_mutex_unlock (&m->mu);
+  __atomic_thread_fence (__ATOMIC_SEQ_CST);
+  if (__atomic_load_n (&m->tq, __ATOMIC_RELAXED) != NULL) m9_mon_leave_slow (m);
+}
 
 /* SIGNAL is a BROADCAST, not a signal.  With one condition variable
    per monitor, two threads can be waiting for different predicates.
@@ -805,7 +848,7 @@ static inline void m9_mon_wait (m9_mon *m)
    Every WAIT is written as a loop around its predicate, so a spurious
    wake costs a re-test and nothing else. */
 static inline void m9_mon_signal (m9_mon *m)
-{ pthread_cond_broadcast (&m->cv); }
+{ pthread_cond_broadcast (&m->cv); if (m->wq != NULL) m9_mon_signal_tasks (m); }
 #endif
 
 /* THE [SERIAL] GATE OF A FOR "C" UNIT is one per unit in the WHOLE
@@ -839,7 +882,17 @@ int m9_thread_start (void *(*fn) (void *), void *arg, m9_state *err);
    words. */
 int m9_thread_start2 (void *(*fn) (void *, struct m9_pool *), void *arg,
                       struct m9_pool *pool, m9_state *err);
+
+/* m9_task_start2 serves TASK (proc, arg) with THREAD's thunk.  The
+   task runs on the calling thread, which becomes its carrier
+   (m9rt.c, the TASK section).  name is the target's, for the
+   overflow and deadlock stops.  Windows starts a THREAD for now. */
+int m9_task_start2 (void *(*fn) (void *, struct m9_pool *), void *arg,
+                    struct m9_pool *pool, const char *name, m9_state *err);
+void m9_task_yield (void);
 void m9_thread_died (const char *name);
+void m9_thread_died_at (const m9_state *err);
+void m9_unhandled (const m9_state *err, const char *where);
 
 /* ---- wire boundary: explicit width, explicit endianness ---- */
 
@@ -1038,6 +1091,8 @@ typedef struct m9_fin {
   double   d[2];
   struct { const void *p; int64_t len; } s[3];
   size_t   n[3];                       /* octets copied, 0 = a view kept */
+  const char *why, *sproc;             /* the context, kept with the rest */
+  int32_t  sline;
 } m9_fin;
 void  m9_fin_save (m9_state *err, m9_fin *f);
 void  m9_fin_restore (m9_state *err, const m9_fin *f);

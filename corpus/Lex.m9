@@ -65,7 +65,7 @@ PROCEDURE Next (VAR lx: Lexer ; VAR t: Token) ;
             this is called once per token; the caller reuses one.
 
      Comments leave no trace here at all: they cost zero tokens, so
-     the count lextest.golden records is a count of code.          *)
+     a file's token count is a count of code.                      *)
 
 PROCEDURE KindName (k: I64) : STR ;
   (* KindName answers the FPC oracle's names, for dumps and
@@ -74,7 +74,7 @@ PROCEDURE KindName (k: I64) : STR ;
 (* ---- comments, BESIDE the token stream ----
 
    Comments are not tokens and never will be: making one a token
-   would move every count in lextest.golden and put a code in the
+   would change every file's token stream and put a code in the
    kind table that the parser must then be taught to ignore.  So
    `Skip` throws them away, which is right for a compiler and leaves
    nothing for a documentation tool to read.
@@ -142,7 +142,7 @@ CONST
      so alphabetical order buys nothing but the reading.
      Keywords own 7..199 and grow upward; operators start at 200.   *)
   KwFirst  = 7 ;
-  KwLast   = 68 ;         (* grows as keywords are appended *)
+  KwLast   = 69 ;         (* grows as keywords are appended *)
   OpFirst  = 200 ;
 
   KAssign = 200 ; KEq = 201 ; KNeq = 202 ; KLt = 203 ; KLe = 204 ;
@@ -288,6 +288,7 @@ BEGIN
   | 66 : RETURN 'GRID'
   | 67 : RETURN 'KEPT'
   | 68 : RETURN 'LINK'
+  | 69 : RETURN 'TASK'
   ELSE RETURN '?'
   END
 END KwName ;

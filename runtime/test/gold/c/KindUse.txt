@@ -60,6 +60,8 @@ static int64_t KindUse_Width (Csv_Kind x, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "KindUse.Width"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   { __typeof__(x) m9t1 = x;
   switch (m9t1.tag) {
@@ -102,6 +104,7 @@ static int64_t KindUse_Width (Csv_Kind x, m9_state *err)
   default: m9_trap_tag ();
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -112,6 +115,8 @@ int main (int argc, char **argv)
   m9_state errv = {0};
   m9_state *err = &errv;
   err->res = &m9mframe;
+  static const char m9pn[] = "KindUse (the module body)"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_args (argc, argv);
   Csv_m9init (err); if (err->exc) goto L_ret;
   Io_m9init (err); if (err->exc) goto L_ret;
@@ -119,18 +124,19 @@ int main (int argc, char **argv)
   Time_m9init (err); if (err->exc) goto L_ret;
   k = ((Csv_Kind){ .tag = Csv_Kind_Real });
   { __typeof__(KindUse_Width (k, err)) m9a1 = KindUse_Width (k, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 42; goto L_ret; };
   Io_WriteI64 (m9a1, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 42; goto L_ret; };
   }
   { __typeof__(KindUse_Width (((Csv_Kind){ .tag = Csv_Kind_Stamp, .u.Stamp = { INT64_C(12) } }), err)) m9a2 = KindUse_Width (((Csv_Kind){ .tag = Csv_Kind_Stamp, .u.Stamp = { INT64_C(12) } }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 43; goto L_ret; };
   Io_WriteI64 (m9a2, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 43; goto L_ret; };
   }
   Io_WriteLineUtf (((m9_sl_UTF8){ NULL, 0 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 44; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   m9_pool_free (&m9mframe);
   return m9_exit (err);
 }

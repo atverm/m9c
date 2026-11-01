@@ -53,17 +53,12 @@ them.
 
 every error
 
-### Init (VAR p: Parser ; RO src: STR)
+### Init (VAR p: Parser ; RO src: UTF)
 
-**Deprecated** (the UTF transition): InitUtf is its UTF form.
+Since 0.26 a call of Init is InitUtf, whose heading this is.
 
-Init points a parser at source text and reads the first token.
-
-src -- BORROWED for as long as p is used, and for as long as
-       the tree p builds is used: identifier and literal text
-       in the AST are SLICES of this, not copies.  The
-       caller's buffer must outlive both, which is the same
-       contract Json.Parse has with its document.
+InitUtf is Init over a UTF, the same contract; the text is lexed
+as it is.
 
 ### InitUtf (VAR p: Parser ; RO src: UTF)
 

@@ -39,7 +39,7 @@ type
     tkNOT, tkOF, tkOPT, tkOR, tkOWN, tkPOOL, tkPROCEDURE, tkPTR,
     tkKEPT, tkLINK, tkRAISE, tkRAISES, tkRECORD, tkRETURN, tkRO, tkSHARED, tkSIGNAL,
     tkSLICE,
-    tkSOME, tkSTATEFUL, tkTHEN, tkTHREAD, tkTO, tkTRANSFER, tkTRUE,
+    tkSOME, tkSTATEFUL, tkTASK, tkTHEN, tkTHREAD, tkTO, tkTRANSFER, tkTRUE,
     tkTYPE, tkUNSAFE, tkVAR, tkWAIT, tkWHILE,
     { operators and delimiters }
     tkAssign,                 { :=  }
@@ -87,7 +87,7 @@ type
     constructor Create (const Source: string);
     function Next: TToken;
     { Comments are NOT tokens and never will be: a comment token kind
-      would move every count in lextest.golden.  Armed, the lexer also
+      would change every file's token stream.  Armed, the lexer also
       records each comment it skips; the token stream is untouched.
       The list is per-INSTANCE here because TLexer is a class.  The M9
       side keeps one module-level list because its Lexer is a record
@@ -112,7 +112,7 @@ type
 
 const
   { alphabetical: binary-searchable }
-  Keywords : array [0..61] of TKw = (
+  Keywords : array [0..62] of TKw = (
     (s:'AND';k:tkAND), (s:'ARRAY';k:tkARRAY), (s:'BEGIN';k:tkBEGIN),
     (s:'BY';k:tkBY), (s:'CASE';k:tkCASE), (s:'CONST';k:tkCONST),
     (s:'DEFINITION';k:tkDEFINITION), (s:'DISPOSE';k:tkDISPOSE),
@@ -134,7 +134,7 @@ const
     (s:'RO';k:tkRO),
     (s:'SHARED';k:tkSHARED), (s:'SIGNAL';k:tkSIGNAL),
     (s:'SLICE';k:tkSLICE), (s:'SOME';k:tkSOME),
-    (s:'STATEFUL';k:tkSTATEFUL), (s:'THEN';k:tkTHEN),
+    (s:'STATEFUL';k:tkSTATEFUL), (s:'TASK';k:tkTASK), (s:'THEN';k:tkTHEN),
     (s:'THREAD';k:tkTHREAD), (s:'TO';k:tkTO),
     (s:'TRANSFER';k:tkTRANSFER), (s:'TRUE';k:tkTRUE),
     (s:'TYPE';k:tkTYPE), (s:'UNSAFE';k:tkUNSAFE), (s:'VAR';k:tkVAR),

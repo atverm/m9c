@@ -10,6 +10,9 @@ PROVED BY THE CHECKER -- examined, and nothing refused
   THREAD arguments                                0
   CASE over variants, proved total                0
 
+CAN TRAP AT RUN TIME -- a byte cut a character can straddle
+  text compared through a byte cut                0
+
 DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
   local pools                                     7   Bits.scratch, ParseBits.scratch, Short.scratch, Make.scratch, Parts.scratch, SignBit.scratch, +1 more

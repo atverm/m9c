@@ -88,6 +88,7 @@ begin
   GenModule ('JsonUtf', ['DynStr', 'Text']);
   GenModule ('Chars', ['Bits', 'Faults', 'Text']);
   GenModule ('DynUtf', []);
+  GenModule ('Tsk', ['Faults', 'System']);
   GenModule ('Http', ['DynStr', 'Io', 'Text']);
   GenModule ('HttpServer', ['DynStr', 'Http', 'Io', 'Logger', 'Zip', 'Text']);
   GenModule ('OpenApi', ['HttpServer', 'DynStr', 'Text']);

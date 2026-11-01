@@ -387,6 +387,10 @@ begin
     nkDispose :
       Result := Sp (ind) + 'DISPOSE (' + DesigStr (n.kids[0]) + ')';
     nkThread :
+      if n.a = 'TASK' then
+        Result := Sp (ind) + 'TASK (' + E (n.kids[0]) + ', ' +
+          E (n.kids[1]) + ')'
+      else
       Result := Sp (ind) + 'THREAD (' + E (n.kids[0]) + ', ' +
         E (n.kids[1]) + ')';
     nkTransfer :

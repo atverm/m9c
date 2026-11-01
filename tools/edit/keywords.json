@@ -51,6 +51,7 @@
  "SLICE": "A view: SLICE OF T is {pointer, length}, every index checked. Also the sub-slice form SLICE (s, start, len) -- start and LENGTH, never an inclusive end -- and the array view SLICE (arr, start, len).",
  "SOME": "The present OPT: SOME (x) wraps, and IS SOME tests-and-binds.",
  "STATEFUL": "Marks a definition whose module carries state (module variables behind the interface). Plot is the corpus' example: AddLine accumulates into a module-level figure, and the definition says so.",
+ "TASK": "Starts a procedure as a task: TASK (P, arg). A task is far cheaper than a THREAD and runs on the thread that starts it until it waits (stage 1 of docs/task-plan.md). The argument follows the THREAD rules -- a MONITOR, a record marked [SHARABLE], or an owned value moved in -- and a monitor may be shared by tasks and threads.",
  "THEN": "Follows an IF or ELSIF condition.",
  "THREAD": "Starts a procedure on a new thread: THREAD (P, arg). The one argument must be SHARABLE -- a MONITOR (shared by reference, its lock is the point) or an owned value moved in. Foreign [SERIAL] procedures are serialised by an emitted per-unit monitor, so a thread reaching one waits instead of racing.",
  "TO": "The upper bound of FOR.",

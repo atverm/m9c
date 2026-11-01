@@ -567,7 +567,8 @@ BEGIN
       DynStr.AppendChar (d, ')')
   | Ast.NThread :
       Sp (d, ind) ;
-      DynStr.Append (d, 'THREAD (') ;
+      IF Text.Eq (n.au, 'TASK') THEN DynStr.Append (d, 'TASK (')
+      ELSE DynStr.Append (d, 'THREAD (') END ;
       E (d, n.kids[0]) ;
       DynStr.Append (d, ', ') ;
       E (d, n.kids[1]) ;

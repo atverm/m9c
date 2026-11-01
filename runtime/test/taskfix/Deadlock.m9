@@ -1,0 +1,25 @@
+MODULE Deadlock ;
+
+(* Every task waits for a flag nobody sets, and the module body waits
+   too.  No THREAD is alive, so nothing can wake one.  The program
+   stops by name, "every task waits", and lists each task with what it
+   waits in (docs/task-plan.md, stage 1).  tasks.sh reads the message
+   from stderr. *)
+
+TYPE
+  Gate = MONITOR RECORD
+    go : BOOL ;
+  END ;
+
+PROCEDURE Hold (VAR g: Gate) =
+BEGIN
+  WHILE NOT g.go DO WAIT (g) END
+END Hold ;
+
+VAR g : Gate ;
+
+BEGIN
+  TASK (Hold, g) ;
+  TASK (Hold, g) ;
+  Hold (g)
+END Deadlock.

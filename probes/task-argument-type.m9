@@ -1,0 +1,9 @@
+(* EXPECT: TASK (Work): cannot pass I64 where PTR m.Rec is expected *)
+(* A TASK's argument is checked against its target's parameter by
+   THREAD's own code (thread-argument-type is the twin). *)
+MODULE m ;
+TYPE Rec = RECORD n : I64 ; END ;
+VAR x : I64 ;
+PROCEDURE Work (r: PTR Rec) = BEGIN x := r.n END Work ;
+PROCEDURE F () = BEGIN TASK (Work, x) END F ;
+END m.

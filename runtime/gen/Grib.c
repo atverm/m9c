@@ -78,6 +78,8 @@ Grib_File * Grib_Open (m9_pool *pool, m9_sl_UTF8 path, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Grib.Open"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Grib_File * m9ret = NULL;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE pb = {0}; (void) pb;
@@ -85,22 +87,22 @@ Grib_File * Grib_Open (m9_pool *pool, m9_sl_UTF8 path, m9_state *err)
   Grib_File * f = NULL; (void) f;
   void * fp = NULL; (void) fp;
   { __typeof__(pb) m9v = Grib_CStr (&(scratch), path, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 351; goto L_ret; };
     pb = m9v;
   }
   { __typeof__(mb) m9v = Grib_CStr (&(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s0, 2 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 352; goto L_ret; };
     mb = m9v;
   }
   fp = ({ __auto_type m9_fam9t1 = (((void *)(pb).p)); __auto_type m9_fam9t2 = (((void *)(mb).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cgrib, "cgrib"); m9_mon_enter (m9_gm); __typeof__(fopen (m9_fam9t1, m9_fam9t2)) m9_gv = fopen (m9_fam9t1, m9_fam9t2); m9_mon_leave (m9_gm); m9_gv; });
   bool m9t3 = (((int64_t)(fp)) == ((int64_t)(Grib_Null (err))));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 354; goto L_ret; };
   if (m9t3) {
     Grib_Fail (((m9_sl_UTF8){ (uint8_t *) m9s1, 5 }), path, INT64_C(0), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 358; goto L_ret; };
   }
   { __typeof__(f) m9v = (Grib_File *) m9_pool_alloc (&((*pool)), sizeof (Grib_File), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 360; goto L_ret; };
     f = m9v;
   }
   f->fp = fp;
@@ -110,6 +112,7 @@ Grib_File * Grib_Open (m9_pool *pool, m9_sl_UTF8 path, m9_state *err)
   m9ret = f;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -123,6 +126,8 @@ void Grib_Close (Grib_File * *f, m9_pool *f_pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Grib.Close"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int rc = {0}; (void) rc;
   if ((!({ __auto_type m9g = ((*f)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->open)) {
     goto L_ret;
@@ -130,6 +135,7 @@ void Grib_Close (Grib_File * *f, m9_pool *f_pool, m9_state *err)
   ({ __auto_type m9g = ((*f)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->open = false;
   rc = ({ __auto_type m9_fam9t1 = (({ __auto_type m9g = ((*f)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->fp); m9_mon *m9_gm = m9_gate (&m9_gate_cgrib, "cgrib"); m9_mon_enter (m9_gm); __typeof__(fclose (m9_fam9t1)) m9_gv = fclose (m9_fam9t1); m9_mon_leave (m9_gm); m9_gv; });
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, f_pool, (*f));
   m9_pool_free (&m9frame);
@@ -142,18 +148,21 @@ int64_t Grib_Count (Grib_File * f, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Grib.Count"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   m9_arr_1_int32_t n = {0}; (void) n;
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (Grib_Null (err)); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (f->fp); __auto_type m9_fam9t3 = (((void *)(n).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cgrib, "cgrib"); m9_mon_enter (m9_gm); __typeof__(codes_count_in_file (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = codes_count_in_file (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }))) m9a1 = (int64_t)(({ __auto_type m9_fam9t1 = (Grib_Null (err)); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (f->fp); __auto_type m9_fam9t3 = (((void *)(n).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cgrib, "cgrib"); m9_mon_enter (m9_gm); __typeof__(codes_count_in_file (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = codes_count_in_file (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }));
-    if (err->exc) goto L_ret;
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (Grib_Null (err)); if (err->exc) { m9ln = 378; goto L_ret; }; __auto_type m9_fam9t2 = (f->fp); __auto_type m9_fam9t3 = (((void *)(n).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cgrib, "cgrib"); m9_mon_enter (m9_gm); __typeof__(codes_count_in_file (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = codes_count_in_file (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }))) m9a1 = (int64_t)(({ __auto_type m9_fam9t1 = (Grib_Null (err)); if (err->exc) { m9ln = 378; goto L_ret; }; __auto_type m9_fam9t2 = (f->fp); __auto_type m9_fam9t3 = (((void *)(n).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cgrib, "cgrib"); m9_mon_enter (m9_gm); __typeof__(codes_count_in_file (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = codes_count_in_file (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }));
+    if (err->exc) { m9ln = 378; goto L_ret; };
   Grib_Check (((m9_sl_UTF8){ (uint8_t *) m9s2, 19 }), ((m9_sl_UTF8){ NULL, 0 }), m9a1, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 378; goto L_ret; };
   }
   err->res = m9res;
   m9ret = (int64_t)((*(int32_t *) m9_at (n.v, INT64_C(0), INT64_C(1), sizeof (int32_t), err)));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 380; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -165,33 +174,35 @@ Grib_Message * Grib_Next (m9_pool *pool, Grib_File * f, bool *ok, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Grib.Next"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Grib_Message * m9ret = NULL;
   m9_arr_1_int32_t err_ = {0}; (void) err_;
   void * h = NULL; (void) h;
   Grib_Message * m = NULL; (void) m;
   (*ok) = false;
   { __typeof__(m) m9v = (Grib_Message *) m9_pool_alloc (&((*pool)), sizeof (Grib_Message), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 391; goto L_ret; };
     m = m9v;
   }
   m->live = false;
   (*(int32_t *) m9_at (err_.v, INT64_C(0), INT64_C(1), sizeof (int32_t), err)) = INT64_C(0);
-  if (err->exc) goto L_ret;
-  { __typeof__(h) m9v = ({ __auto_type m9_fam9t1 = (Grib_Null (err)); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (f->fp); __auto_type m9_fam9t3 = (((void *)(err_).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cgrib, "cgrib"); m9_mon_enter (m9_gm); __typeof__(codes_grib_handle_new_from_file (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = codes_grib_handle_new_from_file (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; });
-    if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 393; goto L_ret; };
+  { __typeof__(h) m9v = ({ __auto_type m9_fam9t1 = (Grib_Null (err)); if (err->exc) { m9ln = 394; goto L_ret; }; __auto_type m9_fam9t2 = (f->fp); __auto_type m9_fam9t3 = (((void *)(err_).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cgrib, "cgrib"); m9_mon_enter (m9_gm); __typeof__(codes_grib_handle_new_from_file (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = codes_grib_handle_new_from_file (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; });
+    if (err->exc) { m9ln = 394; goto L_ret; };
     h = m9v;
   }
   bool m9t4 = ((int64_t)((*(int32_t *) m9_at (err_.v, INT64_C(0), INT64_C(1), sizeof (int32_t), err))) != INT64_C(0));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 395; goto L_ret; };
   if (m9t4) {
     { __typeof__((int64_t)((*(int32_t *) m9_at (err_.v, INT64_C(0), INT64_C(1), sizeof (int32_t), err)))) m9a2 = (int64_t)((*(int32_t *) m9_at (err_.v, INT64_C(0), INT64_C(1), sizeof (int32_t), err)));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 396; goto L_ret; };
     Grib_Check (((m9_sl_UTF8){ (uint8_t *) m9s3, 31 }), ((m9_sl_UTF8){ NULL, 0 }), m9a2, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 396; goto L_ret; };
     }
   }
   bool m9t5 = (((int64_t)(h)) == ((int64_t)(Grib_Null (err))));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 398; goto L_ret; };
   if (m9t5) {
     err->res = m9res;
     m9ret = m;
@@ -204,6 +215,7 @@ Grib_Message * Grib_Next (m9_pool *pool, Grib_File * f, bool *ok, m9_state *err)
   m9ret = m;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -216,6 +228,8 @@ Grib_Index Grib_BuildIndex (m9_sl_BYTE data, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Grib.BuildIndex"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Grib_Index m9ret = {0};
   Grib_Index ix = {0}; (void) ix;
   int64_t p = 0; (void) p;
@@ -225,22 +239,22 @@ Grib_Index Grib_BuildIndex (m9_sl_BYTE data, m9_state *err)
   p = INT64_C(0);
   for (;;) {
     bool m9t1 = (m9_add_i64 (p, INT64_C(16), err) <= (data).len);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 455; goto L_ret; };
     if (!(m9t1)) break;
     bool m9t2 = Grib_MsgAt (data, p, &(len), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 456; goto L_ret; };
     if (m9t2) {
       { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 457; goto L_ret; };
         n = m9v;
       }
       { __typeof__(p) m9v = m9_add_i64 (p, len, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 458; goto L_ret; };
         p = m9v;
       }
     } else {
       { __typeof__(p) m9v = m9_add_i64 (p, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 460; goto L_ret; };
         p = m9v;
       }
     }
@@ -251,41 +265,42 @@ Grib_Index Grib_BuildIndex (m9_sl_BYTE data, m9_state *err)
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s5, 28 })) m9t5 = ((m9_sl_UTF8){ (uint8_t *) m9s5, 28 }); err->s[2].p = m9t5.p; err->s[2].len = m9t5.len; m9_pay_keep (err, 2, sizeof (*m9t5.p)); }
     err->i[0] = INT64_C(0);
     m9_raise (err, &Grib_Error);
+    m9_site (err, 464, m9pn);
     goto L_ret;
   }
   ix.n = n;
   { __typeof__(ix.off) m9v = M9_POOL_SL (m9_sl_I64, int64_t, err->res, n, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 467; goto L_ret; };
     ix.off = m9v;
   }
   { __typeof__(ix.len) m9v = M9_POOL_SL (m9_sl_I64, int64_t, err->res, n, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 468; goto L_ret; };
     ix.len = m9v;
   }
   n = INT64_C(0);
   p = INT64_C(0);
   for (;;) {
     bool m9t6 = (m9_add_i64 (p, INT64_C(16), err) <= (data).len);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 471; goto L_ret; };
     if (!(m9t6)) break;
     bool m9t7 = Grib_MsgAt (data, p, &(len), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 472; goto L_ret; };
     if (m9t7) {
       (*(int64_t *) m9_at (ix.off.p, n, ix.off.len, sizeof (int64_t), err)) = p;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 473; goto L_ret; };
       (*(int64_t *) m9_at (ix.len.p, n, ix.len.len, sizeof (int64_t), err)) = len;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 474; goto L_ret; };
       { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 475; goto L_ret; };
         n = m9v;
       }
       { __typeof__(p) m9v = m9_add_i64 (p, len, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 476; goto L_ret; };
         p = m9v;
       }
     } else {
       { __typeof__(p) m9v = m9_add_i64 (p, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 478; goto L_ret; };
         p = m9v;
       }
     }
@@ -294,6 +309,7 @@ Grib_Index Grib_BuildIndex (m9_sl_BYTE data, m9_state *err)
   m9ret = ix;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.off.p);
   m9_adopt_if (&m9frame, m9res, m9ret.len.p);
@@ -307,26 +323,28 @@ Grib_Message * Grib_FromBytes (m9_pool *pool, m9_sl_BYTE data, int64_t off, int6
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Grib.FromBytes"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Grib_Message * m9ret = NULL;
   Grib_Message * m = NULL; (void) m;
   void * h = NULL; (void) h;
   m9_sl_BYTE sub = {0}; (void) sub;
   { __typeof__(sub) m9v = ({ __auto_type m9t1 = data; int64_t m9t1a = off, m9t1n = len; int64_t m9t1o = m9_chk_slice (m9t1a, m9t1n, m9t1.len, err); (__typeof__(m9t1)){ m9t1.p + m9t1o, err->exc ? 0 : m9t1n }; });
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 495; goto L_ret; };
     sub = m9v;
   }
-  { __typeof__(h) m9v = ({ __auto_type m9_fam9t2 = (Grib_Null (err)); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(sub).p)); __auto_type m9_fam9t4 = (((size_t) m9_u64 (len, err))); if (err->exc) goto L_ret; codes_handle_new_from_message (m9_fam9t2, m9_fam9t3, m9_fam9t4); });
-    if (err->exc) goto L_ret;
+  { __typeof__(h) m9v = ({ __auto_type m9_fam9t2 = (Grib_Null (err)); if (err->exc) { m9ln = 496; goto L_ret; }; __auto_type m9_fam9t3 = (((void *)(sub).p)); __auto_type m9_fam9t4 = (((size_t) m9_u64 (len, err))); if (err->exc) { m9ln = 496; goto L_ret; }; codes_handle_new_from_message (m9_fam9t2, m9_fam9t3, m9_fam9t4); });
+    if (err->exc) { m9ln = 496; goto L_ret; };
     h = m9v;
   }
   bool m9t5 = (((int64_t)(h)) == ((int64_t)(Grib_Null (err))));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 497; goto L_ret; };
   if (m9t5) {
     Grib_Fail (((m9_sl_UTF8){ (uint8_t *) m9s6, 29 }), ((m9_sl_UTF8){ NULL, 0 }), INT64_C(0), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 498; goto L_ret; };
   }
   { __typeof__(m) m9v = (Grib_Message *) m9_pool_alloc (&((*pool)), sizeof (Grib_Message), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 500; goto L_ret; };
     m = m9v;
   }
   m->h = h;
@@ -335,6 +353,7 @@ Grib_Message * Grib_FromBytes (m9_pool *pool, m9_sl_BYTE data, int64_t off, int6
   m9ret = m;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -347,6 +366,8 @@ void Grib_Release (Grib_Message * *m, m9_pool *m_pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Grib.Release"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int rc = {0}; (void) rc;
   if ((!({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->live)) {
     goto L_ret;
@@ -354,10 +375,11 @@ void Grib_Release (Grib_Message * *m, m9_pool *m_pool, m9_state *err)
   ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->live = false;
   rc = codes_handle_delete (({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->h);
   { __typeof__(({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->h) m9v = Grib_Null (err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 512; goto L_ret; };
     ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->h = m9v;
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m_pool, (*m));
   m9_pool_free (&m9frame);
@@ -370,6 +392,8 @@ bool Grib_Has (Grib_Message * m, m9_sl_UTF8 key, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Grib.Has"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE kb = {0}; (void) kb;
@@ -379,13 +403,14 @@ bool Grib_Has (Grib_Message * m, m9_sl_UTF8 key, m9_state *err)
     goto L_ret;
   }
   { __typeof__(kb) m9v = Grib_CStr (&(scratch), key, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 526; goto L_ret; };
     kb = m9v;
   }
   err->res = m9res;
   m9ret = ((int64_t)(codes_is_defined (m->h, ((void *)(kb).p))) != INT64_C(0));
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
@@ -398,25 +423,28 @@ int64_t Grib_GetI64 (Grib_Message * m, m9_sl_UTF8 key, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Grib.GetI64"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE kb = {0}; (void) kb;
   m9_arr_1_int64_t v = {0}; (void) v;
   if ((!m->live)) {
     Grib_Dead (((m9_sl_UTF8){ (uint8_t *) m9s7, 14 }), key, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 537; goto L_ret; };
   }
   { __typeof__(kb) m9v = Grib_CStr (&(scratch), key, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 538; goto L_ret; };
     kb = m9v;
   }
   Grib_Check (((m9_sl_UTF8){ (uint8_t *) m9s8, 14 }), key, (int64_t)(codes_get_long (m->h, ((void *)(kb).p), ((void *)(v).v))), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 539; goto L_ret; };
   err->res = m9res;
   m9ret = (*(int64_t *) m9_at (v.v, INT64_C(0), INT64_C(1), sizeof (int64_t), err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 541; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
@@ -429,25 +457,28 @@ double Grib_GetF64 (Grib_Message * m, m9_sl_UTF8 key, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Grib.GetF64"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   double m9ret = 0;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE kb = {0}; (void) kb;
   m9_arr_1_double v = {0}; (void) v;
   if ((!m->live)) {
     Grib_Dead (((m9_sl_UTF8){ (uint8_t *) m9s9, 16 }), key, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 551; goto L_ret; };
   }
   { __typeof__(kb) m9v = Grib_CStr (&(scratch), key, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 552; goto L_ret; };
     kb = m9v;
   }
   Grib_Check (((m9_sl_UTF8){ (uint8_t *) m9s10, 16 }), key, (int64_t)(codes_get_double (m->h, ((void *)(kb).p), ((void *)(v).v))), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 553; goto L_ret; };
   err->res = m9res;
   m9ret = (*(double *) m9_at (v.v, INT64_C(0), INT64_C(1), sizeof (double), err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 555; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
@@ -460,6 +491,8 @@ m9_sl_UTF8 Grib_GetStr (m9_pool *pool, Grib_Message * m, m9_sl_UTF8 key, m9_stat
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Grib.GetStr"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE kb = {0}; (void) kb;
@@ -468,53 +501,54 @@ m9_sl_UTF8 Grib_GetStr (m9_pool *pool, Grib_Message * m, m9_sl_UTF8 key, m9_stat
   int64_t len = 0; (void) len;
   if ((!m->live)) {
     Grib_Dead (((m9_sl_UTF8){ (uint8_t *) m9s11, 16 }), key, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 580; goto L_ret; };
   }
   { __typeof__(kb) m9v = Grib_CStr (&(scratch), key, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 581; goto L_ret; };
     kb = m9v;
   }
   { __typeof__(buf) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), m9_add_i64 (Grib_MaxStr, INT64_C(1), err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 582; goto L_ret; };
     buf = m9v;
   }
   { __typeof__((*(uint64_t *) m9_at (n.v, INT64_C(0), INT64_C(1), sizeof (uint64_t), err))) m9v = m9_u64 (Grib_MaxStr, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 583; goto L_ret; };
     (*(uint64_t *) m9_at (n.v, INT64_C(0), INT64_C(1), sizeof (uint64_t), err)) = m9v;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 583; goto L_ret; };
   }
   Grib_Check (((m9_sl_UTF8){ (uint8_t *) m9s12, 16 }), key, (int64_t)(codes_get_string (m->h, ((void *)(kb).p), ((void *)(buf).p), ((void *)(n).v))), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 584; goto L_ret; };
   { __typeof__(len) m9v = m9_i64_u64 ((*(uint64_t *) m9_at (n.v, INT64_C(0), INT64_C(1), sizeof (uint64_t), err)), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 589; goto L_ret; };
     len = m9v;
   }
   if ((len > INT64_C(0))) {
     { __typeof__(len) m9v = m9_sub_i64 (len, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 590; goto L_ret; };
       len = m9v;
     }
   }
   for (;;) {
     if (!((len > INT64_C(0)))) break;
     bool m9t5 = ((*(uint8_t *) m9_at (buf.p, m9_sub_i64 (len, INT64_C(1), err), buf.len, sizeof (uint8_t), err)) != INT64_C(0));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 592; goto L_ret; };
     if (m9t5) {
       break;
     }
     { __typeof__(len) m9v = m9_sub_i64 (len, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 593; goto L_ret; };
       len = m9v;
     }
   }
   err->res = m9res;
   { __typeof__(({ __auto_type m9t6 = buf; int64_t m9t6a = INT64_C(0), m9t6n = len; int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; })) m9a3 = ({ __auto_type m9t6 = buf; int64_t m9t6a = INT64_C(0), m9t6n = len; int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; });
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 595; goto L_ret; };
   m9ret = DynStr_Decoded (pool, m9a3, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 595; goto L_ret; };
   }
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9ret = m9_rehome_utf (&scratch, m9res, m9ret, err);
@@ -529,25 +563,28 @@ int64_t Grib_Size (Grib_Message * m, m9_sl_UTF8 key, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Grib.Size"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE kb = {0}; (void) kb;
   m9_arr_1_uint64_t n = {0}; (void) n;
   if ((!m->live)) {
     Grib_Dead (((m9_sl_UTF8){ (uint8_t *) m9s13, 14 }), key, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 565; goto L_ret; };
   }
   { __typeof__(kb) m9v = Grib_CStr (&(scratch), key, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 566; goto L_ret; };
     kb = m9v;
   }
   Grib_Check (((m9_sl_UTF8){ (uint8_t *) m9s14, 14 }), key, (int64_t)(codes_get_size (m->h, ((void *)(kb).p), ((void *)(n).v))), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 567; goto L_ret; };
   err->res = m9res;
   m9ret = m9_i64_u64 ((*(uint64_t *) m9_at (n.v, INT64_C(0), INT64_C(1), sizeof (uint64_t), err)), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 569; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
@@ -560,9 +597,12 @@ void Grib_Values (Grib_Message * m, m9_sl_F64 out, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Grib.Values"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Grib_Doubles (m, ((m9_sl_UTF8){ (uint8_t *) m9s15, 6 }), out, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 601; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -574,36 +614,40 @@ void Grib_Floats (Grib_Message * m, m9_sl_UTF8 key, m9_sl_F32 out, m9_state *err
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Grib.Floats"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE kb = {0}; (void) kb;
   m9_arr_1_uint64_t n = {0}; (void) n;
   int64_t want = 0; (void) want;
   if ((!m->live)) {
     Grib_Dead (((m9_sl_UTF8){ (uint8_t *) m9s16, 21 }), key, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 629; goto L_ret; };
   }
   { __typeof__(want) m9v = Grib_Size (m, key, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 630; goto L_ret; };
     want = m9v;
   }
   if (((out).len != want)) {
     err->i[0] = (out).len;
     err->i[1] = want;
     m9_raise (err, &Faults_SizeError);
+    m9_site (err, 631, m9pn);
     goto L_ret;
   }
   { __typeof__(kb) m9v = Grib_CStr (&(scratch), key, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 632; goto L_ret; };
     kb = m9v;
   }
   { __typeof__((*(uint64_t *) m9_at (n.v, INT64_C(0), INT64_C(1), sizeof (uint64_t), err))) m9v = m9_u64 ((out).len, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 633; goto L_ret; };
     (*(uint64_t *) m9_at (n.v, INT64_C(0), INT64_C(1), sizeof (uint64_t), err)) = m9v;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 633; goto L_ret; };
   }
   Grib_Check (((m9_sl_UTF8){ (uint8_t *) m9s17, 21 }), key, (int64_t)(codes_get_float_array (m->h, ((void *)(kb).p), ((void *)(out).p), ((void *)(n).v))), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 634; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
@@ -616,36 +660,40 @@ void Grib_Doubles (Grib_Message * m, m9_sl_UTF8 key, m9_sl_F64 out, m9_state *er
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Grib.Doubles"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE kb = {0}; (void) kb;
   m9_arr_1_uint64_t n = {0}; (void) n;
   int64_t want = 0; (void) want;
   if ((!m->live)) {
     Grib_Dead (((m9_sl_UTF8){ (uint8_t *) m9s18, 22 }), key, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 612; goto L_ret; };
   }
   { __typeof__(want) m9v = Grib_Size (m, key, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 613; goto L_ret; };
     want = m9v;
   }
   if (((out).len != want)) {
     err->i[0] = (out).len;
     err->i[1] = want;
     m9_raise (err, &Faults_SizeError);
+    m9_site (err, 614, m9pn);
     goto L_ret;
   }
   { __typeof__(kb) m9v = Grib_CStr (&(scratch), key, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 615; goto L_ret; };
     kb = m9v;
   }
   { __typeof__((*(uint64_t *) m9_at (n.v, INT64_C(0), INT64_C(1), sizeof (uint64_t), err))) m9v = m9_u64 ((out).len, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 616; goto L_ret; };
     (*(uint64_t *) m9_at (n.v, INT64_C(0), INT64_C(1), sizeof (uint64_t), err)) = m9v;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 616; goto L_ret; };
   }
   Grib_Check (((m9_sl_UTF8){ (uint8_t *) m9s19, 22 }), key, (int64_t)(codes_get_double_array (m->h, ((void *)(kb).p), ((void *)(out).p), ((void *)(n).v))), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 617; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
@@ -658,6 +706,8 @@ m9_gd2_double Grib_ReadGrid2 (Grib_Message * m, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Grib.ReadGrid2"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_gd2_double m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_F64 flat = {0}; (void) flat;
@@ -667,37 +717,37 @@ m9_gd2_double Grib_ReadGrid2 (Grib_Message * m, m9_state *err)
   int64_t i = 0; (void) i;
   int64_t j = 0; (void) j;
   { __typeof__(ni) m9v = Grib_GetI64 (m, ((m9_sl_UTF8){ (uint8_t *) m9s20, 2 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 646; goto L_ret; };
     ni = m9v;
   }
   { __typeof__(nj) m9v = Grib_GetI64 (m, ((m9_sl_UTF8){ (uint8_t *) m9s21, 2 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 647; goto L_ret; };
     nj = m9v;
   }
   { __typeof__(flat) m9v = M9_POOL_SL (m9_sl_F64, double, &(scratch), m9_mul_i64 (ni, nj, err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 648; goto L_ret; };
     flat = m9v;
   }
   Grib_Values (m, flat, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 649; goto L_ret; };
   { __typeof__(g) m9v = ({ m9_gd2_double m9t1; m9t1.n[0] = nj; m9t1.n[1] = ni; m9t1.s[1] = 1; m9t1.s[0] = m9t1.s[1] * m9t1.n[1]; m9t1.p = (double *) m9_pool_alloc (err->res, sizeof (double), m9_gcount (m9t1.n, 2, err), err); m9t1; });
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 650; goto L_ret; };
     g = m9v;
   }
   { __typeof__(j) m9t2to;
   j = INT64_C(0);
   m9t2to = m9_sub_i64 (nj, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 654; goto L_ret; };
   if (j <= m9t2to) for (;;) {
     { __typeof__(i) m9t3to;
     i = INT64_C(0);
     m9t3to = m9_sub_i64 (ni, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 655; goto L_ret; };
     if (i <= m9t3to) for (;;) {
       { __typeof__((*(double *) m9_gat2 (g.p, sizeof (double), g.n[0], g.n[1], g.s[0], g.s[1], j, i, err))) m9v = (*(double *) m9_at (flat.p, m9_add_i64 (m9_mul_i64 (j, ni, err), i, err), flat.len, sizeof (double), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 656; goto L_ret; };
         (*(double *) m9_gat2 (g.p, sizeof (double), g.n[0], g.n[1], g.s[0], g.s[1], j, i, err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 656; goto L_ret; };
       }
       if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
@@ -709,6 +759,7 @@ m9_gd2_double Grib_ReadGrid2 (Grib_Message * m, m9_state *err)
   m9ret = g;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
@@ -722,14 +773,17 @@ void Grib_MultiSupport (bool on, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Grib.MultiSupport"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   if (on) {
-    ({ __auto_type m9_fam9t1 = (Grib_Null (err)); if (err->exc) goto L_ret; m9_mon *m9_gm = m9_gate (&m9_gate_cgrib, "cgrib"); m9_mon_enter (m9_gm); codes_grib_multi_support_on (m9_fam9t1); m9_mon_leave (m9_gm); });
-    if (err->exc) goto L_ret;
+    ({ __auto_type m9_fam9t1 = (Grib_Null (err)); if (err->exc) { m9ln = 664; goto L_ret; }; m9_mon *m9_gm = m9_gate (&m9_gate_cgrib, "cgrib"); m9_mon_enter (m9_gm); codes_grib_multi_support_on (m9_fam9t1); m9_mon_leave (m9_gm); });
+    if (err->exc) { m9ln = 664; goto L_ret; };
   } else {
-    ({ __auto_type m9_fam9t2 = (Grib_Null (err)); if (err->exc) goto L_ret; m9_mon *m9_gm = m9_gate (&m9_gate_cgrib, "cgrib"); m9_mon_enter (m9_gm); codes_grib_multi_support_off (m9_fam9t2); m9_mon_leave (m9_gm); });
-    if (err->exc) goto L_ret;
+    ({ __auto_type m9_fam9t2 = (Grib_Null (err)); if (err->exc) { m9ln = 664; goto L_ret; }; m9_mon *m9_gm = m9_gate (&m9_gate_cgrib, "cgrib"); m9_mon_enter (m9_gm); codes_grib_multi_support_off (m9_fam9t2); m9_mon_leave (m9_gm); });
+    if (err->exc) { m9ln = 664; goto L_ret; };
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -741,13 +795,15 @@ static m9_sl_UTF8 Grib_Message2 (m9_pool *pool, int64_t code, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Grib.Message2"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   const void * p = NULL; (void) p;
   void * q = NULL; (void) q;
   int64_t n = 0; (void) n;
   m9_sl_BYTE b = {0}; (void) b;
-  { __typeof__(p) m9v = ({ __auto_type m9_fam9t1 = (((int) m9_i32 (code, err))); if (err->exc) goto L_ret; m9_mon *m9_gm = m9_gate (&m9_gate_cgrib, "cgrib"); m9_mon_enter (m9_gm); __typeof__(grib_get_error_message (m9_fam9t1)) m9_gv = grib_get_error_message (m9_fam9t1); m9_mon_leave (m9_gm); m9_gv; });
-    if (err->exc) goto L_ret;
+  { __typeof__(p) m9v = ({ __auto_type m9_fam9t1 = (((int) m9_i32 (code, err))); if (err->exc) { m9ln = 292; goto L_ret; }; m9_mon *m9_gm = m9_gate (&m9_gate_cgrib, "cgrib"); m9_mon_enter (m9_gm); __typeof__(grib_get_error_message (m9_fam9t1)) m9_gv = grib_get_error_message (m9_fam9t1); m9_mon_leave (m9_gm); m9_gv; });
+    if (err->exc) { m9ln = 292; goto L_ret; };
     p = m9v;
   }
   n = (int64_t)(m9_cstrlen (p));
@@ -755,21 +811,22 @@ static m9_sl_UTF8 Grib_Message2 (m9_pool *pool, int64_t code, m9_state *err)
     n = Grib_MaxStr;
   }
   { __typeof__(b) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), m9_add_i64 (n, INT64_C(1), err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 295; goto L_ret; };
     b = m9v;
   }
-  { __typeof__(q) m9v = ({ __auto_type m9_fam9t3 = (((void *)(b).p)); __auto_type m9_fam9t4 = (p); __auto_type m9_fam9t5 = (((size_t) m9_u64 (n, err))); if (err->exc) goto L_ret; memcpy (m9_fam9t3, m9_fam9t4, m9_fam9t5); });
-    if (err->exc) goto L_ret;
+  { __typeof__(q) m9v = ({ __auto_type m9_fam9t3 = (((void *)(b).p)); __auto_type m9_fam9t4 = (p); __auto_type m9_fam9t5 = (((size_t) m9_u64 (n, err))); if (err->exc) { m9ln = 296; goto L_ret; }; memcpy (m9_fam9t3, m9_fam9t4, m9_fam9t5); });
+    if (err->exc) { m9ln = 296; goto L_ret; };
     q = m9v;
   }
   err->res = m9res;
   { __typeof__(({ __auto_type m9t6 = b; int64_t m9t6a = INT64_C(0), m9t6n = n; int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; })) m9a4 = ({ __auto_type m9t6 = b; int64_t m9t6a = INT64_C(0), m9t6n = n; int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; });
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 297; goto L_ret; };
   m9ret = DynStr_Decoded (pool, m9a4, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 297; goto L_ret; };
   }
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -782,24 +839,26 @@ static m9_sl_BYTE Grib_CStr (m9_pool *pool, m9_sl_UTF8 s, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Grib.CStr"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_BYTE m9ret = {0};
   m9_sl_BYTE u = {0}; (void) u;
   m9_sl_BYTE b = {0}; (void) b;
   int64_t i = 0; (void) i;
   u = m9_utf_octets (s);
   { __typeof__(b) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), m9_add_i64 ((u).len, INT64_C(1), err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 311; goto L_ret; };
     b = m9v;
   }
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((u).len, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 312; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     { __typeof__((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (u.p, i, u.len, sizeof (uint8_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 312; goto L_ret; };
       (*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)) = m9v;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 312; goto L_ret; };
     }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
@@ -808,6 +867,7 @@ static m9_sl_BYTE Grib_CStr (m9_pool *pool, m9_sl_UTF8 s, m9_state *err)
   m9ret = b;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
@@ -820,11 +880,13 @@ static void Grib_Fail (m9_sl_UTF8 op, m9_sl_UTF8 key, int64_t code, m9_state *er
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Grib.Fail"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_UTF8 detail = {0}; (void) detail;
   detail = ((m9_sl_UTF8){ NULL, 0 });
   { __typeof__(detail) m9v = Grib_Message2 (&(scratch), code, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 323; goto L_hdl_m9t1; };
     detail = m9v;
   }
   goto L_dn_m9t2;
@@ -841,8 +903,10 @@ L_dn_m9t2: ;
   { __typeof__(detail) m9t5 = detail; err->s[2].p = m9t5.p; err->s[2].len = m9t5.len; m9_pay_keep (err, 2, sizeof (*m9t5.p)); }
   err->i[0] = code;
   m9_raise (err, &Grib_Error);
+  m9_site (err, 328, m9pn);
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
@@ -855,11 +919,14 @@ static void Grib_Check (m9_sl_UTF8 op, m9_sl_UTF8 key, int64_t code, m9_state *e
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Grib.Check"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   if ((code != INT64_C(0))) {
     Grib_Fail (op, key, code, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 333; goto L_ret; };
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -871,11 +938,14 @@ static void * Grib_Null (m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Grib.Null"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   void * m9ret = NULL;
   err->res = m9res;
   m9ret = ((void *)(Grib_Nowhere));
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -887,12 +957,15 @@ static int64_t Grib_Byte (m9_sl_BYTE d, int64_t i, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Grib.Byte"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   err->res = m9res;
   m9ret = (int64_t)((*(uint8_t *) m9_at (d.p, i, d.len, sizeof (uint8_t), err)));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 410; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -904,55 +977,57 @@ static bool Grib_MsgAt (m9_sl_BYTE d, int64_t p, int64_t *len, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Grib.MsgAt"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   int64_t ed = 0; (void) ed;
   int64_t i = 0; (void) i;
   (*len) = INT64_C(0);
   bool m9t1 = (m9_add_i64 (p, INT64_C(16), err) > (d).len);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 424; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
   bool m9t2 = (Grib_Byte (d, p, err) != INT64_C(71));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 425; goto L_ret; };
   if (m9t2) {
     err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
   { __typeof__(m9_add_i64 (p, INT64_C(1), err)) m9a5 = m9_add_i64 (p, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 426; goto L_ret; };
   bool m9t3 = (Grib_Byte (d, m9a5, err) != INT64_C(82));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 426; goto L_ret; };
   if (m9t3) {
     err->res = m9res;
     m9ret = false;
     goto L_ret;
   } }
   { __typeof__(m9_add_i64 (p, INT64_C(2), err)) m9a6 = m9_add_i64 (p, INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 427; goto L_ret; };
   bool m9t4 = (Grib_Byte (d, m9a6, err) != INT64_C(73));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 427; goto L_ret; };
   if (m9t4) {
     err->res = m9res;
     m9ret = false;
     goto L_ret;
   } }
   { __typeof__(m9_add_i64 (p, INT64_C(3), err)) m9a7 = m9_add_i64 (p, INT64_C(3), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 428; goto L_ret; };
   bool m9t5 = (Grib_Byte (d, m9a7, err) != INT64_C(66));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 428; goto L_ret; };
   if (m9t5) {
     err->res = m9res;
     m9ret = false;
     goto L_ret;
   } }
   { __typeof__(m9_add_i64 (p, INT64_C(7), err)) m9a8 = m9_add_i64 (p, INT64_C(7), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 429; goto L_ret; };
   { __typeof__(ed) m9v = Grib_Byte (d, m9a8, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 429; goto L_ret; };
     ed = m9v;
   }
   }
@@ -962,9 +1037,9 @@ static bool Grib_MsgAt (m9_sl_BYTE d, int64_t p, int64_t *len, m9_state *err)
     m9t6to = INT64_C(15);
     if (i <= m9t6to) for (;;) {
       { __typeof__(m9_add_i64 (p, i, err)) m9a9 = m9_add_i64 (p, i, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 431; goto L_ret; };
       { __typeof__((*len)) m9v = m9_add_i64 (m9_mul_i64 ((*len), INT64_C(256), err), Grib_Byte (d, m9a9, err), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 431; goto L_ret; };
         (*len) = m9v;
       }
       }
@@ -978,9 +1053,9 @@ static bool Grib_MsgAt (m9_sl_BYTE d, int64_t p, int64_t *len, m9_state *err)
       m9t7to = INT64_C(6);
       if (i <= m9t7to) for (;;) {
         { __typeof__(m9_add_i64 (p, i, err)) m9a10 = m9_add_i64 (p, i, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 433; goto L_ret; };
         { __typeof__((*len)) m9v = m9_add_i64 (m9_mul_i64 ((*len), INT64_C(256), err), Grib_Byte (d, m9a10, err), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 433; goto L_ret; };
           (*len) = m9v;
         }
         }
@@ -998,43 +1073,43 @@ static bool Grib_MsgAt (m9_sl_BYTE d, int64_t p, int64_t *len, m9_state *err)
     goto L_ret;
   }
   bool m9t8 = (m9_add_i64 (p, (*len), err) > (d).len);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 438; goto L_ret; };
   if (m9t8) {
     err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
   { __typeof__(m9_sub_i64 (m9_add_i64 (p, (*len), err), INT64_C(4), err)) m9a11 = m9_sub_i64 (m9_add_i64 (p, (*len), err), INT64_C(4), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 439; goto L_ret; };
   bool m9t9 = (Grib_Byte (d, m9a11, err) != INT64_C(55));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 439; goto L_ret; };
   if (m9t9) {
     err->res = m9res;
     m9ret = false;
     goto L_ret;
   } }
   { __typeof__(m9_sub_i64 (m9_add_i64 (p, (*len), err), INT64_C(3), err)) m9a12 = m9_sub_i64 (m9_add_i64 (p, (*len), err), INT64_C(3), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 440; goto L_ret; };
   bool m9t10 = (Grib_Byte (d, m9a12, err) != INT64_C(55));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 440; goto L_ret; };
   if (m9t10) {
     err->res = m9res;
     m9ret = false;
     goto L_ret;
   } }
   { __typeof__(m9_sub_i64 (m9_add_i64 (p, (*len), err), INT64_C(2), err)) m9a13 = m9_sub_i64 (m9_add_i64 (p, (*len), err), INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 441; goto L_ret; };
   bool m9t11 = (Grib_Byte (d, m9a13, err) != INT64_C(55));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 441; goto L_ret; };
   if (m9t11) {
     err->res = m9res;
     m9ret = false;
     goto L_ret;
   } }
   { __typeof__(m9_sub_i64 (m9_add_i64 (p, (*len), err), INT64_C(1), err)) m9a14 = m9_sub_i64 (m9_add_i64 (p, (*len), err), INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 442; goto L_ret; };
   bool m9t12 = (Grib_Byte (d, m9a14, err) != INT64_C(55));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 442; goto L_ret; };
   if (m9t12) {
     err->res = m9res;
     m9ret = false;
@@ -1044,6 +1119,7 @@ static bool Grib_MsgAt (m9_sl_BYTE d, int64_t p, int64_t *len, m9_state *err)
   m9ret = true;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -1055,12 +1131,15 @@ static void Grib_Dead (m9_sl_UTF8 op, m9_sl_UTF8 key, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Grib.Dead"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   { __typeof__(m9_neg_i64 (INT64_C(1), err)) m9a15 = m9_neg_i64 (INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 517; goto L_ret; };
   Grib_Fail (op, key, m9a15, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 517; goto L_ret; };
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -1073,8 +1152,11 @@ void Grib_m9init (m9_state *err)
   m9done = 1;
   m9_pool *m9prev = err->res;
   err->res = &m9mframe;
+  static const char m9pn[] = "Grib (the module body)"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   DynStr_m9init (err); if (err->exc) goto L_ret;
   Faults_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9prev;
 }

@@ -228,7 +228,7 @@ CONST
      compiler is the one artifact that cannot read its own package
      version, and a generated file would drag the build system into
      the bootstrap. *)
-  Version = '0.26.1' ;
+  Version = '0.26.2' ;
   (* StdInclude is where its runtime lives, which --help quotes so
      that the example a user copies out of it actually compiles. *)
   StdInclude = '/usr/include/m9' ;
@@ -1248,12 +1248,28 @@ BEGIN
   IF macos THEN
     IF Text.BLen (name) = 0 THEN RETURN FALSE END ;
     IF Io.Exists (Cat ('/opt/homebrew/lib/lib', Cat (name, '.dylib'))) THEN RETURN TRUE END ;
+    IF Text.BLen (KegLib (name)) > 0 THEN RETURN TRUE END ;
     IF InLibraryPath (name) THEN RETURN TRUE END ;
     RETURN CcFinds (Cat ('lib', Cat (name, '.dylib'))) OR CcFinds (Cat ('lib', Cat (name, '.a')))
   END ;
   IF Text.BLen (file) > 0 THEN RETURN CcFinds (file) END ;
   RETURN CcFinds (Cat ('lib', Cat (name, '.so'))) OR CcFinds (Cat ('lib', Cat (name, '.a')))
 END LibFound ;
+
+(* KegLib answers the lib directory of a keg-only Homebrew formula named
+   libNAME, or empty.  libpq is keg-only: Homebrew does not link it into
+   the prefix's lib, so -lpq found nothing, and a program importing Pg
+   did not link on a Mac without LIBRARY_PATH (2026-11-01).  The
+   formula depends on libpq since 0.26.2. *)
+PROCEDURE KegLib (RO name: UTF) : UTF RAISES ValueRange =
+VAR d : UTF ;
+BEGIN
+  d := Cat ('/opt/homebrew/opt/lib', Cat (name, '/lib')) ;
+  IF Io.ExistsUtf (Cat (d, Cat ('/lib', Cat (name, '.dylib')))) THEN RETURN d END ;
+  d := Cat ('/usr/local/opt/lib', Cat (name, '/lib')) ;
+  IF Io.ExistsUtf (Cat (d, Cat ('/lib', Cat (name, '.dylib')))) THEN RETURN d END ;
+  RETURN ''
+END KegLib ;
 
 (* InLibraryPath asks whether libNAME.dylib or libNAME.a is in a
    directory of $LIBRARY_PATH.  The linker searches them, but Apple
@@ -1389,6 +1405,9 @@ BEGIN
        the same thing, and against static archives neither is needed *)
     o := OsslDir () ;
     IF Text.BLen (o) > 0 THEN Word (Cat ('-L', Cat (o, '/lib'))) END ;
+    (* libpq is keg-only, as OpenSSL is, so its directory is named too *)
+    o := KegLib ('pq') ;
+    IF Text.BLen (o) > 0 THEN Word (Cat ('-L', o)) END ;
     Word ('-Wl,-dead_strip_dylibs') ;
     (* It also strips THE CODE NOTHING REACHES, which on Linux -flto
        removes by

@@ -3,12 +3,15 @@ REVIEW Http -- 74 procedures with a body, 59 of them functions; 25 headings in a
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              59
   assignments                                   503
-  arguments                                     929
+  arguments                                     928
   RETURN values                                 131
   operands of a comparison or an operator       519
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
+
+CAN TRAP AT RUN TIME -- a byte cut a character can straddle
+  text compared through a byte cut                0
 
 DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0

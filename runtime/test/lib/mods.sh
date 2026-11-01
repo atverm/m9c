@@ -15,13 +15,14 @@
 COMPILERC=$(sed -n 's/^COMPILER="\(.*\)"/\1/p' ../../build.sh | tr ' ' '\n' | sed '/^$/d; s#^#../gen/#; s#$#.c#' | tr '\n' ' ')
 [ -n "$COMPILERC" ] || { echo "lib/mods.sh: no COMPILER line in build.sh" >&2; exit 1; }
 
-MODS="DynStr Faults Mat Stats System Frame Parquet NbCells NbShow Json JsonUtf Chars DynUtf Http HttpServer OpenApi ApiSpec Arrow ZarrStore Zarr Plot Lex Ast Print Parse Dict Fmt Io Time Text Math Bits Sort Seq Check Arrays Numeric Csv Delim Zip Png Pg Sparql Regex Xml Rdf Hash Smtp Rsa Map NetCDF Grib Syslog Logger Hello Concat Narrow ProcUse AggUse ShareUse ExportDef ExportUse Gen Sem Doc Review M9c Diag"
+MODS="DynStr Faults Mat Stats System Frame Parquet NbCells NbShow Json JsonUtf Chars DynUtf Tsk Http HttpServer OpenApi ApiSpec Arrow ZarrStore Zarr Plot Lex Ast Print Parse Dict Fmt Io Time Text Math Bits Sort Seq Check Arrays Numeric Csv Delim Zip Png Pg Sparql Regex Xml Rdf Hash Smtp Rsa Map NetCDF Grib Syslog Logger Hello Concat Narrow ProcUse AggUse ShareUse ExportDef ExportUse Gen Sem Doc Review M9c Diag"
 deps_of () {
   case $1 in
     Json)          echo DynStr Text ;;
     Lex)           echo DynStr Text ;;
     JsonUtf)       echo DynStr Text ;;
     Chars)         echo Bits Faults Text ;;
+    Tsk)           echo Faults System ;;
     Http)          echo DynStr Io Text ;;
     ApiSpec)       echo DynStr Text ;;
     Arrow)         echo DynStr Faults Text ;;

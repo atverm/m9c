@@ -1,0 +1,252 @@
+MODULE TskTest ;
+
+(* TskTest holds Tsk.For to the loop it replaces.  Chunk must cut
+   0 .. n - 1 into disjoint chunks that cover it, in worker order,
+   sizes within one.  A crew must run every index exactly once a
+   round, by the worker Chunk names, for n divisible by the workers or
+   not, for n < workers, for one worker and for n = 0.  A body that fails must
+   make For raise Failed after the round, and the crew must run the
+   next round.  Start, For and Stop must refuse their misuses. *)
+
+IMPORT Check ;
+IMPORT Faults ;
+IMPORT Io ;
+IMPORT Tsk ;
+
+CONST
+  Cap = 1003 ;                  (* the largest n a job is run with *)
+  Fill = 1 ;                    (* op: a[i] := i, count it, note the worker *)
+  Fail = 2 ;                    (* op: as Fill; index 5 raises IndexError *)
+
+TYPE
+  Job = RECORD
+    crew : Tsk.Crew ;
+    a : SLICE OF I64 ;          (* each worker writes its own chunk *)
+    hits : SLICE OF I64 ;       (* visits of index i, summed over the rounds *)
+    owner : SLICE OF I64 ;      (* the worker that visited index i last *)
+  END [SHARABLE] ;
+
+VAR
+  t : Check.T ;
+  pool : POOL ;
+
+(* Body runs one chunk.  It raises IndexError at index 5 when the op
+   is Fail. *)
+PROCEDURE Body (VAR j: Job ; RO s: Tsk.Seat) RAISES IndexError =
+VAR
+  i : I64 ;
+BEGIN
+  FOR i := s.lo TO s.hi - 1 DO
+    IF (s.op = Fail) AND (i = 5) THEN j.a[LEN (j.a) + i] := 0 END ;
+    j.a[i] := i ;
+    j.hits[i] := j.hits[i] + 1 ;
+    j.owner[i] := s.id
+  END
+END Body ;
+
+PROCEDURE Worker (VAR j: Job) =
+VAR
+  s : Tsk.Seat ;
+BEGIN
+  s := Tsk.Join (j.crew) ;
+  WHILE Tsk.Next (j.crew, s) DO
+    BEGIN
+      Body (j, s)
+    EXCEPT
+    | IndexError : s.failed := TRUE
+    END
+  END
+END Worker ;
+
+PROCEDURE NewJob (workers: I64) : PTR Job IN pool RAISES Faults.BadArg, OutOfMemory =
+VAR
+  j : PTR Job IN pool ;
+  k : I64 ;
+BEGIN
+  j := NEW (pool, Job) ;
+  j.a := NEW (pool, I64, Cap) ;
+  j.hits := NEW (pool, I64, Cap) ;
+  j.owner := NEW (pool, I64, Cap) ;
+  Tsk.Start (j.crew, workers) ;
+  FOR k := 1 TO workers DO THREAD (Worker, j) END ;
+  RETURN j
+END NewJob ;
+
+(* Holds answers TRUE when the last rounds visited every index below n
+   exactly rounds times, gave a[i] = i, and the owner of index i is the
+   worker Chunk names.  No index at n or above may be touched. *)
+PROCEDURE Holds (j: PTR Job ; n, workers, rounds: I64) : BOOL RAISES IndexError =
+VAR
+  i, k, lo, hi : I64 ;
+BEGIN
+  FOR i := 0 TO Cap - 1 DO
+    IF i < n THEN
+      IF (j.hits[i] # rounds) OR (j.a[i] # i) THEN RETURN FALSE END
+    ELSIF j.hits[i] # 0 THEN
+      RETURN FALSE
+    END
+  END ;
+  FOR k := 0 TO workers - 1 DO
+    Tsk.Chunk (k, n, workers, lo, hi) ;
+    FOR i := lo TO hi - 1 DO
+      IF j.owner[i] # k THEN RETURN FALSE END
+    END
+  END ;
+  RETURN TRUE
+END Holds ;
+
+(* Loop runs a crew of workers over n indices, rounds times, and
+   checks every index was visited once a round by its worker. *)
+PROCEDURE Loop (RO label: STR ; n, workers, rounds: I64) =
+VAR
+  j : PTR Job IN pool ;
+  r, sum, i : I64 ;
+BEGIN
+  j := NewJob (workers) ;
+  FOR r := 1 TO rounds DO Tsk.For (j.crew, n, Fill) END ;
+  Tsk.Stop (j.crew) ;
+  Check.That (t, label + ': every index once a round, by its worker',
+              Holds (j, n, workers, rounds)) ;
+  sum := 0 ;
+  FOR i := 0 TO n - 1 DO sum := sum + j.a[i] END ;
+  Check.EqI64 (t, label + ': the sum of a[i] = i', sum, n * (n - 1) DIV 2)
+EXCEPT
+| Tsk.Failed : Check.That (t, label + ': no body failed', FALSE)
+| Faults.BadArg (w) : Check.That (t, label + ': no BadArg: ' + w, FALSE)
+| IndexError : Check.That (t, label + ': no IndexError', FALSE)
+| OutOfMemory : Check.That (t, label + ': every THREAD started', FALSE)
+END Loop ;
+
+(* Chunks holds Chunk to its contract for every n up to 40 and every
+   crew up to 9: in order, disjoint, covering, within one. *)
+PROCEDURE Chunks () =
+VAR
+  n, w, k, lo, hi, at, small, big, bad : I64 ;
+BEGIN
+  bad := 0 ;
+  FOR n := 0 TO 40 DO
+    FOR w := 1 TO 9 DO
+      at := 0 ;
+      small := n ;
+      big := 0 ;
+      FOR k := 0 TO w - 1 DO
+        Tsk.Chunk (k, n, w, lo, hi) ;
+        IF (lo # at) OR (hi < lo) THEN bad := bad + 1 END ;
+        IF hi - lo < small THEN small := hi - lo END ;
+        IF hi - lo > big THEN big := hi - lo END ;
+        at := hi
+      END ;
+      IF at # n THEN bad := bad + 1 END ;
+      IF big - small > 1 THEN bad := bad + 1 END
+    END
+  END ;
+  Check.EqI64 (t, 'Chunk: in order, disjoint, covering, within one', bad, 0) ;
+  Tsk.Chunk (3, 10, 3, lo, hi) ;
+  Check.EqI64 (t, 'Chunk past the last worker is empty', hi - lo, 0) ;
+  Tsk.Chunk (0, 10, 0, lo, hi) ;
+  Check.EqI64 (t, 'Chunk of no workers is empty', hi - lo, 0) ;
+  (* A product k * n would overflow here; Chunk forms none. *)
+  Tsk.Chunk (7, 9223372036854775807, 8, lo, hi) ;
+  Check.EqI64 (t, 'Chunk of the largest n ends at n', hi, 9223372036854775807) ;
+  Check.That (t, 'Workers (0) is 1', Tsk.Workers (0) = 1) ;
+  Check.That (t, 'Workers (3) is at most 3', Tsk.Workers (3) <= 3)
+END Chunks ;
+
+(* Failing runs a round whose body raises at index 5.  For must raise
+   Failed once every worker has finished: every other index is done.
+   The next round must run whole. *)
+PROCEDURE Failing () =
+VAR
+  j : PTR Job IN pool ;
+  raised : BOOL ;
+  i, rest : I64 ;
+BEGIN
+  j := NewJob (4) ;
+  raised := FALSE ;
+  BEGIN
+    Tsk.For (j.crew, 100, Fail)
+  EXCEPT
+  | Tsk.Failed : raised := TRUE
+  END ;
+  Check.That (t, 'a failing body makes For raise Failed', raised) ;
+  (* Index 5 lies in worker 0's chunk, 0 .. 24.  The body stopped
+     there, so indices 0 .. 4 are done and 5 .. 24 are not.  Every
+     other worker finished its chunk before For raised. *)
+  rest := 0 ;
+  FOR i := 25 TO 99 DO rest := rest + j.hits[i] END ;
+  Check.EqI64 (t, 'the other workers finished before Failed', rest, 75) ;
+  Check.EqI64 (t, 'the failing chunk stopped at index 5', j.hits[5], 0) ;
+  Tsk.For (j.crew, 100, Fill) ;
+  Check.EqI64 (t, 'the crew runs the next round', j.hits[5], 1) ;
+  Tsk.Stop (j.crew)
+EXCEPT
+| Tsk.Failed : Check.That (t, 'the round after a failure fails not', FALSE)
+| Faults.BadArg (w) : Check.That (t, 'no BadArg: ' + w, FALSE)
+| IndexError : Check.That (t, 'no IndexError', FALSE)
+| OutOfMemory : Check.That (t, 'every THREAD started', FALSE)
+END Failing ;
+
+PROCEDURE StartZero () : BOOL =
+VAR
+  j : PTR Job IN pool ;
+BEGIN
+  j := NEW (pool, Job) ;
+  Tsk.Start (j.crew, 0) ;
+  RETURN FALSE
+EXCEPT
+| Faults.BadArg (w) : RETURN TRUE
+END StartZero ;
+
+PROCEDURE StartTwice () : BOOL =
+VAR
+  j : PTR Job IN pool ;
+BEGIN
+  j := NEW (pool, Job) ;
+  Tsk.Start (j.crew, 2) ;
+  Tsk.Start (j.crew, 2) ;
+  RETURN FALSE
+EXCEPT
+| Faults.BadArg (w) : RETURN TRUE
+END StartTwice ;
+
+PROCEDURE ForUnstarted () : BOOL =
+VAR
+  j : PTR Job IN pool ;
+BEGIN
+  j := NEW (pool, Job) ;
+  Tsk.For (j.crew, 10, Fill) ;
+  RETURN FALSE
+EXCEPT
+| Faults.BadArg (w) : RETURN TRUE
+| Tsk.Failed : RETURN FALSE
+END ForUnstarted ;
+
+PROCEDURE ForStopped () : BOOL =
+VAR
+  j : PTR Job IN pool ;
+BEGIN
+  j := NewJob (2) ;
+  Tsk.Stop (j.crew) ;
+  Tsk.For (j.crew, 10, Fill) ;
+  RETURN FALSE
+EXCEPT
+| Faults.BadArg (w) : RETURN TRUE
+| Tsk.Failed : RETURN FALSE
+| OutOfMemory : RETURN FALSE
+END ForStopped ;
+
+BEGIN
+  Chunks () ;
+  Loop ('1000 on 4', 1000, 4, 3) ;
+  Loop ('1003 on 4, not divisible', 1003, 4, 2) ;
+  Loop ('3 on 8, n < workers', 3, 8, 2) ;
+  Loop ('1000 on 1', 1000, 1, 2) ;
+  Loop ('0 on 4', 0, 4, 2) ;
+  Loop ('1003 on Workers (1003)', 1003, Tsk.Workers (1003), 2) ;
+  Failing () ;
+  Check.That (t, 'Start refuses 0 workers', StartZero ()) ;
+  Check.That (t, 'Start refuses a second Start', StartTwice ()) ;
+  Check.That (t, 'For refuses a crew not started', ForUnstarted ()) ;
+  Check.That (t, 'For refuses a crew stopped', ForStopped ()) ;
+  Io.Halt (Check.Done (t, 'Tsk'))
+END TskTest.

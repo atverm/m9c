@@ -260,6 +260,9 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `SHARED cannot consume through a selector of b: a move takes a name that owns its pointer, and ownership is not followed into a field or an element (par 4.2)` | SHARED (x) of a field or an element: SHARED consumes an owned pointer, and the field still names what the last handle frees (par 4.2) | make the handle from a local or an OWN parameter that owns the pointer: SHARED (q), parentheses or not | `shared-through-field` |
 | `signature differs from definition` | the IMPLEMENTATION's procedure heading is not the DEFINITION's, printed canonically (modes, types, RAISES all count) | copy the definition's heading exactly; the IMPLEMENTATION adds only '=' | `signature-differs-from-definition` |
 | `a SLICE of an array no variable holds: the array is gone at the end of the statement -- name it first: a := F (...) ; SLICE (a, ...)` | SLICE over an ARRAY that a call answers (or a field of one): an array is a value, held in a temporary that is gone at the end of the statement, and the slice would point into it (par 2.2.1) | assign the answer to a variable first, a := F (x), and slice the variable; a function answering a SLICE OF T can be sliced as it is | `slice-of-call-array` |
+| `TASK (Work): cannot pass I64 where PTR m.Rec is expected` | a TASK hands its argument to the target, as a THREAD does, and this one is not of the type the target takes: the checker holds TASK by THREAD's own code (docs/task-plan.md) | pass what the target declares, as for THREAD: a PTR T or SHARED PTR T for a `VAR r: T` or `p: PTR T` parameter, or a monitor by name (par 6) | `task-argument-type` |
+| `use of p after it was moved into a TASK running Work` | a bare owned pointer handed to a TASK is MOVED, as one handed to a THREAD is: the task owns it now, and tasks run on more than one carrier from stage 2 of docs/task-plan.md | hand the task a MONITOR or a record marked [SHARABLE], or do not touch the owned value again after the TASK (par 6, par 4.2) | `task-moves-its-argument` |
+| `TASK (Work): both threads hold the m.Job handed over, and it is neither a MONITOR nor a RECORD marked [SHARABLE]` | a TASK is handed a record it does not own -- a pool pointer, a VAR parameter, a module variable -- so it and its starter both hold it, and the record is neither a MONITOR nor marked [SHARABLE] (par 6; the rule is THREAD's) | as for THREAD: end the record END [SHARABLE] if the writes are disjoint, put what is shared in a MONITOR, or move an owned value in | `task-sharable` |
 | `THREAD (Grow): the target allocates through its parameter, in the pool of the record both threads hold, and the pool takes no lock` | a THREAD target calls a procedure value and hands it the shared record or a part of it: what the value does there is unseen, and it may allocate in the record pool both threads use | hand the procedure value only what is read out of the record, or give the worker a POOL of its own | `thread-alloc-through-value` |
 | `THREAD (Grow): the target allocates through its parameter, in the pool of the record both threads hold, and the pool takes no lock` | a THREAD target that allocates through its parameter -- a NEW on it, a callee growing a builder in it -- while the record it was handed is shared: both threads carve the one pool at once, and the pool takes no lock | give the worker a POOL of its own (a field of a record each thread gets, or a local) to allocate in, or move an owned value in | `thread-allocs-shared-pool` |
 | `THREAD (Work): cannot pass I64 where PTR m.Rec is expected` | THREAD hands its argument to the target's first parameter, and this one is not of that type -- until 2026-09-27 neither checker looked at the argument (only the generator refused a non-pointer shape) | pass what the target declares: a PTR T or SHARED PTR T for a `VAR r: T` or `p: PTR T` parameter, or a monitor by name (par 6) | `thread-argument-type` |
@@ -278,6 +281,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `type H refers to itself other than through a pointer to a record: it would have no size or no end -- point to it with PTR from a RECORD field (par 2.2)` | a type is a pointer to itself, or two names are each other: there is no record for the recursion to stop at, and until 2026-10-21 --check followed the names until it ran out of stack or for ever (par 2.2) | point to a RECORD that holds the pointer back: P = PTR R ; R = RECORD p : P END | `type-alias-cycle` |
 | `I64 is a type, not a value -- a value of it is written I64 (x)` | a type names a set of values, not one: it is read as a value only through a conversion or as the argument of MAX or SizeOf | convert a value, I64 (x), or ask MAX (I64) for the type | `type-as-value` |
 | `a TYPE declared in a procedure is not in the language yet: declare Pt at module level` | a TYPE among a procedure's declarations: the grammar allows it and nothing implements it; until 2026-10-22 the generator refused its first use as an unsupported selector (par 3 rule 7) | move the TYPE to the module level | `type-in-procedure` |
+| `unknown type: Box -- this module declares no such type; it is Lib's: write Lib.Box` | a bare type name that another module declares and this one does not: a bare name means this module's type; until 2026-11-01 the checker took it and cc refused the mangled name (par 3 rule 7) | write the module the type is in: Mod.T | `type-of-another-module-bare` |
 | `type Bad refers to itself other than through a pointer to a record: it would have no size or no end -- point to it with PTR from a RECORD field (par 2.2)` | a record, array, slice, grid or procedure type holds itself -- by value, as an element, as a parameter -- with no pointer to a record between: it would have no size, and until 2026-10-21 it reached cc as an incomplete type (par 2.2) | hold it through a pointer: RECORD inner : PTR Bad END, OPT PTR where it may be absent | `type-refers-to-itself` |
 | `type H0 refers to itself other than through a pointer to a record` | a ring of type names too long for the walk that looks for one: a cycle of more than a hundred names was taken for none, and the generator crashed on it | break the ring with a PTR to a RECORD, as for a short one | `type-ring-long` |
 | `unknown type: Nosuch -- no module declares it` | a bare type name that no module the checker loaded declares: a typo, or a type of another module written without its module; until 2026-10-22 it was left soft and the generator refused it (par 3 rule 7) | declare the type, or write Mod.T and IMPORT Mod | `type-unknown-bare` |
@@ -6550,6 +6554,72 @@ BEGIN
 END m.
 ```
 
+### task-argument-type
+
+`TASK (Work): cannot pass I64 where PTR m.Rec is expected`
+
+```
+(* A TASK's argument is checked against its target's parameter by
+   THREAD's own code (thread-argument-type is the twin). *)
+MODULE m ;
+TYPE Rec = RECORD n : I64 ; END ;
+VAR x : I64 ;
+PROCEDURE Work (r: PTR Rec) = BEGIN x := r.n END Work ;
+PROCEDURE F () = BEGIN TASK (Work, x) END F ;
+END m.
+```
+
+### task-moves-its-argument
+
+`use of p after it was moved into a TASK running Work`
+
+```
+(* An owned value handed to a TASK is moved, as one handed to a THREAD
+   is (thread-moves-its-argument is the twin). *)
+MODULE m ;
+TYPE Rec = RECORD n : I64 END ;
+VAR y : I64 ;
+PROCEDURE Work (OWN r: PTR Rec) = BEGIN y := r.n ; DISPOSE (r) END Work ;
+PROCEDURE F () = VAR p : PTR Rec ;
+BEGIN p := NEW (OWN, Rec) ; TASK (Work, p) ; p.n := 8 END F ;
+END m.
+```
+
+### task-sharable
+
+`TASK (Work): both threads hold the m.Job handed over, and it is neither a MONITOR nor a RECORD marked [SHARABLE]`
+
+```
+(* A TASK is handed what a THREAD may be handed, and nothing else
+   (thread-not-sharable is the twin).  Tasks run on more than one
+   carrier from stage 2, so the rule is THREAD's.  The legal forms
+   come first. *)
+MODULE m ;
+TYPE
+  Gate = MONITOR RECORD n : I64 END ;
+  Band = RECORD part : SLICE OF I64 END [SHARABLE] ;
+  Job = RECORD n : I64 END ;
+VAR
+  pool : POOL ;
+  g : PTR Gate IN pool ;
+  b : PTR Band IN pool ;
+  o : PTR Job ;
+  j : PTR Job IN pool ;
+PROCEDURE Count (VAR q: Gate) = BEGIN q.n := q.n + 1 END Count ;
+PROCEDURE Fill (VAR q: Band) = BEGIN q.part[0] := 1 END Fill ;
+PROCEDURE Work (VAR q: Job) = BEGIN q.n := q.n + 1 END Work ;
+BEGIN
+  g := NEW (pool, Gate) ;
+  TASK (Count, g) ;
+  b := NEW (pool, Band) ;
+  TASK (Fill, b) ;
+  o := NEW (OWN, Job) ;
+  TASK (Work, o) ;
+  j := NEW (pool, Job) ;
+  TASK (Work, j)
+END m.
+```
+
 ### thread-alloc-through-value
 
 `THREAD (Grow): the target allocates through its parameter, in the pool of the record both threads hold, and the pool takes no lock`
@@ -7180,6 +7250,35 @@ END R ;
 BEGIN
   P () ;
   R ()
+END m.
+```
+
+### type-of-another-module-bare
+
+`unknown type: Box -- this module declares no such type; it is Lib's: write Lib.Box`
+
+```
+(* A bare type name means this module's type.  Box is Lib's, and Lib
+   is imported, so the program must write Lib.Box.  The checker took
+   the bare name, and cc refused the mangled `m_Box' (m9fun, with
+   DynStr's DString, 2026-11-01).  The legal forms come first: the
+   qualified name, this module's own type, and a builtin. *)
+DEFINITION MODULE Lib ;
+TYPE Box = RECORD n : I64 END ;
+END Lib.
+MODULE m ;
+IMPORT Lib ;
+TYPE Own = RECORD n : I64 END ;
+VAR
+  q : Lib.Box ;
+  own : Own ;
+  k : I64 ;
+  d : Box ;
+BEGIN
+  q.n := 1 ;
+  own.n := q.n ;
+  k := own.n ;
+  d := q
 END m.
 ```
 

@@ -1,0 +1,24 @@
+DEFINITION MODULE GfFsA ;
+
+(* GfFsA helps GfFieldScope: a record whose field has the bare type
+   Input, an enumeration of this module. *)
+
+TYPE
+  Input = (Demo, Cf) ;
+  Params = RECORD
+    input : Input ;
+    names : SLICE OF STR ;
+  END ;
+
+PROCEDURE IsCf (RO p: Params) : BOOL ;
+
+END GfFsA.
+
+IMPLEMENTATION MODULE GfFsA ;
+
+PROCEDURE IsCf (RO p: Params) : BOOL =
+BEGIN
+  RETURN p.input = Input.Cf
+END IsCf ;
+
+END GfFsA.

@@ -1940,6 +1940,15 @@ BEGIN
   RETURN f
 END FromNc ;
 
+(* TailIs asks whether the text of units from byte k to its end is lit.
+   It compares by length and suffix, so a k inside a character answers
+   FALSE where a SLICE raised IndexError (the review page's byte-cut
+   lint, 2026-11-01). *)
+PROCEDURE TailIs (RO units: STR ; k: I64 ; RO lit: STR) : BOOL =
+BEGIN
+  RETURN Text.BLen (units) - k = Text.BLen (lit) AND Text.EndsWith (units, lit)
+END TailIs ;
+
 PROCEDURE ParseSince (RO units: STR ;
                       VAR mult, base: I64)
   RAISES Faults.BadArg, ValueRange =
@@ -1980,11 +1989,9 @@ BEGIN
      explicit zero is welcome, and anything else is refused. *)
   WHILE k < Text.BLen (units) AND Text.BIs (units, k, ' ') DO k := k + 1 END ;
   IF k < Text.BLen (units) THEN
-    IF NOT (Text.Eq (SLICE (units, k, Text.BLen (units) - k), 'Z')
-            OR Text.Eq (SLICE (units, k, Text.BLen (units) - k), 'UTC')
-            OR Text.Eq (SLICE (units, k, Text.BLen (units) - k), '+00:00')
-            OR Text.Eq (SLICE (units, k, Text.BLen (units) - k), '+0000')
-            OR Text.Eq (SLICE (units, k, Text.BLen (units) - k), '00:00')) THEN
+    IF NOT (TailIs (units, k, 'Z') OR TailIs (units, k, 'UTC')
+            OR TailIs (units, k, '+00:00') OR TailIs (units, k, '+0000')
+            OR TailIs (units, k, '00:00')) THEN
       RAISE Faults.BadArg (units)
     END
   END ;

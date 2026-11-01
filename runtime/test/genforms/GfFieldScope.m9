@@ -1,0 +1,21 @@
+MODULE GfFieldScope ;
+
+(* WANT: cf true *)
+
+(* A bare type name in an imported record is the exporter's type
+   (LPJ-GUESS port, M14, 2026-11-01).  GfFsA.Params has a field
+   `input : Input', GfFsA's enumeration.  GfFsB has its own Input, a
+   record with a slice, and takes a VAR GfFsA.Params.  The generator
+   read the field's Input in GfFsB and adopted `input.lu' at Set's
+   exit.  gcc said 'GfFsA_Input' has no member named 'lu'. *)
+
+IMPORT GfFsA ;
+IMPORT GfFsB ;
+IMPORT Io ;
+
+VAR p : GfFsA.Params ;
+
+BEGIN
+  GfFsB.Set (p) ;
+  IF GfFsA.IsCf (p) THEN Io.WriteLine ('cf true') END
+END GfFieldScope.

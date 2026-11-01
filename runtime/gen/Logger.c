@@ -72,8 +72,11 @@ void Logger_SetLevel (int64_t level, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Logger.SetLevel"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   curLevel = level;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -85,11 +88,14 @@ int64_t Logger_Level (m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Logger.Level"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   err->res = m9res;
   m9ret = curLevel;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -101,11 +107,14 @@ bool Logger_Enabled (int64_t level, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Logger.Enabled"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   err->res = m9res;
   m9ret = (level >= curLevel);
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -117,52 +126,55 @@ void Logger_Msg (int64_t level, m9_sl_UTF8 text, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Logger.Msg"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
   m9_sl_UTF8 v = {0}; (void) v;
   bool m9t1 = (!Logger_Enabled (level, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 234; goto L_ret; };
   if (m9t1) {
     goto L_ret;
   }
   if (toSyslog) {
     { __typeof__(Syslog_FromLoggerLevel (level, err)) m9a1 = Syslog_FromLoggerLevel (level, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 236; goto L_ret; };
     { __typeof__(Syslog_Pri (curFacility, m9a1, err)) m9a2 = Syslog_Pri (curFacility, m9a1, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 236; goto L_ret; };
     Syslog_Send (m9a2, text, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 236; goto L_ret; };
     }
     }
     goto L_ret;
   }
   { __typeof__(d) m9v = DynStr_New (&(scratch), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 239; goto L_ret; };
     d = m9v;
   }
   { __typeof__(Logger_Stamp (err)) m9a3 = Logger_Stamp (err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 240; goto L_ret; };
   DynStr_Append (&(d), &(scratch), m9a3, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 240; goto L_ret; };
   }
   DynStr_AppendChar (&(d), &(scratch), 32u, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 241; goto L_ret; };
   { __typeof__(Logger_LevelName (level, err)) m9a4 = Logger_LevelName (level, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 242; goto L_ret; };
   DynStr_Append (&(d), &(scratch), m9a4, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 242; goto L_ret; };
   }
   DynStr_AppendChar (&(d), &(scratch), 32u, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 243; goto L_ret; };
   DynStr_Append (&(d), &(scratch), text, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 244; goto L_ret; };
   { __typeof__(v) m9v = DynStr_View (d, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 245; goto L_ret; };
     v = m9v;
   }
   Io_ErrLineUtf (v, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 246; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
@@ -175,41 +187,44 @@ void Logger_Start (int64_t level, m9_sl_UTF8 text, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Logger.Start"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9t1 = (!Logger_Enabled (level, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 148; goto L_ret; };
   if (m9t1) {
     goto L_ret;
   }
   { __typeof__(line) m9v = DynStr_New (&(pool), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 149; goto L_ret; };
     line = m9v;
   }
   { __typeof__(Logger_Stamp (err)) m9a5 = Logger_Stamp (err);
-    if (err->exc) goto L_ret;
-  DynStr_Append (({ __typeof__ (&(line)) m9v = &(line); if (err->exc) goto L_ret; m9v; }), &(pool), m9a5, err);
-  if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 150; goto L_ret; };
+  DynStr_Append (({ __typeof__ (&(line)) m9v = &(line); if (err->exc) { m9ln = 150; goto L_ret; }; m9v; }), &(pool), m9a5, err);
+  if (err->exc) { m9ln = 150; goto L_ret; };
   }
-  DynStr_AppendChar (({ __typeof__ (&(line)) m9v = &(line); if (err->exc) goto L_ret; m9v; }), &(pool), 32u, err);
-  if (err->exc) goto L_ret;
+  DynStr_AppendChar (({ __typeof__ (&(line)) m9v = &(line); if (err->exc) { m9ln = 151; goto L_ret; }; m9v; }), &(pool), 32u, err);
+  if (err->exc) { m9ln = 151; goto L_ret; };
   { __typeof__(Logger_LevelName (level, err)) m9a6 = Logger_LevelName (level, err);
-    if (err->exc) goto L_ret;
-  DynStr_Append (({ __typeof__ (&(line)) m9v = &(line); if (err->exc) goto L_ret; m9v; }), &(pool), m9a6, err);
-  if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 152; goto L_ret; };
+  DynStr_Append (({ __typeof__ (&(line)) m9v = &(line); if (err->exc) { m9ln = 152; goto L_ret; }; m9v; }), &(pool), m9a6, err);
+  if (err->exc) { m9ln = 152; goto L_ret; };
   }
-  DynStr_AppendChar (({ __typeof__ (&(line)) m9v = &(line); if (err->exc) goto L_ret; m9v; }), &(pool), 32u, err);
-  if (err->exc) goto L_ret;
+  DynStr_AppendChar (({ __typeof__ (&(line)) m9v = &(line); if (err->exc) { m9ln = 153; goto L_ret; }; m9v; }), &(pool), 32u, err);
+  if (err->exc) { m9ln = 153; goto L_ret; };
   { __typeof__(({ __auto_type m9n = (line); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a7 = ({ __auto_type m9n = (line); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 158; goto L_ret; };
   { __typeof__(bodyAt) m9v = DynStr_BLen (m9a7, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 158; goto L_ret; };
     bodyAt = m9v;
   }
   }
   curLevelOfLine = level;
-  DynStr_Append (({ __typeof__ (&(line)) m9v = &(line); if (err->exc) goto L_ret; m9v; }), &(pool), text, err);
-  if (err->exc) goto L_ret;
+  DynStr_Append (({ __typeof__ (&(line)) m9v = &(line); if (err->exc) { m9ln = 160; goto L_ret; }; m9v; }), &(pool), text, err);
+  if (err->exc) { m9ln = 160; goto L_ret; };
   building = true;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -221,14 +236,17 @@ void Logger_Str (m9_sl_UTF8 key, m9_sl_UTF8 val, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Logger.Str"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   if ((!building)) {
     goto L_ret;
   }
   Logger_Key (key, err);
-  if (err->exc) goto L_ret;
-  DynStr_Append (({ __typeof__ (&(line)) m9v = &(line); if (err->exc) goto L_ret; m9v; }), &(pool), val, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 174; goto L_ret; };
+  DynStr_Append (({ __typeof__ (&(line)) m9v = &(line); if (err->exc) { m9ln = 175; goto L_ret; }; m9v; }), &(pool), val, err);
+  if (err->exc) { m9ln = 175; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -240,14 +258,17 @@ void Logger_Int (m9_sl_UTF8 key, int64_t v, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Logger.Int"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   if ((!building)) {
     goto L_ret;
   }
   Logger_Key (key, err);
-  if (err->exc) goto L_ret;
-  DynStr_AppendI64 (({ __typeof__ (&(line)) m9v = &(line); if (err->exc) goto L_ret; m9v; }), &(pool), v, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 181; goto L_ret; };
+  DynStr_AppendI64 (({ __typeof__ (&(line)) m9v = &(line); if (err->exc) { m9ln = 182; goto L_ret; }; m9v; }), &(pool), v, err);
+  if (err->exc) { m9ln = 182; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -259,27 +280,30 @@ void Logger_Real (m9_sl_UTF8 key, double v, int64_t decimals, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Logger.Real"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   if ((!building)) {
     goto L_ret;
   }
   Logger_Key (key, err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 188; goto L_hdl_m9t1; };
   { __typeof__(Fmt_FixedUtf (v, decimals, err)) m9a8 = Fmt_FixedUtf (v, decimals, err);
-    if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (({ __typeof__ (&(line)) m9v = &(line); if (err->exc) goto L_hdl_m9t1; m9v; }), &(pool), m9a8, err);
-  if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 189; goto L_hdl_m9t1; };
+  DynStr_Append (({ __typeof__ (&(line)) m9v = &(line); if (err->exc) { m9ln = 189; goto L_hdl_m9t1; }; m9v; }), &(pool), m9a8, err);
+  if (err->exc) { m9ln = 189; goto L_hdl_m9t1; };
   }
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
-    DynStr_Append (({ __typeof__ (&(line)) m9v = &(line); if (err->exc) goto L_ret; m9v; }), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s0, 1 }), err);
-    if (err->exc) goto L_ret;
+    DynStr_Append (({ __typeof__ (&(line)) m9v = &(line); if (err->exc) { m9ln = 194; goto L_ret; }; m9v; }), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s0, 1 }), err);
+    if (err->exc) { m9ln = 194; goto L_ret; };
     goto L_dn_m9t2;
   }
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -291,19 +315,22 @@ void Logger_Bool (m9_sl_UTF8 key, bool v, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Logger.Bool"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   if ((!building)) {
     goto L_ret;
   }
   Logger_Key (key, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 200; goto L_ret; };
   if (v) {
-    DynStr_Append (({ __typeof__ (&(line)) m9v = &(line); if (err->exc) goto L_ret; m9v; }), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s1, 4 }), err);
-    if (err->exc) goto L_ret;
+    DynStr_Append (({ __typeof__ (&(line)) m9v = &(line); if (err->exc) { m9ln = 201; goto L_ret; }; m9v; }), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s1, 4 }), err);
+    if (err->exc) { m9ln = 201; goto L_ret; };
   } else {
-    DynStr_Append (({ __typeof__ (&(line)) m9v = &(line); if (err->exc) goto L_ret; m9v; }), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s2, 5 }), err);
-    if (err->exc) goto L_ret;
+    DynStr_Append (({ __typeof__ (&(line)) m9v = &(line); if (err->exc) { m9ln = 202; goto L_ret; }; m9v; }), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s2, 5 }), err);
+    if (err->exc) { m9ln = 202; goto L_ret; };
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -315,35 +342,38 @@ void Logger_Done (m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Logger.Done"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 v = {0}; (void) v;
   if ((!building)) {
     goto L_ret;
   }
   { __typeof__(({ __auto_type m9n = (line); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a9 = ({ __auto_type m9n = (line); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 209; goto L_ret; };
   { __typeof__(v) m9v = DynStr_View (m9a9, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 209; goto L_ret; };
     v = m9v;
   }
   }
   if (toSyslog) {
     { __typeof__(Syslog_FromLoggerLevel (curLevelOfLine, err)) m9a10 = Syslog_FromLoggerLevel (curLevelOfLine, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 214; goto L_ret; };
     { __typeof__(Syslog_Pri (curFacility, m9a10, err)) m9a11 = Syslog_Pri (curFacility, m9a10, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 214; goto L_ret; };
     { __typeof__(m9_utf_slice (v, bodyAt, m9_sub_i64 (Text_BLen (v, err), bodyAt, err), err)) m9a12 = m9_utf_slice (v, bodyAt, m9_sub_i64 (Text_BLen (v, err), bodyAt, err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 214; goto L_ret; };
     Syslog_Send (m9a11, m9a12, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 214; goto L_ret; };
     }
     }
     }
   } else {
     Io_ErrLineUtf (v, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 218; goto L_ret; };
   }
   building = false;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -355,14 +385,17 @@ void Logger_ToSyslog (m9_sl_UTF8 ident, int64_t options, int64_t facility, m9_st
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Logger.ToSyslog"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   { __typeof__(m9_add_i64 (options, Syslog_NoDelay, err)) m9a13 = m9_add_i64 (options, Syslog_NoDelay, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 254; goto L_ret; };
   Syslog_Open (ident, m9a13, facility, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 254; goto L_ret; };
   }
   curFacility = facility;
   toSyslog = true;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -374,12 +407,15 @@ void Logger_ToStderr (m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Logger.ToStderr"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   if (toSyslog) {
     Syslog_Close (err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 261; goto L_ret; };
   }
   toSyslog = false;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -391,6 +427,8 @@ static m9_sl_UTF8 Logger_LevelName (int64_t level, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Logger.LevelName"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   { __typeof__(level) m9t1 = level;
   switch (m9t1) {
@@ -425,6 +463,7 @@ static m9_sl_UTF8 Logger_LevelName (int64_t level, m9_state *err)
   } break;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -437,12 +476,14 @@ static m9_sl_UTF8 Logger_Stamp (m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Logger.Stamp"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   err->res = m9res;
   { __typeof__(Time_Now (err)) m9a14 = Time_Now (err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 140; goto L_hdl_m9t1; };
   m9ret = Time_Iso (m9a14, INT64_C(3), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 140; goto L_hdl_m9t1; };
   }
   goto L_ret;
   goto L_dn_m9t2;
@@ -457,6 +498,7 @@ L_hdl_m9t1: ;
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -469,13 +511,16 @@ static void Logger_Key (m9_sl_UTF8 key, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  DynStr_AppendChar (({ __typeof__ (&(line)) m9v = &(line); if (err->exc) goto L_ret; m9v; }), &(pool), 32u, err);
-  if (err->exc) goto L_ret;
-  DynStr_Append (({ __typeof__ (&(line)) m9v = &(line); if (err->exc) goto L_ret; m9v; }), &(pool), key, err);
-  if (err->exc) goto L_ret;
-  DynStr_AppendChar (({ __typeof__ (&(line)) m9v = &(line); if (err->exc) goto L_ret; m9v; }), &(pool), 61u, err);
-  if (err->exc) goto L_ret;
+  static const char m9pn[] = "Logger.Key"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
+  DynStr_AppendChar (({ __typeof__ (&(line)) m9v = &(line); if (err->exc) { m9ln = 166; goto L_ret; }; m9v; }), &(pool), 32u, err);
+  if (err->exc) { m9ln = 166; goto L_ret; };
+  DynStr_Append (({ __typeof__ (&(line)) m9v = &(line); if (err->exc) { m9ln = 167; goto L_ret; }; m9v; }), &(pool), key, err);
+  if (err->exc) { m9ln = 167; goto L_ret; };
+  DynStr_AppendChar (({ __typeof__ (&(line)) m9v = &(line); if (err->exc) { m9ln = 168; goto L_ret; }; m9v; }), &(pool), 61u, err);
+  if (err->exc) { m9ln = 168; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -488,6 +533,8 @@ void Logger_m9init (m9_state *err)
   m9done = 1;
   m9_pool *m9prev = err->res;
   err->res = &m9mframe;
+  static const char m9pn[] = "Logger (the module body)"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   DynStr_m9init (err); if (err->exc) goto L_ret;
   Fmt_m9init (err); if (err->exc) goto L_ret;
   Io_m9init (err); if (err->exc) goto L_ret;
@@ -495,5 +542,6 @@ void Logger_m9init (m9_state *err)
   Time_m9init (err); if (err->exc) goto L_ret;
   Text_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9prev;
 }

@@ -195,14 +195,16 @@ m9_sl_UTF8 NbCells_Dir (m9_pool *pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "NbCells.Dir"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   m9_sl_UTF8 v = {0}; (void) v;
   { __typeof__(v) m9v = Io_EnvUtf (pool, ((m9_sl_UTF8){ (uint8_t *) m9s0, 7 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 99; goto L_ret; };
     v = m9v;
   }
   bool m9t1 = (Text_BLen (v, err) > INT64_C(0));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 100; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
     m9ret = v;
@@ -212,6 +214,7 @@ m9_sl_UTF8 NbCells_Dir (m9_pool *pool, m9_state *err)
   m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s1, 6 });
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -224,12 +227,14 @@ m9_sl_UTF8 NbCells_Kind (m9_sl_UTF8 name, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "NbCells.Kind"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   int64_t k = 0; (void) k;
   NbCells_CheckName (name, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 153; goto L_ret; };
   { __typeof__(k) m9v = NbCells_KindAt (name, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 154; goto L_ret; };
     k = m9v;
   }
   if ((k < INT64_C(0))) {
@@ -239,9 +244,10 @@ m9_sl_UTF8 NbCells_Kind (m9_sl_UTF8 name, m9_state *err)
   }
   err->res = m9res;
   m9ret = NbCells_KindName (k, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 156; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -254,10 +260,13 @@ void NbCells_PutFrame (Frame_Fr * f, m9_sl_UTF8 name, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "NbCells.PutFrame"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_pool scratch = {0}; (void) scratch;
   NbCells_Store (&(scratch), f, name, INT64_C(0), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 213; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
@@ -270,12 +279,15 @@ Frame_Fr * NbCells_GetFrame (m9_pool *pool, m9_sl_UTF8 name, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "NbCells.GetFrame"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Frame_Fr * m9ret = NULL;
   err->res = m9res;
   m9ret = NbCells_Fetch (pool, name, INT64_C(0), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 220; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -288,16 +300,18 @@ void NbCells_PutF64s (m9_sl_UTF8 name, m9_sl_F64 v, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "NbCells.PutF64s"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_pool scratch = {0}; (void) scratch;
   Frame_Fr * f = NULL; (void) f;
   { __typeof__(f) m9v = Frame_New (&(scratch), (v).len, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 230; goto L_hdl_m9t1; };
     f = m9v;
   }
   Frame_AddF64 (&(scratch), &(f), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s2, 5 }), v, NAN, err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 231; goto L_hdl_m9t1; };
   NbCells_Store (&(scratch), f, name, INT64_C(1), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 232; goto L_hdl_m9t1; };
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Frame_Duplicate) {
@@ -305,12 +319,14 @@ L_hdl_m9t1: ;
     err->exc = NULL;
     { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Faults_BadArg);
+    m9_site (err, 235, m9pn);
     goto L_ret;
     goto L_dn_m9t2;
   }
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
@@ -323,15 +339,17 @@ m9_sl_F64 NbCells_GetF64s (m9_pool *pool, m9_sl_UTF8 name, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "NbCells.GetF64s"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_F64 m9ret = {0};
   Frame_Fr * f = NULL; (void) f;
   { __typeof__(f) m9v = NbCells_Fetch (pool, name, INT64_C(1), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 243; goto L_hdl_m9t1; };
     f = m9v;
   }
   err->res = m9res;
   m9ret = Frame_ColF64 (f, ((m9_sl_UTF8){ (uint8_t *) m9s3, 5 }), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 244; goto L_hdl_m9t1; };
   goto L_ret;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -340,6 +358,7 @@ L_hdl_m9t1: ;
     err->exc = NULL;
     { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Faults_BadArg);
+    m9_site (err, 247, m9pn);
     goto L_ret;
     goto L_dn_m9t2;
   }
@@ -348,12 +367,14 @@ L_hdl_m9t1: ;
     err->exc = NULL;
     { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Faults_BadArg);
+    m9_site (err, 249, m9pn);
     goto L_ret;
     goto L_dn_m9t2;
   }
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
@@ -366,19 +387,21 @@ void NbCells_PutI64s (m9_sl_UTF8 name, m9_sl_I64 v, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "NbCells.PutI64s"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_pool scratch = {0}; (void) scratch;
   Frame_Fr * f = NULL; (void) f;
   { __typeof__(f) m9v = Frame_New (&(scratch), (v).len, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 259; goto L_hdl_m9t1; };
     f = m9v;
   }
   { __typeof__(m9_sub_i64 (m9_neg_i64 (INT64_C(9223372036854775807), err), INT64_C(1), err)) m9a1 = m9_sub_i64 (m9_neg_i64 (INT64_C(9223372036854775807), err), INT64_C(1), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 262; goto L_hdl_m9t1; };
   Frame_AddI64 (&(scratch), &(f), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s4, 5 }), v, m9a1, err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 262; goto L_hdl_m9t1; };
   }
   NbCells_Store (&(scratch), f, name, INT64_C(2), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 263; goto L_hdl_m9t1; };
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Frame_Duplicate) {
@@ -386,12 +409,14 @@ L_hdl_m9t1: ;
     err->exc = NULL;
     { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Faults_BadArg);
+    m9_site (err, 266, m9pn);
     goto L_ret;
     goto L_dn_m9t2;
   }
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
@@ -404,15 +429,17 @@ m9_sl_I64 NbCells_GetI64s (m9_pool *pool, m9_sl_UTF8 name, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "NbCells.GetI64s"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_I64 m9ret = {0};
   Frame_Fr * f = NULL; (void) f;
   { __typeof__(f) m9v = NbCells_Fetch (pool, name, INT64_C(2), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 274; goto L_hdl_m9t1; };
     f = m9v;
   }
   err->res = m9res;
   m9ret = Frame_ColI64 (f, ((m9_sl_UTF8){ (uint8_t *) m9s5, 5 }), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 275; goto L_hdl_m9t1; };
   goto L_ret;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -421,6 +448,7 @@ L_hdl_m9t1: ;
     err->exc = NULL;
     { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Faults_BadArg);
+    m9_site (err, 278, m9pn);
     goto L_ret;
     goto L_dn_m9t2;
   }
@@ -429,12 +457,14 @@ L_hdl_m9t1: ;
     err->exc = NULL;
     { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Faults_BadArg);
+    m9_site (err, 280, m9pn);
     goto L_ret;
     goto L_dn_m9t2;
   }
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
@@ -447,6 +477,8 @@ void NbCells_PutGrid (m9_sl_UTF8 name, m9_gd2_double g, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "NbCells.PutGrid"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_pool scratch = {0}; (void) scratch;
   Frame_Fr * f = NULL; (void) f;
   m9_sl_F64 col = {0}; (void) col;
@@ -459,44 +491,45 @@ void NbCells_PutGrid (m9_sl_UTF8 name, m9_gd2_double g, m9_state *err)
   if ((nc == INT64_C(0))) {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s6, 22 })) m9t3 = ((m9_sl_UTF8){ (uint8_t *) m9s6, 22 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Faults_BadArg);
+    m9_site (err, 305, m9pn);
     goto L_hdl_m9t1;
   }
   { __typeof__(f) m9v = Frame_New (&(scratch), nr, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 306; goto L_hdl_m9t1; };
     f = m9v;
   }
   { __typeof__(j) m9t4to;
   j = INT64_C(0);
   m9t4to = m9_sub_i64 (nc, INT64_C(1), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 307; goto L_hdl_m9t1; };
   if (j <= m9t4to) for (;;) {
     { __typeof__(col) m9v = M9_POOL_SL (m9_sl_F64, double, &(scratch), nr, err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 312; goto L_hdl_m9t1; };
       col = m9v;
     }
     { __typeof__(i) m9t5to;
     i = INT64_C(0);
     m9t5to = m9_sub_i64 (nr, INT64_C(1), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 313; goto L_hdl_m9t1; };
     if (i <= m9t5to) for (;;) {
       { __typeof__((*(double *) m9_at (col.p, i, col.len, sizeof (double), err))) m9v = (*(double *) m9_gat2 (g.p, sizeof (double), g.n[0], g.n[1], g.s[0], g.s[1], i, j, err));
-        if (err->exc) goto L_hdl_m9t1;
+        if (err->exc) { m9ln = 313; goto L_hdl_m9t1; };
         (*(double *) m9_at (col.p, i, col.len, sizeof (double), err)) = m9v;
-        if (err->exc) goto L_hdl_m9t1;
+        if (err->exc) { m9ln = 313; goto L_hdl_m9t1; };
       }
       if ((uint64_t) m9t5to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
     } }
     { __typeof__(NbCells_ColName (&(scratch), j, err)) m9a2 = NbCells_ColName (&(scratch), j, err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 314; goto L_hdl_m9t1; };
     Frame_AddF64 (&(scratch), &(f), &(scratch), m9a2, col, NAN, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 314; goto L_hdl_m9t1; };
     }
     if ((uint64_t) m9t4to - (uint64_t) j < (uint64_t) 1) break;
     j += 1;
   } }
   NbCells_Store (&(scratch), f, name, INT64_C(3), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 316; goto L_hdl_m9t1; };
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Frame_Duplicate) {
@@ -504,12 +537,14 @@ L_hdl_m9t1: ;
     err->exc = NULL;
     { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
     m9_raise (err, &Faults_BadArg);
+    m9_site (err, 319, m9pn);
     goto L_ret;
     goto L_dn_m9t2;
   }
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
@@ -522,6 +557,8 @@ m9_gd2_double NbCells_GetGrid (m9_pool *pool, m9_sl_UTF8 name, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "NbCells.GetGrid"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_gd2_double m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   Frame_Fr * f = NULL; (void) f;
@@ -532,42 +569,42 @@ m9_gd2_double NbCells_GetGrid (m9_pool *pool, m9_sl_UTF8 name, m9_state *err)
   int64_t nr = 0; (void) nr;
   int64_t nc = 0; (void) nc;
   { __typeof__(f) m9v = NbCells_Fetch (&(scratch), name, INT64_C(3), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 332; goto L_hdl_m9t1; };
     f = m9v;
   }
   { __typeof__(nr) m9v = Frame_Rows (f, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 333; goto L_hdl_m9t1; };
     nr = m9v;
   }
   { __typeof__(nc) m9v = Frame_Cols (f, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 334; goto L_hdl_m9t1; };
     nc = m9v;
   }
   { __typeof__(g) m9v = ({ m9_gd2_double m9t3; m9t3.n[0] = nr; m9t3.n[1] = nc; m9t3.s[1] = 1; m9t3.s[0] = m9t3.s[1] * m9t3.n[1]; m9t3.p = (double *) m9_pool_alloc (&((*pool)), sizeof (double), m9_gcount (m9t3.n, 2, err), err); m9t3; });
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 335; goto L_hdl_m9t1; };
     g = m9v;
   }
   { __typeof__(j) m9t4to;
   j = INT64_C(0);
   m9t4to = m9_sub_i64 (nc, INT64_C(1), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 336; goto L_hdl_m9t1; };
   if (j <= m9t4to) for (;;) {
     { __typeof__(NbCells_ColName (&(scratch), j, err)) m9a3 = NbCells_ColName (&(scratch), j, err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 337; goto L_hdl_m9t1; };
     { __typeof__(col) m9v = Frame_ColF64 (f, m9a3, err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 337; goto L_hdl_m9t1; };
       col = m9v;
     }
     }
     { __typeof__(i) m9t5to;
     i = INT64_C(0);
     m9t5to = m9_sub_i64 (nr, INT64_C(1), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 338; goto L_hdl_m9t1; };
     if (i <= m9t5to) for (;;) {
       { __typeof__((*(double *) m9_gat2 (g.p, sizeof (double), g.n[0], g.n[1], g.s[0], g.s[1], i, j, err))) m9v = (*(double *) m9_at (col.p, i, col.len, sizeof (double), err));
-        if (err->exc) goto L_hdl_m9t1;
+        if (err->exc) { m9ln = 338; goto L_hdl_m9t1; };
         (*(double *) m9_gat2 (g.p, sizeof (double), g.n[0], g.n[1], g.s[0], g.s[1], i, j, err)) = m9v;
-        if (err->exc) goto L_hdl_m9t1;
+        if (err->exc) { m9ln = 338; goto L_hdl_m9t1; };
       }
       if ((uint64_t) m9t5to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
@@ -585,6 +622,7 @@ L_hdl_m9t1: ;
     err->exc = NULL;
     { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
     m9_raise (err, &Faults_BadArg);
+    m9_site (err, 343, m9pn);
     goto L_ret;
     goto L_dn_m9t2;
   }
@@ -593,12 +631,14 @@ L_hdl_m9t1: ;
     err->exc = NULL;
     { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
     m9_raise (err, &Faults_BadArg);
+    m9_site (err, 345, m9pn);
     goto L_ret;
     goto L_dn_m9t2;
   }
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
@@ -612,33 +652,38 @@ static void NbCells_CheckName (m9_sl_UTF8 name, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "NbCells.CheckName"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   uint32_t c = 0; (void) c;
   bool m9t1 = (Text_BLen (name, err) == INT64_C(0));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 112; goto L_ret; };
   if (m9t1) {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s7, 13 })) m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s7, 13 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Faults_BadArg);
+    m9_site (err, 112, m9pn);
     goto L_ret;
   }
   { __typeof__(i) m9t3to;
   i = INT64_C(0);
   m9t3to = m9_sub_i64 (Text_BLen (name, err), INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 113; goto L_ret; };
   if (i <= m9t3to) for (;;) {
     { __typeof__(c) m9v = Text_BChar (name, i, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 114; goto L_ret; };
       c = m9v;
     }
     if ((!((((((c >= 65u) && (c <= 90u))) || (((c >= 97u) && (c <= 122u)))) || ((((i > INT64_C(0)) && (c >= 48u)) && (c <= 57u))))))) {
       { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
       m9_raise (err, &Faults_BadArg);
+      m9_site (err, 117, m9pn);
       goto L_ret;
     }
     if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -650,36 +695,39 @@ static m9_sl_UTF8 NbCells_File (m9_pool *pool, m9_sl_UTF8 name, m9_sl_UTF8 kind,
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "NbCells.File"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   { __typeof__(d) m9v = DynStr_New (pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 128; goto L_ret; };
     d = m9v;
   }
   { __typeof__(NbCells_Dir (pool, err)) m9a4 = NbCells_Dir (pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 129; goto L_ret; };
   DynStr_Append (&(d), &((*pool)), m9a4, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 129; goto L_ret; };
   }
   DynStr_AppendChar (&(d), &((*pool)), 47u, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 130; goto L_ret; };
   DynStr_Append (&(d), &((*pool)), name, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 131; goto L_ret; };
   DynStr_AppendChar (&(d), &((*pool)), 46u, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 132; goto L_ret; };
   DynStr_Append (&(d), &((*pool)), kind, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 133; goto L_ret; };
   DynStr_Append (&(d), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s8, 8 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 134; goto L_ret; };
   if (tmp) {
     DynStr_Append (&(d), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s9, 4 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 135; goto L_ret; };
   }
   err->res = m9res;
   m9ret = DynStr_ViewIn (pool, d, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 136; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -692,20 +740,22 @@ static int64_t NbCells_KindAt (m9_sl_UTF8 name, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "NbCells.KindAt"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   m9_pool scratch = {0}; (void) scratch;
   int64_t i = 0; (void) i;
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (INT64_C(4), INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 144; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     { __typeof__((*(m9_sl_UTF8 *) m9_at ((*Kinds).v, i, INT64_C(4), sizeof (m9_sl_UTF8), err))) m9a5 = (*(m9_sl_UTF8 *) m9_at ((*Kinds).v, i, INT64_C(4), sizeof (m9_sl_UTF8), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 145; goto L_ret; };
     { __typeof__(NbCells_File (&(scratch), name, m9a5, false, err)) m9a6 = NbCells_File (&(scratch), name, m9a5, false, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 145; goto L_ret; };
     bool m9t2 = Io_ExistsUtf (m9a6, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 145; goto L_ret; };
     if (m9t2) {
       err->res = m9res;
       m9ret = i;
@@ -716,9 +766,10 @@ static int64_t NbCells_KindAt (m9_sl_UTF8 name, m9_state *err)
   } }
   err->res = m9res;
   m9ret = m9_neg_i64 (INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 147; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
@@ -731,71 +782,78 @@ static void NbCells_Store (m9_pool *scratch, Frame_Fr * f, m9_sl_UTF8 name, int6
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "NbCells.Store"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   bool gone = false; (void) gone;
   NbCells_CheckName (name, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 168; goto L_ret; };
   { __typeof__(NbCells_Dir (scratch, err)) m9a7 = NbCells_Dir (scratch, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 169; goto L_ret; };
   Io_MkDirUtf (m9a7, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 169; goto L_ret; };
   }
   { __typeof__((*(m9_sl_UTF8 *) m9_at ((*Kinds).v, k, INT64_C(4), sizeof (m9_sl_UTF8), err))) m9a8 = (*(m9_sl_UTF8 *) m9_at ((*Kinds).v, k, INT64_C(4), sizeof (m9_sl_UTF8), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 170; goto L_ret; };
   { __typeof__(NbCells_File (scratch, name, m9a8, true, err)) m9a9 = NbCells_File (scratch, name, m9a8, true, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 170; goto L_ret; };
   Parquet_Write (scratch, f, m9a9, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 170; goto L_ret; };
   }
   }
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (INT64_C(4), INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 171; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     if ((i != k)) {
       { __typeof__((*(m9_sl_UTF8 *) m9_at ((*Kinds).v, i, INT64_C(4), sizeof (m9_sl_UTF8), err))) m9a10 = (*(m9_sl_UTF8 *) m9_at ((*Kinds).v, i, INT64_C(4), sizeof (m9_sl_UTF8), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 173; goto L_ret; };
       { __typeof__(NbCells_File (scratch, name, m9a10, false, err)) m9a11 = NbCells_File (scratch, name, m9a10, false, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 173; goto L_ret; };
       bool m9t2 = Io_ExistsUtf (m9a11, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 173; goto L_ret; };
       if (m9t2) {
         { __typeof__((*(m9_sl_UTF8 *) m9_at ((*Kinds).v, i, INT64_C(4), sizeof (m9_sl_UTF8), err))) m9a12 = (*(m9_sl_UTF8 *) m9_at ((*Kinds).v, i, INT64_C(4), sizeof (m9_sl_UTF8), err));
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 174; goto L_ret; };
         { __typeof__(NbCells_File (scratch, name, m9a12, false, err)) m9a13 = NbCells_File (scratch, name, m9a12, false, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 174; goto L_ret; };
         { __typeof__(gone) m9v = Io_RemoveUtf (m9a13, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 174; goto L_ret; };
           gone = m9v;
         }
         }
         }
         if ((!gone)) {
-          { __typeof__(NbCells_File (scratch, name, (*(m9_sl_UTF8 *) m9_at ((*Kinds).v, i, INT64_C(4), sizeof (m9_sl_UTF8), err)), false, err)) m9t3 = NbCells_File (scratch, name, (*(m9_sl_UTF8 *) m9_at ((*Kinds).v, i, INT64_C(4), sizeof (m9_sl_UTF8), err)), false, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
+          { __typeof__((*(m9_sl_UTF8 *) m9_at ((*Kinds).v, i, INT64_C(4), sizeof (m9_sl_UTF8), err))) m9a14 = (*(m9_sl_UTF8 *) m9_at ((*Kinds).v, i, INT64_C(4), sizeof (m9_sl_UTF8), err));
+            if (err->exc) { m9ln = 175; goto L_ret; };
+          { __typeof__(NbCells_File (scratch, name, m9a14, false, err)) m9t3 = NbCells_File (scratch, name, m9a14, false, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
           m9_raise (err, &Io_IOError);
+          m9_site (err, 175, m9pn);
           goto L_ret;
+          }
         }
       } } }
     }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
-  { __typeof__((*(m9_sl_UTF8 *) m9_at ((*Kinds).v, k, INT64_C(4), sizeof (m9_sl_UTF8), err))) m9a14 = (*(m9_sl_UTF8 *) m9_at ((*Kinds).v, k, INT64_C(4), sizeof (m9_sl_UTF8), err));
-    if (err->exc) goto L_ret;
-  { __typeof__(NbCells_File (scratch, name, m9a14, true, err)) m9a15 = NbCells_File (scratch, name, m9a14, true, err);
-    if (err->exc) goto L_ret;
-  { __typeof__((*(m9_sl_UTF8 *) m9_at ((*Kinds).v, k, INT64_C(4), sizeof (m9_sl_UTF8), err))) m9a16 = (*(m9_sl_UTF8 *) m9_at ((*Kinds).v, k, INT64_C(4), sizeof (m9_sl_UTF8), err));
-    if (err->exc) goto L_ret;
-  { __typeof__(NbCells_File (scratch, name, m9a16, false, err)) m9a17 = NbCells_File (scratch, name, m9a16, false, err);
-    if (err->exc) goto L_ret;
-  Io_RenameUtf (m9a15, m9a17, err);
-  if (err->exc) goto L_ret;
+  { __typeof__((*(m9_sl_UTF8 *) m9_at ((*Kinds).v, k, INT64_C(4), sizeof (m9_sl_UTF8), err))) m9a15 = (*(m9_sl_UTF8 *) m9_at ((*Kinds).v, k, INT64_C(4), sizeof (m9_sl_UTF8), err));
+    if (err->exc) { m9ln = 179; goto L_ret; };
+  { __typeof__(NbCells_File (scratch, name, m9a15, true, err)) m9a16 = NbCells_File (scratch, name, m9a15, true, err);
+    if (err->exc) { m9ln = 179; goto L_ret; };
+  { __typeof__((*(m9_sl_UTF8 *) m9_at ((*Kinds).v, k, INT64_C(4), sizeof (m9_sl_UTF8), err))) m9a17 = (*(m9_sl_UTF8 *) m9_at ((*Kinds).v, k, INT64_C(4), sizeof (m9_sl_UTF8), err));
+    if (err->exc) { m9ln = 179; goto L_ret; };
+  { __typeof__(NbCells_File (scratch, name, m9a17, false, err)) m9a18 = NbCells_File (scratch, name, m9a17, false, err);
+    if (err->exc) { m9ln = 179; goto L_ret; };
+  Io_RenameUtf (m9a16, m9a18, err);
+  if (err->exc) { m9ln = 179; goto L_ret; };
   }
   }
   }
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -807,18 +865,21 @@ static Frame_Fr * NbCells_Fetch (m9_pool *pool, m9_sl_UTF8 name, int64_t k, m9_s
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "NbCells.Fetch"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Frame_Fr * m9ret = NULL;
   m9_pool scratch = {0}; (void) scratch;
   int64_t have = 0; (void) have;
   NbCells_CheckName (name, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 192; goto L_ret; };
   { __typeof__(have) m9v = NbCells_KindAt (name, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 193; goto L_ret; };
     have = m9v;
   }
   if ((have < INT64_C(0))) {
     { __typeof__(name) m9t1 = name; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &NbCells_Missing);
+    m9_site (err, 194, m9pn);
     goto L_ret;
   }
   if ((have != k)) {
@@ -826,19 +887,21 @@ static Frame_Fr * NbCells_Fetch (m9_pool *pool, m9_sl_UTF8 name, int64_t k, m9_s
     { __typeof__(NbCells_Kind (name, err)) m9t3 = NbCells_Kind (name, err); err->s[1].p = m9t3.p; err->s[1].len = m9t3.len; m9_pay_keep (err, 1, sizeof (*m9t3.p)); }
     { __typeof__(NbCells_KindName (k, err)) m9t4 = NbCells_KindName (k, err); err->s[2].p = m9t4.p; err->s[2].len = m9t4.len; m9_pay_keep (err, 2, sizeof (*m9t4.p)); }
     m9_raise (err, &NbCells_WrongType);
+    m9_site (err, 195, m9pn);
     goto L_ret;
   }
   err->res = m9res;
-  { __typeof__((*(m9_sl_UTF8 *) m9_at ((*Kinds).v, k, INT64_C(4), sizeof (m9_sl_UTF8), err))) m9a18 = (*(m9_sl_UTF8 *) m9_at ((*Kinds).v, k, INT64_C(4), sizeof (m9_sl_UTF8), err));
-    if (err->exc) goto L_ret;
-  { __typeof__(NbCells_File (&(scratch), name, m9a18, false, err)) m9a19 = NbCells_File (&(scratch), name, m9a18, false, err);
-    if (err->exc) goto L_ret;
-  m9ret = Parquet_Read (pool, m9a19, err);
-  if (err->exc) goto L_ret;
+  { __typeof__((*(m9_sl_UTF8 *) m9_at ((*Kinds).v, k, INT64_C(4), sizeof (m9_sl_UTF8), err))) m9a19 = (*(m9_sl_UTF8 *) m9_at ((*Kinds).v, k, INT64_C(4), sizeof (m9_sl_UTF8), err));
+    if (err->exc) { m9ln = 196; goto L_ret; };
+  { __typeof__(NbCells_File (&(scratch), name, m9a19, false, err)) m9a20 = NbCells_File (&(scratch), name, m9a19, false, err);
+    if (err->exc) { m9ln = 196; goto L_ret; };
+  m9ret = Parquet_Read (pool, m9a20, err);
+  if (err->exc) { m9ln = 196; goto L_ret; };
   }
   }
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -852,6 +915,8 @@ static m9_sl_UTF8 NbCells_KindName (int64_t k, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "NbCells.KindName"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   { __typeof__(k) m9t1 = k;
   switch (m9t1) {
@@ -880,6 +945,7 @@ static m9_sl_UTF8 NbCells_KindName (int64_t k, m9_state *err)
   } break;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -892,21 +958,24 @@ static m9_sl_UTF8 NbCells_ColName (m9_pool *pool, int64_t j, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "NbCells.ColName"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   { __typeof__(d) m9v = DynStr_New (pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 288; goto L_ret; };
     d = m9v;
   }
   DynStr_AppendChar (&(d), &((*pool)), 99u, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 289; goto L_ret; };
   DynStr_AppendI64 (&(d), &((*pool)), j, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 290; goto L_ret; };
   err->res = m9res;
   m9ret = DynStr_ViewIn (pool, d, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 291; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -920,6 +989,8 @@ void NbCells_m9init (m9_state *err)
   m9done = 1;
   m9_pool *m9prev = err->res;
   err->res = &m9mframe;
+  static const char m9pn[] = "NbCells (the module body)"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Parquet_m9init (err); if (err->exc) goto L_ret;
   Frame_m9init (err); if (err->exc) goto L_ret;
   Io_m9init (err); if (err->exc) goto L_ret;
@@ -934,5 +1005,6 @@ void NbCells_m9init (m9_state *err)
   Bits_m9init (err); if (err->exc) goto L_ret;
   Text_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9prev;
 }

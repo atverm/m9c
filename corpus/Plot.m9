@@ -2490,6 +2490,21 @@ BEGIN
   DynStr.Append (d, Fmt.Fixed (v, decimals))
 END NumP ;
 
+(* OctetsAt asks whether s holds the octets of lit at byte k.  It
+   compares octets, so a k inside a character answers FALSE where a
+   SLICE raised IndexError: Frame scans back byte by byte for
+   `</svg>', and a label with a character past ASCII trapped (the
+   review page's byte-cut lint, 2026-11-01). *)
+PROCEDURE OctetsAt (RO s: STR ; k: I64 ; RO lit: STR) : BOOL =
+VAR j : I64 ;
+BEGIN
+  IF k < 0 OR k + Text.BLen (lit) > Text.BLen (s) THEN RETURN FALSE END ;
+  FOR j := 0 TO Text.BLen (lit) - 1 DO
+    IF Text.BAt (s, k + j) # Text.BAt (lit, j) THEN RETURN FALSE END
+  END ;
+  RETURN TRUE
+END OctetsAt ;
+
 (* the four numbers of a figure's viewBox, and where its root tag
    ends and its closing tag begins; BadArg for a document that is
    not a figure of this kind *)
@@ -2508,7 +2523,7 @@ BEGIN
   bodyAt := j + 1 ;
   bodyEnd := Text.BLen (svg) ;
   k := Text.BLen (svg) - 6 ;
-  WHILE k >= bodyAt AND NOT Text.Eq (SLICE (svg, k, 6), '</svg>') DO k := k - 1 END ;
+  WHILE k >= bodyAt AND NOT OctetsAt (svg, k, '</svg>') DO k := k - 1 END ;
   IF k < bodyAt THEN RAISE Faults.BadArg ('Plot.Panels: a figure without its </svg>') END ;
   bodyEnd := k ;
   k := Text.Find (SLICE (svg, i, j - i), 'viewBox="') ;

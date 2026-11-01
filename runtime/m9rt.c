@@ -16,6 +16,9 @@
 /* Ask for 2008, not 2001: O_CLOEXEC and F_DUPFD_CLOEXEC (2026-10-21,
    the Exec descriptors; see m9_pipe_ce). */
 #define _POSIX_C_SOURCE 200809L
+/* glibc also hides MAP_ANON and SA_ONSTACK past POSIX: a task's stack
+   and its overflow stop need both (the TASK section). */
+#define _DEFAULT_SOURCE
 #ifdef __APPLE__
 /* Darwin hides everything past POSIX once _POSIX_C_SOURCE is named */
 #define _DARWIN_C_SOURCE
@@ -110,6 +113,7 @@ const m9_exc m9_exc_ValueRange  = { "ValueRange" };
 #include <sys/wait.h>
 #include <spawn.h>
 #include <poll.h>
+#include <sys/mman.h>        /* a task's stack and its guard page */
 #include <signal.h>
 #include <fcntl.h>           /* O_NONBLOCK on the child's stdin pipe */
 #endif
@@ -310,7 +314,8 @@ int64_t m9_block_reuse_held (void) { return (int64_t) m9_big_held; }
 /* These are the RAISE payload copies: m9rt.h says why.  n is the
    octets the slot's payload holds now, so a FINALLY can copy it
    without knowing the element type. */
-static _Thread_local struct { unsigned char *p; size_t cap; size_t n; } m9_inflight[3];
+typedef struct { unsigned char *p; size_t cap; size_t n; } m9_inflight_t;
+static _Thread_local m9_inflight_t m9_inflight[3];
 
 /* m9_inflight_put copies the octets at src into in-flight buffer k.
    It answers 0 if no buffer could be had (the caller leaves the slot
@@ -349,6 +354,7 @@ void m9_fin_save (m9_state *err, m9_fin *f)
   int k;
   f->exc = err->exc;
   if (err->exc == NULL) return;
+  f->why = err->why; f->sproc = err->sproc; f->sline = err->sline;
   memcpy (f->i, err->i, sizeof f->i);
   memcpy (f->d, err->d, sizeof f->d);
   for (k = 0; k < 3; k++) {
@@ -380,6 +386,7 @@ void m9_fin_restore (m9_state *err, const m9_fin *f)
   int k;
   if (f->exc == NULL) return;
   err->exc = f->exc;
+  err->why = f->why; err->sproc = f->sproc; err->sline = f->sline;
   memcpy (err->i, f->i, sizeof err->i);
   memcpy (err->d, f->d, sizeof err->d);
   for (k = 0; k < 3; k++) {
@@ -1542,17 +1549,32 @@ static void m9_end (int code)
   (void) code;
 }
 
+/* m9_unhandled prints an exception nothing handled: its name, the
+   first procedure and line it passed, and a runtime raise's reason
+   with its numbers.  Under -g the raising statement's file and line
+   come first, as before. */
+void m9_unhandled (const m9_state *err, const char *where)
+{
+  if (err->file && err->line > 0)
+    fprintf (stderr, "%s:%d: ", err->file, err->line);
+  else
+    fprintf (stderr, "m9: ");
+  fprintf (stderr, "unhandled %s%s", err->exc->name, where);
+  if (err->sproc)
+    fprintf (stderr, " in %s, line %d", err->sproc, (int) err->sline);
+  if (err->why) {
+    fprintf (stderr, ": ");
+    fprintf (stderr, err->why, (long long) err->i[0], (long long) err->i[1],
+             (long long) err->i[2]);
+  }
+  fprintf (stderr, "\n");
+}
+
 int m9_exit (m9_state *err)
 {
   fflush (stdout);
   if (!err->exc) { m9_end (0); return 0; }
-  /* Under -g the generator records the raising statement's
-     position.  Without it line is 0, and the plain message stands. */
-  if (err->file && err->line > 0)
-    fprintf (stderr, "%s:%d: unhandled %s\n",
-             err->file, err->line, err->exc->name);
-  else
-    fprintf (stderr, "m9: unhandled %s\n", err->exc->name);
+  m9_unhandled (err, "");
   fflush (stderr);
   m9_end (1);
   return 1;
@@ -2988,6 +3010,16 @@ void m9_mon_drop (void *m)
   m9_mon_drop_slow (m);
 }
 
+/* m9_thread_died_at is m9_thread_died with the context: where the
+   exception was first seen, and a runtime raise's reason. */
+void m9_thread_died_at (const m9_state *err)
+{
+  fflush (stdout);
+  m9_unhandled (err, " in a thread");
+  fflush (stderr);
+  abort ();
+}
+
 void m9_thread_died (const char *name)
 {
   fflush (stdout);
@@ -3067,6 +3099,18 @@ int m9_thread_start (void *(*fn) (void *), void *arg, m9_state *err)
   return 0;
 }
 
+/* TASK ON WINDOWS IS A THREAD FOR NOW.  The rules of the two are the
+   same, so a program means the same; only the scale differs.  Fibers
+   are the plan's way to a carrier here (docs/task-plan.md). */
+int m9_task_start2 (void *(*fn) (void *, m9_pool *), void *arg,
+                    m9_pool *pool, const char *name, m9_state *err)
+{
+  (void) name;
+  return m9_thread_start2 (fn, arg, pool, err);
+}
+
+void m9_task_yield (void) { }
+
 /* THE MONITOR, OUT OF LINE.  m9rt.h declares m9_mon as two pointers
    so that generated code never includes <windows.h> (IN, OUT, min
    and max are macros there and M9 identifiers here).  The four
@@ -3112,6 +3156,613 @@ void m9_mon_make (m9_mon *m)
 }
 #endif
 
+/* ---- TASK: many small tasks on a carrier (docs/task-plan.md) ----
+
+   Stage 1 runs a task on the OS thread that started it.  That thread
+   is the task's CARRIER, and its own code is the carrier's root task:
+   the module body on the main thread, a THREAD's body on a THREAD.
+   Scheduling is cooperative.  A task runs until it waits: at a WAIT,
+   at a monitor another holds, or at its end.  No task moves to
+   another carrier, so a pthread mutex is still unlocked by the thread
+   that locked it.  Stage 2 replaces all of this with N carriers.
+
+   A task's stack is fixed.  C cannot move a stack, because the
+   generated code keeps addresses of locals in registers.  So each
+   task gets an mmap'd region with a guard page below it.  A fault on
+   the guard page stops the program by name. */
+
+/* The size is a guess the plan says stage 1 measures.  The pages are
+   reserved, not resident: a task that touches 8 KB of it costs 8 KB. */
+#define M9_TASK_STACK (256 * 1024)
+#define M9_TASK_CACHE 64
+
+typedef struct m9_task m9_task;
+typedef struct m9_carrier m9_carrier;
+
+/* RUN is the one running.  READY sits in a run queue.  ENTER and WAIT
+   are parked on a monitor's queues.  DRAIN is a THREAD's root that
+   has returned and waits for its tasks.  DONE has ended. */
+enum { M9_T_RUN, M9_T_READY, M9_T_ENTER, M9_T_WAIT, M9_T_DRAIN, M9_T_DONE };
+
+struct m9_task {
+  void *sp;                     /* saved by m9_task_swap */
+  m9_task *next;                /* a run queue, or a monitor's queue */
+  m9_task *anext, *aprev;       /* every task of the carrier */
+  m9_carrier *home;
+  void *(*fn) (void *, m9_pool *);
+  void *arg;
+  m9_pool *pool;
+  const char *name;
+  unsigned char *stk;           /* the mapping; its lowest page is the guard */
+  int state;
+  /* This is the runtime state that travels with the task (the plan's
+     section P).  The thread-locals hold the running task's. */
+  void *held[M9_HELD_MAX];
+  int nheld;
+  m9_inflight_t inflight[3];
+  size_t big_limit;
+};
+
+struct m9_carrier {
+  m9_task root;
+  m9_task *cur;
+  m9_task *rq, *rqt;            /* the run queue, the carrier's own */
+  pthread_mutex_t mu;           /* guards the inbox */
+  pthread_cond_t cv;            /* an idle carrier sleeps on it */
+  m9_task *in, *intail;         /* the inbox: wakes from other threads */
+  m9_task *zombie;              /* a task that ended, freed by the next */
+  int live;                     /* tasks started and not ended */
+  int main;                     /* 1 on the main thread */
+  unsigned char *cache[M9_TASK_CACHE];
+  int ncache;
+  void *alt;                    /* the signal stack the overflow stop runs on */
+};
+
+static _Thread_local m9_carrier *m9_car = NULL;
+static _Thread_local int m9_in_thread = 0;
+static int m9_threads_alive = 0;
+static m9_carrier *m9_main_car = NULL;
+static size_t m9_page = 0;
+
+/* THE SWITCH saves the callee-saved registers on the running stack,
+   stores the stack pointer through save, and resumes the stack at to.
+   m9_task_boot is where a new task's first switch returns to.  It
+   calls m9_task_body (t), which never returns.  Both arrive in
+   callee-saved registers the first frame sets, so the assembly names
+   no C symbol.  It is top-level assembly under a name of its own:
+   gcc ignores `naked' on arm64, and a symbol only assembly refers to
+   is one -flto may drop.  The names are global, since -flto may put
+   this file's parts in different objects. */
+extern void m9_task_swap (void **save, void *to) __asm__ ("m9rt_task_swap");
+extern void m9_task_boot (void) __asm__ ("m9rt_task_boot");
+
+#if defined (__APPLE__)
+#define M9_ASM_FN(n) ".globl " n "\n\t.private_extern " n "\n\t.p2align 4\n" n ":\n\t"
+#else
+#define M9_ASM_FN(n) ".globl " n "\n\t.hidden " n "\n\t.type " n ", %function\n\t.p2align 4\n" n ":\n\t"
+#endif
+
+#if defined (__x86_64__)
+__asm__ (
+  ".text\n\t"
+  M9_ASM_FN ("m9rt_task_swap")
+  "pushq %rbp\n\t"
+  "pushq %rbx\n\t"
+  "pushq %r12\n\t"
+  "pushq %r13\n\t"
+  "pushq %r14\n\t"
+  "pushq %r15\n\t"
+  "subq $8, %rsp\n\t"
+  "stmxcsr (%rsp)\n\t"
+  "fnstcw 4(%rsp)\n\t"
+  "movq %rsp, (%rdi)\n\t"
+  "movq %rsi, %rsp\n\t"
+  "ldmxcsr (%rsp)\n\t"
+  "fldcw 4(%rsp)\n\t"
+  "addq $8, %rsp\n\t"
+  "popq %r15\n\t"
+  "popq %r14\n\t"
+  "popq %r13\n\t"
+  "popq %r12\n\t"
+  "popq %rbx\n\t"
+  "popq %rbp\n\t"
+  "ret\n\t"
+  M9_ASM_FN ("m9rt_task_boot")
+  "movq %r12, %rdi\n\t"
+  "callq *%r13\n\t"
+  "ud2\n");
+#elif defined (__aarch64__)
+__asm__ (
+  ".text\n\t"
+  M9_ASM_FN ("m9rt_task_swap")
+  "sub sp, sp, #176\n\t"
+  "stp x19, x20, [sp, #0]\n\t"
+  "stp x21, x22, [sp, #16]\n\t"
+  "stp x23, x24, [sp, #32]\n\t"
+  "stp x25, x26, [sp, #48]\n\t"
+  "stp x27, x28, [sp, #64]\n\t"
+  "stp x29, x30, [sp, #80]\n\t"
+  "stp d8, d9, [sp, #96]\n\t"
+  "stp d10, d11, [sp, #112]\n\t"
+  "stp d12, d13, [sp, #128]\n\t"
+  "stp d14, d15, [sp, #144]\n\t"
+  "mov x9, sp\n\t"
+  "str x9, [x0]\n\t"
+  "mov sp, x1\n\t"
+  "ldp x19, x20, [sp, #0]\n\t"
+  "ldp x21, x22, [sp, #16]\n\t"
+  "ldp x23, x24, [sp, #32]\n\t"
+  "ldp x25, x26, [sp, #48]\n\t"
+  "ldp x27, x28, [sp, #64]\n\t"
+  "ldp x29, x30, [sp, #80]\n\t"
+  "ldp d8, d9, [sp, #96]\n\t"
+  "ldp d10, d11, [sp, #112]\n\t"
+  "ldp d12, d13, [sp, #128]\n\t"
+  "ldp d14, d15, [sp, #144]\n\t"
+  "add sp, sp, #176\n\t"
+  "ret\n\t"
+  M9_ASM_FN ("m9rt_task_boot")
+  "mov x0, x19\n\t"
+  "blr x20\n\t"
+  "brk #0\n");
+#else
+#error "TASK has no context switch for this processor"
+#endif
+
+static void m9_task_body (m9_task *t);
+
+/* The first frame is what m9_task_swap pops.  Its return address is
+   m9_task_boot, and it carries t and m9_task_body in the registers
+   boot reads.  The boot call must find the stack 16-aligned. */
+static void m9_task_frame (m9_task *t)
+{
+  uintptr_t top = (uintptr_t) t->stk + m9_page + M9_TASK_STACK;
+#if defined (__x86_64__)
+  uint64_t *f = (uint64_t *) (top - 80);
+  memset (f, 0, 80);
+  f[0] = 0x1F80 | ((uint64_t) 0x037F << 32);   /* MXCSR, x87 control word */
+  f[1] = 0;                                     /* r15 */
+  f[2] = 0;                                     /* r14 */
+  f[3] = (uint64_t) (uintptr_t) m9_task_body;   /* r13 */
+  f[4] = (uint64_t) (uintptr_t) t;              /* r12 */
+  f[5] = 0;                                     /* rbx */
+  f[6] = 0;                                     /* rbp */
+  f[7] = (uint64_t) (uintptr_t) m9_task_boot;   /* the return address */
+  t->sp = f;
+#else
+  uint64_t *f = (uint64_t *) (top - 176);
+  memset (f, 0, 176);
+  f[0] = (uint64_t) (uintptr_t) t;              /* x19 */
+  f[1] = (uint64_t) (uintptr_t) m9_task_body;   /* x20 */
+  f[11] = (uint64_t) (uintptr_t) m9_task_boot;  /* x30 */
+  t->sp = f;
+#endif
+}
+
+/* A stack comes from the carrier's cache, or from mmap.  The guard is
+   the lowest page, made inaccessible. */
+static unsigned char *m9_stack_get (m9_carrier *c)
+{
+  size_t len = m9_page + M9_TASK_STACK;
+  int flags = MAP_PRIVATE | MAP_ANON;
+  void *p;
+  if (c->ncache > 0) return c->cache[--c->ncache];
+#ifdef MAP_NORESERVE
+  flags |= MAP_NORESERVE;
+#endif
+#ifdef MAP_STACK
+  flags |= MAP_STACK;
+#endif
+  p = mmap (NULL, len, PROT_READ | PROT_WRITE, flags, -1, 0);
+  if (p == MAP_FAILED) return NULL;
+  if (mprotect (p, m9_page, PROT_NONE) != 0) { munmap (p, len); return NULL; }
+  return p;
+}
+
+static void m9_stack_put (m9_carrier *c, unsigned char *s)
+{
+  if (c->ncache < M9_TASK_CACHE) c->cache[c->ncache++] = s;
+  else munmap (s, m9_page + M9_TASK_STACK);
+}
+
+/* The runtime state of section P moves between the thread-locals and
+   the task record at every switch. */
+static void m9_task_out (m9_task *t)
+{
+  int n = m9_nheld < M9_HELD_MAX ? m9_nheld : M9_HELD_MAX;
+  memcpy (t->held, m9_held, (size_t) n * sizeof (void *));
+  t->nheld = m9_nheld;
+  memcpy (t->inflight, m9_inflight, sizeof m9_inflight);
+  t->big_limit = m9_big_limit;
+}
+
+static void m9_task_in (m9_task *t)
+{
+  int n = t->nheld < M9_HELD_MAX ? t->nheld : M9_HELD_MAX;
+  memcpy (m9_held, t->held, (size_t) n * sizeof (void *));
+  m9_nheld = t->nheld;
+  memcpy (m9_inflight, t->inflight, sizeof m9_inflight);
+  m9_big_limit = t->big_limit;
+}
+
+/* A task that ended is freed by the context that runs after it.  It
+   cannot free the stack it is running on. */
+static void m9_task_reap (m9_carrier *c)
+{
+  m9_task *z = c->zombie;
+  if (z == NULL) return;
+  c->zombie = NULL;
+  m9_stack_put (c, z->stk);
+  free (z);
+}
+
+static void m9_task_go (m9_carrier *c, m9_task *to)
+{
+  m9_task *from = c->cur;
+  to->state = M9_T_RUN;
+  if (to == from) return;
+  m9_task_out (from);
+  c->cur = to;
+  m9_task_in (to);
+  m9_task_swap (&from->sp, to->sp);
+  m9_task_reap (m9_car);
+}
+
+static void m9_rq_push (m9_carrier *c, m9_task *t)
+{
+  t->state = M9_T_READY;
+  t->next = NULL;
+  if (c->rqt) c->rqt->next = t; else c->rq = t;
+  c->rqt = t;
+}
+
+/* m9_task_wake makes a parked task ready.  Its own carrier queues it
+   at once.  Another thread posts it to the carrier's inbox and wakes
+   the carrier if it sleeps.  The task may not have parked yet: it can
+   be between joining a queue and switching away.  Its carrier finds
+   it in the inbox at that switch, and m9_task_go to itself returns. */
+static void m9_task_wake (m9_task *t)
+{
+  m9_carrier *c = t->home;
+  if (c == m9_car) { m9_rq_push (c, t); return; }
+  t->next = NULL;
+  pthread_mutex_lock (&c->mu);
+  if (c->intail) c->intail->next = t; else __atomic_store_n (&c->in, t, __ATOMIC_RELEASE);
+  c->intail = t;
+  pthread_cond_signal (&c->cv);
+  pthread_mutex_unlock (&c->mu);
+}
+
+static void m9_inbox_drain (m9_carrier *c)
+{
+  m9_task *t, *n;
+  pthread_mutex_lock (&c->mu);
+  t = c->in;
+  c->in = NULL;
+  c->intail = NULL;
+  pthread_mutex_unlock (&c->mu);
+  for (; t; t = n) { n = t->next; m9_rq_push (c, t); }
+}
+
+static const char *m9_task_state_name (int s)
+{
+  switch (s) {
+  case M9_T_ENTER: return "waits to enter a monitor";
+  case M9_T_WAIT:  return "waits in WAIT";
+  case M9_T_DRAIN: return "waits for its tasks";
+  default:         return "is ready";
+  }
+}
+
+/* EVERY TASK WAITS, AND NOTHING CAN WAKE ONE.  Stage 1 has no timer
+   and no poller, and a blocking call holds its carrier.  So when the
+   main carrier has nothing to run and no THREAD is alive, nothing
+   will ever post to its inbox.  This stops the program by name, as
+   an unhandled RAISE in a thread does.  A THREAD alive could still
+   signal, so the test waits while one is. */
+static void m9_task_deadlock (m9_carrier *c)
+{
+  m9_task *t;
+  int n = 0;
+  fflush (stdout);
+  fprintf (stderr, "m9: every task waits, and nothing can wake one (a deadlock; par 6):\n");
+  for (t = &c->root; t && n < 10; t = t->anext, n++)
+    fprintf (stderr, "  %s %s\n", t->name ? t->name : "a task", m9_task_state_name (t->state));
+  if (c->live + 1 > n) fprintf (stderr, "  and %d more\n", c->live + 1 - n);
+  fflush (stderr);
+  abort ();
+}
+
+/* m9_task_sched runs the next ready task.  The running one has already
+   parked itself, queued itself, or ended.  With nothing ready the
+   carrier sleeps until another thread posts a wake. */
+static void m9_task_sched (m9_carrier *c)
+{
+  m9_task *n;
+  for (;;) {
+    if (__atomic_load_n (&c->in, __ATOMIC_ACQUIRE) != NULL) m9_inbox_drain (c);
+    n = c->rq;
+    if (n != NULL) {
+      c->rq = n->next;
+      if (c->rq == NULL) c->rqt = NULL;
+      n->next = NULL;
+      break;
+    }
+    pthread_mutex_lock (&c->mu);
+    while (c->in == NULL) {
+      if (c->main && __atomic_load_n (&m9_threads_alive, __ATOMIC_ACQUIRE) == 0)
+        m9_task_deadlock (c);
+      pthread_cond_wait (&c->cv, &c->mu);
+    }
+    pthread_mutex_unlock (&c->mu);
+  }
+  m9_task_go (c, n);
+}
+
+/* m9_task_yield lets the other ready tasks run.  It is for the
+   parallel loop and a later YIELD, not yet a statement. */
+void m9_task_yield (void)
+{
+  m9_carrier *c = m9_car;
+  if (c == NULL) return;
+  m9_rq_push (c, c->cur);
+  m9_task_sched (c);
+}
+
+/* The body of every task.  The thunk the generator made handles an
+   exception the target did not: it stops the program by name. */
+static void m9_task_body (m9_task *t)
+{
+  m9_carrier *c = t->home;
+  int k;
+  m9_task_reap (c);
+  (void) t->fn (t->arg, t->pool);
+  for (k = 0; k < 3; k++) { free (m9_inflight[k].p); m9_inflight[k].p = NULL; m9_inflight[k].cap = 0; m9_inflight[k].n = 0; }
+  m9_nheld = 0;
+  t->aprev->anext = t->anext;
+  if (t->anext) t->anext->aprev = t->aprev;
+  t->state = M9_T_DONE;
+  c->zombie = t;
+  c->live--;
+  if (c->live == 0 && c->root.state == M9_T_DRAIN) m9_rq_push (c, &c->root);
+  m9_task_sched (c);
+  abort ();                     /* an ended task is never run again */
+}
+
+/* A TASK'S STACK OVERFLOW IS A FAULT ON ITS GUARD PAGE.  The handler
+   runs on the carrier's own signal stack, since the task's has no
+   room left.  Any other fault puts the default action back, and the
+   faulting instruction runs again and gets it.  A frame bigger than a
+   page can step over the guard; the plan's checker rule sums a
+   target's locals for that. */
+static void m9_task_fault (int sig, siginfo_t *si, void *uc)
+{
+  m9_carrier *c = m9_car;
+  uintptr_t a = (uintptr_t) si->si_addr;
+  (void) uc;
+  if (c != NULL && c->cur != NULL && c->cur->stk != NULL
+      && a >= (uintptr_t) c->cur->stk && a < (uintptr_t) c->cur->stk + m9_page) {
+    const char *name = c->cur->name ? c->cur->name : "a task";
+    static const char a1[] = "m9: task stack overflow in ";
+    static const char a2[] = " -- a task's stack is 256 KB (docs/task-plan.md)\n";
+    ssize_t w;
+    w = write (2, a1, sizeof a1 - 1);
+    w = write (2, name, strlen (name));
+    w = write (2, a2, sizeof a2 - 1);
+    (void) w;
+    signal (SIGABRT, SIG_DFL);
+    abort ();
+  }
+  signal (sig, SIG_DFL);
+}
+
+static void m9_task_fault_install (void)
+{
+  struct sigaction sa;
+  memset (&sa, 0, sizeof sa);
+  sa.sa_sigaction = m9_task_fault;
+  sa.sa_flags = SA_SIGINFO | SA_ONSTACK;
+  sigemptyset (&sa.sa_mask);
+  sigaction (SIGSEGV, &sa, NULL);
+  sigaction (SIGBUS, &sa, NULL);
+}
+
+static pthread_once_t m9_task_once = PTHREAD_ONCE_INIT;
+
+static void m9_task_init (void)
+{
+  m9_page = (size_t) sysconf (_SC_PAGESIZE);
+  m9_task_fault_install ();
+}
+
+#define M9_ALT_STACK (64 * 1024)
+
+/* A thread becomes a carrier at its first TASK. */
+static m9_carrier *m9_carrier_make (void)
+{
+  m9_carrier *c;
+  stack_t ss;
+  pthread_once (&m9_task_once, m9_task_init);
+  c = calloc (1, sizeof *c);
+  if (c == NULL) return NULL;
+  pthread_mutex_init (&c->mu, NULL);
+  pthread_cond_init (&c->cv, NULL);
+  c->root.home = c;
+  c->root.state = M9_T_RUN;
+  c->main = !m9_in_thread;
+  c->root.name = c->main ? "the module body" : "a THREAD's body";
+  c->cur = &c->root;
+  c->alt = malloc (M9_ALT_STACK);
+  if (c->alt != NULL) {
+    ss.ss_sp = c->alt;
+    ss.ss_size = M9_ALT_STACK;
+    ss.ss_flags = 0;
+    sigaltstack (&ss, NULL);
+  }
+  if (c->main) __atomic_store_n (&m9_main_car, c, __ATOMIC_RELEASE);
+  m9_car = c;
+  return c;
+}
+
+/* A THREAD whose body returns while its tasks live waits for them.
+   Then its carrier goes. */
+static void m9_carrier_end (void)
+{
+  m9_carrier *c = m9_car;
+  stack_t ss;
+  if (c == NULL) return;
+  while (c->live > 0) {
+    c->root.state = M9_T_DRAIN;
+    m9_task_sched (c);
+  }
+  m9_task_reap (c);
+  while (c->ncache > 0) munmap (c->cache[--c->ncache], m9_page + M9_TASK_STACK);
+  memset (&ss, 0, sizeof ss);
+  ss.ss_flags = SS_DISABLE;
+  sigaltstack (&ss, NULL);
+  free (c->alt);
+  pthread_mutex_destroy (&c->mu);
+  pthread_cond_destroy (&c->cv);
+  free (c);
+  m9_car = NULL;
+}
+
+int m9_task_start2 (void *(*fn) (void *, m9_pool *), void *arg,
+                    m9_pool *pool, const char *name, m9_state *err)
+{
+  m9_carrier *c = m9_car ? m9_car : m9_carrier_make ();
+  m9_task *t;
+  if (c == NULL) { m9_raise (err, &m9_exc_OutOfMemory); return -1; }
+  t = calloc (1, sizeof *t);
+  if (t == NULL) { m9_raise (err, &m9_exc_OutOfMemory); return -1; }
+  t->stk = m9_stack_get (c);
+  if (t->stk == NULL) { free (t); m9_raise (err, &m9_exc_OutOfMemory); return -1; }
+  t->home = c;
+  t->fn = fn;
+  t->arg = arg;
+  t->pool = pool;
+  t->name = name;
+  t->big_limit = m9_big_limit;
+  m9_task_frame (t);
+  t->aprev = &c->root;
+  t->anext = c->root.anext;
+  if (t->anext) t->anext->aprev = t;
+  c->root.anext = t;
+  c->live++;
+  m9_rq_push (c, t);
+  return 0;
+}
+
+/* THE MONITOR UNDER TASK.  The pthread mutex and condition stay, so a
+   program of THREADs runs as it did.  Two task queues sit beside
+   them.  tq holds tasks waiting to enter; a short spin lock guards
+   it, because leave reads it after unlocking.  wq holds tasks in
+   WAIT; the monitor itself guards it, because only a holder WAITs or
+   SIGNALs.  The fast paths in m9rt.h come here only when a trylock
+   fails or a queue is not empty. */
+static void m9_spin_lock (int *s)
+{
+  int n = 0;
+  while (__atomic_exchange_n (s, 1, __ATOMIC_ACQUIRE) != 0)
+    if (++n > 100) { sched_yield (); n = 0; }
+}
+
+static void m9_spin_unlock (int *s) { __atomic_store_n (s, 0, __ATOMIC_RELEASE); }
+
+/* The task joins tq, then tries the lock once more.  A leaver unlocks
+   and then reads tq, a fence on each side.  So either the trylock
+   sees the lock free, or the leaver sees the task queued.  The task
+   is not lost between the two. */
+static void m9_mon_take (m9_carrier *c, m9_mon *m)
+{
+  m9_task *t = c->cur, *p;
+  for (;;) {
+    m9_spin_lock (&m->tspin);
+    t->next = NULL;
+    if (m->tqt) ((m9_task *) m->tqt)->next = t;
+    else __atomic_store_n (&m->tq, (void *) t, __ATOMIC_SEQ_CST);
+    m->tqt = t;
+    __atomic_thread_fence (__ATOMIC_SEQ_CST);
+    if (pthread_mutex_trylock (&m->mu) == 0) {
+      /* t is the tail it just became. */
+      if (m->tq == t) { __atomic_store_n (&m->tq, NULL, __ATOMIC_RELAXED); m->tqt = NULL; }
+      else {
+        for (p = m->tq; p->next != t; p = p->next) ;
+        p->next = NULL;
+        m->tqt = p;
+      }
+      m9_spin_unlock (&m->tspin);
+      return;
+    }
+    t->state = M9_T_ENTER;
+    m9_spin_unlock (&m->tspin);
+    m9_task_sched (c);
+  }
+}
+
+void m9_mon_enter_slow (m9_mon *m)
+{
+  m9_carrier *c = m9_car;
+  if (c == NULL) { pthread_mutex_lock (&m->mu); return; }
+  m9_mon_take (c, m);
+}
+
+/* One leave wakes one entrant.  If a thread takes the lock first, the
+   task queues again, and that thread's leave wakes it. */
+void m9_mon_leave_slow (m9_mon *m)
+{
+  m9_task *t;
+  m9_spin_lock (&m->tspin);
+  t = m->tq;
+  if (t != NULL) {
+    __atomic_store_n (&m->tq, (void *) t->next, __ATOMIC_RELAXED);
+    if (m->tq == NULL) m->tqt = NULL;
+    t->next = NULL;
+  }
+  m9_spin_unlock (&m->tspin);
+  if (t != NULL) m9_task_wake (t);
+}
+
+void m9_mon_wait (m9_mon *m)
+{
+  m9_carrier *c = m9_car;
+  m9_task *t;
+  if (c == NULL) { pthread_cond_wait (&m->cv, &m->mu); return; }
+  t = c->cur;
+  t->next = m->wq;
+  m->wq = t;
+  t->state = M9_T_WAIT;
+  pthread_mutex_unlock (&m->mu);
+  __atomic_thread_fence (__ATOMIC_SEQ_CST);
+  if (__atomic_load_n (&m->tq, __ATOMIC_RELAXED) != NULL) m9_mon_leave_slow (m);
+  m9_task_sched (c);
+  if (pthread_mutex_trylock (&m->mu) != 0) m9_mon_take (c, m);
+}
+
+/* SIGNAL wakes every task in WAIT, as it wakes every thread. */
+void m9_mon_signal_tasks (m9_mon *m)
+{
+  m9_task *t = m->wq, *n;
+  m->wq = NULL;
+  for (; t; t = n) { n = t->next; t->next = NULL; m9_task_wake (t); }
+}
+
+/* A THREAD counts as alive from its start to its end, for the
+   deadlock test.  The last one to end wakes the main carrier, which
+   may sleep with no task ready and must look again. */
+static void m9_thread_begins (void) { m9_in_thread = 1; }
+
+static void m9_thread_ends (void)
+{
+  m9_carrier *c;
+  if (__atomic_sub_fetch (&m9_threads_alive, 1, __ATOMIC_ACQ_REL) == 0
+      && (c = __atomic_load_n (&m9_main_car, __ATOMIC_ACQUIRE)) != NULL) {
+    pthread_mutex_lock (&c->mu);
+    pthread_cond_signal (&c->cv);
+    pthread_mutex_unlock (&c->mu);
+  }
+}
+
 /* EVERY THREAD GETS 8 MB OF STACK, as the main thread has on Linux and
    macOS.  With no attributes macOS gives a pthread 512 KB.  A
    procedure with an 800 KB local that ran on the main thread died
@@ -3138,9 +3789,12 @@ static void *m9_thread_tramp1 (void *p)
   m9_thread_cell1 c = *(m9_thread_cell1 *) p;
   void *r;
   free (p);
+  m9_thread_begins ();
   m9_big_limit = c.limit;
   r = c.fn (c.arg);
+  m9_carrier_end ();
   m9_big_drop ();
+  m9_thread_ends ();
   return r;
 }
 
@@ -3153,8 +3807,9 @@ int m9_thread_start (void *(*fn) (void *), void *arg, m9_state *err)
   c->fn = fn;
   c->arg = arg;
   c->limit = m9_big_limit;
+  __atomic_add_fetch (&m9_threads_alive, 1, __ATOMIC_ACQ_REL);
   rc = m9_pthread (&t, m9_thread_tramp1, c);
-  if (rc != 0) { free (c); m9_raise (err, &m9_exc_OutOfMemory); return rc; }
+  if (rc != 0) { m9_thread_ends (); free (c); m9_raise (err, &m9_exc_OutOfMemory); return rc; }
   pthread_detach (t);
   return 0;
 }
@@ -3164,9 +3819,12 @@ static void *m9_thread_tramp2 (void *p)
   m9_thread_cell2 c = *(m9_thread_cell2 *) p;
   void *r;
   free (p);
+  m9_thread_begins ();
   m9_big_limit = c.limit;
   r = c.fn (c.arg, c.pool);
+  m9_carrier_end ();
   m9_big_drop ();
+  m9_thread_ends ();
   return r;
 }
 
@@ -3181,8 +3839,9 @@ int m9_thread_start2 (void *(*fn) (void *, m9_pool *), void *arg,
   c->arg = arg;
   c->pool = pool;
   c->limit = m9_big_limit;
+  __atomic_add_fetch (&m9_threads_alive, 1, __ATOMIC_ACQ_REL);
   rc = m9_pthread (&t, m9_thread_tramp2, c);
-  if (rc != 0) { free (c); m9_raise (err, &m9_exc_OutOfMemory); return rc; }
+  if (rc != 0) { m9_thread_ends (); free (c); m9_raise (err, &m9_exc_OutOfMemory); return rc; }
   pthread_detach (t);
   return 0;
 }

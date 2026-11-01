@@ -110,11 +110,13 @@ JsonUtf_Node * JsonUtf_Parse (m9_sl_UTF8 src, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "JsonUtf.Parse"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * m9ret = NULL;
   JsonUtf_Cursor * c = NULL; (void) c;
   JsonUtf_Node * n = NULL; (void) n;
   { __typeof__(c) m9v = (JsonUtf_Cursor *) m9_pool_alloc (err->res, sizeof (JsonUtf_Cursor), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 408; goto L_ret; };
     c = m9v;
   }
   c->src = src;
@@ -122,21 +124,22 @@ JsonUtf_Node * JsonUtf_Parse (m9_sl_UTF8 src, m9_state *err)
   c->line = INT64_C(1);
   c->col = INT64_C(1);
   { __typeof__(n) m9v = JsonUtf_ParseValue (&(c), err->res, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 410; goto L_ret; };
     n = m9v;
   }
   JsonUtf_Skip (&(c), err->res, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 411; goto L_ret; };
   bool m9t1 = (c->pos < Text_BLen (c->src, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 412; goto L_ret; };
   if (m9t1) {
     JsonUtf_Fail (&(c), err->res, ((m9_sl_UTF8){ (uint8_t *) m9s0, 31 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 412; goto L_ret; };
   }
   err->res = m9res;
   m9ret = n;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -149,11 +152,13 @@ JsonUtf_Node * JsonUtf_ParseIn (m9_pool *pool, m9_sl_UTF8 src, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "JsonUtf.ParseIn"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * m9ret = NULL;
   JsonUtf_Cursor * c = NULL; (void) c;
   JsonUtf_Node * n = NULL; (void) n;
   { __typeof__(c) m9v = (JsonUtf_Cursor *) m9_pool_alloc (&((*pool)), sizeof (JsonUtf_Cursor), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 422; goto L_ret; };
     c = m9v;
   }
   c->src = src;
@@ -161,21 +166,22 @@ JsonUtf_Node * JsonUtf_ParseIn (m9_pool *pool, m9_sl_UTF8 src, m9_state *err)
   c->line = INT64_C(1);
   c->col = INT64_C(1);
   { __typeof__(n) m9v = JsonUtf_ParseValue (&(c), &((*pool)), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 424; goto L_ret; };
     n = m9v;
   }
   JsonUtf_Skip (&(c), &((*pool)), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 425; goto L_ret; };
   bool m9t1 = (c->pos < Text_BLen (c->src, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 426; goto L_ret; };
   if (m9t1) {
     JsonUtf_Fail (&(c), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s1, 31 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 426; goto L_ret; };
   }
   err->res = m9res;
   m9ret = n;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -188,6 +194,8 @@ JsonUtf_Node * JsonUtf_Field (JsonUtf_Node * obj, m9_sl_UTF8 name, m9_state *err
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "JsonUtf.Field"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * m9ret = NULL;
   JsonUtf_Node * c = NULL; (void) c;
   { __typeof__(obj->v) m9t1 = obj->v;
@@ -206,7 +214,7 @@ JsonUtf_Node * JsonUtf_Field (JsonUtf_Node * obj, m9_sl_UTF8 name, m9_state *err
     JsonUtf_Node * p = c;
     if (!(p != NULL)) break;
     bool m9t2 = Text_EqUtf (p->name, name, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 439; goto L_ret; };
     if (m9t2) {
       err->res = m9res;
       m9ret = p;
@@ -218,6 +226,7 @@ JsonUtf_Node * JsonUtf_Field (JsonUtf_Node * obj, m9_sl_UTF8 name, m9_state *err
   m9ret = NULL;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -230,6 +239,8 @@ JsonUtf_Node * JsonUtf_Item (JsonUtf_Node * arr, int64_t i, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "JsonUtf.Item"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * m9ret = NULL;
   JsonUtf_Node * c = NULL; (void) c;
   int64_t j = 0; (void) j;
@@ -242,6 +253,7 @@ JsonUtf_Node * JsonUtf_Item (JsonUtf_Node * arr, int64_t i, m9_state *err)
       err->i[0] = i;
       err->i[1] = count;
       m9_raise (err, &m9_exc_IndexError);
+      m9_site (err, 453, m9pn);
       goto L_ret;
     }
     c = first;
@@ -255,7 +267,7 @@ JsonUtf_Node * JsonUtf_Item (JsonUtf_Node * arr, int64_t i, m9_state *err)
         goto L_ret;
       }
       { __typeof__(j) m9v = m9_sub_i64 (j, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 458; goto L_ret; };
         j = m9v;
       }
       c = p->next;
@@ -263,15 +275,18 @@ JsonUtf_Node * JsonUtf_Item (JsonUtf_Node * arr, int64_t i, m9_state *err)
     err->i[0] = i;
     err->i[1] = count;
     m9_raise (err, &m9_exc_IndexError);
+    m9_site (err, 461, m9pn);
     goto L_ret;
   } break;
   default: {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s2, 14 })) m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s2, 14 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &JsonUtf_TypeMismatch);
+    m9_site (err, 463, m9pn);
     goto L_ret;
   } break;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -284,6 +299,8 @@ int64_t JsonUtf_Count (JsonUtf_Node * arr, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.Count"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   { __typeof__(arr->v) m9t1 = arr->v;
   switch (m9t1.tag) {
@@ -297,10 +314,12 @@ int64_t JsonUtf_Count (JsonUtf_Node * arr, m9_state *err)
   default: {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s3, 14 })) m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s3, 14 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &JsonUtf_TypeMismatch);
+    m9_site (err, 472, m9pn);
     goto L_ret;
   } break;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -312,6 +331,8 @@ int64_t JsonUtf_MemberCount (JsonUtf_Node * obj, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.MemberCount"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   JsonUtf_Node * c = NULL; (void) c;
   int64_t n = 0; (void) n;
@@ -324,6 +345,7 @@ int64_t JsonUtf_MemberCount (JsonUtf_Node * obj, m9_state *err)
   default: {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s4, 15 })) m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s4, 15 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &JsonUtf_TypeMismatch);
+    m9_site (err, 484, m9pn);
     goto L_ret;
   } break;
   } }
@@ -332,7 +354,7 @@ int64_t JsonUtf_MemberCount (JsonUtf_Node * obj, m9_state *err)
     JsonUtf_Node * p = c;
     if (!(p != NULL)) break;
     { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 488; goto L_ret; };
       n = m9v;
     }
     c = p->next;
@@ -341,6 +363,7 @@ int64_t JsonUtf_MemberCount (JsonUtf_Node * obj, m9_state *err)
   m9ret = n;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -352,16 +375,19 @@ m9_sl_UTF8 JsonUtf_NameAt (JsonUtf_Node * obj, int64_t i, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.NameAt"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   JsonUtf_Node * p = NULL; (void) p;
   { __typeof__(p) m9v = JsonUtf_MemberNode (obj, i, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 517; goto L_ret; };
     p = m9v;
   }
   err->res = m9res;
   m9ret = p->name;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -374,12 +400,15 @@ JsonUtf_Node * JsonUtf_MemberAt (JsonUtf_Node * obj, int64_t i, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "JsonUtf.MemberAt"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * m9ret = NULL;
   err->res = m9res;
   m9ret = JsonUtf_MemberNode (obj, i, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 524; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -392,6 +421,8 @@ int64_t JsonUtf_AsI64 (JsonUtf_Node * n, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.AsI64"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   { __typeof__(n->v) m9t1 = n->v;
   switch (m9t1.tag) {
@@ -406,16 +437,18 @@ int64_t JsonUtf_AsI64 (JsonUtf_Node * n, m9_state *err)
     }
     err->res = m9res;
     m9ret = m9_i64_f64 ((double)(r), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 533; goto L_ret; };
     goto L_ret;
   } break;
   default: {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s5, 15 })) m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s5, 15 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &JsonUtf_TypeMismatch);
+    m9_site (err, 535, m9pn);
     goto L_ret;
   } break;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -427,6 +460,8 @@ double JsonUtf_AsF64 (JsonUtf_Node * n, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.AsF64"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   double m9ret = 0;
   { __typeof__(n->v) m9t1 = n->v;
   switch (m9t1.tag) {
@@ -446,10 +481,12 @@ double JsonUtf_AsF64 (JsonUtf_Node * n, m9_state *err)
   default: {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s6, 15 })) m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s6, 15 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &JsonUtf_TypeMismatch);
+    m9_site (err, 547, m9pn);
     goto L_ret;
   } break;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -461,6 +498,8 @@ bool JsonUtf_AsBool (JsonUtf_Node * n, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.AsBool"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   { __typeof__(n->v) m9t1 = n->v;
   switch (m9t1.tag) {
@@ -473,10 +512,12 @@ bool JsonUtf_AsBool (JsonUtf_Node * n, m9_state *err)
   default: {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s7, 22 })) m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s7, 22 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &JsonUtf_TypeMismatch);
+    m9_site (err, 557, m9pn);
     goto L_ret;
   } break;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -488,6 +529,8 @@ m9_sl_UTF8 JsonUtf_AsStr (JsonUtf_Node * n, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.AsStr"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   { __typeof__(n->v) m9t1 = n->v;
   switch (m9t1.tag) {
@@ -500,10 +543,12 @@ m9_sl_UTF8 JsonUtf_AsStr (JsonUtf_Node * n, m9_state *err)
   default: {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s8, 17 })) m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s8, 17 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &JsonUtf_TypeMismatch);
+    m9_site (err, 566, m9pn);
     goto L_ret;
   } break;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -516,6 +561,8 @@ m9_sl_UTF8 JsonUtf_Text (JsonUtf_Node * n, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.Text"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   { __typeof__(n->v) m9t1 = n->v;
   switch (m9t1.tag) {
@@ -523,16 +570,18 @@ m9_sl_UTF8 JsonUtf_Text (JsonUtf_Node * n, m9_state *err)
     m9_sl_UTF8 t = m9t1.u.Str.s; (void) t;
     err->res = m9res;
     m9ret = JsonUtf_DecodeStr (t, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 693; goto L_ret; };
     goto L_ret;
   } break;
   default: {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s9, 17 })) m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s9, 17 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &JsonUtf_TypeMismatch);
+    m9_site (err, 694, m9pn);
     goto L_ret;
   } break;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -545,6 +594,8 @@ bool JsonUtf_StrIs (JsonUtf_Node * n, m9_sl_UTF8 s, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.StrIs"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   { __typeof__(n->v) m9t1 = n->v;
   switch (m9t1.tag) {
@@ -552,7 +603,7 @@ bool JsonUtf_StrIs (JsonUtf_Node * n, m9_sl_UTF8 s, m9_state *err)
     m9_sl_UTF8 t = m9t1.u.Str.s; (void) t;
     err->res = m9res;
     m9ret = Text_EqUtf (t, s, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 573; goto L_ret; };
     goto L_ret;
   } break;
   default: {
@@ -562,6 +613,7 @@ bool JsonUtf_StrIs (JsonUtf_Node * n, m9_sl_UTF8 s, m9_state *err)
   } break;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -573,6 +625,8 @@ bool JsonUtf_IsNull (JsonUtf_Node * n, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.IsNull"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   { __typeof__(n->v) m9t1 = n->v;
   switch (m9t1.tag) {
@@ -589,6 +643,7 @@ bool JsonUtf_IsNull (JsonUtf_Node * n, m9_state *err)
   } break;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -600,20 +655,23 @@ m9_sl_UTF8 JsonUtf_Compact (JsonUtf_Node * n, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.Compact"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
   { __typeof__(d) m9v = DynStr_New (&(scratch), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 838; goto L_ret; };
     d = m9v;
   }
   JsonUtf_EmitVal (&(d), &(scratch), n, false, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 839; goto L_ret; };
   err->res = m9res;
   m9ret = DynStr_View (d, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 840; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9ret = m9_rehome_utf (&scratch, m9res, m9ret, err);
@@ -628,20 +686,23 @@ m9_sl_UTF8 JsonUtf_Spaced (JsonUtf_Node * n, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.Spaced"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
   { __typeof__(d) m9v = DynStr_New (&(scratch), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 849; goto L_ret; };
     d = m9v;
   }
   JsonUtf_EmitVal (&(d), &(scratch), n, true, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 850; goto L_ret; };
   err->res = m9res;
   m9ret = DynStr_View (d, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 851; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9ret = m9_rehome_utf (&scratch, m9res, m9ret, err);
@@ -656,20 +717,23 @@ m9_sl_UTF8 JsonUtf_CompactSorted (JsonUtf_Node * n, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.CompactSorted"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
   { __typeof__(d) m9v = DynStr_New (&(scratch), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 925; goto L_ret; };
     d = m9v;
   }
   JsonUtf_EmitSorted (&(d), &(scratch), n, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 926; goto L_ret; };
   err->res = m9res;
   m9ret = DynStr_View (d, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 927; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9ret = m9_rehome_utf (&scratch, m9res, m9ret, err);
@@ -684,20 +748,23 @@ m9_sl_UTF8 JsonUtf_Pretty (JsonUtf_Node * n, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.Pretty"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
   { __typeof__(d) m9v = DynStr_New (&(scratch), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 990; goto L_ret; };
     d = m9v;
   }
   JsonUtf_EmitPretty (&(d), &(scratch), n, INT64_C(0), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 991; goto L_ret; };
   err->res = m9res;
   m9ret = DynStr_View (d, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 992; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9ret = m9_rehome_utf (&scratch, m9res, m9ret, err);
@@ -712,20 +779,23 @@ m9_sl_UTF8 JsonUtf_ReprText (double r, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.ReprText"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
   { __typeof__(d) m9v = DynStr_New (&(scratch), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1001; goto L_ret; };
     d = m9v;
   }
   JsonUtf_AppendF64 (&(d), &(scratch), r, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1002; goto L_ret; };
   err->res = m9res;
   m9ret = DynStr_View (d, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1003; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9ret = m9_rehome_utf (&scratch, m9res, m9ret, err);
@@ -740,11 +810,13 @@ m9_sl_UTF8 JsonUtf_NumText (JsonUtf_Node * n, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.NumText"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
   bool m9t1 = (Text_BLen (n->raw, err) > INT64_C(0));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1012; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
     m9ret = n->raw;
@@ -757,28 +829,30 @@ m9_sl_UTF8 JsonUtf_NumText (JsonUtf_Node * n, m9_state *err)
     int64_t i = m9t2.u.Num.i; (void) i;
     bool isInt = m9t2.u.Num.isInt; (void) isInt;
     { __typeof__(d) m9v = DynStr_New (&(scratch), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1015; goto L_ret; };
       d = m9v;
     }
     if (isInt) {
       DynStr_AppendI64 (&(d), &(scratch), i, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1016; goto L_ret; };
     } else {
       JsonUtf_AppendF64 (&(d), &(scratch), r, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1016; goto L_ret; };
     }
     err->res = m9res;
     m9ret = DynStr_View (d, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1017; goto L_ret; };
     goto L_ret;
   } break;
   default: {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s10, 15 })) m9t3 = ((m9_sl_UTF8){ (uint8_t *) m9s10, 15 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &JsonUtf_TypeMismatch);
+    m9_site (err, 1018, m9pn);
     goto L_ret;
   } break;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9ret = m9_rehome_utf (&scratch, m9res, m9ret, err);
@@ -793,39 +867,42 @@ void JsonUtf_AppendF64 (DynStr_DString * *d, m9_pool *d_pool, double r, m9_state
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.AppendF64"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_arr_32_uint8_t buf = {0}; (void) buf;
   int64_t n = 0; (void) n;
   int64_t i = 0; (void) i;
   if ((r != r)) {
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s11, 3 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 768; goto L_ret; };
     goto L_ret;
   }
   if ((r > 1.7976931348623157e308)) {
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s12, 8 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 769; goto L_ret; };
     goto L_ret;
   }
   if ((r < (0.0 - 1.7976931348623157e308))) {
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s13, 9 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 770; goto L_ret; };
     goto L_ret;
   }
   n = (int64_t)(m9_repr_double (((double)(r)), ((void *)(buf).v)));
   { __typeof__(i) m9t3to;
   i = INT64_C(0);
   m9t3to = m9_sub_i64 (n, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 772; goto L_ret; };
   if (i <= m9t3to) for (;;) {
     { __typeof__(m9_chr ((int64_t)((*(uint8_t *) m9_at (buf.v, i, INT64_C(32), sizeof (uint8_t), err))), err)) m9a1 = m9_chr ((int64_t)((*(uint8_t *) m9_at (buf.v, i, INT64_C(32), sizeof (uint8_t), err))), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 773; goto L_ret; };
     DynStr_AppendChar (d, d_pool, m9a1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 773; goto L_ret; };
     }
     if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -838,9 +915,12 @@ void JsonUtf_AppendJString (DynStr_DString * *d, m9_pool *d_pool, m9_sl_UTF8 t, 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.AppendJString"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_EmitJStr (d, d_pool, t, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 746; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -853,10 +933,12 @@ JsonUtf_Node * JsonUtf_NewObj (m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "JsonUtf.NewObj"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * m9ret = NULL;
   JsonUtf_Node * n = NULL; (void) n;
   { __typeof__(n) m9v = (JsonUtf_Node *) m9_pool_alloc (err->res, sizeof (JsonUtf_Node), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1100; goto L_ret; };
     n = m9v;
   }
   n->v = ((JsonUtf_Value){ .tag = JsonUtf_Value_Object, .u.Object = { NULL } });
@@ -864,6 +946,7 @@ JsonUtf_Node * JsonUtf_NewObj (m9_state *err)
   m9ret = n;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -876,10 +959,12 @@ JsonUtf_Node * JsonUtf_NewArr (m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "JsonUtf.NewArr"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * m9ret = NULL;
   JsonUtf_Node * n = NULL; (void) n;
   { __typeof__(n) m9v = (JsonUtf_Node *) m9_pool_alloc (err->res, sizeof (JsonUtf_Node), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1108; goto L_ret; };
     n = m9v;
   }
   n->v = ((JsonUtf_Value){ .tag = JsonUtf_Value_Arr, .u.Arr = { NULL, INT64_C(0) } });
@@ -887,6 +972,7 @@ JsonUtf_Node * JsonUtf_NewArr (m9_state *err)
   m9ret = n;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -899,20 +985,23 @@ JsonUtf_Node * JsonUtf_NewStr (m9_sl_UTF8 s, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "JsonUtf.NewStr"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * m9ret = NULL;
   JsonUtf_Node * n = NULL; (void) n;
   { __typeof__(n) m9v = (JsonUtf_Node *) m9_pool_alloc (err->res, sizeof (JsonUtf_Node), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1117; goto L_ret; };
     n = m9v;
   }
   { __typeof__(n->v) m9v = ((JsonUtf_Value){ .tag = JsonUtf_Value_Str, .u.Str = { JsonUtf_Name (s, err) } });
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1118; goto L_ret; };
     n->v = m9v;
   }
   err->res = m9res;
   m9ret = n;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -925,10 +1014,12 @@ JsonUtf_Node * JsonUtf_NewI64 (int64_t v, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "JsonUtf.NewI64"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * m9ret = NULL;
   JsonUtf_Node * n = NULL; (void) n;
   { __typeof__(n) m9v = (JsonUtf_Node *) m9_pool_alloc (err->res, sizeof (JsonUtf_Node), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1125; goto L_ret; };
     n = m9v;
   }
   n->v = ((JsonUtf_Value){ .tag = JsonUtf_Value_Num, .u.Num = { (double)(v), v, true } });
@@ -936,6 +1027,7 @@ JsonUtf_Node * JsonUtf_NewI64 (int64_t v, m9_state *err)
   m9ret = n;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -948,10 +1040,12 @@ JsonUtf_Node * JsonUtf_NewF64 (double r, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "JsonUtf.NewF64"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * m9ret = NULL;
   JsonUtf_Node * n = NULL; (void) n;
   { __typeof__(n) m9v = (JsonUtf_Node *) m9_pool_alloc (err->res, sizeof (JsonUtf_Node), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1133; goto L_ret; };
     n = m9v;
   }
   n->v = ((JsonUtf_Value){ .tag = JsonUtf_Value_Num, .u.Num = { r, INT64_C(0), false } });
@@ -959,6 +1053,7 @@ JsonUtf_Node * JsonUtf_NewF64 (double r, m9_state *err)
   m9ret = n;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -971,10 +1066,12 @@ JsonUtf_Node * JsonUtf_NewBool (bool b, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "JsonUtf.NewBool"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * m9ret = NULL;
   JsonUtf_Node * n = NULL; (void) n;
   { __typeof__(n) m9v = (JsonUtf_Node *) m9_pool_alloc (err->res, sizeof (JsonUtf_Node), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1141; goto L_ret; };
     n = m9v;
   }
   n->v = ((JsonUtf_Value){ .tag = JsonUtf_Value_Bool, .u.Bool = { b } });
@@ -982,6 +1079,7 @@ JsonUtf_Node * JsonUtf_NewBool (bool b, m9_state *err)
   m9ret = n;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -994,10 +1092,12 @@ JsonUtf_Node * JsonUtf_NewNull (m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "JsonUtf.NewNull"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * m9ret = NULL;
   JsonUtf_Node * n = NULL; (void) n;
   { __typeof__(n) m9v = (JsonUtf_Node *) m9_pool_alloc (err->res, sizeof (JsonUtf_Node), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1149; goto L_ret; };
     n = m9v;
   }
   n->v = ((JsonUtf_Value){ .tag = JsonUtf_Value_Null });
@@ -1005,6 +1105,7 @@ JsonUtf_Node * JsonUtf_NewNull (m9_state *err)
   m9ret = n;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -1017,24 +1118,27 @@ JsonUtf_Node * JsonUtf_NewRaw (m9_sl_UTF8 text, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "JsonUtf.NewRaw"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * m9ret = NULL;
   JsonUtf_Node * n = NULL; (void) n;
   { __typeof__(n) m9v = (JsonUtf_Node *) m9_pool_alloc (err->res, sizeof (JsonUtf_Node), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1210; goto L_ret; };
     n = m9v;
   }
   { __typeof__(n->v) m9v = JsonUtf_RawValue (text, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1211; goto L_ret; };
     n->v = m9v;
   }
   { __typeof__(n->raw) m9v = JsonUtf_CopyStrTo (&(n), err->res, text, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1212; goto L_ret; };
     n->raw = m9v;
   }
   err->res = m9res;
   m9ret = n;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -1047,10 +1151,12 @@ JsonUtf_Node * JsonUtf_NewObjIn (m9_pool *pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "JsonUtf.NewObjIn"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * m9ret = NULL;
   JsonUtf_Node * n = NULL; (void) n;
   { __typeof__(n) m9v = (JsonUtf_Node *) m9_pool_alloc (&((*pool)), sizeof (JsonUtf_Node), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1157; goto L_ret; };
     n = m9v;
   }
   n->v = ((JsonUtf_Value){ .tag = JsonUtf_Value_Object, .u.Object = { NULL } });
@@ -1058,6 +1164,7 @@ JsonUtf_Node * JsonUtf_NewObjIn (m9_pool *pool, m9_state *err)
   m9ret = n;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -1070,10 +1177,12 @@ JsonUtf_Node * JsonUtf_NewArrIn (m9_pool *pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "JsonUtf.NewArrIn"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * m9ret = NULL;
   JsonUtf_Node * n = NULL; (void) n;
   { __typeof__(n) m9v = (JsonUtf_Node *) m9_pool_alloc (&((*pool)), sizeof (JsonUtf_Node), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1165; goto L_ret; };
     n = m9v;
   }
   n->v = ((JsonUtf_Value){ .tag = JsonUtf_Value_Arr, .u.Arr = { NULL, INT64_C(0) } });
@@ -1081,6 +1190,7 @@ JsonUtf_Node * JsonUtf_NewArrIn (m9_pool *pool, m9_state *err)
   m9ret = n;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -1093,16 +1203,18 @@ JsonUtf_Node * JsonUtf_NewStrIn (m9_pool *pool, m9_sl_UTF8 s, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "JsonUtf.NewStrIn"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * m9ret = NULL;
   JsonUtf_Node * n = NULL; (void) n;
   { __typeof__(n) m9v = (JsonUtf_Node *) m9_pool_alloc (&((*pool)), sizeof (JsonUtf_Node), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1174; goto L_ret; };
     n = m9v;
   }
   { __typeof__(JsonUtf_Name (s, err)) m9a2 = JsonUtf_Name (s, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1175; goto L_ret; };
   { __typeof__(n->v) m9v = ((JsonUtf_Value){ .tag = JsonUtf_Value_Str, .u.Str = { JsonUtf_CopyStrTo (&(n), &((*pool)), m9a2, err) } });
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1175; goto L_ret; };
     n->v = m9v;
   }
   }
@@ -1110,6 +1222,7 @@ JsonUtf_Node * JsonUtf_NewStrIn (m9_pool *pool, m9_sl_UTF8 s, m9_state *err)
   m9ret = n;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -1122,10 +1235,12 @@ JsonUtf_Node * JsonUtf_NewI64In (m9_pool *pool, int64_t v, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "JsonUtf.NewI64In"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * m9ret = NULL;
   JsonUtf_Node * n = NULL; (void) n;
   { __typeof__(n) m9v = (JsonUtf_Node *) m9_pool_alloc (&((*pool)), sizeof (JsonUtf_Node), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1182; goto L_ret; };
     n = m9v;
   }
   n->v = ((JsonUtf_Value){ .tag = JsonUtf_Value_Num, .u.Num = { (double)(v), v, true } });
@@ -1133,6 +1248,7 @@ JsonUtf_Node * JsonUtf_NewI64In (m9_pool *pool, int64_t v, m9_state *err)
   m9ret = n;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -1145,10 +1261,12 @@ JsonUtf_Node * JsonUtf_NewF64In (m9_pool *pool, double r, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "JsonUtf.NewF64In"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * m9ret = NULL;
   JsonUtf_Node * n = NULL; (void) n;
   { __typeof__(n) m9v = (JsonUtf_Node *) m9_pool_alloc (&((*pool)), sizeof (JsonUtf_Node), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1190; goto L_ret; };
     n = m9v;
   }
   n->v = ((JsonUtf_Value){ .tag = JsonUtf_Value_Num, .u.Num = { r, INT64_C(0), false } });
@@ -1156,6 +1274,7 @@ JsonUtf_Node * JsonUtf_NewF64In (m9_pool *pool, double r, m9_state *err)
   m9ret = n;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -1168,24 +1287,27 @@ JsonUtf_Node * JsonUtf_NewRawIn (m9_pool *pool, m9_sl_UTF8 text, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "JsonUtf.NewRawIn"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * m9ret = NULL;
   JsonUtf_Node * n = NULL; (void) n;
   { __typeof__(n) m9v = (JsonUtf_Node *) m9_pool_alloc (&((*pool)), sizeof (JsonUtf_Node), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1220; goto L_ret; };
     n = m9v;
   }
   { __typeof__(n->v) m9v = JsonUtf_RawValue (text, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1221; goto L_ret; };
     n->v = m9v;
   }
   { __typeof__(n->raw) m9v = JsonUtf_CopyStrTo (&(n), &((*pool)), text, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1222; goto L_ret; };
     n->raw = m9v;
   }
   err->res = m9res;
   m9ret = n;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -1198,10 +1320,12 @@ JsonUtf_Node * JsonUtf_NewBoolIn (m9_pool *pool, bool b, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "JsonUtf.NewBoolIn"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * m9ret = NULL;
   JsonUtf_Node * n = NULL; (void) n;
   { __typeof__(n) m9v = (JsonUtf_Node *) m9_pool_alloc (&((*pool)), sizeof (JsonUtf_Node), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1229; goto L_ret; };
     n = m9v;
   }
   n->v = ((JsonUtf_Value){ .tag = JsonUtf_Value_Bool, .u.Bool = { b } });
@@ -1209,6 +1333,7 @@ JsonUtf_Node * JsonUtf_NewBoolIn (m9_pool *pool, bool b, m9_state *err)
   m9ret = n;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -1221,10 +1346,12 @@ JsonUtf_Node * JsonUtf_NewNullIn (m9_pool *pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "JsonUtf.NewNullIn"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * m9ret = NULL;
   JsonUtf_Node * n = NULL; (void) n;
   { __typeof__(n) m9v = (JsonUtf_Node *) m9_pool_alloc (&((*pool)), sizeof (JsonUtf_Node), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1237; goto L_ret; };
     n = m9v;
   }
   n->v = ((JsonUtf_Value){ .tag = JsonUtf_Value_Null });
@@ -1232,6 +1359,7 @@ JsonUtf_Node * JsonUtf_NewNullIn (m9_pool *pool, m9_state *err)
   m9ret = n;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -1244,23 +1372,26 @@ m9_sl_UTF8 JsonUtf_Name (m9_sl_UTF8 s, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.Name"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
   { __typeof__(d) m9v = DynStr_New (&(scratch), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 755; goto L_ret; };
     d = m9v;
   }
   { __typeof__(s) m9a3 = s;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 756; goto L_ret; };
   JsonUtf_EscapeBody (&(d), &(scratch), m9a3, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 756; goto L_ret; };
   }
   err->res = m9res;
   m9ret = DynStr_View (d, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 757; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9ret = m9_rehome_utf (&scratch, m9res, m9ret, err);
@@ -1275,6 +1406,8 @@ void JsonUtf_Set (JsonUtf_Node * *obj, m9_pool *obj_pool, m9_sl_UTF8 name, JsonU
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.Set"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * cur = NULL; (void) cur;
   JsonUtf_Node * prev = NULL; (void) prev;
   { __typeof__(({ __auto_type m9g = ((*obj)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->v) m9t1 = ({ __auto_type m9g = ((*obj)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->v;
@@ -1286,6 +1419,7 @@ void JsonUtf_Set (JsonUtf_Node * *obj, m9_pool *obj_pool, m9_sl_UTF8 name, JsonU
   default: {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s14, 35 })) m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s14, 35 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &JsonUtf_TypeMismatch);
+    m9_site (err, 1250, m9pn);
     goto L_ret;
   } break;
   } }
@@ -1295,18 +1429,18 @@ void JsonUtf_Set (JsonUtf_Node * *obj, m9_pool *obj_pool, m9_sl_UTF8 name, JsonU
     JsonUtf_Node * p = cur;
     if (!(p != NULL)) break;
     bool m9t3 = Text_EqUtf (p->name, name, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1255; goto L_ret; };
     if (m9t3) {
       ({ __auto_type m9g = ((*v)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->next = p->next;
       { JsonUtf_Node * q = prev;
       if (q != NULL) {
         { __typeof__(q->next) m9v = ({ __auto_type m9n = ((*v)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1257; goto L_ret; };
           q->next = m9v;
         }
       } else {
         { __typeof__(({ __auto_type m9g = ((*obj)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->v) m9v = ((JsonUtf_Value){ .tag = JsonUtf_Value_Object, .u.Object = { ({ __auto_type m9n = ((*v)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); }) } });
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 1258; goto L_ret; };
           ({ __auto_type m9g = ((*obj)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->v = m9v;
         }
       } }
@@ -1319,16 +1453,17 @@ void JsonUtf_Set (JsonUtf_Node * *obj, m9_pool *obj_pool, m9_sl_UTF8 name, JsonU
   { JsonUtf_Node * q = prev;
   if (q != NULL) {
     { __typeof__(q->next) m9v = ({ __auto_type m9n = ((*v)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1265; goto L_ret; };
       q->next = m9v;
     }
   } else {
     { __typeof__(({ __auto_type m9g = ((*obj)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->v) m9v = ((JsonUtf_Value){ .tag = JsonUtf_Value_Object, .u.Object = { ({ __auto_type m9n = ((*v)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); }) } });
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1266; goto L_ret; };
       ({ __auto_type m9g = ((*obj)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->v = m9v;
     }
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, obj_pool, (*obj));
   m9_adopt_if (&m9frame, v_pool, (*v));
@@ -1342,6 +1477,8 @@ void JsonUtf_Add (JsonUtf_Node * *arr, m9_pool *arr_pool, JsonUtf_Node * *v, m9_
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.Add"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * cur = NULL; (void) cur;
   JsonUtf_Node * prev = NULL; (void) prev;
   JsonUtf_Node * head = NULL; (void) head;
@@ -1358,6 +1495,7 @@ void JsonUtf_Add (JsonUtf_Node * *arr, m9_pool *arr_pool, JsonUtf_Node * *v, m9_
   default: {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s15, 34 })) m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s15, 34 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &JsonUtf_TypeMismatch);
+    m9_site (err, 1277, m9pn);
     goto L_ret;
   } break;
   } }
@@ -1372,20 +1510,21 @@ void JsonUtf_Add (JsonUtf_Node * *arr, m9_pool *arr_pool, JsonUtf_Node * *v, m9_
   { JsonUtf_Node * q = prev;
   if (q != NULL) {
     { __typeof__(q->next) m9v = ({ __auto_type m9n = ((*v)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1286; goto L_ret; };
       q->next = m9v;
     }
     { __typeof__(({ __auto_type m9g = ((*arr)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->v) m9v = ((JsonUtf_Value){ .tag = JsonUtf_Value_Arr, .u.Arr = { head, m9_add_i64 (k, INT64_C(1), err) } });
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1287; goto L_ret; };
       ({ __auto_type m9g = ((*arr)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->v = m9v;
     }
   } else {
     { __typeof__(({ __auto_type m9g = ((*arr)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->v) m9v = ((JsonUtf_Value){ .tag = JsonUtf_Value_Arr, .u.Arr = { ({ __auto_type m9n = ((*v)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); }), m9_add_i64 (k, INT64_C(1), err) } });
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1289; goto L_ret; };
       ({ __auto_type m9g = ((*arr)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->v = m9v;
     }
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, arr_pool, (*arr));
   m9_adopt_if (&m9frame, v_pool, (*v));
@@ -1399,18 +1538,21 @@ JsonUtf_Node * JsonUtf_CloneIn (m9_pool *pool, JsonUtf_Node * n, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "JsonUtf.CloneIn"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * m9ret = NULL;
   JsonUtf_Node * c = NULL; (void) c;
   { __typeof__(c) m9v = (JsonUtf_Node *) m9_pool_alloc (&((*pool)), sizeof (JsonUtf_Node), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1092; goto L_ret; };
     c = m9v;
   }
   JsonUtf_CopyInto (&(c), &((*pool)), &(c), &((*pool)), n, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1093; goto L_ret; };
   err->res = m9res;
   m9ret = c;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -1423,18 +1565,21 @@ JsonUtf_Node * JsonUtf_Clone (JsonUtf_Node * n, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "JsonUtf.Clone"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * m9ret = NULL;
   JsonUtf_Node * c = NULL; (void) c;
   { __typeof__(c) m9v = (JsonUtf_Node *) m9_pool_alloc (err->res, sizeof (JsonUtf_Node), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1083; goto L_ret; };
     c = m9v;
   }
   JsonUtf_CopyInto (&(c), err->res, &(c), err->res, n, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1084; goto L_ret; };
   err->res = m9res;
   m9ret = c;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -1447,10 +1592,12 @@ static uint32_t JsonUtf_Cur (JsonUtf_Cursor * *c, m9_pool *c_pool, m9_state *err
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.Cur"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   uint32_t m9ret = 0;
   int64_t at = 0; (void) at;
   bool m9t3 = (({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->pos >= Text_BLen (({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->src, err));
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 169; goto L_hdl_m9t1; };
   if (m9t3) {
     err->res = m9res;
     m9ret = 0u;
@@ -1459,7 +1606,7 @@ static uint32_t JsonUtf_Cur (JsonUtf_Cursor * *c, m9_pool *c_pool, m9_state *err
   at = ({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->pos;
   err->res = m9res;
   m9ret = Text_NextCp (({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->src, &(at), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 171; goto L_hdl_m9t1; };
   goto L_ret;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -1473,6 +1620,7 @@ L_hdl_m9t1: ;
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, c_pool, (*c));
   m9_pool_free (&m9frame);
@@ -1485,25 +1633,27 @@ static void JsonUtf_Bump (JsonUtf_Cursor * *c, m9_pool *c_pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.Bump"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   uint32_t ch = 0; (void) ch;
   bool m9t3 = (({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->pos >= Text_BLen (({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->src, err));
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 179; goto L_hdl_m9t1; };
   if (m9t3) {
     goto L_ret;
   }
   { __typeof__(ch) m9v = Text_NextCp (({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->src, &(({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->pos), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 180; goto L_hdl_m9t1; };
     ch = m9v;
   }
   if ((ch == 10u)) {
     { __typeof__(({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->line) m9v = m9_add_i64 (({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->line, INT64_C(1), err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 181; goto L_hdl_m9t1; };
       ({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->line = m9v;
     }
     ({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->col = INT64_C(1);
   } else {
     { __typeof__(({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->col) m9v = m9_add_i64 (({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->col, INT64_C(1), err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 182; goto L_hdl_m9t1; };
       ({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->col = m9v;
     }
   }
@@ -1512,7 +1662,7 @@ L_hdl_m9t1: ;
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
     { __typeof__(({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = Text_BLen (({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 184; goto L_ret; };
       ({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = m9v;
     }
     goto L_dn_m9t2;
@@ -1520,6 +1670,7 @@ L_hdl_m9t1: ;
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, c_pool, (*c));
   m9_pool_free (&m9frame);
@@ -1532,14 +1683,17 @@ static void JsonUtf_Skip (JsonUtf_Cursor * *c, m9_pool *c_pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.Skip"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   for (;;) {
     bool m9t1 = ((((JsonUtf_Cur (c, c_pool, err) == 32u) || (JsonUtf_Cur (c, c_pool, err) == 9u)) || (JsonUtf_Cur (c, c_pool, err) == 10u)) || (JsonUtf_Cur (c, c_pool, err) == 13u));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 189; goto L_ret; };
     if (!(m9t1)) break;
     JsonUtf_Bump (c, c_pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 190; goto L_ret; };
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, c_pool, (*c));
   m9_pool_free (&m9frame);
@@ -1552,12 +1706,16 @@ static void JsonUtf_Fail (JsonUtf_Cursor * *c, m9_pool *c_pool, m9_sl_UTF8 msg, 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.Fail"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   { __typeof__(msg) m9t1 = msg; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
   err->i[0] = ({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->line;
   err->i[1] = ({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->col;
   m9_raise (err, &JsonUtf_ParseError);
+  m9_site (err, 197, m9pn);
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, c_pool, (*c));
   m9_pool_free (&m9frame);
@@ -1570,35 +1728,37 @@ static JsonUtf_Node * JsonUtf_ParseValue (JsonUtf_Cursor * *c, m9_pool *c_pool, 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "JsonUtf.ParseValue"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * m9ret = NULL;
   JsonUtf_Node * n = NULL; (void) n;
   JsonUtf_Skip (c, c_pool, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 204; goto L_ret; };
   { __typeof__(JsonUtf_Cur (c, c_pool, err)) m9t1 = JsonUtf_Cur (c, c_pool, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 205; goto L_ret; };
   switch (m9t1) {
   case 123u:
   {
     err->res = m9res;
     m9ret = JsonUtf_ParseObject (c, c_pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 206; goto L_ret; };
     goto L_ret;
   } break;
   case 91u:
   {
     err->res = m9res;
     m9ret = JsonUtf_ParseArray (c, c_pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 207; goto L_ret; };
     goto L_ret;
   } break;
   case 34u:
   {
     { __typeof__(n) m9v = (JsonUtf_Node *) m9_pool_alloc (c_pool, sizeof (JsonUtf_Node), 1, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 208; goto L_ret; };
       n = m9v;
     }
     { __typeof__(n->v) m9v = ((JsonUtf_Value){ .tag = JsonUtf_Value_Str, .u.Str = { JsonUtf_ParseString (c, c_pool, err) } });
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 209; goto L_ret; };
       n->v = m9v;
     }
     err->res = m9res;
@@ -1607,10 +1767,10 @@ static JsonUtf_Node * JsonUtf_ParseValue (JsonUtf_Cursor * *c, m9_pool *c_pool, 
   } break;
   default: {
     bool m9t2 = JsonUtf_Match (c, c_pool, ((m9_sl_UTF8){ (uint8_t *) m9s16, 4 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 212; goto L_ret; };
     if (m9t2) {
       { __typeof__(n) m9v = (JsonUtf_Node *) m9_pool_alloc (c_pool, sizeof (JsonUtf_Node), 1, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 213; goto L_ret; };
         n = m9v;
       }
       n->v = ((JsonUtf_Value){ .tag = JsonUtf_Value_Bool, .u.Bool = { true } });
@@ -1619,10 +1779,10 @@ static JsonUtf_Node * JsonUtf_ParseValue (JsonUtf_Cursor * *c, m9_pool *c_pool, 
       goto L_ret;
     } else {
       bool m9t3 = JsonUtf_Match (c, c_pool, ((m9_sl_UTF8){ (uint8_t *) m9s17, 5 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 213; goto L_ret; };
       if (m9t3) {
         { __typeof__(n) m9v = (JsonUtf_Node *) m9_pool_alloc (c_pool, sizeof (JsonUtf_Node), 1, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 215; goto L_ret; };
           n = m9v;
         }
         n->v = ((JsonUtf_Value){ .tag = JsonUtf_Value_Bool, .u.Bool = { false } });
@@ -1631,10 +1791,10 @@ static JsonUtf_Node * JsonUtf_ParseValue (JsonUtf_Cursor * *c, m9_pool *c_pool, 
         goto L_ret;
     } else {
       bool m9t4 = JsonUtf_Match (c, c_pool, ((m9_sl_UTF8){ (uint8_t *) m9s18, 4 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 215; goto L_ret; };
       if (m9t4) {
         { __typeof__(n) m9v = (JsonUtf_Node *) m9_pool_alloc (c_pool, sizeof (JsonUtf_Node), 1, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 217; goto L_ret; };
           n = m9v;
         }
         n->v = ((JsonUtf_Value){ .tag = JsonUtf_Value_Null });
@@ -1643,22 +1803,24 @@ static JsonUtf_Node * JsonUtf_ParseValue (JsonUtf_Cursor * *c, m9_pool *c_pool, 
         goto L_ret;
     } else {
       bool m9t5 = ((JsonUtf_Cur (c, c_pool, err) == 45u) || (((JsonUtf_Cur (c, c_pool, err) >= 48u) && (JsonUtf_Cur (c, c_pool, err) <= 57u))));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 217; goto L_ret; };
       if (m9t5) {
         err->res = m9res;
         m9ret = JsonUtf_ParseNumber (c, c_pool, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 219; goto L_ret; };
         goto L_ret;
     } else {
       { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s19, 14 })) m9t6 = ((m9_sl_UTF8){ (uint8_t *) m9s19, 14 }); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
       err->i[0] = ({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->line;
       err->i[1] = ({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->col;
       m9_raise (err, &JsonUtf_ParseError);
+      m9_site (err, 221, m9pn);
       goto L_ret;
     } } } }
   } break;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_adopt_if (&m9frame, c_pool, (*c));
@@ -1672,6 +1834,8 @@ static JsonUtf_Node * JsonUtf_ParseObject (JsonUtf_Cursor * *c, m9_pool *c_pool,
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "JsonUtf.ParseObject"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * m9ret = NULL;
   JsonUtf_Node * n = NULL; (void) n;
   JsonUtf_Node * child = NULL; (void) child;
@@ -1679,18 +1843,18 @@ static JsonUtf_Node * JsonUtf_ParseObject (JsonUtf_Cursor * *c, m9_pool *c_pool,
   JsonUtf_Node * last = NULL; (void) last;
   m9_sl_UTF8 nm = {0}; (void) nm;
   JsonUtf_Bump (c, c_pool, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 233; goto L_ret; };
   JsonUtf_Skip (c, c_pool, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 234; goto L_ret; };
   head = NULL;
   last = NULL;
   bool m9t1 = (JsonUtf_Cur (c, c_pool, err) == 125u);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 236; goto L_ret; };
   if (m9t1) {
     JsonUtf_Bump (c, c_pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 237; goto L_ret; };
     { __typeof__(n) m9v = (JsonUtf_Node *) m9_pool_alloc (c_pool, sizeof (JsonUtf_Node), 1, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 238; goto L_ret; };
       n = m9v;
     }
     n->v = ((JsonUtf_Value){ .tag = JsonUtf_Value_Object, .u.Object = { NULL } });
@@ -1700,23 +1864,23 @@ static JsonUtf_Node * JsonUtf_ParseObject (JsonUtf_Cursor * *c, m9_pool *c_pool,
   }
   for (;;) {
     JsonUtf_Skip (c, c_pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 241; goto L_ret; };
     { __typeof__(nm) m9v = JsonUtf_ParseString (c, c_pool, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 242; goto L_ret; };
       nm = m9v;
     }
     JsonUtf_Skip (c, c_pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 243; goto L_ret; };
     bool m9t2 = (JsonUtf_Cur (c, c_pool, err) != 58u);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 244; goto L_ret; };
     if (m9t2) {
       JsonUtf_Fail (c, c_pool, ((m9_sl_UTF8){ (uint8_t *) m9s20, 32 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 244; goto L_ret; };
     }
     JsonUtf_Bump (c, c_pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 245; goto L_ret; };
     { __typeof__(child) m9v = JsonUtf_ParseValue (c, c_pool, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 246; goto L_ret; };
       child = m9v;
     }
     child->name = nm;
@@ -1728,26 +1892,26 @@ static JsonUtf_Node * JsonUtf_ParseObject (JsonUtf_Cursor * *c, m9_pool *c_pool,
     } }
     last = child;
     JsonUtf_Skip (c, c_pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 251; goto L_ret; };
     bool m9t3 = (JsonUtf_Cur (c, c_pool, err) == 44u);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 252; goto L_ret; };
     if (m9t3) {
       JsonUtf_Bump (c, c_pool, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 252; goto L_ret; };
     } else {
       bool m9t4 = (JsonUtf_Cur (c, c_pool, err) == 125u);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 252; goto L_ret; };
       if (m9t4) {
         JsonUtf_Bump (c, c_pool, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 253; goto L_ret; };
         break;
     } else {
       JsonUtf_Fail (c, c_pool, ((m9_sl_UTF8){ (uint8_t *) m9s21, 31 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 254; goto L_ret; };
     } }
   }
   { __typeof__(n) m9v = (JsonUtf_Node *) m9_pool_alloc (c_pool, sizeof (JsonUtf_Node), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 256; goto L_ret; };
     n = m9v;
   }
   n->v = ((JsonUtf_Value){ .tag = JsonUtf_Value_Object, .u.Object = { head } });
@@ -1755,6 +1919,7 @@ static JsonUtf_Node * JsonUtf_ParseObject (JsonUtf_Cursor * *c, m9_pool *c_pool,
   m9ret = n;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_adopt_if (&m9frame, c_pool, (*c));
@@ -1768,6 +1933,8 @@ static JsonUtf_Node * JsonUtf_ParseArray (JsonUtf_Cursor * *c, m9_pool *c_pool, 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "JsonUtf.ParseArray"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * m9ret = NULL;
   JsonUtf_Node * n = NULL; (void) n;
   JsonUtf_Node * child = NULL; (void) child;
@@ -1775,19 +1942,19 @@ static JsonUtf_Node * JsonUtf_ParseArray (JsonUtf_Cursor * *c, m9_pool *c_pool, 
   JsonUtf_Node * last = NULL; (void) last;
   int64_t k = 0; (void) k;
   JsonUtf_Bump (c, c_pool, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 268; goto L_ret; };
   JsonUtf_Skip (c, c_pool, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 269; goto L_ret; };
   head = NULL;
   last = NULL;
   k = INT64_C(0);
   bool m9t1 = (JsonUtf_Cur (c, c_pool, err) == 93u);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 271; goto L_ret; };
   if (m9t1) {
     JsonUtf_Bump (c, c_pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 272; goto L_ret; };
     { __typeof__(n) m9v = (JsonUtf_Node *) m9_pool_alloc (c_pool, sizeof (JsonUtf_Node), 1, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 273; goto L_ret; };
       n = m9v;
     }
     n->v = ((JsonUtf_Value){ .tag = JsonUtf_Value_Arr, .u.Arr = { NULL, INT64_C(0) } });
@@ -1797,7 +1964,7 @@ static JsonUtf_Node * JsonUtf_ParseArray (JsonUtf_Cursor * *c, m9_pool *c_pool, 
   }
   for (;;) {
     { __typeof__(child) m9v = JsonUtf_ParseValue (c, c_pool, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 276; goto L_ret; };
       child = m9v;
     }
     { JsonUtf_Node * lp = last;
@@ -1808,30 +1975,30 @@ static JsonUtf_Node * JsonUtf_ParseArray (JsonUtf_Cursor * *c, m9_pool *c_pool, 
     } }
     last = child;
     { __typeof__(k) m9v = m9_add_i64 (k, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 280; goto L_ret; };
       k = m9v;
     }
     JsonUtf_Skip (c, c_pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 281; goto L_ret; };
     bool m9t2 = (JsonUtf_Cur (c, c_pool, err) == 44u);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 282; goto L_ret; };
     if (m9t2) {
       JsonUtf_Bump (c, c_pool, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 282; goto L_ret; };
     } else {
       bool m9t3 = (JsonUtf_Cur (c, c_pool, err) == 93u);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 282; goto L_ret; };
       if (m9t3) {
         JsonUtf_Bump (c, c_pool, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 283; goto L_ret; };
         break;
     } else {
       JsonUtf_Fail (c, c_pool, ((m9_sl_UTF8){ (uint8_t *) m9s22, 33 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 284; goto L_ret; };
     } }
   }
   { __typeof__(n) m9v = (JsonUtf_Node *) m9_pool_alloc (c_pool, sizeof (JsonUtf_Node), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 286; goto L_ret; };
     n = m9v;
   }
   n->v = ((JsonUtf_Value){ .tag = JsonUtf_Value_Arr, .u.Arr = { head, k } });
@@ -1839,6 +2006,7 @@ static JsonUtf_Node * JsonUtf_ParseArray (JsonUtf_Cursor * *c, m9_pool *c_pool, 
   m9ret = n;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_adopt_if (&m9frame, c_pool, (*c));
@@ -1852,43 +2020,45 @@ static m9_sl_UTF8 JsonUtf_ParseString (JsonUtf_Cursor * *c, m9_pool *c_pool, m9_
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.ParseString"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   int64_t start = 0; (void) start;
   m9_sl_UTF8 s = {0}; (void) s;
   bool m9t3 = (JsonUtf_Cur (c, c_pool, err) != 34u);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 300; goto L_hdl_m9t1; };
   if (m9t3) {
     JsonUtf_Fail (c, c_pool, ((m9_sl_UTF8){ (uint8_t *) m9s23, 15 }), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 300; goto L_hdl_m9t1; };
   }
   JsonUtf_Bump (c, c_pool, err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 301; goto L_hdl_m9t1; };
   start = ({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->pos;
   for (;;) {
     bool m9t4 = (JsonUtf_Cur (c, c_pool, err) != 34u);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 303; goto L_hdl_m9t1; };
     if (!(m9t4)) break;
     bool m9t5 = (({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->pos >= Text_BLen (({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->src, err));
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 304; goto L_hdl_m9t1; };
     if (m9t5) {
       JsonUtf_Fail (c, c_pool, ((m9_sl_UTF8){ (uint8_t *) m9s24, 19 }), err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 304; goto L_hdl_m9t1; };
     }
     bool m9t6 = (JsonUtf_Cur (c, c_pool, err) == 92u);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 305; goto L_hdl_m9t1; };
     if (m9t6) {
       JsonUtf_Bump (c, c_pool, err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 305; goto L_hdl_m9t1; };
     }
     JsonUtf_Bump (c, c_pool, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 306; goto L_hdl_m9t1; };
   }
   { __typeof__(s) m9v = m9_utf_slice (({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->src, start, m9_sub_i64 (({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->pos, start, err), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 308; goto L_hdl_m9t1; };
     s = m9v;
   }
   JsonUtf_Bump (c, c_pool, err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 309; goto L_hdl_m9t1; };
   err->res = m9res;
   m9ret = s;
   goto L_ret;
@@ -1900,12 +2070,14 @@ L_hdl_m9t1: ;
     err->i[0] = ({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->line;
     err->i[1] = ({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->col;
     m9_raise (err, &JsonUtf_ParseError);
+    m9_site (err, 312, m9pn);
     goto L_ret;
     goto L_dn_m9t2;
   }
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_adopt_if (&m9frame, c_pool, (*c));
@@ -1919,6 +2091,8 @@ static JsonUtf_Node * JsonUtf_ParseNumber (JsonUtf_Cursor * *c, m9_pool *c_pool,
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "JsonUtf.ParseNumber"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * m9ret = NULL;
   m9_pool scratch = {0}; (void) scratch;
   JsonUtf_Node * n = NULL; (void) n;
@@ -1937,110 +2111,110 @@ static JsonUtf_Node * JsonUtf_ParseNumber (JsonUtf_Cursor * *c, m9_pool *c_pool,
   start = ({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->pos;
   neg = false;
   bool m9t3 = (JsonUtf_Cur (c, c_pool, err) == 45u);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 327; goto L_hdl_m9t1; };
   if (m9t3) {
     neg = true;
     JsonUtf_Bump (c, c_pool, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 327; goto L_hdl_m9t1; };
   }
   bool m9t4 = ((JsonUtf_Cur (c, c_pool, err) < 48u) || (JsonUtf_Cur (c, c_pool, err) > 57u));
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 328; goto L_hdl_m9t1; };
   if (m9t4) {
     JsonUtf_Fail (c, c_pool, ((m9_sl_UTF8){ (uint8_t *) m9s26, 14 }), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 328; goto L_hdl_m9t1; };
   }
   ip = INT64_C(0);
   r = 0.0;
   isInt = true;
   for (;;) {
     bool m9t5 = ((JsonUtf_Cur (c, c_pool, err) >= 48u) && (JsonUtf_Cur (c, c_pool, err) <= 57u));
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 330; goto L_hdl_m9t1; };
     if (!(m9t5)) break;
     { __typeof__(d) m9v = m9_sub_i64 ((int64_t)(JsonUtf_Cur (c, c_pool, err)), (int64_t)(48u), err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 331; goto L_hdl_m9t1; };
       d = m9v;
     }
     r = ((r * 10.0) + (double)(d));
     bool m9t6 = (isInt && ((ip <= m9_div_i64 ((m9_sub_i64 (INT64_MAX, d, err)), INT64_C(10), err))));
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 333; goto L_hdl_m9t1; };
     if (m9t6) {
       { __typeof__(ip) m9v = m9_add_i64 (m9_mul_i64 (ip, INT64_C(10), err), d, err);
-        if (err->exc) goto L_hdl_m9t1;
+        if (err->exc) { m9ln = 333; goto L_hdl_m9t1; };
         ip = m9v;
       }
     } else {
       isInt = false;
     }
     JsonUtf_Bump (c, c_pool, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 335; goto L_hdl_m9t1; };
   }
   bool m9t7 = (JsonUtf_Cur (c, c_pool, err) == 46u);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 337; goto L_hdl_m9t1; };
   if (m9t7) {
     isInt = false;
     JsonUtf_Bump (c, c_pool, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 339; goto L_hdl_m9t1; };
     bool m9t8 = ((JsonUtf_Cur (c, c_pool, err) < 48u) || (JsonUtf_Cur (c, c_pool, err) > 57u));
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 340; goto L_hdl_m9t1; };
     if (m9t8) {
       JsonUtf_Fail (c, c_pool, ((m9_sl_UTF8){ (uint8_t *) m9s27, 34 }), err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 341; goto L_hdl_m9t1; };
     }
     frac = 0.0;
     sc = 0.1;
     for (;;) {
       bool m9t9 = ((JsonUtf_Cur (c, c_pool, err) >= 48u) && (JsonUtf_Cur (c, c_pool, err) <= 57u));
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 343; goto L_hdl_m9t1; };
       if (!(m9t9)) break;
       { __typeof__(frac) m9v = (frac + (sc * (double)(m9_sub_i64 ((int64_t)(JsonUtf_Cur (c, c_pool, err)), (int64_t)(48u), err))));
-        if (err->exc) goto L_hdl_m9t1;
+        if (err->exc) { m9ln = 344; goto L_hdl_m9t1; };
         frac = m9v;
       }
       sc = (sc / 10.0);
       JsonUtf_Bump (c, c_pool, err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 346; goto L_hdl_m9t1; };
     }
     r = (r + frac);
   }
   bool m9t10 = ((JsonUtf_Cur (c, c_pool, err) == 101u) || (JsonUtf_Cur (c, c_pool, err) == 69u));
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 350; goto L_hdl_m9t1; };
   if (m9t10) {
     isInt = false;
     JsonUtf_Bump (c, c_pool, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 352; goto L_hdl_m9t1; };
     negE = false;
     bool m9t11 = (JsonUtf_Cur (c, c_pool, err) == 45u);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 354; goto L_hdl_m9t1; };
     if (m9t11) {
       negE = true;
       JsonUtf_Bump (c, c_pool, err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 354; goto L_hdl_m9t1; };
     } else {
       bool m9t12 = (JsonUtf_Cur (c, c_pool, err) == 43u);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 354; goto L_hdl_m9t1; };
       if (m9t12) {
         JsonUtf_Bump (c, c_pool, err);
-        if (err->exc) goto L_hdl_m9t1;
+        if (err->exc) { m9ln = 355; goto L_hdl_m9t1; };
     } }
     bool m9t13 = ((JsonUtf_Cur (c, c_pool, err) < 48u) || (JsonUtf_Cur (c, c_pool, err) > 57u));
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 356; goto L_hdl_m9t1; };
     if (m9t13) {
       JsonUtf_Fail (c, c_pool, ((m9_sl_UTF8){ (uint8_t *) m9s28, 26 }), err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 357; goto L_hdl_m9t1; };
     }
     ex = INT64_C(0);
     for (;;) {
       bool m9t14 = ((JsonUtf_Cur (c, c_pool, err) >= 48u) && (JsonUtf_Cur (c, c_pool, err) <= 57u));
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 359; goto L_hdl_m9t1; };
       if (!(m9t14)) break;
       if ((ex < INT64_C(1000))) {
         { __typeof__(ex) m9v = m9_sub_i64 (m9_add_i64 (m9_mul_i64 (ex, INT64_C(10), err), (int64_t)(JsonUtf_Cur (c, c_pool, err)), err), (int64_t)(48u), err);
-          if (err->exc) goto L_hdl_m9t1;
+          if (err->exc) { m9ln = 360; goto L_hdl_m9t1; };
           ex = m9v;
         }
       }
       JsonUtf_Bump (c, c_pool, err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 361; goto L_hdl_m9t1; };
     }
     for (;;) {
       if (!((ex > INT64_C(0)))) break;
@@ -2050,7 +2224,7 @@ static JsonUtf_Node * JsonUtf_ParseNumber (JsonUtf_Cursor * *c, m9_pool *c_pool,
         r = (r * 10.0);
       }
       { __typeof__(ex) m9v = m9_sub_i64 (ex, INT64_C(1), err);
-        if (err->exc) goto L_hdl_m9t1;
+        if (err->exc) { m9ln = 365; goto L_hdl_m9t1; };
         ex = m9v;
       }
     }
@@ -2058,27 +2232,27 @@ static JsonUtf_Node * JsonUtf_ParseNumber (JsonUtf_Cursor * *c, m9_pool *c_pool,
   if (neg) {
     r = (- r);
     { __typeof__(ip) m9v = m9_neg_i64 (ip, err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 368; goto L_hdl_m9t1; };
       ip = m9v;
     }
   }
   if ((!isInt)) {
     { __typeof__(len) m9v = m9_sub_i64 (({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->pos, start, err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 372; goto L_hdl_m9t1; };
       len = m9v;
     }
     { __typeof__(tb) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), m9_add_i64 (len, INT64_C(1), err), err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 373; goto L_hdl_m9t1; };
       tb = m9v;
     }
     ({ __typeof__ (({ __auto_type m9t15 = tb; int64_t m9t15a = INT64_C(0), m9t15n = len; int64_t m9t15o = m9_chk_slice (m9t15a, m9t15n, m9t15.len, err); (__typeof__(m9t15)){ m9t15.p + m9t15o, err->exc ? 0 : m9t15n }; })) m9cdq = (({ __auto_type m9t15 = tb; int64_t m9t15a = INT64_C(0), m9t15n = len; int64_t m9t15o = m9_chk_slice (m9t15a, m9t15n, m9t15.len, err); (__typeof__(m9t15)){ m9t15.p + m9t15o, err->exc ? 0 : m9t15n }; })); __typeof__ (m9cdq.p) m9cdp = m9cdq.p; int64_t m9cdn = m9cdq.len; __typeof__ (({ __auto_type m9t16 = m9_utf_octets (({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->src); int64_t m9t16a = start, m9t16n = len; int64_t m9t16o = m9_chk_slice (m9t16a, m9t16n, m9t16.len, err); (__typeof__(m9t16)){ m9t16.p + m9t16o, err->exc ? 0 : m9t16n }; })) m9csq = (({ __auto_type m9t16 = m9_utf_octets (({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->src); int64_t m9t16a = start, m9t16n = len; int64_t m9t16o = m9_chk_slice (m9t16a, m9t16n, m9t16.len, err); (__typeof__(m9t16)){ m9t16.p + m9t16o, err->exc ? 0 : m9t16n }; })); __typeof__ (m9csq.p) m9csp = m9csq.p; int64_t m9csn = m9csq.len; m9_copy ((void *) m9cdp, m9cdn, (const void *) m9csp, m9csn, sizeof (*m9cdp), err); });
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 374; goto L_hdl_m9t1; };
     (*(uint8_t *) m9_at (tb.p, len, tb.len, sizeof (uint8_t), err)) = INT64_C(0);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 375; goto L_hdl_m9t1; };
     r = (double)(m9_strtod (((void *)(tb).p)));
   }
   { __typeof__(n) m9v = (JsonUtf_Node *) m9_pool_alloc (c_pool, sizeof (JsonUtf_Node), 1, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 378; goto L_hdl_m9t1; };
     n = m9v;
   }
   n->v = ((JsonUtf_Value){ .tag = JsonUtf_Value_Num, .u.Num = { r, ip, isInt } });
@@ -2090,16 +2264,17 @@ L_hdl_m9t1: ;
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
     JsonUtf_Fail (c, c_pool, ((m9_sl_UTF8){ (uint8_t *) m9s29, 22 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 383; goto L_ret; };
     err->res = m9res;
     m9ret = (JsonUtf_Node *) m9_pool_alloc (c_pool, sizeof (JsonUtf_Node), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 384; goto L_ret; };
     goto L_ret;
     goto L_dn_m9t2;
   }
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_adopt_if (&m9frame, c_pool, (*c));
@@ -2114,10 +2289,12 @@ static bool JsonUtf_Match (JsonUtf_Cursor * *c, m9_pool *c_pool, m9_sl_UTF8 lit,
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.Match"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   int64_t i = 0; (void) i;
   bool m9t3 = (m9_add_i64 (({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->pos, Text_BLen (lit, err), err) > Text_BLen (({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->src, err));
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 391; goto L_hdl_m9t1; };
   if (m9t3) {
     err->res = m9res;
     m9ret = false;
@@ -2126,12 +2303,12 @@ static bool JsonUtf_Match (JsonUtf_Cursor * *c, m9_pool *c_pool, m9_sl_UTF8 lit,
   { __typeof__(i) m9t4to;
   i = INT64_C(0);
   m9t4to = m9_sub_i64 (Text_BLen (lit, err), INT64_C(1), err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 392; goto L_hdl_m9t1; };
   if (i <= m9t4to) for (;;) {
     { __typeof__(m9_add_i64 (({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->pos, i, err)) m9a4 = m9_add_i64 (({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->pos, i, err);
-      if (err->exc) goto L_hdl_m9t1;
+      if (err->exc) { m9ln = 393; goto L_hdl_m9t1; };
     bool m9t5 = ((int64_t)(Text_BAt (({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->src, m9a4, err)) != (int64_t)(Text_BAt (lit, i, err)));
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 393; goto L_hdl_m9t1; };
     if (m9t5) {
       err->res = m9res;
       m9ret = false;
@@ -2141,11 +2318,11 @@ static bool JsonUtf_Match (JsonUtf_Cursor * *c, m9_pool *c_pool, m9_sl_UTF8 lit,
     i += 1;
   } }
   { __typeof__(({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->pos, Text_BLen (lit, err), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 395; goto L_hdl_m9t1; };
     ({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->pos = m9v;
   }
   { __typeof__(({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->col) m9v = m9_add_i64 (({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->col, Text_BLen (lit, err), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 396; goto L_hdl_m9t1; };
     ({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->col = m9v;
   }
   err->res = m9res;
@@ -2163,6 +2340,7 @@ L_hdl_m9t1: ;
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, c_pool, (*c));
   m9_pool_free (&m9frame);
@@ -2175,6 +2353,8 @@ static JsonUtf_Node * JsonUtf_MemberNode (JsonUtf_Node * obj, int64_t i, m9_stat
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "JsonUtf.MemberNode"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * m9ret = NULL;
   JsonUtf_Node * c = NULL; (void) c;
   int64_t n = 0; (void) n;
@@ -2187,6 +2367,7 @@ static JsonUtf_Node * JsonUtf_MemberNode (JsonUtf_Node * obj, int64_t i, m9_stat
   default: {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s30, 15 })) m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s30, 15 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &JsonUtf_TypeMismatch);
+    m9_site (err, 502, m9pn);
     goto L_ret;
   } break;
   } }
@@ -2200,14 +2381,16 @@ static JsonUtf_Node * JsonUtf_MemberNode (JsonUtf_Node * obj, int64_t i, m9_stat
       goto L_ret;
     }
     { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 507; goto L_ret; };
       n = m9v;
     }
     c = p->next;
   }
   m9_raise (err, &m9_exc_IndexError);
+  m9_site (err, 510, m9pn);
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -2220,6 +2403,8 @@ static bool JsonUtf_HasBackslash (m9_sl_UTF8 t, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.HasBackslash"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   m9_sl_BYTE o = {0}; (void) o;
   uint8_t b = 0; (void) b;
@@ -2236,6 +2421,7 @@ static bool JsonUtf_HasBackslash (m9_sl_UTF8 t, m9_state *err)
   m9ret = false;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2247,30 +2433,33 @@ static int64_t JsonUtf_HexVal (uint32_t ch, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.HexVal"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   if (((ch >= 48u) && (ch <= 57u))) {
     err->res = m9res;
     m9ret = m9_sub_i64 ((int64_t)(ch), (int64_t)(48u), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 602; goto L_ret; };
     goto L_ret;
   }
   if (((ch >= 97u) && (ch <= 102u))) {
     err->res = m9res;
     m9ret = m9_add_i64 (m9_sub_i64 ((int64_t)(ch), (int64_t)(97u), err), INT64_C(10), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 603; goto L_ret; };
     goto L_ret;
   }
   if (((ch >= 65u) && (ch <= 70u))) {
     err->res = m9res;
     m9ret = m9_add_i64 (m9_sub_i64 ((int64_t)(ch), (int64_t)(65u), err), INT64_C(10), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 604; goto L_ret; };
     goto L_ret;
   }
   err->res = m9res;
   m9ret = m9_neg_i64 (INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 605; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2282,15 +2471,18 @@ static int64_t JsonUtf_Hex4 (m9_sl_UTF8 t, int64_t at, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.Hex4"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   int64_t v = 0; (void) v;
   int64_t k = 0; (void) k;
   int64_t h = 0; (void) h;
   bool m9t1 = (m9_add_i64 (at, INT64_C(3), err) >= Text_BLen (t, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 612; goto L_ret; };
   if (m9t1) {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s31, 24 })) m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s31, 24 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &JsonUtf_TypeMismatch);
+    m9_site (err, 612, m9pn);
     goto L_ret;
   }
   v = INT64_C(0);
@@ -2299,11 +2491,11 @@ static int64_t JsonUtf_Hex4 (m9_sl_UTF8 t, int64_t at, m9_state *err)
   m9t3to = INT64_C(3);
   if (k <= m9t3to) for (;;) {
     { __typeof__(m9_add_i64 (at, k, err)) m9a5 = m9_add_i64 (at, k, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 615; goto L_ret; };
     { __typeof__(Text_BChar (t, m9a5, err)) m9a6 = Text_BChar (t, m9a5, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 615; goto L_ret; };
     { __typeof__(h) m9v = JsonUtf_HexVal (m9a6, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 615; goto L_ret; };
       h = m9v;
     }
     }
@@ -2311,10 +2503,11 @@ static int64_t JsonUtf_Hex4 (m9_sl_UTF8 t, int64_t at, m9_state *err)
     if ((h < INT64_C(0))) {
       { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s32, 25 })) m9t4 = ((m9_sl_UTF8){ (uint8_t *) m9s32, 25 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
       m9_raise (err, &JsonUtf_TypeMismatch);
+      m9_site (err, 616, m9pn);
       goto L_ret;
     }
     { __typeof__(v) m9v = m9_add_i64 (m9_mul_i64 (v, INT64_C(16), err), h, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 617; goto L_ret; };
       v = m9v;
     }
     if ((uint64_t) m9t3to - (uint64_t) k < (uint64_t) 1) break;
@@ -2324,6 +2517,7 @@ static int64_t JsonUtf_Hex4 (m9_sl_UTF8 t, int64_t at, m9_state *err)
   m9ret = v;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2335,6 +2529,8 @@ static m9_sl_UTF8 JsonUtf_DecodeChars (m9_sl_UTF8 t, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.DecodeChars"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
@@ -2344,137 +2540,143 @@ static m9_sl_UTF8 JsonUtf_DecodeChars (m9_sl_UTF8 t, m9_state *err)
   int64_t from = 0; (void) from;
   uint32_t ch = 0; (void) ch;
   { __typeof__(d) m9v = DynStr_New (&(scratch), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 635; goto L_ret; };
     d = m9v;
   }
   i = INT64_C(0);
   from = INT64_C(0);
   for (;;) {
     bool m9t1 = (i < Text_BLen (t, err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 638; goto L_ret; };
     if (!(m9t1)) break;
     bool m9t2 = ((int64_t)(Text_BAt (t, i, err)) == INT64_C(92));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 639; goto L_ret; };
     if (m9t2) {
       { __typeof__(m9_utf_slice (t, from, m9_sub_i64 (i, from, err), err)) m9a7 = m9_utf_slice (t, from, m9_sub_i64 (i, from, err), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 640; goto L_ret; };
       DynStr_Append (&(d), &(scratch), m9a7, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 640; goto L_ret; };
       }
       bool m9t4 = (m9_add_i64 (i, INT64_C(1), err) >= Text_BLen (t, err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 641; goto L_ret; };
       if (m9t4) {
         { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s33, 23 })) m9t5 = ((m9_sl_UTF8){ (uint8_t *) m9s33, 23 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
         m9_raise (err, &JsonUtf_TypeMismatch);
+        m9_site (err, 641, m9pn);
         goto L_ret;
       }
       { __typeof__(m9_add_i64 (i, INT64_C(1), err)) m9a8 = m9_add_i64 (i, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 642; goto L_ret; };
       { __typeof__(ch) m9v = Text_BChar (t, m9a8, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 642; goto L_ret; };
         ch = m9v;
       }
       }
       { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(2), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 643; goto L_ret; };
         i = m9v;
       }
       if ((((ch == 34u) || (ch == 47u)) || ((int64_t)(ch) == INT64_C(92)))) {
         DynStr_AppendChar (&(d), &(scratch), ch, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 644; goto L_ret; };
       } else {
         if ((ch == 98u)) {
           DynStr_AppendChar (&(d), &(scratch), 8u, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 645; goto L_ret; };
       } else {
         if ((ch == 116u)) {
           DynStr_AppendChar (&(d), &(scratch), 9u, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 646; goto L_ret; };
       } else {
         if ((ch == 110u)) {
           DynStr_AppendChar (&(d), &(scratch), 10u, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 647; goto L_ret; };
       } else {
         if ((ch == 102u)) {
           DynStr_AppendChar (&(d), &(scratch), 12u, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 648; goto L_ret; };
       } else {
         if ((ch == 114u)) {
           DynStr_AppendChar (&(d), &(scratch), 13u, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 649; goto L_ret; };
       } else {
         if ((ch == 117u)) {
           { __typeof__(v) m9v = JsonUtf_Hex4 (t, i, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 651; goto L_ret; };
             v = m9v;
           }
           { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(4), err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 652; goto L_ret; };
             i = m9v;
           }
           if (((v >= INT64_C(55296)) && (v <= INT64_C(56319)))) {
-            bool m9t7 = ({ bool m9t6 = ((m9_add_i64 (i, INT64_C(5), err) < Text_BLen (t, err)) && ((int64_t)(Text_BAt (t, i, err)) == INT64_C(92))); if (m9t6) { { __typeof__(m9_add_i64 (i, INT64_C(1), err)) m9a9 = m9_add_i64 (i, INT64_C(1), err);   if (err->exc) goto L_ret; m9t6 = (Text_BIs (t, m9a9, 117u, err)); } } m9t6; });
-            if (err->exc) goto L_ret;
+            bool m9t7 = ({ bool m9t6 = ((m9_add_i64 (i, INT64_C(5), err) < Text_BLen (t, err)) && ((int64_t)(Text_BAt (t, i, err)) == INT64_C(92))); if (m9t6) { { __typeof__(m9_add_i64 (i, INT64_C(1), err)) m9a9 = m9_add_i64 (i, INT64_C(1), err);   if (err->exc) { m9ln = 654; goto L_ret; }; m9t6 = (Text_BIs (t, m9a9, 117u, err)); } } m9t6; });
+            if (err->exc) { m9ln = 654; goto L_ret; };
             if (m9t7) {
               { __typeof__(m9_add_i64 (i, INT64_C(2), err)) m9a10 = m9_add_i64 (i, INT64_C(2), err);
-                if (err->exc) goto L_ret;
+                if (err->exc) { m9ln = 655; goto L_ret; };
               { __typeof__(lo) m9v = JsonUtf_Hex4 (t, m9a10, err);
-                if (err->exc) goto L_ret;
+                if (err->exc) { m9ln = 655; goto L_ret; };
                 lo = m9v;
               }
               }
               if (((lo < INT64_C(56320)) || (lo > INT64_C(57343)))) {
                 { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s34, 32 })) m9t8 = ((m9_sl_UTF8){ (uint8_t *) m9s34, 32 }); err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
                 m9_raise (err, &JsonUtf_TypeMismatch);
+                m9_site (err, 657, m9pn);
                 goto L_ret;
               }
               { __typeof__(v) m9v = m9_add_i64 (m9_add_i64 (INT64_C(65536), m9_mul_i64 ((m9_sub_i64 (v, INT64_C(55296), err)), INT64_C(1024), err), err), (m9_sub_i64 (lo, INT64_C(56320), err)), err);
-                if (err->exc) goto L_ret;
+                if (err->exc) { m9ln = 659; goto L_ret; };
                 v = m9v;
               }
               { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(6), err);
-                if (err->exc) goto L_ret;
+                if (err->exc) { m9ln = 660; goto L_ret; };
                 i = m9v;
               }
             } else {
               { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s35, 32 })) m9t9 = ((m9_sl_UTF8){ (uint8_t *) m9s35, 32 }); err->s[0].p = m9t9.p; err->s[0].len = m9t9.len; m9_pay_keep (err, 0, sizeof (*m9t9.p)); }
               m9_raise (err, &JsonUtf_TypeMismatch);
+              m9_site (err, 662, m9pn);
               goto L_ret;
             }
           } else {
             if (((v >= INT64_C(56320)) && (v <= INT64_C(57343)))) {
               { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s36, 32 })) m9t10 = ((m9_sl_UTF8){ (uint8_t *) m9s36, 32 }); err->s[0].p = m9t10.p; err->s[0].len = m9t10.len; m9_pay_keep (err, 0, sizeof (*m9t10.p)); }
               m9_raise (err, &JsonUtf_TypeMismatch);
+              m9_site (err, 665, m9pn);
               goto L_ret;
           } }
           { __typeof__(m9_chr (v, err)) m9a11 = m9_chr (v, err);
-            if (err->exc) goto L_ret;
+            if (err->exc) { m9ln = 667; goto L_ret; };
           DynStr_AppendChar (&(d), &(scratch), m9a11, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 667; goto L_ret; };
           }
       } else {
         { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s37, 24 })) m9t11 = ((m9_sl_UTF8){ (uint8_t *) m9s37, 24 }); err->s[0].p = m9t11.p; err->s[0].len = m9t11.len; m9_pay_keep (err, 0, sizeof (*m9t11.p)); }
         m9_raise (err, &JsonUtf_TypeMismatch);
+        m9_site (err, 669, m9pn);
         goto L_ret;
       } } } } } } }
       from = i;
     } else {
       { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 673; goto L_ret; };
         i = m9v;
       }
     }
   }
   { __typeof__(m9_utf_slice (t, from, m9_sub_i64 (i, from, err), err)) m9a12 = m9_utf_slice (t, from, m9_sub_i64 (i, from, err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 676; goto L_ret; };
   DynStr_Append (&(d), &(scratch), m9a12, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 676; goto L_ret; };
   }
   err->res = m9res;
   m9ret = DynStr_View (d, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 677; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9ret = m9_rehome_utf (&scratch, m9res, m9ret, err);
@@ -2489,9 +2691,11 @@ static m9_sl_UTF8 JsonUtf_DecodeStr (m9_sl_UTF8 t, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.DecodeStr"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   bool m9t1 = (!JsonUtf_HasBackslash (t, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 685; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
     m9ret = t;
@@ -2499,12 +2703,13 @@ static m9_sl_UTF8 JsonUtf_DecodeStr (m9_sl_UTF8 t, m9_state *err)
   }
   err->res = m9res;
   { __typeof__(t) m9a13 = t;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 686; goto L_ret; };
   m9ret = JsonUtf_DecodeChars (m9a13, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 686; goto L_ret; };
   }
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -2517,18 +2722,21 @@ static uint32_t JsonUtf_HexDigit (int64_t v, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.HexDigit"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   uint32_t m9ret = 0;
   if ((v < INT64_C(10))) {
     err->res = m9res;
     m9ret = m9_chr (m9_add_i64 ((int64_t)(48u), v, err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 701; goto L_ret; };
     goto L_ret;
   }
   err->res = m9res;
   m9ret = m9_chr (m9_sub_i64 (m9_add_i64 ((int64_t)(97u), v, err), INT64_C(10), err), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 702; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2540,6 +2748,8 @@ static void JsonUtf_EscapeBody (DynStr_DString * *d, m9_pool *d_pool, m9_sl_UTF8
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.EscapeBody"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t v = 0; (void) v;
   uint32_t ch = 0; (void) ch;
   { __typeof__(t) m9t1s = t;
@@ -2547,71 +2757,72 @@ static void JsonUtf_EscapeBody (DynStr_DString * *d, m9_pool *d_pool, m9_sl_UTF8
     v = (int64_t)(ch);
     if ((ch == 34u)) {
       DynStr_AppendChar (d, d_pool, 92u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 717; goto L_ret; };
       DynStr_AppendChar (d, d_pool, 34u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 717; goto L_ret; };
     } else {
       if ((v == INT64_C(92))) {
         DynStr_AppendChar (d, d_pool, 92u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 718; goto L_ret; };
         DynStr_AppendChar (d, d_pool, 92u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 718; goto L_ret; };
     } else {
       if ((v == INT64_C(8))) {
         DynStr_AppendChar (d, d_pool, 92u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 719; goto L_ret; };
         DynStr_AppendChar (d, d_pool, 98u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 719; goto L_ret; };
     } else {
       if ((v == INT64_C(9))) {
         DynStr_AppendChar (d, d_pool, 92u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 720; goto L_ret; };
         DynStr_AppendChar (d, d_pool, 116u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 720; goto L_ret; };
     } else {
       if ((v == INT64_C(10))) {
         DynStr_AppendChar (d, d_pool, 92u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 721; goto L_ret; };
         DynStr_AppendChar (d, d_pool, 110u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 721; goto L_ret; };
     } else {
       if ((v == INT64_C(12))) {
         DynStr_AppendChar (d, d_pool, 92u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 722; goto L_ret; };
         DynStr_AppendChar (d, d_pool, 102u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 722; goto L_ret; };
     } else {
       if ((v == INT64_C(13))) {
         DynStr_AppendChar (d, d_pool, 92u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 723; goto L_ret; };
         DynStr_AppendChar (d, d_pool, 114u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 723; goto L_ret; };
     } else {
       if ((v < INT64_C(32))) {
         DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s38, 4 }), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 725; goto L_ret; };
         { __typeof__(m9_div_i64 (v, INT64_C(16), err)) m9a14 = m9_div_i64 (v, INT64_C(16), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 726; goto L_ret; };
         { __typeof__(JsonUtf_HexDigit (m9a14, err)) m9a15 = JsonUtf_HexDigit (m9a14, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 726; goto L_ret; };
         DynStr_AppendChar (d, d_pool, m9a15, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 726; goto L_ret; };
         }
         }
         { __typeof__(m9_mod_i64 (v, INT64_C(16), err)) m9a16 = m9_mod_i64 (v, INT64_C(16), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 727; goto L_ret; };
         { __typeof__(JsonUtf_HexDigit (m9a16, err)) m9a17 = JsonUtf_HexDigit (m9a16, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 727; goto L_ret; };
         DynStr_AppendChar (d, d_pool, m9a17, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 727; goto L_ret; };
         }
         }
     } else {
       DynStr_AppendChar (d, d_pool, ch, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 729; goto L_ret; };
     } } } } } } } }
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -2624,16 +2835,19 @@ static void JsonUtf_EmitJStr (DynStr_DString * *d, m9_pool *d_pool, m9_sl_UTF8 t
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.EmitJStr"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   DynStr_AppendChar (d, d_pool, 34u, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 738; goto L_ret; };
   { __typeof__(t) m9a18 = t;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 739; goto L_ret; };
   JsonUtf_EscapeBody (d, d_pool, m9a18, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 739; goto L_ret; };
   }
   DynStr_AppendChar (d, d_pool, 34u, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 740; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -2646,23 +2860,26 @@ static void JsonUtf_EmitNum (DynStr_DString * *d, m9_pool *d_pool, JsonUtf_Node 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.EmitNum"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9t1 = (Text_BLen (n->raw, err) > INT64_C(0));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 781; goto L_ret; };
   if (m9t1) {
     { __typeof__(n->raw) m9a19 = n->raw;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 781; goto L_ret; };
     DynStr_Append (d, d_pool, m9a19, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 781; goto L_ret; };
     }
   } else {
     if (isInt) {
       DynStr_AppendI64 (d, d_pool, i, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 782; goto L_ret; };
   } else {
     JsonUtf_AppendF64 (d, d_pool, r, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 783; goto L_ret; };
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -2675,6 +2892,8 @@ static void JsonUtf_EmitVal (DynStr_DString * *d, m9_pool *d_pool, JsonUtf_Node 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.EmitVal"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * c = NULL; (void) c;
   bool sep = false; (void) sep;
   { __typeof__(n->v) m9t1 = n->v;
@@ -2682,7 +2901,7 @@ static void JsonUtf_EmitVal (DynStr_DString * *d, m9_pool *d_pool, JsonUtf_Node 
   case JsonUtf_Value_Object: {
     JsonUtf_Node * first = m9t1.u.Object.first; (void) first;
     DynStr_AppendChar (d, d_pool, 123u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 794; goto L_ret; };
     c = first;
     sep = false;
     for (;;) {
@@ -2690,36 +2909,36 @@ static void JsonUtf_EmitVal (DynStr_DString * *d, m9_pool *d_pool, JsonUtf_Node 
       if (!(p != NULL)) break;
       if (sep) {
         DynStr_AppendChar (d, d_pool, 44u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 799; goto L_ret; };
         if (spaced) {
           DynStr_AppendChar (d, d_pool, 32u, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 800; goto L_ret; };
         }
       }
       sep = true;
       { __typeof__(JsonUtf_DecodeStr (p->name, err)) m9a20 = JsonUtf_DecodeStr (p->name, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 803; goto L_ret; };
       JsonUtf_EmitJStr (d, d_pool, m9a20, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 803; goto L_ret; };
       }
       DynStr_AppendChar (d, d_pool, 58u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 804; goto L_ret; };
       if (spaced) {
         DynStr_AppendChar (d, d_pool, 32u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 805; goto L_ret; };
       }
       JsonUtf_EmitVal (d, d_pool, p, spaced, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 806; goto L_ret; };
       c = p->next;
     }
     DynStr_AppendChar (d, d_pool, 125u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 809; goto L_ret; };
   } break;
   case JsonUtf_Value_Arr: {
     JsonUtf_Node * first = m9t1.u.Arr.first; (void) first;
     int64_t count = m9t1.u.Arr.count; (void) count;
     DynStr_AppendChar (d, d_pool, 91u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 811; goto L_ret; };
     c = first;
     sep = false;
     for (;;) {
@@ -2727,26 +2946,26 @@ static void JsonUtf_EmitVal (DynStr_DString * *d, m9_pool *d_pool, JsonUtf_Node 
       if (!(p != NULL)) break;
       if (sep) {
         DynStr_AppendChar (d, d_pool, 44u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 816; goto L_ret; };
         if (spaced) {
           DynStr_AppendChar (d, d_pool, 32u, err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 817; goto L_ret; };
         }
       }
       sep = true;
       JsonUtf_EmitVal (d, d_pool, p, spaced, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 820; goto L_ret; };
       c = p->next;
     }
     DynStr_AppendChar (d, d_pool, 93u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 823; goto L_ret; };
   } break;
   case JsonUtf_Value_Str: {
     m9_sl_UTF8 t = m9t1.u.Str.s; (void) t;
     { __typeof__(JsonUtf_DecodeStr (t, err)) m9a21 = JsonUtf_DecodeStr (t, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 824; goto L_ret; };
     JsonUtf_EmitJStr (d, d_pool, m9a21, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 824; goto L_ret; };
     }
   } break;
   case JsonUtf_Value_Num: {
@@ -2754,26 +2973,27 @@ static void JsonUtf_EmitVal (DynStr_DString * *d, m9_pool *d_pool, JsonUtf_Node 
     int64_t i = m9t1.u.Num.i; (void) i;
     bool isInt = m9t1.u.Num.isInt; (void) isInt;
     JsonUtf_EmitNum (d, d_pool, n, r, i, isInt, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 825; goto L_ret; };
   } break;
   case JsonUtf_Value_Bool: {
     bool b = m9t1.u.Bool.b; (void) b;
     if (b) {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s39, 4 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 827; goto L_ret; };
     } else {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s40, 5 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 827; goto L_ret; };
     }
   } break;
   case JsonUtf_Value_Null:
   {
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s41, 4 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 828; goto L_ret; };
   } break;
   default: m9_trap_tag ();
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -2786,6 +3006,8 @@ static void JsonUtf_EmitSorted (DynStr_DString * *d, m9_pool *d_pool, JsonUtf_No
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.EmitSorted"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * c = NULL; (void) c;
   m9_sl_JsonUtf_Nodep ms = {0}; (void) ms;
   m9_sl_m9_sl_UTF8 nms = {0}; (void) nms;
@@ -2805,17 +3027,17 @@ static void JsonUtf_EmitSorted (DynStr_DString * *d, m9_pool *d_pool, JsonUtf_No
       JsonUtf_Node * p = c;
       if (!(p != NULL)) break;
       { __typeof__(cnt) m9v = m9_add_i64 (cnt, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 874; goto L_ret; };
         cnt = m9v;
       }
       c = p->next;
     }
     { __typeof__(ms) m9v = M9_POOL_SL (m9_sl_JsonUtf_Nodep, JsonUtf_Node *, d_pool, cnt, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 875; goto L_ret; };
       ms = m9v;
     }
     { __typeof__(nms) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, d_pool, cnt, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 876; goto L_ret; };
       nms = m9v;
     }
     cnt = INT64_C(0);
@@ -2824,14 +3046,14 @@ static void JsonUtf_EmitSorted (DynStr_DString * *d, m9_pool *d_pool, JsonUtf_No
       JsonUtf_Node * p = c;
       if (!(p != NULL)) break;
       (*(JsonUtf_Node * *) m9_at (ms.p, cnt, ms.len, sizeof (JsonUtf_Node *), err)) = p;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 880; goto L_ret; };
       { __typeof__((*(m9_sl_UTF8 *) m9_at (nms.p, cnt, nms.len, sizeof (m9_sl_UTF8), err))) m9v = JsonUtf_DecodeStr (p->name, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 881; goto L_ret; };
         (*(m9_sl_UTF8 *) m9_at (nms.p, cnt, nms.len, sizeof (m9_sl_UTF8), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 881; goto L_ret; };
       }
       { __typeof__(cnt) m9v = m9_add_i64 (cnt, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 882; goto L_ret; };
         cnt = m9v;
       }
       c = p->next;
@@ -2839,37 +3061,37 @@ static void JsonUtf_EmitSorted (DynStr_DString * *d, m9_pool *d_pool, JsonUtf_No
     { __typeof__(i) m9t2to;
     i = INT64_C(1);
     m9t2to = m9_sub_i64 (cnt, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 885; goto L_ret; };
     if (i <= m9t2to) for (;;) {
       j = i;
       for (;;) {
-        bool m9t4 = ({ bool m9t3 = (j > INT64_C(0)); if (m9t3) { { __typeof__((*(m9_sl_UTF8 *) m9_at (nms.p, j, nms.len, sizeof (m9_sl_UTF8), err))) m9a22 = (*(m9_sl_UTF8 *) m9_at (nms.p, j, nms.len, sizeof (m9_sl_UTF8), err));   if (err->exc) goto L_ret; { __typeof__((*(m9_sl_UTF8 *) m9_at (nms.p, m9_sub_i64 (j, INT64_C(1), err), nms.len, sizeof (m9_sl_UTF8), err))) m9a23 = (*(m9_sl_UTF8 *) m9_at (nms.p, m9_sub_i64 (j, INT64_C(1), err), nms.len, sizeof (m9_sl_UTF8), err));   if (err->exc) goto L_ret; m9t3 = ((Text_CompareUtf (m9a22, m9a23, err) < INT64_C(0))); } } } m9t3; });
-        if (err->exc) goto L_ret;
+        bool m9t4 = ({ bool m9t3 = (j > INT64_C(0)); if (m9t3) { { __typeof__((*(m9_sl_UTF8 *) m9_at (nms.p, j, nms.len, sizeof (m9_sl_UTF8), err))) m9a22 = (*(m9_sl_UTF8 *) m9_at (nms.p, j, nms.len, sizeof (m9_sl_UTF8), err));   if (err->exc) { m9ln = 887; goto L_ret; }; { __typeof__((*(m9_sl_UTF8 *) m9_at (nms.p, m9_sub_i64 (j, INT64_C(1), err), nms.len, sizeof (m9_sl_UTF8), err))) m9a23 = (*(m9_sl_UTF8 *) m9_at (nms.p, m9_sub_i64 (j, INT64_C(1), err), nms.len, sizeof (m9_sl_UTF8), err));   if (err->exc) { m9ln = 887; goto L_ret; }; m9t3 = ((Text_CompareUtf (m9a22, m9a23, err) < INT64_C(0))); } } } m9t3; });
+        if (err->exc) { m9ln = 887; goto L_ret; };
         if (!(m9t4)) break;
         { __typeof__(t) m9v = ({ __auto_type m9n = ((*(JsonUtf_Node * *) m9_at (ms.p, j, ms.len, sizeof (JsonUtf_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 888; goto L_ret; };
           t = m9v;
         }
         { __typeof__((*(JsonUtf_Node * *) m9_at (ms.p, j, ms.len, sizeof (JsonUtf_Node *), err))) m9v = ({ __auto_type m9n = ((*(JsonUtf_Node * *) m9_at (ms.p, m9_sub_i64 (j, INT64_C(1), err), ms.len, sizeof (JsonUtf_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 888; goto L_ret; };
           (*(JsonUtf_Node * *) m9_at (ms.p, j, ms.len, sizeof (JsonUtf_Node *), err)) = m9v;
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 888; goto L_ret; };
         }
         (*(JsonUtf_Node * *) m9_at (ms.p, m9_sub_i64 (j, INT64_C(1), err), ms.len, sizeof (JsonUtf_Node *), err)) = t;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 888; goto L_ret; };
         { __typeof__(ns) m9v = (*(m9_sl_UTF8 *) m9_at (nms.p, j, nms.len, sizeof (m9_sl_UTF8), err));
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 889; goto L_ret; };
           ns = m9v;
         }
         { __typeof__((*(m9_sl_UTF8 *) m9_at (nms.p, j, nms.len, sizeof (m9_sl_UTF8), err))) m9v = (*(m9_sl_UTF8 *) m9_at (nms.p, m9_sub_i64 (j, INT64_C(1), err), nms.len, sizeof (m9_sl_UTF8), err));
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 889; goto L_ret; };
           (*(m9_sl_UTF8 *) m9_at (nms.p, j, nms.len, sizeof (m9_sl_UTF8), err)) = m9v;
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 889; goto L_ret; };
         }
         (*(m9_sl_UTF8 *) m9_at (nms.p, m9_sub_i64 (j, INT64_C(1), err), nms.len, sizeof (m9_sl_UTF8), err)) = ns;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 889; goto L_ret; };
         { __typeof__(j) m9v = m9_sub_i64 (j, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          if (err->exc) { m9ln = 890; goto L_ret; };
           j = m9v;
         }
       }
@@ -2877,41 +3099,41 @@ static void JsonUtf_EmitSorted (DynStr_DString * *d, m9_pool *d_pool, JsonUtf_No
       i += 1;
     } }
     DynStr_AppendChar (d, d_pool, 123u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 893; goto L_ret; };
     sep = false;
     { __typeof__(i) m9t5to;
     i = INT64_C(0);
     m9t5to = m9_sub_i64 (cnt, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 895; goto L_ret; };
     if (i <= m9t5to) for (;;) {
       if (sep) {
         DynStr_AppendChar (d, d_pool, 44u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 896; goto L_ret; };
       }
       sep = true;
       { __typeof__((*(m9_sl_UTF8 *) m9_at (nms.p, i, nms.len, sizeof (m9_sl_UTF8), err))) m9a24 = (*(m9_sl_UTF8 *) m9_at (nms.p, i, nms.len, sizeof (m9_sl_UTF8), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 898; goto L_ret; };
       JsonUtf_EmitJStr (d, d_pool, m9a24, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 898; goto L_ret; };
       }
       DynStr_AppendChar (d, d_pool, 58u, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 899; goto L_ret; };
       { __typeof__(({ __auto_type m9n = ((*(JsonUtf_Node * *) m9_at (ms.p, i, ms.len, sizeof (JsonUtf_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a25 = ({ __auto_type m9n = ((*(JsonUtf_Node * *) m9_at (ms.p, i, ms.len, sizeof (JsonUtf_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 900; goto L_ret; };
       JsonUtf_EmitSorted (d, d_pool, m9a25, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 900; goto L_ret; };
       }
       if ((uint64_t) m9t5to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
     } }
     DynStr_AppendChar (d, d_pool, 125u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 902; goto L_ret; };
   } break;
   case JsonUtf_Value_Arr: {
     JsonUtf_Node * first = m9t1.u.Arr.first; (void) first;
     int64_t count = m9t1.u.Arr.count; (void) count;
     DynStr_AppendChar (d, d_pool, 91u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 904; goto L_ret; };
     c = first;
     sep = false;
     for (;;) {
@@ -2919,22 +3141,23 @@ static void JsonUtf_EmitSorted (DynStr_DString * *d, m9_pool *d_pool, JsonUtf_No
       if (!(p != NULL)) break;
       if (sep) {
         DynStr_AppendChar (d, d_pool, 44u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 908; goto L_ret; };
       }
       sep = true;
       JsonUtf_EmitSorted (d, d_pool, p, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 910; goto L_ret; };
       c = p->next;
     }
     DynStr_AppendChar (d, d_pool, 93u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 913; goto L_ret; };
   } break;
   default: {
     JsonUtf_EmitVal (d, d_pool, n, false, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 915; goto L_ret; };
   } break;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -2947,20 +3170,23 @@ static void JsonUtf_Indent (DynStr_DString * *d, m9_pool *d_pool, int64_t depth,
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.Indent"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   DynStr_AppendChar (d, d_pool, 10u, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 934; goto L_ret; };
   { __typeof__(i) m9t1to;
   i = INT64_C(1);
   m9t1to = m9_mul_i64 (depth, INT64_C(2), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 935; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     DynStr_AppendChar (d, d_pool, 32u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 935; goto L_ret; };
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -2973,6 +3199,8 @@ static void JsonUtf_EmitPretty (DynStr_DString * *d, m9_pool *d_pool, JsonUtf_No
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.EmitPretty"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * c = NULL; (void) c;
   bool sep = false; (void) sep;
   int64_t cnt = 0; (void) cnt;
@@ -2986,95 +3214,96 @@ static void JsonUtf_EmitPretty (DynStr_DString * *d, m9_pool *d_pool, JsonUtf_No
       JsonUtf_Node * p = c;
       if (!(p != NULL)) break;
       { __typeof__(cnt) m9v = m9_add_i64 (cnt, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 949; goto L_ret; };
         cnt = m9v;
       }
       c = p->next;
     }
     if ((cnt == INT64_C(0))) {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s42, 2 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 950; goto L_ret; };
       goto L_ret;
     }
     c = first;
     DynStr_AppendChar (d, d_pool, 123u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 952; goto L_ret; };
     sep = false;
     for (;;) {
       JsonUtf_Node * p = c;
       if (!(p != NULL)) break;
       if (sep) {
         DynStr_AppendChar (d, d_pool, 44u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 955; goto L_ret; };
       }
       sep = true;
       { __typeof__(m9_add_i64 (depth, INT64_C(1), err)) m9a26 = m9_add_i64 (depth, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 957; goto L_ret; };
       JsonUtf_Indent (d, d_pool, m9a26, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 957; goto L_ret; };
       }
       { __typeof__(JsonUtf_DecodeStr (p->name, err)) m9a27 = JsonUtf_DecodeStr (p->name, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 958; goto L_ret; };
       JsonUtf_EmitJStr (d, d_pool, m9a27, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 958; goto L_ret; };
       }
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s43, 2 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 959; goto L_ret; };
       { __typeof__(m9_add_i64 (depth, INT64_C(1), err)) m9a28 = m9_add_i64 (depth, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 960; goto L_ret; };
       JsonUtf_EmitPretty (d, d_pool, p, m9a28, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 960; goto L_ret; };
       }
       c = p->next;
     }
     JsonUtf_Indent (d, d_pool, depth, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 963; goto L_ret; };
     DynStr_AppendChar (d, d_pool, 125u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 964; goto L_ret; };
   } break;
   case JsonUtf_Value_Arr: {
     JsonUtf_Node * first = m9t1.u.Arr.first; (void) first;
     int64_t count = m9t1.u.Arr.count; (void) count;
     if ((count == INT64_C(0))) {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s44, 2 }), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 966; goto L_ret; };
       goto L_ret;
     }
     c = first;
     DynStr_AppendChar (d, d_pool, 91u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 968; goto L_ret; };
     sep = false;
     for (;;) {
       JsonUtf_Node * p = c;
       if (!(p != NULL)) break;
       if (sep) {
         DynStr_AppendChar (d, d_pool, 44u, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 971; goto L_ret; };
       }
       sep = true;
       { __typeof__(m9_add_i64 (depth, INT64_C(1), err)) m9a29 = m9_add_i64 (depth, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 973; goto L_ret; };
       JsonUtf_Indent (d, d_pool, m9a29, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 973; goto L_ret; };
       }
       { __typeof__(m9_add_i64 (depth, INT64_C(1), err)) m9a30 = m9_add_i64 (depth, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 974; goto L_ret; };
       JsonUtf_EmitPretty (d, d_pool, p, m9a30, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 974; goto L_ret; };
       }
       c = p->next;
     }
     JsonUtf_Indent (d, d_pool, depth, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 977; goto L_ret; };
     DynStr_AppendChar (d, d_pool, 93u, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 978; goto L_ret; };
   } break;
   default: {
     JsonUtf_EmitVal (d, d_pool, n, false, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 980; goto L_ret; };
   } break;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -3087,12 +3316,15 @@ static m9_sl_UTF8 JsonUtf_CopyStrTo (JsonUtf_Node * *dst, m9_pool *dst_pool, m9_
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.CopyStrTo"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   err->res = m9res;
   m9ret = m9_utf_from_bytes (dst_pool, m9_utf_octets (s), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 1028; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_adopt_if (&m9frame, dst_pool, (*dst));
@@ -3106,6 +3338,8 @@ static void JsonUtf_CopyInto (JsonUtf_Node * *root, m9_pool *root_pool, JsonUtf_
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "JsonUtf.CopyInto"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Node * cc = NULL; (void) cc;
   JsonUtf_Node * cur = NULL; (void) cur;
   JsonUtf_Node * head = NULL; (void) head;
@@ -3122,13 +3356,13 @@ static void JsonUtf_CopyInto (JsonUtf_Node * *root, m9_pool *root_pool, JsonUtf_
       JsonUtf_Node * p = cur;
       if (!(p != NULL)) break;
       { __typeof__(cc) m9v = (JsonUtf_Node *) m9_pool_alloc (root_pool, sizeof (JsonUtf_Node), 1, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1043; goto L_ret; };
         cc = m9v;
       }
       JsonUtf_CopyInto (root, root_pool, &(cc), err->res, p, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1044; goto L_ret; };
       { __typeof__(cc->name) m9v = JsonUtf_CopyStrTo (root, root_pool, p->name, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1045; goto L_ret; };
         cc->name = m9v;
       }
       cc->next = NULL;
@@ -3154,11 +3388,11 @@ static void JsonUtf_CopyInto (JsonUtf_Node * *root, m9_pool *root_pool, JsonUtf_
       JsonUtf_Node * p = cur;
       if (!(p != NULL)) break;
       { __typeof__(cc) m9v = (JsonUtf_Node *) m9_pool_alloc (root_pool, sizeof (JsonUtf_Node), 1, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1056; goto L_ret; };
         cc = m9v;
       }
       JsonUtf_CopyInto (root, root_pool, &(cc), err->res, p, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1057; goto L_ret; };
       cc->next = NULL;
       { JsonUtf_Node * lp = last;
       if (lp != NULL) {
@@ -3168,7 +3402,7 @@ static void JsonUtf_CopyInto (JsonUtf_Node * *root, m9_pool *root_pool, JsonUtf_
       } }
       last = cc;
       { __typeof__(k) m9v = m9_add_i64 (k, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1061; goto L_ret; };
         k = m9v;
       }
       cur = p->next;
@@ -3178,7 +3412,7 @@ static void JsonUtf_CopyInto (JsonUtf_Node * *root, m9_pool *root_pool, JsonUtf_
   case JsonUtf_Value_Str: {
     m9_sl_UTF8 t = m9t1.u.Str.s; (void) t;
     { __typeof__(({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->v) m9v = ((JsonUtf_Value){ .tag = JsonUtf_Value_Str, .u.Str = { JsonUtf_CopyStrTo (root, root_pool, t, err) } });
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 1068; goto L_ret; };
       ({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->v = m9v;
     }
   } break;
@@ -3188,10 +3422,10 @@ static void JsonUtf_CopyInto (JsonUtf_Node * *root, m9_pool *root_pool, JsonUtf_
     bool isInt = m9t1.u.Num.isInt; (void) isInt;
     ({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->v = ((JsonUtf_Value){ .tag = JsonUtf_Value_Num, .u.Num = { r, i, isInt } });
     bool m9t2 = (Text_BLen (n->raw, err) > INT64_C(0));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1071; goto L_ret; };
     if (m9t2) {
       { __typeof__(({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->raw) m9v = JsonUtf_CopyStrTo (root, root_pool, n->raw, err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 1071; goto L_ret; };
         ({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->raw = m9v;
       }
     }
@@ -3207,6 +3441,7 @@ static void JsonUtf_CopyInto (JsonUtf_Node * *root, m9_pool *root_pool, JsonUtf_
   default: m9_trap_tag ();
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, root_pool, (*root));
   m9_adopt_if (&m9frame, c_pool, (*c));
@@ -3220,10 +3455,12 @@ static JsonUtf_Value JsonUtf_RawValue (m9_sl_UTF8 text, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "JsonUtf.RawValue"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   JsonUtf_Value m9ret = {0};
   JsonUtf_Node * t = NULL; (void) t;
   { __typeof__(t) m9v = JsonUtf_Parse (text, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 1199; goto L_ret; };
     t = m9v;
   }
   { __typeof__(t->v) m9t1 = t->v;
@@ -3239,10 +3476,12 @@ static JsonUtf_Value JsonUtf_RawValue (m9_sl_UTF8 text, m9_state *err)
   default: {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s45, 30 })) m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s45, 30 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &JsonUtf_TypeMismatch);
+    m9_site (err, 1202, m9pn);
     goto L_ret;
   } break;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.u.Object.first);
   m9_adopt_if (&m9frame, m9res, m9ret.u.Arr.first);
@@ -3258,8 +3497,11 @@ void JsonUtf_m9init (m9_state *err)
   m9done = 1;
   m9_pool *m9prev = err->res;
   err->res = &m9mframe;
+  static const char m9pn[] = "JsonUtf (the module body)"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   DynStr_m9init (err); if (err->exc) goto L_ret;
   Text_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9prev;
 }

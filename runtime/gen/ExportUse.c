@@ -48,56 +48,59 @@ int main (int argc, char **argv)
   m9_state errv = {0};
   m9_state *err = &errv;
   err->res = &m9mframe;
+  static const char m9pn[] = "ExportUse (the module body)"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_args (argc, argv);
   ExportDef_m9init (err); if (err->exc) goto L_ret;
   Io_m9init (err); if (err->exc) goto L_ret;
   Fmt_m9init (err); if (err->exc) goto L_ret;
   { __typeof__(c) m9v = (ExportDef_Cell *) m9_pool_alloc (err->res, sizeof (ExportDef_Cell), 1, err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 17; goto L_hdl_m9t1; };
     c = m9v;
   }
   (*(double *) m9_at (row.v, INT64_C(0), INT64_C(4), sizeof (double), err)) = 1.0;
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 20; goto L_hdl_m9t1; };
   ({ __auto_type m9g = (c); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->shade = ((ExportDef_Shade){ .tag = ExportDef_Shade_Dark });
   if (((({ __auto_type m9g = (c); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->shade).tag == (((ExportDef_Shade){ .tag = ExportDef_Shade_Dark })).tag)) {
     Io_WriteLineUtf (((m9_sl_UTF8){ (uint8_t *) m9s0, 41 }), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 22; goto L_hdl_m9t1; };
   }
   if (((({ __auto_type m9g = (c); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->shade).tag != (((ExportDef_Shade){ .tag = ExportDef_Shade_Light })).tag)) {
     Io_WriteLineUtf (((m9_sl_UTF8){ (uint8_t *) m9s1, 16 }), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 23; goto L_hdl_m9t1; };
   }
   { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s2, 22 }), Fmt_I64Str ((*ExportDef_count), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s3, 9 }), err), Fmt_I64Str (((*ExportDef_xs)).len, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s4, 10 }), err), Fmt_I64Str ((*ExportDef_version), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s5, 10 }), err), Fmt_I64Str (INT64_C(4), err), err)) m9a1 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s2, 22 }), Fmt_I64Str ((*ExportDef_count), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s3, 9 }), err), Fmt_I64Str (((*ExportDef_xs)).len, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s4, 10 }), err), Fmt_I64Str ((*ExportDef_version), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s5, 10 }), err), Fmt_I64Str (INT64_C(4), err), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 24; goto L_hdl_m9t1; };
   Io_WriteLineUtf (m9a1, err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 24; goto L_hdl_m9t1; };
   }
   { __typeof__((*ExportDef_count)) m9v = m9_add_i64 ((*ExportDef_count), INT64_C(2), err);
-    if (err->exc) goto L_hdl_m9t1;
+    if (err->exc) { m9ln = 28; goto L_hdl_m9t1; };
     (*ExportDef_count) = m9v;
   }
   (*(double *) m9_at ((*ExportDef_xs).p, INT64_C(1), (*ExportDef_xs).len, sizeof (double), err)) = 9.5;
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 29; goto L_hdl_m9t1; };
   ({ __auto_type m9g = ((*ExportDef_box)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->n = INT64_C(7);
   ExportDef_Show (err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 31; goto L_hdl_m9t1; };
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
     Io_Halt (INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 34; goto L_ret; };
     goto L_dn_m9t2;
   }
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
     Io_Halt (INT64_C(3), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 36; goto L_ret; };
     goto L_dn_m9t2;
   }
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   m9_pool_free (&m9mframe);
   return m9_exit (err);
 }

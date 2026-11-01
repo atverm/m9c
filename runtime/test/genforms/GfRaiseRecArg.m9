@@ -1,0 +1,44 @@
+MODULE GfRaiseRecArg ;
+
+(* WANT: raised: made 7 *)
+
+(* A RAISE payload whose argument is a call handing a call's record
+   answer to an RO record parameter.  The RO record goes by address,
+   so the record needs a temporary, and the payload was not lowered:
+   "gen: unknown name: " (the LPJ-GUESS port, M13, 2026-11-01). *)
+
+IMPORT Io, Fmt ;
+
+EXCEPTION E (RO msg: STR ; n: I64) ;
+
+TYPE
+  R = RECORD
+    a : I64 ;
+    s : STR ;
+  END ;
+
+PROCEDURE Make (a: I64 ; RO s: STR) : R =
+BEGIN
+  RETURN R (a, s)
+END Make ;
+
+PROCEDURE Show (RO r: R) : STR =
+BEGIN
+  RETURN r.s
+END Show ;
+
+PROCEDURE Num (RO r: R) : I64 =
+BEGIN
+  RETURN r.a
+END Num ;
+
+PROCEDURE Fails () RAISES E =
+BEGIN
+  RAISE E (Show (Make (1, 'made')), Num (Make (7, 'x')))
+END Fails ;
+
+BEGIN
+  Fails ()
+EXCEPT
+| E (msg, n) : Io.WriteLine ('raised: ' + msg + ' ' + Fmt.I64Str (n))
+END GfRaiseRecArg.

@@ -173,6 +173,15 @@ gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 M9_BLOCK_REUSE=0 ./blockreuse_test
 }
 
+# TASK's runtime, stage 1 (docs/task-plan.md): exact counts through
+# monitors, 100,000 tasks parked and freed by one SIGNAL, a THREAD and
+# a TASK waking each other, and the deadlock and overflow stops by name.
+b_task () {
+gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
+    -iquote .. -iquote ../gen ../m9rt.c task_driver.c -lm -o task_test
+./task_test
+}
+
 # b_execlimit tests ExecWithin's limit as poll takes it.  Past 2^31 ms
 # it wrapped through (int) and killed a child after half a second (the
 # second review's R2).
@@ -681,7 +690,7 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label \
 echo "PASS (1 check) -- catbench.c still compiles"
 }
 
-for b in dynstr dict fmt time text syslog math mat sort sort_rt bits crc utfrt blockreuse execlimit parsef64 csvnum system stats \
+for b in dynstr dict fmt time text syslog math mat sort sort_rt bits crc utfrt blockreuse task execlimit parsef64 csvnum system stats \
          frame delim io zip csv grib json apispec arrow \
          httpserver sigpipe release zarrw stores; do
   battery "$b"

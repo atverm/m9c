@@ -3,12 +3,15 @@ REVIEW Print -- 29 procedures with a body, 9 of them functions; 13 headings in a
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path               9
   assignments                                    11
-  arguments                                     940
+  arguments                                     944
   RETURN values                                   6
   operands of a comparison or an operator       106
   CASE labels                                    57
   THREAD arguments                                0
   CASE over variants, proved total                0
+
+CAN TRAP AT RUN TIME -- a byte cut a character can straddle
+  text compared through a byte cut                0
 
 DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0

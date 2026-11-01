@@ -33,18 +33,21 @@ Dict_Dict * Dict_New (m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Dict.New"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Dict_Dict * m9ret = NULL;
   Dict_Dict * d = NULL; (void) d;
   { __typeof__(d) m9v = (Dict_Dict *) m9_pool_alloc (err->res, sizeof (Dict_Dict), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 169; goto L_ret; };
     d = m9v;
   }
   Dict_Init (&(d), err->res, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 170; goto L_ret; };
   err->res = m9res;
   m9ret = d;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -57,18 +60,21 @@ Dict_Dict * Dict_NewIn (m9_pool *pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Dict.NewIn"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Dict_Dict * m9ret = NULL;
   Dict_Dict * d = NULL; (void) d;
   { __typeof__(d) m9v = (Dict_Dict *) m9_pool_alloc (&((*pool)), sizeof (Dict_Dict), 1, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 177; goto L_ret; };
     d = m9v;
   }
   Dict_Init (&(d), &((*pool)), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 178; goto L_ret; };
   err->res = m9res;
   m9ret = d;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
@@ -81,40 +87,42 @@ void Dict_Put (Dict_Dict * *d, m9_pool *d_pool, m9_sl_UTF8 key, Dict_Value val, 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Dict.Put"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t s = 0; (void) s;
   int64_t e = 0; (void) e;
   int64_t i = 0; (void) i;
   m9_sl_Dict_Ent ne = {0}; (void) ne;
   { __typeof__(({ __auto_type m9n = ((*d)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a1 = ({ __auto_type m9n = ((*d)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 226; goto L_ret; };
   { __typeof__(s) m9v = Dict_Slot (m9a1, key, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 226; goto L_ret; };
     s = m9v;
   }
   }
   { __typeof__(e) m9v = (*(int64_t *) m9_at (({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->idx.p, s, ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->idx.len, sizeof (int64_t), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 227; goto L_ret; };
     e = m9v;
   }
   if ((e != Dict_Empty)) {
     (*(Dict_Ent *) m9_at (({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ents.p, e, ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ents.len, sizeof (Dict_Ent), err)).val = val;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 229; goto L_ret; };
     goto L_ret;
   }
   if ((({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n == (({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ents).len)) {
     { __typeof__(ne) m9v = M9_POOL_SL (m9_sl_Dict_Ent, Dict_Ent, d_pool, m9_mul_i64 (INT64_C(2), (({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ents).len, err), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 233; goto L_ret; };
       ne = m9v;
     }
     { __typeof__(i) m9t1to;
     i = INT64_C(0);
     m9t1to = m9_sub_i64 (({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 234; goto L_ret; };
     if (i <= m9t1to) for (;;) {
       { __typeof__((*(Dict_Ent *) m9_at (ne.p, i, ne.len, sizeof (Dict_Ent), err))) m9v = (*(Dict_Ent *) m9_at (({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ents.p, i, ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ents.len, sizeof (Dict_Ent), err));
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 234; goto L_ret; };
         (*(Dict_Ent *) m9_at (ne.p, i, ne.len, sizeof (Dict_Ent), err)) = m9v;
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 234; goto L_ret; };
       }
       if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
@@ -122,22 +130,23 @@ void Dict_Put (Dict_Dict * *d, m9_pool *d_pool, m9_sl_UTF8 key, Dict_Value val, 
     ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ents = ne;
   }
   (*(Dict_Ent *) m9_at (({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ents.p, ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ents.len, sizeof (Dict_Ent), err)).key = key;
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 237; goto L_ret; };
   (*(Dict_Ent *) m9_at (({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ents.p, ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ents.len, sizeof (Dict_Ent), err)).val = val;
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 241; goto L_ret; };
   (*(int64_t *) m9_at (({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->idx.p, s, ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->idx.len, sizeof (int64_t), err)) = ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n;
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 242; goto L_ret; };
   { __typeof__(({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n) m9v = m9_add_i64 (({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 243; goto L_ret; };
     ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n = m9v;
   }
   bool m9t2 = (m9_mul_i64 (INT64_C(2), ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, err) >= (({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->idx).len);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 244; goto L_ret; };
   if (m9t2) {
     Dict_Regrow (d, d_pool, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 244; goto L_ret; };
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -150,10 +159,12 @@ bool Dict_Find (Dict_Dict * d, m9_sl_UTF8 key, Dict_Value *val, m9_pool *val_poo
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Dict.Find"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   int64_t e = 0; (void) e;
   { __typeof__(e) m9v = (*(int64_t *) m9_at (d->idx.p, Dict_Slot (d, key, err), d->idx.len, sizeof (int64_t), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 250; goto L_ret; };
     e = m9v;
   }
   if ((e == Dict_Empty)) {
@@ -162,13 +173,14 @@ bool Dict_Find (Dict_Dict * d, m9_sl_UTF8 key, Dict_Value *val, m9_pool *val_poo
     goto L_ret;
   }
   { __typeof__((*val)) m9v = (*(Dict_Ent *) m9_at (d->ents.p, e, d->ents.len, sizeof (Dict_Ent), err)).val;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 252; goto L_ret; };
     (*val) = m9v;
   }
   err->res = m9res;
   m9ret = true;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, val_pool, (*val).u.Str.s.p);
   m9_pool_free (&m9frame);
@@ -181,22 +193,26 @@ Dict_Value Dict_Get (Dict_Dict * d, m9_sl_UTF8 key, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Dict.Get"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Dict_Value m9ret = {0};
   int64_t e = 0; (void) e;
   { __typeof__(e) m9v = (*(int64_t *) m9_at (d->idx.p, Dict_Slot (d, key, err), d->idx.len, sizeof (int64_t), err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 264; goto L_ret; };
     e = m9v;
   }
   if ((e == Dict_Empty)) {
     { __typeof__(key) m9t1 = key; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Dict_NotFound);
+    m9_site (err, 265, m9pn);
     goto L_ret;
   }
   err->res = m9res;
   m9ret = (*(Dict_Ent *) m9_at (d->ents.p, e, d->ents.len, sizeof (Dict_Ent), err)).val;
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 266; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.u.Str.s.p);
   m9_pool_free (&m9frame);
@@ -209,12 +225,15 @@ bool Dict_Has (Dict_Dict * d, m9_sl_UTF8 key, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Dict.Has"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   err->res = m9res;
   m9ret = ((*(int64_t *) m9_at (d->idx.p, Dict_Slot (d, key, err), d->idx.len, sizeof (int64_t), err)) != Dict_Empty);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 258; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -226,11 +245,14 @@ int64_t Dict_Count (Dict_Dict * d, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Dict.Count"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   err->res = m9res;
   m9ret = d->n;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -242,18 +264,22 @@ m9_sl_UTF8 Dict_KeyAt (Dict_Dict * d, int64_t i, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Dict.KeyAt"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   if (((i < INT64_C(0)) || (i >= d->n))) {
     err->i[0] = i;
     err->i[1] = d->n;
     m9_raise (err, &m9_exc_IndexError);
+    m9_site (err, 276, m9pn);
     goto L_ret;
   }
   err->res = m9res;
   m9ret = (*(Dict_Ent *) m9_at (d->ents.p, i, d->ents.len, sizeof (Dict_Ent), err)).key;
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 277; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
@@ -266,18 +292,22 @@ Dict_Value Dict_ValAt (Dict_Dict * d, int64_t i, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
+  static const char m9pn[] = "Dict.ValAt"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Dict_Value m9ret = {0};
   if (((i < INT64_C(0)) || (i >= d->n))) {
     err->i[0] = i;
     err->i[1] = d->n;
     m9_raise (err, &m9_exc_IndexError);
+    m9_site (err, 282, m9pn);
     goto L_ret;
   }
   err->res = m9res;
   m9ret = (*(Dict_Ent *) m9_at (d->ents.p, i, d->ents.len, sizeof (Dict_Ent), err)).val;
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 283; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, m9ret.u.Str.s.p);
   m9_pool_free (&m9frame);
@@ -290,6 +320,8 @@ int64_t Dict_Hash (m9_sl_UTF8 key, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Dict.Hash"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   int64_t h = 0; (void) h;
   int64_t i = 0; (void) i;
@@ -297,10 +329,10 @@ int64_t Dict_Hash (m9_sl_UTF8 key, m9_state *err)
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (Text_BLen (key, err), INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 138; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     { __typeof__(h) m9v = m9_mod_i64 ((m9_add_i64 (m9_mul_i64 (h, Dict_HashMul, err), (int64_t)(Text_BAt (key, i, err)), err)), Dict_HashPrime, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 139; goto L_ret; };
       h = m9v;
     }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
@@ -310,6 +342,7 @@ int64_t Dict_Hash (m9_sl_UTF8 key, m9_state *err)
   m9ret = h;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -321,10 +354,12 @@ static bool Dict_Eq (m9_sl_UTF8 a, m9_sl_UTF8 b, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Dict.Eq"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   int64_t i = 0; (void) i;
   bool m9t1 = (Text_BLen (a, err) != Text_BLen (b, err));
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 147; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
     m9ret = false;
@@ -333,10 +368,10 @@ static bool Dict_Eq (m9_sl_UTF8 a, m9_sl_UTF8 b, m9_state *err)
   { __typeof__(i) m9t2to;
   i = INT64_C(0);
   m9t2to = m9_sub_i64 (Text_BLen (a, err), INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 148; goto L_ret; };
   if (i <= m9t2to) for (;;) {
     bool m9t3 = (Text_BAt (a, i, err) != Text_BAt (b, i, err));
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 149; goto L_ret; };
     if (m9t3) {
       err->res = m9res;
       m9ret = false;
@@ -349,6 +384,7 @@ static bool Dict_Eq (m9_sl_UTF8 a, m9_sl_UTF8 b, m9_state *err)
   m9ret = true;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -360,27 +396,30 @@ static void Dict_Init (Dict_Dict * *d, m9_pool *d_pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Dict.Init"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   { __typeof__(({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ents) m9v = M9_POOL_SL (m9_sl_Dict_Ent, Dict_Ent, d_pool, Dict_InitEnts, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 160; goto L_ret; };
     ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ents = m9v;
   }
   ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n = INT64_C(0);
   { __typeof__(({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->idx) m9v = M9_POOL_SL (m9_sl_I64, int64_t, d_pool, Dict_InitSlots, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 162; goto L_ret; };
     ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->idx = m9v;
   }
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->idx).len, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 163; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     (*(int64_t *) m9_at (({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->idx.p, i, ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->idx.len, sizeof (int64_t), err)) = Dict_Empty;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 163; goto L_ret; };
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -393,18 +432,20 @@ static int64_t Dict_Slot (Dict_Dict * d, m9_sl_UTF8 key, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Dict.Slot"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   int64_t cap = 0; (void) cap;
   int64_t s = 0; (void) s;
   int64_t e = 0; (void) e;
   cap = (d->idx).len;
   { __typeof__(s) m9v = m9_mod_i64 (Dict_Hash (key, err), cap, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 191; goto L_ret; };
     s = m9v;
   }
   for (;;) {
     { __typeof__(e) m9v = (*(int64_t *) m9_at (d->idx.p, s, d->idx.len, sizeof (int64_t), err));
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 193; goto L_ret; };
       e = m9v;
     }
     if ((e == Dict_Empty)) {
@@ -413,16 +454,16 @@ static int64_t Dict_Slot (Dict_Dict * d, m9_sl_UTF8 key, m9_state *err)
       goto L_ret;
     }
     { __typeof__((*(Dict_Ent *) m9_at (d->ents.p, e, d->ents.len, sizeof (Dict_Ent), err)).key) m9a2 = (*(Dict_Ent *) m9_at (d->ents.p, e, d->ents.len, sizeof (Dict_Ent), err)).key;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 195; goto L_ret; };
     bool m9t1 = Dict_Eq (m9a2, key, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 195; goto L_ret; };
     if (m9t1) {
       err->res = m9res;
       m9ret = s;
       goto L_ret;
     } }
     { __typeof__(s) m9v = m9_add_i64 (s, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 196; goto L_ret; };
       s = m9v;
     }
     if ((s == cap)) {
@@ -430,6 +471,7 @@ static int64_t Dict_Slot (Dict_Dict * d, m9_sl_UTF8 key, m9_state *err)
     }
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -441,45 +483,47 @@ static void Dict_Regrow (Dict_Dict * *d, m9_pool *d_pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "Dict.Regrow"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
   int64_t s = 0; (void) s;
   int64_t cap = 0; (void) cap;
   { __typeof__(cap) m9v = m9_mul_i64 (INT64_C(2), (({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->idx).len, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 205; goto L_ret; };
     cap = m9v;
   }
   { __typeof__(({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->idx) m9v = M9_POOL_SL (m9_sl_I64, int64_t, d_pool, cap, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 206; goto L_ret; };
     ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->idx = m9v;
   }
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (cap, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 207; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     (*(int64_t *) m9_at (({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->idx.p, i, ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->idx.len, sizeof (int64_t), err)) = Dict_Empty;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 207; goto L_ret; };
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   { __typeof__(i) m9t2to;
   i = INT64_C(0);
   m9t2to = m9_sub_i64 (({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 211; goto L_ret; };
   if (i <= m9t2to) for (;;) {
     { __typeof__((*(Dict_Ent *) m9_at (({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ents.p, i, ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ents.len, sizeof (Dict_Ent), err)).key) m9a3 = (*(Dict_Ent *) m9_at (({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ents.p, i, ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ents.len, sizeof (Dict_Ent), err)).key;
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 212; goto L_ret; };
     { __typeof__(s) m9v = m9_mod_i64 (Dict_Hash (m9a3, err), cap, err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 212; goto L_ret; };
       s = m9v;
     }
     }
     for (;;) {
       bool m9t3 = ((*(int64_t *) m9_at (({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->idx.p, s, ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->idx.len, sizeof (int64_t), err)) != Dict_Empty);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 213; goto L_ret; };
       if (!(m9t3)) break;
       { __typeof__(s) m9v = m9_add_i64 (s, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (err->exc) { m9ln = 214; goto L_ret; };
         s = m9v;
       }
       if ((s == cap)) {
@@ -487,11 +531,12 @@ static void Dict_Regrow (Dict_Dict * *d, m9_pool *d_pool, m9_state *err)
       }
     }
     (*(int64_t *) m9_at (({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->idx.p, s, ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->idx.len, sizeof (int64_t), err)) = i;
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 217; goto L_ret; };
     if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
@@ -505,7 +550,10 @@ void Dict_m9init (m9_state *err)
   m9done = 1;
   m9_pool *m9prev = err->res;
   err->res = &m9mframe;
+  static const char m9pn[] = "Dict (the module body)"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Text_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9prev;
 }

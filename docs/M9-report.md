@@ -2181,6 +2181,35 @@ held monitors is checked at each entry.
   waking one risks waking the wrong one. Every `WAIT` therefore sits
   in a loop around its own predicate, where a spurious wake costs a
   re-test and nothing else.
+- `TASK (proc, arg)` starts a task: a thread of control far cheaper
+  than a `THREAD`, for programs that want thousands of them (a server's
+  connections, a simulation's agents). The checker holds `TASK` to
+  every rule above by `THREAD`'s own code: the argument's type against
+  the target's parameter, the move of an owned value, sharability, the
+  target's module, the allocation through a shared pool. A message
+  names the statement written (probes `task-argument-type`,
+  `task-moves-its-argument`, `task-sharable`). A monitor may be shared
+  by tasks and threads together. `WAIT` in a task parks the task, not
+  its thread, and `SIGNAL` wakes waiting tasks and threads alike.
+  *(Stage 1 of `docs/task-plan.md`, 2026-11-01. A task runs on the
+  thread that starts it, its CARRIER; that thread's own code (the
+  module body, or a `THREAD`'s body) is itself a task. Scheduling is
+  cooperative: a task runs until it waits, at a `WAIT`, at a monitor
+  another holds, or at its end. A blocking call (I/O, `Time.Sleep`, a
+  foreign procedure) holds the carrier, and the tasks beside it wait.
+  The module body's end ends every task, as it ends every thread; a
+  `THREAD` whose body returns waits for its tasks. A task's stack is
+  fixed at 256 KB, with a guard page below it. A task that runs into
+  the guard stops the program by name ("task stack overflow in M.P").
+  A program whose every task waits, with no `THREAD` alive to wake
+  one, stops by name ("every task waits") and lists them. On Windows a
+  `TASK` is started as a `THREAD` for now: the rules are the same, the
+  scale is not. Measured on an M4 Mac against `THREAD`: a task starts
+  and finishes in 0.18 us (a thread in 12.6 us), a monitor round trip
+  between two tasks takes 0.085 us (4.3 us between two threads), and
+  100,000 tasks park and are freed in 0.4 s; `tasks.sh` holds the
+  counts. Several carriers, preemption and a poller for I/O are the
+  plan's later stages.)*
 - Coroutines remain (`TRANSFER`), unchanged since 1978, for when
   concurrency without parallelism is the honest tool. *(Observed:
   on a one-core container, the pthread benchmark's only truthful
@@ -2188,7 +2217,7 @@ held monitors is checked at each entry.
   feature.)* **`TRANSFER` is specified and parsed; it is not yet
   generated** — no corpus program has needed it, and by this
   report's own rule a feature is built when a program forces it.
-  `THREAD`, `MONITOR`, `WAIT` and `SIGNAL` are generated and in use.
+  `THREAD`, `TASK`, `MONITOR`, `WAIT` and `SIGNAL` are generated and in use.
 
 A `STATEFUL` non-monitor module is not to be touched by more than one
 thread. **The compiler does not refuse a breach**, and the sentence is
@@ -2449,8 +2478,8 @@ features:
 Seventy-four productions; the ceiling is one hundred, and past it a
 feature dies.  (The seventy-third is `Aggregate`, 2026-10-01: a
 bracketed list is the value of a `CONST` and of nothing else, so `[`
-in an expression is still only a subscript.)  Sixty-two keywords: the fifty-eight the language was
-designed with, plus RO, GRID, KEPT and LINK, each appended to the table
+in an expression is still only a subscript.)  Sixty-three keywords: the fifty-eight the language was
+designed with, plus RO, GRID, KEPT, LINK and TASK (2026-11-01), each appended to the table
 rather than inserted into it, because a token code that moves is a
 code no one can rely on. A source may nest at most 1000 levels -- each
 nested expression, statement and type is one, and so is each further
@@ -2538,7 +2567,7 @@ CaseLabel   = ConstExpr [ ".." ConstExpr ]
 Return      = "RETURN" [ Expr ] .
 Raise       = "RAISE" Qualident [ "(" ExprList ")" ] .
 Dispose     = "DISPOSE" "(" Designator ")" .
-ThreadStmt  = "THREAD" "(" Expr "," Expr ")" .
+ThreadStmt  = ( "THREAD" | "TASK" ) "(" Expr "," Expr ")" .
 WaitStmt    = "WAIT" "(" Expr ")" .
 SignalStmt  = "SIGNAL" "(" Expr ")" .
 TransferStmt = "TRANSFER" "(" Expr "," Expr ")" .
@@ -2588,7 +2617,7 @@ Notes, each a decision:
    `x IS SOME p`, `x IS SubType` — are legal only as the whole
    condition of IF, ELSIF, or WHILE; the bound name lives in the
    guarded suite. Elsewhere IS is a plain BOOL test with no binding.
-5. **THREAD, WAIT, SIGNAL, TRANSFER are statements**, not
+5. **THREAD, TASK, WAIT, SIGNAL, TRANSFER are statements**, not
    expressions: nothing to bind, nothing to forget to bind.
 6. **NEW's first-argument ambiguity** (a pool's name vs a type's)
    is resolved by name resolution, not grammar — both parse as the

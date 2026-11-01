@@ -14,7 +14,8 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -o lexdump_m9
 ( cd ../../host/fpc && fpc -O2 lexdump.pas >/dev/null )
 n=0
-for f in ../../corpus/*.m9 ../../museum/*.m9; do
+# tasktest.m9 holds TASK, which no corpus file uses yet.
+for f in ../../corpus/*.m9 ../../museum/*.m9 tasktest.m9 ../../probes/task-*.m9; do
   ../../host/fpc/lexdump "$f" > "$TG"/lex_fpc.txt
   ./lexdump_m9 "$f" > "$TG"/lex_m9.txt
   cmp "$TG"/lex_fpc.txt "$TG"/lex_m9.txt || { echo "DIVERGES: $f"; exit 1; }

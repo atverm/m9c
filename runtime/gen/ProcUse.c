@@ -69,11 +69,14 @@ static bool ProcUse_Up (int64_t a, int64_t b, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "ProcUse.Up"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   err->res = m9res;
   m9ret = (a < b);
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -85,11 +88,14 @@ static bool ProcUse_Down (int64_t a, int64_t b, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "ProcUse.Down"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   err->res = m9res;
   m9ret = (a > b);
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -101,15 +107,19 @@ static double ProcUse_Twice (double x, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "ProcUse.Twice"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   double m9ret = 0;
   if ((x < 0.0)) {
     m9_raise (err, &m9_exc_ValueRange);
+    m9_site (err, 42, m9pn);
     goto L_ret;
   }
   err->res = m9res;
   m9ret = (x * 2.0);
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -121,11 +131,14 @@ static void ProcUse_AddLen (int64_t *acc, m9_sl_UTF8 s, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "ProcUse.AddLen"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   { __typeof__((*acc)) m9v = m9_add_i64 ((*acc), Text_BLen (s, err), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 48; goto L_ret; };
     (*acc) = m9v;
   }
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -137,12 +150,15 @@ static double ProcUse_Apply (ProcUse_Kernel k, double x, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "ProcUse.Apply"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   double m9ret = 0;
   err->res = m9res;
   m9ret = k (x, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 53; goto L_ret; };
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -154,9 +170,11 @@ static int64_t ProcUse_Pick (ProcUse_Less less, int64_t a, int64_t b, m9_state *
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "ProcUse.Pick"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   bool m9t1 = less (a, b, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 59; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
     m9ret = a;
@@ -166,6 +184,7 @@ static int64_t ProcUse_Pick (ProcUse_Less less, int64_t a, int64_t b, m9_state *
   m9ret = b;
   goto L_ret;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
@@ -177,13 +196,16 @@ static void ProcUse_Each (ProcUse_Step f, int64_t *acc, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "ProcUse.Each"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   f (acc, ((m9_sl_UTF8){ (uint8_t *) m9s0, 3 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 65; goto L_ret; };
   f (acc, ((m9_sl_UTF8){ (uint8_t *) m9s1, 5 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 66; goto L_ret; };
   f (acc, ((m9_sl_UTF8){ (uint8_t *) m9s2, 7 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 67; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -195,15 +217,18 @@ static void ProcUse_Show (m9_sl_UTF8 what, int64_t v, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "ProcUse.Show"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   Io_WriteUtf (what, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 72; goto L_ret; };
   Io_WriteUtf (((m9_sl_UTF8){ (uint8_t *) m9s3, 1 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 72; goto L_ret; };
   Io_WriteI64 (v, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 72; goto L_ret; };
   Io_WriteLineUtf (((m9_sl_UTF8){ NULL, 0 }), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 72; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -215,47 +240,50 @@ static void ProcUse_Run (m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  static const char m9pn[] = "ProcUse.Run"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   int64_t v = 0; (void) v;
   { __typeof__(ProcUse_Pick (ProcUse_Up, INT64_C(3), INT64_C(2), err)) m9a1 = ProcUse_Pick (ProcUse_Up, INT64_C(3), INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 78; goto L_ret; };
   ProcUse_Show (((m9_sl_UTF8){ (uint8_t *) m9s4, 14 }), m9a1, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 78; goto L_ret; };
   }
   { __typeof__(ProcUse_Pick (ProcUse_Down, INT64_C(3), INT64_C(2), err)) m9a2 = ProcUse_Pick (ProcUse_Down, INT64_C(3), INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 79; goto L_ret; };
   ProcUse_Show (((m9_sl_UTF8){ (uint8_t *) m9s5, 16 }), m9a2, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 79; goto L_ret; };
   }
   chosen = ProcUse_Down;
   { ProcUse_Less l = chosen;
   if (l != NULL) {
     { __typeof__(ProcUse_Pick (l, INT64_C(7), INT64_C(9), err)) m9a3 = ProcUse_Pick (l, INT64_C(7), INT64_C(9), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 82; goto L_ret; };
     ProcUse_Show (((m9_sl_UTF8){ (uint8_t *) m9s6, 18 }), m9a3, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 82; goto L_ret; };
     }
   } }
   h.k = ProcUse_Twice;
   { ProcUse_Kernel k = h.k;
   if (k != NULL) {
     { __typeof__(m9_i64_f64 ((double)(ProcUse_Apply (k, 1.5, err)), err)) m9a4 = m9_i64_f64 ((double)(ProcUse_Apply (k, 1.5, err)), err);
-      if (err->exc) goto L_ret;
+      if (err->exc) { m9ln = 86; goto L_ret; };
     ProcUse_Show (((m9_sl_UTF8){ (uint8_t *) m9s7, 18 }), m9a4, err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 86; goto L_ret; };
     }
   } }
   total = INT64_C(0);
   ProcUse_Each (ProcUse_AddLen, &(total), err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 89; goto L_ret; };
   ProcUse_Show (((m9_sl_UTF8){ (uint8_t *) m9s8, 14 }), total, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 90; goto L_ret; };
   { __typeof__(v) m9v = m9_i64_f64 ((double)(ProcUse_Apply (ProcUse_Twice, (- 1.0), err)), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 94; goto L_ret; };
     v = m9v;
   }
   ProcUse_Show (((m9_sl_UTF8){ (uint8_t *) m9s9, 17 }), v, err);
-  if (err->exc) goto L_ret;
+  if (err->exc) { m9ln = 95; goto L_ret; };
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
@@ -266,22 +294,25 @@ int main (int argc, char **argv)
   m9_state errv = {0};
   m9_state *err = &errv;
   err->res = &m9mframe;
+  static const char m9pn[] = "ProcUse (the module body)"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
   m9_args (argc, argv);
   Io_m9init (err); if (err->exc) goto L_ret;
   Text_m9init (err); if (err->exc) goto L_ret;
   ProcUse_Run (err);
-  if (err->exc) goto L_hdl_m9t1;
+  if (err->exc) { m9ln = 99; goto L_hdl_m9t1; };
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
     Io_WriteLineUtf (((m9_sl_UTF8){ (uint8_t *) m9s10, 37 }), err);
-    if (err->exc) goto L_ret;
+    if (err->exc) { m9ln = 101; goto L_ret; };
     goto L_dn_m9t2;
   }
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
   m9_pool_free (&m9mframe);
   return m9_exit (err);
 }

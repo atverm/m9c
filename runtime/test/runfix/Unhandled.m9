@@ -1,0 +1,37 @@
+MODULE Unhandled ;
+
+(* An exception nothing handles says what was refused and where.  A
+   production build died with only "IndexError" (zarrm9, 2026-11-01).
+   run.sh runs it twice: a slice that cuts inside the è of a name, and
+   an index past a slice's end. *)
+
+IMPORT Io ;
+IMPORT Text ;
+
+PROCEDURE Citation (RO cite: STR) : BOOL =
+BEGIN
+  RETURN Text.BLen (cite) >= 8 AND Text.Eq (SLICE (cite, 0, 8), 'Fetching')
+END Citation ;
+
+PROCEDURE Pick (RO xs: SLICE OF I64 ; i: I64) : I64 =
+BEGIN
+  RETURN xs[i]
+END Pick ;
+
+VAR
+  pool : POOL ;
+  xs : SLICE OF I64 ;
+  which : STR ;
+
+BEGIN
+  which := Io.Arg (pool, 1) ;
+  xs := NEW (pool, I64, 3) ;
+  IF Text.Eq (which, 'cut') THEN
+    IF Citation ('De Mazi' + 0E8C + 're, M.') THEN Io.WriteLine ('placeholder') END
+  ELSE
+    Io.WriteI64 (Pick (xs, 5)) ;
+    Io.WriteLine ('')
+  END
+EXCEPT
+| ValueRange : Io.WriteLine ('no argument')
+END Unhandled.

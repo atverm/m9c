@@ -106,6 +106,7 @@ TYPE
     unsafeUnits, statefulUnits : I64 ;
     foreign, serial, reentrant : I64 ;
     cases, raises, handlers : I64 ;
+    cuts : I64 ;                   (* text compared through a byte SLICE *)
     defs, impls, progs : I64 ;
   END ;
 
@@ -286,6 +287,85 @@ BEGIN
   RETURN FALSE
 END EndsSeq ;
 
+(* ---- a comparison through a byte cut ----
+
+   `Text.Eq (SLICE (s, 0, 8), 'Fetching')' raises IndexError when a
+   character of s straddles byte 8.  Since the switch a SLICE of text
+   cuts at byte offsets, and one inside a character raises.  The guard
+   `Text.BLen (s) >= 8' before it does not help.  The idiom was every
+   pre-0.26 program's, and the migration tool let it through: a
+   production build died on 'De Mazi' + 0E8C (zarrm9, 2026-11-01).
+   Text.StartsWith and Text.EndsWith answer FALSE where the cut falls
+   inside a character, so they are the rewrite. *)
+
+(* CalleeIs asks whether the call e's callee is Mod.name. *)
+PROCEDURE CalleeIs (e: PTR Ast.Node ; RO m, name: UTF) : BOOL =
+BEGIN
+  IF e.kids[0] IS SOME d THEN
+    IF d.kind = Ast.NDesignator AND d.nkids = 1 AND Text.Eq (d.au, m) THEN
+      IF d.kids[0] IS SOME sel THEN
+        RETURN sel.kind = Ast.NSelField AND Text.Eq (sel.au, name)
+      END
+    END
+  END ;
+  RETURN FALSE
+END CalleeIs ;
+
+(* SliceArgs answers the SLICE node of k, whose three kids are the
+   text, the start and the length, or NONE.  SLICE is a node of its
+   own, not a call (Sem says why that matters). *)
+PROCEDURE SliceArgs (k: Ast.Kid) : Ast.Kid =
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NSliceOf3 THEN RETURN k END
+  END ;
+  RETURN NONE
+END SliceArgs ;
+
+(* CutRewrite answers the rewrite for a comparison of a byte cut with
+   other text, or empty when e is no such comparison: the prefix
+   form for a cut at 0, the suffix form for a cut at Text.BLen (..) - n,
+   and a search for any other start. *)
+PROCEDURE CutRewrite (e: PTR Ast.Node) : UTF =
+VAR i, lit : I64 ;
+  args : Ast.Kid ;
+BEGIN
+  IF NOT (CalleeIs (e, 'Text', 'Eq') OR CalleeIs (e, 'DynStr', 'Eq') OR
+          CalleeIs (e, 'Text', 'EqUtf')) THEN
+    RETURN ''
+  END ;
+  IF e.kids[1] IS SOME al THEN
+    IF al.nkids # 2 THEN RETURN '' END ;
+    (* the other operand may be a literal or any text: `SLICE (path,
+       0, Text.BLen (p)) = p' cuts as a literal does *)
+    lit := -1 ;
+    FOR i := 0 TO 1 DO
+      IF SliceArgs (al.kids[i]) IS SOME sx THEN lit := 1 - i END
+    END ;
+    IF lit < 0 THEN RETURN '' END ;
+    args := SliceArgs (al.kids[1 - lit]) ;
+    IF args IS SOME sa THEN
+      IF sa.nkids # 3 THEN RETURN '' END ;
+      IF sa.kids[1] IS SOME st THEN
+        IF st.kind = Ast.NInt AND Text.Eq (st.au, '0') THEN
+          RETURN 'Text.StartsWith (s, lit)'
+        END ;
+        IF st.kind = Ast.NBin THEN
+          IF st.kids[0] IS SOME l THEN
+            IF l.kind = Ast.NCallExpr AND CalleeIs (l, 'Text', 'BLen') THEN
+              RETURN 'Text.EndsWith (s, lit)'
+            END
+          END
+        END
+      END ;
+      RETURN 'Text.Find, or octets compared with Text.BAt'
+    END
+  END ;
+  RETURN ''
+EXCEPT
+| IndexError : RETURN ''
+END CutRewrite ;
+
 (* ---- the walk over statements and expressions ---- *)
 
 PROCEDURE Walk (VAR c: Counts ; VAR log: PTR DynStr.DString ;
@@ -326,6 +406,11 @@ BEGIN
         IF Text.Eq (n.au, 'HEAP') THEN
           c.heap := c.heap + 1 ;
           Site (log, 'H', n.line, proc)
+        END
+    | Ast.NCallExpr :
+        IF Text.BLen (CutRewrite (n)) > 0 THEN
+          c.cuts := c.cuts + 1 ;
+          Site (log, 'Y', n.line, proc + ': write ' + CutRewrite (n))
         END
     ELSE
     END ;
@@ -588,6 +673,7 @@ VAR
 BEGIN
   c.procs := 0 ; c.funcs := 0 ; c.exported := 0 ; c.fallOff := 0 ;
   c.modPools := 0 ; c.localPools := 0 ; c.poolParams := 0 ;
+  c.cuts := 0 ;
   c.kept := 0 ; c.heap := 0 ; c.newOwn := 0 ; c.newPool := 0 ;
   c.newFrame := 0 ; c.dispose := 0 ; c.shared := 0 ; c.thread := 0 ;
   c.modVars := 0 ; c.sharable := 0 ; c.unsafeUnits := 0 ; c.statefulUnits := 0 ;
@@ -629,6 +715,9 @@ BEGIN
     Head (d, 'NOT CHECKED HERE -- the tree alone; the checker refuses these') ;
     Row (d, lines, 'functions that can reach END unanswered', c.fallOff, 'F')
   END ;
+
+  Head (d, 'CAN TRAP AT RUN TIME -- a byte cut a character can straddle') ;
+  Row (d, lines, 'text compared through a byte cut', c.cuts, 'Y') ;
 
   Head (d, 'DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each') ;
   Row (d, lines, 'module pools', c.modPools, 'M') ;

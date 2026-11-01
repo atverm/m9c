@@ -117,6 +117,7 @@ CONST
   TkTO = 57 ; TkTRANSFER = 58 ; TkTRUE = 59 ; TkTYPE = 60 ;
   TkUNSAFE = 61 ; TkVAR = 62 ; TkWAIT = 63 ; TkWHILE = 64 ;
   TkRO = 65 ; TkGRID = 66 ; TkKEPT = 67 ; TkLINK = 68 ;
+  TkTASK = 69 ;
   (* appended: codes are identifiers *)
   (* operators start at 200: see the note in Lex.  Keywords may be
      appended at 65.. without moving any of these.                *)
@@ -1252,8 +1253,13 @@ BEGIN
     RETURN n
   ELSIF p.cur.kind = TkBEGIN THEN
     RETURN PBlock (pool, p)
-  ELSIF p.cur.kind = TkTHREAD OR p.cur.kind = TkTRANSFER THEN
+  ELSIF p.cur.kind = TkTHREAD OR p.cur.kind = TkTASK OR p.cur.kind = TkTRANSFER THEN
+    (* A TASK is a THREAD node with au 'TASK'.  The checker holds both
+       to the same rules by the same code (docs/task-plan.md). *)
     IF p.cur.kind = TkTHREAD THEN n := Nn (pool, p, Ast.NThread)
+    ELSIF p.cur.kind = TkTASK THEN
+      n := Nn (pool, p, Ast.NThread) ;
+      Ast.SetA (pool, n, 'TASK')
     ELSE n := Nn (pool, p, Ast.NTransfer) END ;
     Bump (p) ;
     Expect (p, TkLParen) ;

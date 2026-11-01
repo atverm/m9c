@@ -777,6 +777,50 @@ EXCEPT
 | IndexError : RETURN FALSE
 END HasUtfTwin ;
 
+(* TwinOver gives every procedure X whose module declares XUtf the
+   heading XUtf has, under X's name, and XUtf's text.  Since the
+   switch a call of X is XUtf's (Sem.UtfTwin), so X's own heading
+   describes a procedure no call reaches.  --json published
+   `ReadFile (VAR pool: POOL ; RO path: STR)' while a call took one
+   argument, and an agent reading it wrote the refused form (m9fun,
+   2026-11-01).  XUtf keeps its own entry: it is callable by that
+   name too. *)
+PROCEDURE TwinOver (VAR pool: POOL ; VAR anch: SLICE OF Anchor ; nanch: I64) RAISES IndexError =
+VAR i, j, n : I64 ;
+  tw : UTF ;
+BEGIN
+  FOR i := 0 TO nanch - 1 DO
+    IF anch[i].kind = Ast.NProcDecl AND HasUtfTwin (anch, nanch, anch[i].name) THEN
+      tw := Text.Keep (pool, anch[i].name + 'Utf') ;
+      n := Text.BLen (tw) ;
+      FOR j := 0 TO nanch - 1 DO
+        IF anch[j].kind = Ast.NProcDecl AND Text.Eq (anch[j].name, tw) THEN
+          (* the twin's heading starts with its own name; X's is put
+             in its place *)
+          IF Text.StartsWith (anch[j].sig, tw) THEN
+            anch[i].sig := Text.Keep (pool, anch[i].name + SLICE (anch[j].sig, n, Text.BLen (anch[j].sig) - n))
+          ELSE
+            anch[i].sig := anch[j].sig
+          END ;
+          anch[i].params := anch[j].params ;
+          anch[i].paramsJson := anch[j].paramsJson ;
+          anch[i].resultText := anch[j].resultText ;
+          anch[i].raisesJson := anch[j].raisesJson ;
+          anch[i].attribText := anch[j].attribText ;
+          (* A member of a documented group keeps the group's text:
+             it names the group's parameters, and taking the twin's
+             own text took X out of the group (Io's Write beside
+             WriteI64). *)
+          IF NOT anch[i].shared THEN
+            anch[i].doc := anch[j].doc ;
+            anch[i].hasDoc := anch[j].hasDoc
+          END
+        END
+      END
+    END
+  END
+END TwinOver ;
+
 PROCEDURE KindWord (k: I64) : UTF =
 BEGIN
   IF k = Ast.NProcDecl THEN RETURN 'PROCEDURE' END ;
@@ -891,7 +935,9 @@ BEGIN
         END
       END
     END
-  END
+  END ;
+  (* last, once every comment is attached: a twin's heading and text *)
+  TwinOver (pool, anch, nanch)
 END Gather ;
 
 PROCEDURE KindJson (k: I64) : UTF =
@@ -1079,14 +1125,17 @@ BEGIN
           END ;
           DynStr.AppendChar (d, 0AC) ;
           DynStr.AppendChar (d, 0AC) ;
-          (* A STR form whose UTF twin the module declares is
-             DEPRECATED for the transition (docs/utf8-plan.md, (C)).
-             The page says so from the declarations, so no comment
-             has to remember it. *)
+          (* A name whose module declares name + Utf is that twin since
+             the switch: a call of it is the twin's (Sem.UtfTwin), and
+             TwinOver gave this entry the twin's heading and text.  The
+             page says so from the declarations, so no comment has to
+             remember it. *)
           IF anch[i].kind = Ast.NProcDecl AND HasUtfTwin (anch, nanch, anch[i].name) THEN
-            DynStr.Append (d, '**Deprecated** (the UTF transition): ') ;
+            DynStr.Append (d, 'Since 0.26 a call of ') ;
             DynStr.Append (d, anch[i].name) ;
-            DynStr.Append (d, 'Utf is its UTF form.') ;
+            DynStr.Append (d, ' is ') ;
+            DynStr.Append (d, anch[i].name) ;
+            DynStr.Append (d, 'Utf, whose heading this is.') ;
             DynStr.AppendChar (d, 0AC) ;
             DynStr.AppendChar (d, 0AC)
           END ;

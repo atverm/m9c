@@ -40,17 +40,14 @@ branch on the platform (a path separator, where a library lives)
 asks at run time, and both branches stay in the text where a
 reviewer can read them.
 
-### Executable (VAR pool: POOL) : STR RAISES ValueRange
+### Executable (VAR pool: POOL) : UTF RAISES ValueRange
 
-**Deprecated** (the UTF transition): ExecutableUtf is its UTF form.
+Since 0.26 a call of Executable is ExecutableUtf, whose heading this is.
 
-Executable answers the running executable's resolved path, as the
-kernel knows it, or empty when the system will not say.  It is
-NOT Program, which is how the program was CALLED and may be a
-bare name found on PATH.  This is where the binary IS, which is
-what a tool that ships beside its own library needs to find it.
-The answer is on Io's path wire, bytes as CHARs, so it can be
-handed to Io as it is.
+ExecutableUtf answers the path's bytes validated as UTF-8.
+Executable answers them one CHAR a byte, so
+`UTF (System.Executable (pool))` would encode a name past ASCII
+twice.
 
 ### Cores () : I64
 
@@ -99,60 +96,23 @@ cap stays.  A worker calls it when it goes idle.
 KeptBytes answers the bytes the calling thread keeps in large
 blocks now.
 
-### Exec (VAR pool: POOL ; RO prog: STR ; RO args: SLICE OF STR ; RO input: STR ; RO env: SLICE OF STR) : Result RAISES ValueRange, Io.IOError
+### Exec (VAR pool: POOL ; RO prog: UTF ; RO args: SLICE OF UTF ; RO input: UTF ; RO env: SLICE OF UTF) : ResultUtf RAISES ValueRange, Io.IOError
 
-**Deprecated** (the UTF transition): ExecUtf is its UTF form.
+Since 0.26 a call of Exec is ExecUtf, whose heading this is.
 
-Exec runs prog with args directly, with no shell, so an argument
-is an argument and not a command.  It feeds it `input` on stdin
-(the empty string is an immediate end-of-file, never this
-program's own stdin), waits for it, and collects both streams
-whole.  `env` is NAME=VALUE overrides MERGED over the inherited
-environment: [ 'LC_ALL=C' ] pins one variable and keeps the
-rest, so PATH still finds the program.  Pass no input and no env
-with '' and an empty slice.  Exec raises IOError when the program
-could not be started at all (not found, not executable); a
-program that starts and fails answers with its status.  stdin
-and both streams are pumped together, so a large input and a
-large output do not deadlock.  It waits as long as the program
-takes: ExecWithin is the one that does not.
+_(undocumented)_
 
-### ExecWithin (VAR pool: POOL ; RO prog: STR ; RO args: SLICE OF STR ; RO input: STR ; RO env: SLICE OF STR ; seconds: F64) : Result RAISES ValueRange, Io.IOError
+### ExecWithin (VAR pool: POOL ; RO prog: UTF ; RO args: SLICE OF UTF ; RO input: UTF ; RO env: SLICE OF UTF ; seconds: F64) : ResultUtf RAISES ValueRange, Io.IOError
 
-**Deprecated** (the UTF transition): ExecWithinUtf is its UTF form.
+Since 0.26 a call of ExecWithin is ExecWithinUtf, whose heading this is.
 
-ExecWithin is Exec with a deadline over the whole run: starting
-it, both streams, and its exit.  When the time is up the program
-AND EVERYTHING IT STARTED are killed (its own process group on
-POSIX, a job object on Windows), and `stopped` answers TRUE.
-`out` and `err` still hold what the program had written by
-then: a bounded run reports, it does not vanish.
+_(undocumented)_
 
-The children matter as much as the child.  A program that has
-exited while something it started still holds its stdout is the
-case that waits forever without this, because the wait is on the
-STREAMS ending and not on the exit.
+### Become (RO prog: UTF ; RO name: UTF ; RO args: SLICE OF UTF) RAISES ValueRange, Io.IOError
 
-`seconds` not greater than zero is no limit at all, which is
-exactly Exec.  A bounded run is put in a group of its own so
-that it can be killed whole.  A group of its own no longer
-receives the terminal's Ctrl-C.  That is the price of the bound,
-and it is why an unbounded run is not given one.
+Since 0.26 a call of Become is BecomeUtf, whose heading this is.
 
-### Become (RO prog: STR ; RO name: STR ; RO args: SLICE OF STR) RAISES ValueRange, Io.IOError
-
-**Deprecated** (the UTF transition): BecomeUtf is its UTF form.
-
-THIS PROCESS BECOMES prog, told `name` as its argv[0] and args
-after it.  It keeps this process's stdin, stdout, stderr,
-environment and terminal, its exit status is the exit status, and
-a Ctrl-C reaches it as if it had been started by hand.  Exec,
-collecting both streams, is not that.  Nothing after a successful
-Become runs.  Become raises IOError when prog could not be
-started, and then this process is still here to say so.  POSIX
-replaces the process (execv); Windows, which cannot, starts prog
-with this process's handles, waits, and exits with its
-status.
+_(undocumented)_
 
 ### ProcessId () : I64
 
@@ -183,11 +143,11 @@ carries it, else dflt: Value (pool, '--out', 'a.nc').
 Positional answers every argument that is not an option, in
 order.
 
-### Glob (RO pattern: STR) : SLICE OF STR RAISES ValueRange
+### Glob (RO pattern: UTF) : SLICE OF UTF RAISES ValueRange
 
-**Deprecated** (the UTF transition): GlobUtf is its UTF form.
+Since 0.26 a call of Glob is GlobUtf, whose heading this is.
 
-see GlobUtf below for the UTF form
+_(undocumented)_
 
 ### ExecUtf (VAR pool: POOL ; RO prog: UTF ; RO args: SLICE OF UTF ; RO input: UTF ; RO env: SLICE OF UTF) : ResultUtf RAISES ValueRange, Io.IOError
 

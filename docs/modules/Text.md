@@ -25,294 +25,194 @@ Case folding is ASCII ONLY and says so in its name's absence: there
 is no Unicode case table here, because a wrong one is worse than
 none and the corpus has no caller that needs Turkish dotless i.
 
-### Eq (RO a: STR ; RO b: STR) : BOOL
+### Eq (RO a: UTF ; RO b: UTF) : BOOL
 
-**Deprecated** (the UTF transition): EqUtf is its UTF form.
+Since 0.26 a call of Eq is EqUtf, whose heading this is.
 
-Eq compares character by character, length first.  It is the same
-function as DynStr.Eq and deliberately so: this module is the
-inventory, and a caller who has Text imported should not have to
-import DynStr as well to compare two slices.
+EqUtf compares octet by octet: two UTF are equal exactly when
+their code points are (UTF-8 is a function of them).
 
-### Compare (RO a: STR ; RO b: STR) : I64
+### Compare (RO a: UTF ; RO b: UTF) : I64
 
-**Deprecated** (the UTF transition): CompareUtf is its UTF form.
+Since 0.26 a call of Compare is CompareUtf, whose heading this is.
 
-Compare answers -1, 0 or 1: the order Sort.Strs sorts by, code
-point by code point from the first, and the shorter first where
-one is a prefix of the other.  `<' on two strings is refused by
-design (par 2.3); this is the ordered comparison, for timestamps
-and names (an ISO 8601 timestamp orders as text).  2026-10-09.
+CompareUtf answers -1, 0 or 1 in Compare's order: by code point
+from the first, the shorter first where one is a prefix.  For
+UTF-8 that is the order of the octets.
 
-### Find (RO hay: STR ; RO needle: STR) : I64
+### Find (RO hay: UTF ; RO needle: UTF) : I64
 
-**Deprecated** (the UTF transition): FindUtf is its UTF form.
+Since 0.26 a call of Find is FindUtf, whose heading this is.
 
-Find answers the first index, or -1.  An empty needle is found at
-0, which is the convention every other language settled on and the
-one that makes Find/Slice compose without a special case.
+FindUtf answers the BYTE offset of the first occurrence, or -1;
+an empty needle is at 0.  It uses the C library's memchr and
+memcmp through the runtime since 2026-10-25, as every byte search
+in this module does.
 
-### FindChar (RO s: STR ; c: CHAR) : I64
+### FindChar (RO s: UTF ; c: CHAR) : I64
 
-**Deprecated** (the UTF transition): FindCharUtf is its UTF form.
+Since 0.26 a call of FindChar is FindCharUtf, whose heading this is.
 
 _(documented with the group below)_
 
-### LastChar (RO s: STR ; c: CHAR) : I64
+### LastChar (RO s: UTF ; c: CHAR) : I64
 
-**Deprecated** (the UTF transition): LastCharUtf is its UTF form.
+Since 0.26 a call of LastChar is LastCharUtf, whose heading this is.
 
-FindChar and LastChar answer the first and last index of c, or -1
-when it does not occur.  They answer -1 rather than LEN (s)
-because -1 cannot be mistaken for a position and will not
-silently index anything.  The M2 habit of answering a
-past-the-end index is how a not-found becomes a read.
+_(undocumented)_
 
-  c -- one scalar, not a set of them.  A search for any of
-       several characters is a loop the caller writes, because
-       M9 has no set type (report par 9.4) and an invented one
-       here would hide that.
+### Contains (RO hay: UTF ; RO needle: UTF) : BOOL
 
-### Contains (RO hay: STR ; RO needle: STR) : BOOL
-
-**Deprecated** (the UTF transition): ContainsUtf is its UTF form.
+Since 0.26 a call of Contains is ContainsUtf, whose heading this is.
 
 _(documented with the group below)_
 
-### StartsWith (RO s: STR ; RO prefix: STR) : BOOL
+### StartsWith (RO s: UTF ; RO prefix: UTF) : BOOL
 
-**Deprecated** (the UTF transition): StartsWithUtf is its UTF form.
-
-_(documented with the group below)_
-
-### EndsWith (RO s: STR ; RO suffix: STR) : BOOL
-
-**Deprecated** (the UTF transition): EndsWithUtf is its UTF form.
-
-Contains, StartsWith and EndsWith are the three yes/no forms.  An
-EMPTY needle, prefix or suffix is always present, which follows
-from Find's empty-needle rule above and is the answer that makes a
-loop over a possibly-empty separator terminate.  Contains is
-Find (...) >= 0 and says so rather than making every caller write
-it; Gen and M9c had both grown a private StartsW before this
-module existed.
-
-### IndexOf (RO among: SLICE OF STR ; RO s: STR) : I64
-
-**Deprecated** (the UTF transition): IndexOfUtf is its UTF form.
+Since 0.26 a call of StartsWith is StartsWithUtf, whose heading this is.
 
 _(documented with the group below)_
 
-### OneOf (RO s: STR ; RO among: SLICE OF STR) : BOOL
+### EndsWith (RO s: UTF ; RO suffix: UTF) : BOOL
 
-**Deprecated** (the UTF transition): OneOfUtf is its UTF form.
+Since 0.26 a call of EndsWith is EndsWithUtf, whose heading this is.
 
-IndexOf and OneOf test membership in a list of strings.  IndexOf
-answers the index of the first element equal to s, or -1; OneOf
-is the yes/no form.  Both do a linear search, which is what the
-chain of comparisons they replace was.
+_(undocumented)_
 
-  among -- usually a constant table (report par 2.2.4):
-             CONST Units = ['ppm', 'ppb', 'ppt'] ;
-             ... IF Text.OneOf (u, Units) THEN ...
-           A table is lent whole to an RO parameter and to
-           nothing else, which is why this one is RO.  The
-           compiler held 29 such lists as `Eq (n, 'a') OR Eq
-           (n, 'b') OR ...`, one of them 96 names long, when
-           these two were written (2026-10-01).
+### IndexOf (RO among: SLICE OF UTF ; RO s: UTF) : I64
 
-### CountChar (RO s: STR ; c: CHAR) : I64
-
-**Deprecated** (the UTF transition): CountCharUtf is its UTF form.
-
-CountChar answers how many times c occurs.  Split allocates
-CountChar + 1 pieces, which is what this is for: sizing the vector
-before filling it, in one pass each, with no growable array in
-between.
-
-### Split (RO s: STR ; sep: CHAR) : SLICE OF STR
-
-**Deprecated** (the UTF transition): SplitUtf is its UTF form.
-
-n separators give n+1 pieces, empties included: 'a,,b' splits
-into three, and ',' into two empty ones.  A split that drops
-empties is a different function, and callers that want it can say
-so; a split that silently loses fields is how CSV readers corrupt
-data.  The PIECES are views into s: only the vector is
-allocated.
-
-### Fields (RO s: STR ; sep: CHAR) : SLICE OF STR
-
-**Deprecated** (the UTF transition): FieldsUtf is its UTF form.
-
-Fields is Split without the empty pieces: `a,,b,` gives [a, b],
-which is C's strtok and awk's default, where Split gives
-[a, '', b, ''].  The ONEFlux port carried this beside Split
-(Common.Tokens).
-
-### Keep (VAR pool: POOL ; RO s: STR) : STR
-
-**Deprecated** (the UTF transition): KeepUtf is its UTF form.
-
-Keep answers a COPY of s in pool.  It is the one thing to do with
-a string that dies with its frame (a `+` result, a view of a
-scratch buffer) before storing it in a record that outlives the
-frame.  The ONEFlux port carried these six lines in six modules
-and the bugs were the forgotten ones (par 2.3).
-
-### Cat (VAR pool: POOL ; RO a: STR ; RO b: STR) : STR
-
-**Deprecated** (the UTF transition): CatUtf is its UTF form.
-
-Cat answers a + b, in pool rather than in the frame.  It is for
-the result that is stored, where `+` is for the result that is
-used.
-
-### Join (RO parts: SLICE OF STR ; RO sep: STR) : STR
-
-**Deprecated** (the UTF transition): JoinUtf is its UTF form.
-
-Join is the inverse of Split, and exact: Join (Split (s, c), c) is
-s again, because Split keeps its empties.
-
-  parts -- BORROWED and copied out of; the result is new
-           storage in the caller's frame (par 4.3) and shares
-           nothing with them, so the
-           pieces may be views of a buffer the caller is about
-           to reuse.
-  sep   -- placed BETWEEN pieces, so an empty parts gives an
-           empty result and a one-element parts gives that
-           element with no separator at all.
-
-### Lower (RO s: STR) : STR
-
-**Deprecated** (the UTF transition): LowerUtf is its UTF form.
+Since 0.26 a call of IndexOf is IndexOfUtf, whose heading this is.
 
 _(documented with the group below)_
 
-### Upper (RO s: STR) : STR
+### OneOf (RO s: UTF ; RO among: SLICE OF UTF) : BOOL
 
-**Deprecated** (the UTF transition): UpperUtf is its UTF form.
+Since 0.26 a call of OneOf is OneOfUtf, whose heading this is.
 
-Lower and Upper map every scalar as Python's str.lower and
-str.upper map it ON ITS OWN.  They use the full mappings, so
-'straße' is 'STRASSE' and 'İ' lowers to 'i' and a combining dot:
-the answer may be longer than s.  They use no context: Python
-lowers a Σ that ends a word to ς, this to σ.  The tables come
-from Python 3.14's Unicode 16.0 (tools/textucd.py); TextTest
-holds them at every code point.  They were ASCII-only until
-2026-10-10.
+_(undocumented)_
 
-### Replace (RO s: STR ; RO old: STR ; RO by: STR) : STR
+### CountChar (RO s: UTF ; c: CHAR) : I64
 
-**Deprecated** (the UTF transition): ReplaceUtf is its UTF form.
+Since 0.26 a call of CountChar is CountCharUtf, whose heading this is.
 
-Replace answers s with every occurrence of `old' replaced by
-`by': found left to right, and never overlapping, so 'aaaa' with
-'aa' replaced is two replacements and not three.  It is Python's
-str.replace.  An
-EMPTY old occurs nowhere here and s comes back as it was;
-Python finds it between every two characters, which is nobody's
-meaning.  A copy either way: the answer shares nothing with s.
+_(undocumented)_
 
-### AllIn (RO s: STR ; RO set: STR) : BOOL
+### Split (RO s: UTF ; sep: CHAR) : SLICE OF UTF
 
-**Deprecated** (the UTF transition): AllInUtf is its UTF form.
+Since 0.26 a call of Split is SplitUtf, whose heading this is.
 
-AllIn asks whether s is non-empty and every character of it is
-in `set'.  `set' is the inside of a Match bracket (characters and
-ranges, `a-z0-9_-', a leading `!' negating), so AllIn (s, 'a-z-')
-is what a regular expression writes `[a-z-]+'.  Empty s answers
-FALSE, as Python's ''.isdigit () does.  It is held to fnmatch,
-character by character (2026-10-10, cp-kernel's proposal: it
-wrote these by hand).
+_(undocumented)_
 
-### AllDigits (RO s: STR) : BOOL
+### Fields (RO s: UTF ; sep: CHAR) : SLICE OF UTF
 
-**Deprecated** (the UTF transition): AllDigitsUtf is its UTF form.
+Since 0.26 a call of Fields is FieldsUtf, whose heading this is.
 
-_(documented with the group below)_
+In SplitUtf and FieldsUtf the pieces are views of s; only the
+vector is allocated.
 
-### AllLower (RO s: STR) : BOOL
+### Keep (VAR pool: POOL ; RO s: UTF) : UTF
 
-**Deprecated** (the UTF transition): AllLowerUtf is its UTF form.
+Since 0.26 a call of Keep is KeepUtf, whose heading this is.
 
-_(documented with the group below)_
+_(undocumented)_
 
-### AllUpper (RO s: STR) : BOOL
+### Cat (VAR pool: POOL ; RO a: UTF ; RO b: UTF) : UTF
 
-**Deprecated** (the UTF transition): AllUpperUtf is its UTF form.
+Since 0.26 a call of Cat is CatUtf, whose heading this is.
+
+_(undocumented)_
+
+### Join (RO parts: SLICE OF UTF ; RO sep: UTF) : UTF
+
+Since 0.26 a call of Join is JoinUtf, whose heading this is.
+
+_(undocumented)_
+
+### Lower (RO s: UTF) : UTF
+
+Since 0.26 a call of Lower is LowerUtf, whose heading this is.
 
 _(documented with the group below)_
 
-### AllAlnum (RO s: STR) : BOOL
+### Upper (RO s: UTF) : UTF
 
-**Deprecated** (the UTF transition): AllAlnumUtf is its UTF form.
+Since 0.26 a call of Upper is UpperUtf, whose heading this is.
 
-AllDigits, AllLower, AllUpper and AllAlnum are AllIn over the
-ASCII sets 0-9, a-z, A-Z and all three: what an identifier or a
-file name's field is checked against.  Unicode
-letters are not letters here; Upper and Lower are where Text
-knows them.
+_(undocumented)_
 
-### Match (RO pattern: STR ; RO s: STR) : BOOL
+### Replace (RO s: UTF ; RO old: UTF ; RO by: UTF) : UTF
 
-**Deprecated** (the UTF transition): MatchUtf is its UTF form.
+Since 0.26 a call of Replace is ReplaceUtf, whose heading this is.
 
-Match asks whether the WHOLE of s fits the shell pattern.  It is
-Python's fnmatch.fnmatchcase, case-sensitive:
+_(undocumented)_
 
-  *        any run of characters, none included
-  ?        any one character
-  [abc]    one of those; [a-c] one in that range; [!abc] one
-           that is not; a ] straight after the [ or the [! is a
-           member, and so is a - at either end
-  a [ that no ] closes, and every other character, stand for
-  themselves.  There is no escape character.
+### AllIn (RO s: UTF ; RO set: UTF) : BOOL
 
-A range written backwards, [c-a], holds nothing.  The / is a
-character like any other here; System.Glob is what knows about
-directories.
+Since 0.26 a call of AllIn is AllInUtf, whose heading this is.
 
-### ToBase64 (RO b: SLICE OF BYTE) : STR
+_(undocumented)_
 
-**Deprecated** (the UTF transition): ToBase64Utf is its UTF form.
+### AllDigits (RO s: UTF) : BOOL
 
-ToBase64 answers RFC 4648 base64 of the octets, padded with =, no
-line breaks: Python's base64.b64encode.  It turns octets to TEXT:
-a key in a header, a token in a URL (not URL-safe; that alphabet
-is not here), a mail body line.
+Since 0.26 a call of AllDigits is AllDigitsUtf, whose heading this is.
 
-### ToBase64Url (RO b: SLICE OF BYTE) : STR
+_(documented with the group below)_
 
-**Deprecated** (the UTF transition): ToBase64UrlUtf is its UTF form.
+### AllLower (RO s: UTF) : BOOL
 
-ToBase64Url answers RFC 4648 section 5, base64url WITHOUT
-padding: `-' and `_' for `+' and `/', no `='.  ICOS object ids,
-JWTs and URL tokens use it.  It is Python's
-base64.urlsafe_b64encode (b).rstrip (b'=') (cp-kernel's issue 19,
-2026-10-09).
+Since 0.26 a call of AllLower is AllLowerUtf, whose heading this is.
 
-### FromBase64Url (RO s: STR) : SLICE OF BYTE RAISES ValueRange
+_(documented with the group below)_
 
-**Deprecated** (the UTF transition): FromBase64UrlUtf is its UTF form.
+### AllUpper (RO s: UTF) : BOOL
 
-FromBase64Url answers the octets back from base64url, padding
-optional.  A length of 1 mod 4 cannot be, and any character
-outside the url alphabet (a
-`+' or `/' included) RAISES ValueRange, as does `=' anywhere but
-at the end of a padded group.
+Since 0.26 a call of AllUpper is AllUpperUtf, whose heading this is.
 
-### FromBase64 (RO s: STR) : SLICE OF BYTE RAISES ValueRange
+_(documented with the group below)_
 
-**Deprecated** (the UTF transition): FromBase64Utf is its UTF form.
+### AllAlnum (RO s: UTF) : BOOL
 
-FromBase64 answers the octets back, STRICTLY: Python's
-base64.b64decode (s, validate=True).  A character outside the
-alphabet, a blank, a line break, a length that is not a multiple
-of four, padding that is not one or two = at the very end: each
-RAISES ValueRange.  FromBase64 takes what Python takes: the
-unused low bits before a = are not held to zero.
+Since 0.26 a call of AllAlnum is AllAlnumUtf, whose heading this is.
+
+AllInUtf, AllDigitsUtf, AllLowerUtf, AllUpperUtf and AllAlnumUtf
+are AllIn over code points; the four sets stay ASCII, as
+AllAlnum's comment says.
+
+### Match (RO pattern: UTF ; RO s: UTF) : BOOL
+
+Since 0.26 a call of Match is MatchUtf, whose heading this is.
+
+MatchUtf is Match over CHARACTERS: `?' takes one code point, a
+bracket's members and the ends of a range are code points, so
+`Gr?ße' fits `Grüße' and `[ä-ü]' holds ö.  It is
+fnmatch.fnmatchcase on str.
+
+### ToBase64 (RO b: SLICE OF BYTE) : UTF
+
+Since 0.26 a call of ToBase64 is ToBase64Utf, whose heading this is.
+
+_(undocumented)_
+
+### ToBase64Url (RO b: SLICE OF BYTE) : UTF
+
+Since 0.26 a call of ToBase64Url is ToBase64UrlUtf, whose heading this is.
+
+_(undocumented)_
+
+### FromBase64Url (RO s: UTF) : SLICE OF BYTE RAISES ValueRange
+
+Since 0.26 a call of FromBase64Url is FromBase64UrlUtf, whose heading this is.
+
+ToBase64Utf, ToBase64UrlUtf, FromBase64Utf and FromBase64UrlUtf
+are the base64 forms with the TEXT side a UTF; the octets are
+octets either way.  ToBase64 and ToBase64Utf take the same
+argument, so the UTF answer is asked for by name.
+
+### FromBase64 (RO s: UTF) : SLICE OF BYTE RAISES ValueRange
+
+Since 0.26 a call of FromBase64 is FromBase64Utf, whose heading this is.
+
+_(undocumented)_
 
 ### BLen (RO u: UTF) : I64
 

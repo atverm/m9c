@@ -163,7 +163,7 @@ CONST
   NoBattery = ['Lex', 'Ast', 'Parse', 'Print', 'Sem', 'Gen', 'Doc', 'Diag',
                'M9c', 'Review', 'Check', 'Arrays', 'Numeric', 'Png', 'NbCells',
                'NbShow', 'ExportDef', 'ExportUse', 'Pg', 'Sparql', 'Rdf', 'Regex', 'Xml', 'Hash', 'Smtp', 'Rsa', 'Map',
-               'Parquet', 'Seq', 'JsonUtf', 'Chars', 'DynUtf'] ;
+               'Parquet', 'Seq', 'JsonUtf', 'Chars', 'DynUtf', 'Tsk'] ;
   NoBatteryWhy = ['lexdiff, comdiff and the token-count golden',
                   'parsediff (every node kind printed back)',
                   'parsediff and the parse probes',
@@ -195,7 +195,8 @@ CONST
                   'm9test (SeqTest, Distinct against Python dict.fromkeys goldens)',
                   'm9test (JsonUtfTest, against Python json)',
                   'm9test (CharsTest, against Python str indexing)',
-                  'm9test (DynUtfTest, against Python encode and join)'] ;
+                  'm9test (DynUtfTest, against Python encode and join)',
+                  'm9test (TskTest, every index once a round, by the worker Chunk names)'] ;
   GendiffFixtures = ['LibmGate', 'KindUse', 'EnumUse', 'Palette'] ;
 
 TYPE

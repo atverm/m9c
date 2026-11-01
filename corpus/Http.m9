@@ -639,9 +639,9 @@ PROCEDURE SplitUrl (VAR pool: POOL ; RO url: STR ; VAR secure: BOOL ;
   RAISES TransportError, ValueRange =
 VAR i, j, colon : I64 ;  rest : STR ;
 BEGIN
-  IF Text.BLen (url) > 8 AND Text.Eq (SLICE (url, 0, 8), 'https://') THEN
+  IF Text.BLen (url) > 8 AND Text.StartsWith (url, 'https://') THEN
     secure := TRUE ; port := 443 ; rest := SLICE (url, 8, Text.BLen (url) - 8)
-  ELSIF Text.BLen (url) > 7 AND Text.Eq (SLICE (url, 0, 7), 'http://') THEN
+  ELSIF Text.BLen (url) > 7 AND Text.StartsWith (url, 'http://') THEN
     secure := FALSE ; port := 80 ; rest := SLICE (url, 7, Text.BLen (url) - 7)
   ELSE
     RAISE TransportError ('not an http or https URL')
@@ -1336,7 +1336,7 @@ PROCEDURE OnPath (RO reqPath: STR ; RO cpath: STR) : BOOL
 BEGIN
   IF Text.BLen (cpath) = 0 THEN RETURN TRUE END ;
   IF Text.BLen (cpath) > Text.BLen (reqPath) THEN RETURN FALSE END ;
-  IF NOT Text.Eq (SLICE (reqPath, 0, Text.BLen (cpath)), cpath) THEN
+  IF NOT Text.StartsWith (reqPath, cpath) THEN
     RETURN FALSE
   END ;
   IF Text.BLen (cpath) = Text.BLen (reqPath) THEN RETURN TRUE END ;

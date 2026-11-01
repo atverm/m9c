@@ -16,7 +16,7 @@ set -e
 cd "$(dirname "$0")"
 . ./lib/gen.sh          # runtime/gen is BUILT here, not found
 
-M9CNEW=$(mktemp -d)
+M9CNEW=$(mktemp -d ./m9cnew.XXXXXX)
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label \
     -Wno-unused-parameter -Wno-unused-function \
     -iquote .. -iquote ../gen ../m9rt.c $COMPILERC -o "$M9CNEW/m9c"

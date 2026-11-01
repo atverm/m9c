@@ -432,15 +432,15 @@ for Add.
 
 _(documented with the group below)_
 
-### SetA (VAR pool: POOL ; VAR n: PTR Node ; RO s: STR)
+### SetA (VAR pool: POOL ; VAR n: PTR Node ; RO u: UTF)
 
-**Deprecated** (the UTF transition): SetAUtf is its UTF form.
+Since 0.26 a call of SetA is SetAUtf, whose heading this is.
 
 _(documented with the group below)_
 
-### SetB (VAR pool: POOL ; VAR n: PTR Node ; RO s: STR)
+### SetB (VAR pool: POOL ; VAR n: PTR Node ; RO u: UTF)
 
-**Deprecated** (the UTF transition): SetBUtf is its UTF form.
+Since 0.26 a call of SetB is SetBUtf, whose heading this is.
 
 _(documented with the group below)_
 

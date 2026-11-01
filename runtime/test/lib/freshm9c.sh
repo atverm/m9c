@@ -12,7 +12,12 @@
 # entries; that cache's key holds m9c's mtime.
 [ -n "${COMPILERC:-}" ] || . ./lib/gen.sh
 if [ -z "${M9C:-}" ]; then
-  M9CNEW=$(mktemp -d)
+  # The new binary is built BESIDE m9c, so the mv below is a rename.
+  # From /tmp it was a copy across filesystems in CI's container: m9c
+  # was written in place while a gate in another lane ran it ("Text
+  # file busy", listdiff on a fresh tree, 2026-11-01).  The seven gates
+  # that build their own m9c do the same.
+  M9CNEW=$(mktemp -d ./m9cnew.XXXXXX)
   gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label \
       -Wno-unused-parameter -Wno-unused-function \
       -iquote .. -iquote ../gen ../m9rt.c $COMPILERC -o "$M9CNEW/m9c" ||
