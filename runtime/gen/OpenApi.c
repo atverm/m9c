@@ -89,6 +89,7 @@ m9_sl_UTF8 OpenApi_Document (m9_sl_UTF8 title, m9_sl_UTF8 version, HttpServer_Ro
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) { m9ln = 96; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     bool m9t2 = (!OpenApi_PathSeen (r, i, err));
     if (err->exc) { m9ln = 97; goto L_ret; };
     if (m9t2) {
@@ -112,6 +113,7 @@ m9_sl_UTF8 OpenApi_Document (m9_sl_UTF8 title, m9_sl_UTF8 version, HttpServer_Ro
       m9t3to = m9_sub_i64 (n, INT64_C(1), err);
       if (err->exc) { m9ln = 107; goto L_ret; };
       if (j <= m9t3to) for (;;) {
+        M9_YCHK ();
         { __typeof__(HttpServer_RoutePath (r, j, err)) m9a2 = HttpServer_RoutePath (r, j, err);
           if (err->exc) { m9ln = 108; goto L_ret; };
         { __typeof__(HttpServer_RoutePath (r, i, err)) m9a3 = HttpServer_RoutePath (r, i, err);
@@ -167,6 +169,7 @@ static bool OpenApi_PathSeen (HttpServer_Router * r, int64_t i, m9_state *err)
   m9t1to = m9_sub_i64 (i, INT64_C(1), err);
   if (err->exc) { m9ln = 35; goto L_ret; };
   if (j <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__(HttpServer_RoutePath (r, j, err)) m9a4 = HttpServer_RoutePath (r, j, err);
       if (err->exc) { m9ln = 36; goto L_ret; };
     { __typeof__(HttpServer_RoutePath (r, i, err)) m9a5 = HttpServer_RoutePath (r, i, err);

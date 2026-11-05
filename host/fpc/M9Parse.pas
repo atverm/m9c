@@ -391,7 +391,7 @@ end;
 
 function TParser.PDeclaration: TNode;
 var
-  d, ag : TNode;
+  d, ag, at : TNode;
 begin
   case cur.kind of
     tkCONST :
@@ -402,6 +402,8 @@ begin
         begin
           d := NewNode (nkConstDecl);
           d.a := TakeIdent ('constant name');
+          { An attribute goes before the =, as Parse.PDeclaration. }
+          at := PAttribOpt;
           Expect (tkEq, '=');
           if cur.kind = tkLBrack then
           begin
@@ -421,6 +423,7 @@ begin
           end
           else
             d.Add (PExpr);
+          if at <> nil then d.Add (at);
           Expect (tkSemi, ';');
           Result.Add (d);
         end;
@@ -557,6 +560,8 @@ begin
     Result := NewNode (nkAttrib);
     Bump;
     Result.a := TakeIdent ('attribute name');
+    { [DEPRECATED 'text'] carries a string: what to write instead }
+    if cur.kind = tkStrLit then begin Result.b := cur.text; Bump; end;
     Expect (tkRBrack, ']');
   end;
 end;
@@ -1162,6 +1167,10 @@ begin
   Result.line := e.line;
   Result.col := e.col;
   Result.a := d.kids[High (d.kids)].a;
+  { b keeps what qualified the variant, as Parse.QualPattern }
+  Result.b := d.a;
+  for i := 0 to High (d.kids) - 1 do
+    Result.b := Result.b + '.' + d.kids[i].a;
   ids := NewNode (nkIdentList);
   ids.line := al.line;
   ids.col := al.col;

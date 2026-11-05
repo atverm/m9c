@@ -67,6 +67,12 @@ a file's token count is a count of code.
 KindName answers the FPC oracle's names, for dumps and
 diagnostics.
 
+### IsKeyword (RO w: STR) : BOOL
+
+IsKeyword answers whether w spells a keyword, in capitals.  M9f
+asks it to reserve each keyword's lower-case .m9f form, so a
+keyword appended to the table is reserved there too.
+
 ### Collect (on: BOOL)
 
 Collect arms or disarms.  Arming also CLEARS what was collected, so

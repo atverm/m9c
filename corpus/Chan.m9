@@ -1,0 +1,189 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
+DEFINITION MODULE Chan ;
+
+(* Chan is the channel between tasks (stage 4 of docs/task-plan.md): a
+   bounded ring in a monitor.  Send waits while the ring is full and
+   Receive while it is empty.  A task that waits parks, and its
+   carrier runs other tasks.  A THREAD waits in its own way, so a
+   channel joins THREADs and TASKs alike.
+
+   A channel carries I64s (Alex, 2026-11-02: "I64 + index").  M9 has
+   no generics, so one element type is chosen, and the index is the
+   one that carries anything.  A bigger message stays in the
+   program's own [SHARABLE] table, and the channel carries its index:
+   job k, chunk k, agent k.  Ownership stays checked: the table is
+   the program's, and the claim that each index is in one hand at a
+   time is the program's, as for any [SHARABLE] record.
+
+     TYPE Job = RECORD
+       work : Chan.Ints ;           (* the indices of the chunks to do *)
+       done : Chan.Ints ;           (* the indices done *)
+       chunks : SLICE OF Chunk ;    (* the messages themselves *)
+     END [SHARABLE] ;
+
+     PROCEDURE Worker (VAR j: Job) =
+     VAR k : I64 ;
+     BEGIN
+       WHILE Chan.Receive (j.work, k) DO
+         ... j.chunks[k] ... ;
+         Chan.Send (j.done, k)
+       END
+     END Worker ;
+
+   CLOSE ends a channel's sending.  Receive drains what is in the
+   ring, then answers FALSE: that is how a worker learns there is no
+   more work.  Send on a closed channel raises Closed.  Close twice is
+   no error.
+
+   A zeroed Ints is ready, with room for MaxCap values.  SetCap makes
+   the ring smaller, before the first Send.  A smaller ring makes a
+   fast sender wait for a slow receiver sooner: that is the
+   back-pressure a pipeline wants.  There is no unbuffered channel.
+   SetCap (c, 1) is the nearest: the sender may run one value ahead.
+
+   SIGNAL wakes every waiter of a monitor (report par 6).  So a Send
+   wakes the receivers waiting, and the senders too, when there are
+   any.  Each one looks and waits again if there is nothing for it.
+   Under TASK a wake is a queue push, no system call.  A channel with
+   thousands of waiters on one side still pays for each look. *)
+
+CONST
+  MaxCap = 256 ;
+
+TYPE
+  Ints = MONITOR RECORD
+    ring : ARRAY 256 OF I64 ;
+    head : I64 ;                (* the oldest value *)
+    n : I64 ;                   (* values in the ring *)
+    cap : I64 ;                 (* 0 is MaxCap: a zeroed channel works *)
+    closed : BOOL ;
+  END ;
+
+EXCEPTION
+  Closed ;
+    (* Closed reports a Send on a channel that was closed. *)
+
+PROCEDURE SetCap (VAR c: Ints ; cap: I64) RAISES ValueRange ;
+  (* SetCap sets the ring's room, 1 .. MaxCap, while the channel is
+     empty.  It raises ValueRange for a cap outside that, or when a
+     value is in the ring. *)
+
+PROCEDURE Send (VAR c: Ints ; v: I64) RAISES Closed ;
+  (* Send puts v in the ring, waiting while it is full.  It raises
+     Closed when the channel was closed, also while it waited. *)
+
+PROCEDURE Receive (VAR c: Ints ; VAR v: I64) : BOOL ;
+  (* Receive takes the oldest value into v, waiting while the ring is
+     empty.  It answers FALSE, and leaves v, when the channel is
+     closed and the ring empty. *)
+
+PROCEDURE TrySend (VAR c: Ints ; v: I64) : BOOL RAISES Closed ;
+  (* TrySend puts v in the ring if there is room, and answers whether
+     it did.  It never waits.  It raises Closed as Send does. *)
+
+PROCEDURE TryReceive (VAR c: Ints ; VAR v: I64) : BOOL ;
+  (* TryReceive takes the oldest value into v if there is one, and
+     answers whether it did.  It never waits. *)
+
+PROCEDURE Close (VAR c: Ints) ;
+  (* Close ends the sending and wakes every waiter. *)
+
+PROCEDURE Count (VAR c: Ints) : I64 ;
+  (* Count answers the values in the ring now. *)
+
+END Chan.
+
+
+IMPLEMENTATION MODULE Chan ;
+
+(* Each procedure below is bound to the channel, and a bound procedure
+   may not call another bound to the same monitor type (MonReach).  So
+   the ring arithmetic is written out in each.  An index into the ring
+   is MOD MaxCap, so it is always in range; the IndexError the checker
+   asks for is handled where it cannot happen. *)
+
+PROCEDURE SetCap (VAR c: Ints ; cap: I64) RAISES ValueRange =
+BEGIN
+  IF cap < 1 OR cap > MaxCap OR c.n # 0 THEN RAISE ValueRange END ;
+  c.cap := cap ;
+  c.head := 0
+END SetCap ;
+
+PROCEDURE Send (VAR c: Ints ; v: I64) RAISES Closed =
+VAR room : I64 ;
+BEGIN
+  room := c.cap ;
+  IF room = 0 THEN room := MaxCap END ;
+  WHILE c.n >= room AND NOT c.closed DO
+    WAIT (c)
+  END ;
+  IF c.closed THEN RAISE Closed END ;
+  BEGIN
+    c.ring[(c.head + c.n) MOD MaxCap] := v
+  EXCEPT
+  | IndexError :
+  END ;
+  c.n := c.n + 1 ;
+  SIGNAL (c)
+END Send ;
+
+PROCEDURE Receive (VAR c: Ints ; VAR v: I64) : BOOL =
+BEGIN
+  WHILE c.n = 0 AND NOT c.closed DO
+    WAIT (c)
+  END ;
+  IF c.n = 0 THEN RETURN FALSE END ;
+  BEGIN
+    v := c.ring[c.head]
+  EXCEPT
+  | IndexError :
+  END ;
+  c.head := (c.head + 1) MOD MaxCap ;
+  c.n := c.n - 1 ;
+  SIGNAL (c) ;
+  RETURN TRUE
+END Receive ;
+
+PROCEDURE TrySend (VAR c: Ints ; v: I64) : BOOL RAISES Closed =
+VAR room : I64 ;
+BEGIN
+  IF c.closed THEN RAISE Closed END ;
+  room := c.cap ;
+  IF room = 0 THEN room := MaxCap END ;
+  IF c.n >= room THEN RETURN FALSE END ;
+  BEGIN
+    c.ring[(c.head + c.n) MOD MaxCap] := v
+  EXCEPT
+  | IndexError :
+  END ;
+  c.n := c.n + 1 ;
+  SIGNAL (c) ;
+  RETURN TRUE
+END TrySend ;
+
+PROCEDURE TryReceive (VAR c: Ints ; VAR v: I64) : BOOL =
+BEGIN
+  IF c.n = 0 THEN RETURN FALSE END ;
+  BEGIN
+    v := c.ring[c.head]
+  EXCEPT
+  | IndexError :
+  END ;
+  c.head := (c.head + 1) MOD MaxCap ;
+  c.n := c.n - 1 ;
+  SIGNAL (c) ;
+  RETURN TRUE
+END TryReceive ;
+
+PROCEDURE Close (VAR c: Ints) =
+BEGIN
+  c.closed := TRUE ;
+  SIGNAL (c)
+END Close ;
+
+PROCEDURE Count (VAR c: Ints) : I64 =
+BEGIN
+  RETURN c.n
+END Count ;
+
+END Chan.

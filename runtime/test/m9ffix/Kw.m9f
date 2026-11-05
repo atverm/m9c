@@ -1,0 +1,22 @@
+// Kw is the m9f gate's hand-written .m9f.  It must convert to Kw.m9
+// byte for byte, and that M9 must check.
+module Kw
+import Io
+var task_ : I64
+procedure Work (n: PTR I64) =
+{
+  Io.WriteLine ('work')
+} Work
+var p : PTR I64
+{
+  task_ = 1
+  p = NEW (I64)
+  task (Work, p)
+  if task_ != 2 && task_ % 2 == 1 {
+    Io.WriteLine ('odd')
+  } elsif !(task_ == 0) {
+    Io.WriteLine ('even')
+  } else {
+    Io.WriteLine ('zero')
+  }
+} Kw.

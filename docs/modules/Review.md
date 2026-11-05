@@ -25,7 +25,7 @@ passed-over sites stand, as text:
 `12, 40, 41, ...'.  It is empty
 when nothing was passed over.
 
-### Page (root: PTR Ast.Node ; RO modName: UTF ; checked: BOOL ; RO stats: SLICE OF Stat ; RO writes: SLICE OF UTF ; RO stale: SLICE OF UTF ; RO strs: SLICE OF UTF ; RO adrs: SLICE OF UTF) : UTF
+### Page (root: PTR Ast.Node ; RO modName: UTF ; checked: BOOL ; RO stats: SLICE OF Stat ; RO writes: SLICE OF UTF ; RO stale: SLICE OF UTF ; RO strs: SLICE OF UTF ; RO adrs: SLICE OF UTF ; RO deps: SLICE OF UTF) : UTF
 
 Page answers the review page for one parsed file.
 
@@ -55,6 +55,11 @@ Page answers the review page for one parsed file.
              forms of the UTF transition a module still uses, the
              edits it owes (docs/utf8-plan.md).  It is empty from
              a caller that ran no checker.
+  deps    -- the uses of a deprecated name from another module
+             (Sem.NoteAt), each `LINE:COL note: MSG', printed
+             under COUNTED: the names the module's imports retire
+             in their next release (report par 3.9).  It is
+             empty from a caller that ran no checker.
   strs    -- the uses of a STR that the UTF-8 switch refuses
              (Sem.StrSite): a subscript, a write through one, a
              LEN, each `LINE KIND what', printed under COUNTED.
@@ -66,7 +71,7 @@ Page answers the review page for one parsed file.
 The page has four sections: PROVED (or, unchecked, the functions
 that can reach their END without answering, named from the tree
 alone), what a person DECIDED (each named pool, pool parameter,
-KEPT, HEAP, owned allocation, THREAD and module variable), what is
-TRUSTED (UNSAFE units, foreign procedures), and what there was
-to check.  A section with nothing in it still prints its
+KEPT, HEAP, owned allocation, THREAD, TASK and module variable),
+what is TRUSTED (UNSAFE units, foreign procedures), and what
+there was to check.  A section with nothing in it still prints its
 zeroes: an absent line and a zero are different claims.

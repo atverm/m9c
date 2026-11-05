@@ -362,6 +362,7 @@ int main (int argc, char **argv)
   m9t5to = m9_sub_i64 (INT64_C(4), INT64_C(1), err);
   if (err->exc) { m9ln = 114; goto L_hdl_m9t1; };
   if (i <= m9t5to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(m9_sl_UTF8 *) m9_at ((*Names).v, i, INT64_C(4), sizeof (m9_sl_UTF8), err))) m9a4 = (*(m9_sl_UTF8 *) m9_at ((*Names).v, i, INT64_C(4), sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 115; goto L_hdl_m9t1; };
     { __typeof__(Text_BLen (m9a4, err)) m9a5 = Text_BLen (m9a4, err);

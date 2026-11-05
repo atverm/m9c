@@ -35,6 +35,6 @@ struct Review_Stat {
   m9_sl_UTF8 lines;
 };
 
-m9_sl_UTF8 Review_Page (Ast_Node * root, m9_sl_UTF8 modName, bool checked, m9_sl_Review_Stat stats, m9_sl_m9_sl_UTF8 writes, m9_sl_m9_sl_UTF8 stale, m9_sl_m9_sl_UTF8 strs, m9_sl_m9_sl_UTF8 adrs, m9_state *err);
+m9_sl_UTF8 Review_Page (Ast_Node * root, m9_sl_UTF8 modName, bool checked, m9_sl_Review_Stat stats, m9_sl_m9_sl_UTF8 writes, m9_sl_m9_sl_UTF8 stale, m9_sl_m9_sl_UTF8 strs, m9_sl_m9_sl_UTF8 adrs, m9_sl_m9_sl_UTF8 deps, m9_state *err);
 
 #endif

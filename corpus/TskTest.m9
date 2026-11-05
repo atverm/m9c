@@ -6,7 +6,9 @@ MODULE TskTest ;
    round, by the worker Chunk names, for n divisible by the workers or
    not, for n < workers, for one worker and for n = 0.  A body that fails must
    make For raise Failed after the round, and the crew must run the
-   next round.  Start, For and Stop must refuse their misuses. *)
+   next round.  Start, For and Stop must refuse their misuses.  Then
+   the loops again, and the failing body, with the workers started as
+   TASKs. *)
 
 IMPORT Check ;
 IMPORT Faults ;
@@ -29,6 +31,7 @@ TYPE
 VAR
   t : Check.T ;
   pool : POOL ;
+  tasks : BOOL ;                (* start the crews as TASKs, not THREADs *)
 
 (* Body runs one chunk.  It raises IndexError at index 5 when the op
    is Fail. *)
@@ -67,8 +70,14 @@ BEGIN
   j.a := NEW (pool, I64, Cap) ;
   j.hits := NEW (pool, I64, Cap) ;
   j.owner := NEW (pool, I64, Cap) ;
+  (* The workers start first, and Start is told how many: Tsk's order
+     since 2026-11-01.  They Join before Start and wait in Next. *)
+  IF tasks THEN
+    FOR k := 1 TO workers DO TASK (Worker, j) END
+  ELSE
+    FOR k := 1 TO workers DO THREAD (Worker, j) END
+  END ;
   Tsk.Start (j.crew, workers) ;
-  FOR k := 1 TO workers DO THREAD (Worker, j) END ;
   RETURN j
 END NewJob ;
 
@@ -248,5 +257,12 @@ BEGIN
   Check.That (t, 'Start refuses a second Start', StartTwice ()) ;
   Check.That (t, 'For refuses a crew not started', ForUnstarted ()) ;
   Check.That (t, 'For refuses a crew stopped', ForStopped ()) ;
+  (* Tsk.For on tasks (stage 4 of docs/task-plan.md): the same crews
+     started with TASK. *)
+  tasks := TRUE ;
+  Loop ('tasks: 1000 on 4', 1000, 4, 3) ;
+  Loop ('tasks: 3 on 8, n < workers', 3, 8, 2) ;
+  Loop ('tasks: 1003 on Workers (1003)', 1003, Tsk.Workers (1003), 2) ;
+  Failing () ;
   Io.Halt (Check.Done (t, 'Tsk'))
 END TskTest.

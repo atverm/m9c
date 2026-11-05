@@ -1,0 +1,219 @@
+MODULE SupTest ;
+
+(* SupTest holds Sup to its policies, with child TASKs.  One for one:
+   a child that fails twice by a checked exception is started again
+   twice, and its siblings once each.  Giving up: a child that always
+   fails makes Watch raise GaveUp after the allowed restarts, and every
+   child then leaves its loop.  All for one: when one child fails, its
+   sibling is started again too.  Dirty: a child that crashes twice by
+   a bug is restarted dirty twice, under the limit of three.  Policy
+   refuses its misuses.  The stop at the third dirty crash ends the
+   process, so tasks.sh holds it (examples/supervision). *)
+
+IMPORT Check ;
+IMPORT Faults ;
+IMPORT Io ;
+IMPORT Sup ;
+IMPORT Time ;
+
+EXCEPTION
+  Refused ;
+
+CONST
+  (* what a child does on each start: the job's mode *)
+  FailTwice = 1 ;               (* child 0 fails its first two starts *)
+  AlwaysFail = 2 ;              (* child 0 fails every start *)
+  Siblings = 3 ;                (* child 0 fails its first start; child 1 waits to be asked *)
+  CrashTwice = 4 ;              (* child 0 crashes by a bug on its first two starts *)
+
+TYPE
+  Tally = MONITOR RECORD
+    starts : ARRAY 4 OF I64 ;   (* starts, by child *)
+    gone : I64 ;                (* children out of their loop *)
+  END ;
+
+  Job = RECORD
+    board : Sup.Board ;
+    tally : Tally ;
+    mode : I64 ;
+    a : SLICE OF I64 ;          (* for the bug: a[5] is out of range *)
+  END [SHARABLE] ;
+
+VAR
+  t : Check.T ;
+  pool : POOL ;
+
+PROCEDURE Count (VAR y: Tally ; k: I64) : I64 =
+BEGIN
+  y.starts[k] := y.starts[k] + 1 ;
+  RETURN y.starts[k]
+EXCEPT
+| IndexError : RETURN 0
+END Count ;
+
+PROCEDURE Starts (VAR y: Tally ; k: I64) : I64 =
+BEGIN
+  RETURN y.starts[k]
+EXCEPT
+| IndexError : RETURN -1
+END Starts ;
+
+PROCEDURE Leaves (VAR y: Tally) =
+BEGIN
+  y.gone := y.gone + 1 ;
+  SIGNAL (y)
+END Leaves ;
+
+PROCEDURE AwaitGone (VAR y: Tally ; n: I64) =
+BEGIN
+  WHILE y.gone < n DO WAIT (y) END
+END AwaitGone ;
+
+(* Work is one start of child s.id, the n-th: it fails, crashes or
+   ends, by the job's mode. *)
+PROCEDURE Work (VAR j: Job ; RO s: Sup.Seat ; n: I64) RAISES Refused =
+BEGIN
+  IF s.id = 0 THEN
+    IF j.mode = FailTwice AND n <= 2 THEN RAISE Refused END ;
+    IF j.mode = AlwaysFail THEN RAISE Refused END ;
+    IF j.mode = Siblings AND n = 1 THEN
+      (* fail only once the sibling runs: then the restart asks it *)
+      WHILE Starts (j.tally, 1) < 1 DO Time.Sleep (1) END ;
+      RAISE Refused
+    END ;
+    IF j.mode = CrashTwice AND n <= 2 THEN j.a[5] := 1 END
+  ELSIF j.mode = Siblings AND n = 1 THEN
+    (* child 1's first start runs until the supervisor asks *)
+    WHILE NOT Sup.Asked (j.board, s) DO Time.Sleep (1) END
+  END
+END Work ;
+
+PROCEDURE Child (VAR j: Job) =
+VAR
+  s : Sup.Seat ;
+  n : I64 ;
+BEGIN
+  BEGIN
+    s := Sup.Join (j.board)
+  EXCEPT
+  | Faults.BadArg (w) : Leaves (j.tally) ; RETURN
+  END ;
+  WHILE Sup.Run (j.board, s) DO
+    n := Count (j.tally, s.id) ;
+    BEGIN
+      Work (j, s, n) ;
+      IF NOT Sup.Asked (j.board, s) THEN Sup.Done (j.board, s) END
+    EXCEPT
+    | Refused : Sup.Failed (j.board, s, 'Refused')
+    | IndexError : Sup.Crashed (j.board, s, 'IndexError')
+    END
+  END ;
+  Leaves (j.tally)
+END Child ;
+
+PROCEDURE NewJob (mode, children, policy, most: I64) : PTR Job IN pool
+  RAISES Faults.BadArg =
+VAR
+  j : PTR Job IN pool ;
+  k : I64 ;
+BEGIN
+  j := NEW (pool, Job) ;
+  j.mode := mode ;
+  j.a := NEW (pool, I64, 3) ;
+  Sup.Policy (j.board, policy, most, 60000, 3) ;
+  FOR k := 1 TO children DO TASK (Child, j) END ;
+  RETURN j
+END NewJob ;
+
+PROCEDURE OneForOne () =
+VAR
+  j : PTR Job IN pool ;
+  clean, dirty : I64 ;
+BEGIN
+  j := NewJob (FailTwice, 3, Sup.OneForOne, 5) ;
+  Sup.Watch (j.board, 3) ;
+  AwaitGone (j.tally, 3) ;
+  Check.EqI64 (t, 'one for one: the failing child is started three times', Starts (j.tally, 0), 3) ;
+  Check.EqI64 (t, 'one for one: its siblings once each', Starts (j.tally, 1) + Starts (j.tally, 2), 2) ;
+  Sup.Restarts (j.board, clean, dirty) ;
+  Check.EqI64 (t, 'one for one: two clean restarts', clean, 2) ;
+  Check.EqI64 (t, 'one for one: no dirty one', dirty, 0)
+EXCEPT
+| Sup.GaveUp : Check.That (t, 'one for one: no GaveUp', FALSE)
+| Faults.BadArg (w) : Check.That (t, 'one for one: ' + w, FALSE)
+END OneForOne ;
+
+PROCEDURE GivesUp () =
+VAR
+  j : PTR Job IN pool ;
+  clean, dirty : I64 ;
+  raised : BOOL ;
+BEGIN
+  raised := FALSE ;
+  j := NewJob (AlwaysFail, 2, Sup.OneForOne, 2) ;
+  BEGIN
+    Sup.Watch (j.board, 2)
+  EXCEPT
+  | Sup.GaveUp : raised := TRUE
+  END ;
+  AwaitGone (j.tally, 2) ;
+  Check.That (t, 'a child that always fails makes Watch raise GaveUp', raised) ;
+  Sup.Restarts (j.board, clean, dirty) ;
+  Check.EqI64 (t, 'after the two restarts the policy allows', clean, 2) ;
+  Check.EqI64 (t, 'so it ran three times', Starts (j.tally, 0), 3)
+EXCEPT
+| Faults.BadArg (w) : Check.That (t, 'gives up: ' + w, FALSE)
+END GivesUp ;
+
+PROCEDURE AllForOne () =
+VAR
+  j : PTR Job IN pool ;
+BEGIN
+  j := NewJob (Siblings, 2, Sup.AllForOne, 5) ;
+  Sup.Watch (j.board, 2) ;
+  AwaitGone (j.tally, 2) ;
+  Check.EqI64 (t, 'all for one: the failing child runs twice', Starts (j.tally, 0), 2) ;
+  Check.EqI64 (t, 'all for one: its sibling is started again too', Starts (j.tally, 1), 2)
+EXCEPT
+| Sup.GaveUp : Check.That (t, 'all for one: no GaveUp', FALSE)
+| Faults.BadArg (w) : Check.That (t, 'all for one: ' + w, FALSE)
+END AllForOne ;
+
+PROCEDURE Dirty () =
+VAR
+  j : PTR Job IN pool ;
+  clean, dirty : I64 ;
+BEGIN
+  j := NewJob (CrashTwice, 1, Sup.OneForOne, 0) ;
+  Sup.Watch (j.board, 1) ;
+  AwaitGone (j.tally, 1) ;
+  Sup.Restarts (j.board, clean, dirty) ;
+  Check.EqI64 (t, 'two crashes by a bug: two dirty restarts', dirty, 2) ;
+  Check.EqI64 (t, 'which the clean policy (no restarts) does not count', clean, 0) ;
+  Check.EqI64 (t, 'and the child ran three times', Starts (j.tally, 0), 3)
+EXCEPT
+| Sup.GaveUp : Check.That (t, 'dirty: no GaveUp', FALSE)
+| Faults.BadArg (w) : Check.That (t, 'dirty: ' + w, FALSE)
+END Dirty ;
+
+PROCEDURE PolicyRefused (policy, most, ms, dirty: I64) : BOOL =
+VAR j : PTR Job IN pool ;
+BEGIN
+  j := NEW (pool, Job) ;
+  Sup.Policy (j.board, policy, most, ms, dirty) ;
+  RETURN FALSE
+EXCEPT
+| Faults.BadArg (w) : RETURN TRUE
+END PolicyRefused ;
+
+BEGIN
+  OneForOne () ;
+  GivesUp () ;
+  AllForOne () ;
+  Dirty () ;
+  Check.That (t, 'Policy refuses an unknown policy', PolicyRefused (7, 3, 1000, 3)) ;
+  Check.That (t, 'Policy refuses a window of 0', PolicyRefused (Sup.OneForOne, 3, 0, 3)) ;
+  Check.That (t, 'Policy refuses a dirty limit of 0', PolicyRefused (Sup.OneForOne, 3, 1000, 0)) ;
+  Check.That (t, 'Policy takes a sound one', NOT PolicyRefused (Sup.AllForOne, 0, 1, 1)) ;
+  Io.Halt (Check.Done (t, 'Sup'))
+END SupTest.

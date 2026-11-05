@@ -10727,6 +10727,7 @@ uint32_t Text_CpAt (m9_sl_UTF8 u, int64_t x, m9_state *err)
     bool m9t1 = (at < Text_BLen (u, err));
     if (err->exc) { m9ln = 2046; goto L_ret; };
     if (!(m9t1)) break;
+    M9_YCHK ();
     { __typeof__(c) m9v = Text_NextCp (u, &(at), err);
       if (err->exc) { m9ln = 2047; goto L_ret; };
       c = m9v;
@@ -11064,6 +11065,7 @@ m9_sl_UTF8 Text_NextGr (m9_sl_UTF8 u, int64_t *at, m9_state *err)
     bool m9t3 = ((*at) < Text_BLen (u, err));
     if (err->exc) { m9ln = 2171; goto L_ret; };
     if (!(m9t3)) break;
+    M9_YCHK ();
     next = (*at);
     { __typeof__(Text_NextCp (u, &(next), err)) m9a3 = Text_NextCp (u, &(next), err);
       if (err->exc) { m9ln = 2173; goto L_ret; };
@@ -11153,6 +11155,7 @@ int64_t Text_GrCount (m9_sl_UTF8 u, m9_state *err)
     bool m9t1 = (at < Text_BLen (u, err));
     if (err->exc) { m9ln = 2198; goto L_ret; };
     if (!(m9t1)) break;
+    M9_YCHK ();
     { __typeof__(g) m9v = Text_NextGr (u, &(at), err);
       if (err->exc) { m9ln = 2199; goto L_ret; };
       g = m9v;
@@ -11197,6 +11200,7 @@ m9_sl_UTF8 Text_GrAt (m9_sl_UTF8 u, int64_t x, m9_state *err)
     bool m9t1 = (at < Text_BLen (u, err));
     if (err->exc) { m9ln = 2211; goto L_ret; };
     if (!(m9t1)) break;
+    M9_YCHK ();
     { __typeof__(g) m9v = Text_NextGr (u, &(at), err);
       if (err->exc) { m9ln = 2212; goto L_ret; };
       g = m9v;
@@ -11936,6 +11940,7 @@ m9_sl_UTF8 Text_LowerUtf (m9_sl_UTF8 s, m9_state *err)
   r = ((m9_sl_UTF8){ NULL, 0 });
   { __typeof__(s) m9t1s = s;
   for (int64_t m9t1i = 0; m9t1i < m9t1s.len; ) { c = m9_utf_next (m9t1s, &m9t1i);
+    M9_YCHK ();
     if (((c >= 65u) && (c <= 90u))) {
       { __typeof__(m9_sub_i64 ((int64_t)(c), INT64_C(65), err)) m9a18 = m9_sub_i64 ((int64_t)(c), INT64_C(65), err);
         if (err->exc) { m9ln = 2443; goto L_ret; };
@@ -11966,6 +11971,7 @@ m9_sl_UTF8 Text_LowerUtf (m9_sl_UTF8 s, m9_state *err)
         m9t2to = m9_sub_i64 ((*(int64_t *) m9_at ((*LowAt).v, m9_add_i64 (k, INT64_C(1), err), INT64_C(1461), sizeof (int64_t), err)), INT64_C(1), err);
         if (err->exc) { m9ln = 2451; goto L_ret; };
         if (j <= m9t2to) for (;;) {
+          M9_YCHK ();
           { __typeof__(r) m9v = m9_utf_cat (err->res, r, m9_utf_of_char (err->res, Text_CpAt (((m9_sl_UTF8){ (uint8_t *) m9s1, 4145 }), j, err), err), err);
             if (err->exc) { m9ln = 2451; goto L_ret; };
             r = m9v;
@@ -12003,6 +12009,7 @@ m9_sl_UTF8 Text_UpperUtf (m9_sl_UTF8 s, m9_state *err)
   r = ((m9_sl_UTF8){ NULL, 0 });
   { __typeof__(s) m9t1s = s;
   for (int64_t m9t1i = 0; m9t1i < m9t1s.len; ) { c = m9_utf_next (m9t1s, &m9t1i);
+    M9_YCHK ();
     if (((c >= 97u) && (c <= 122u))) {
       { __typeof__(m9_sub_i64 ((int64_t)(c), INT64_C(97), err)) m9a19 = m9_sub_i64 ((int64_t)(c), INT64_C(97), err);
         if (err->exc) { m9ln = 2467; goto L_ret; };
@@ -12033,6 +12040,7 @@ m9_sl_UTF8 Text_UpperUtf (m9_sl_UTF8 s, m9_state *err)
         m9t2to = m9_sub_i64 ((*(int64_t *) m9_at ((*UpAt).v, m9_add_i64 (k, INT64_C(1), err), INT64_C(1553), sizeof (int64_t), err)), INT64_C(1), err);
         if (err->exc) { m9ln = 2475; goto L_ret; };
         if (j <= m9t2to) for (;;) {
+          M9_YCHK ();
           { __typeof__(r) m9v = m9_utf_cat (err->res, r, m9_utf_of_char (err->res, Text_CpAt (((m9_sl_UTF8){ (uint8_t *) m9s3, 4582 }), j, err), err), err);
             if (err->exc) { m9ln = 2475; goto L_ret; };
             r = m9v;
@@ -12069,6 +12077,7 @@ int64_t Text_IndexOfUtf (m9_sl_m9_sl_UTF8 among, m9_sl_UTF8 s, m9_state *err)
   m9t1to = m9_sub_i64 ((among).len, INT64_C(1), err);
   if (err->exc) { m9ln = 2485; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(m9_sl_UTF8 *) m9_at (among.p, i, among.len, sizeof (m9_sl_UTF8), err))) m9a20 = (*(m9_sl_UTF8 *) m9_at (among.p, i, among.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 2486; goto L_ret; };
     bool m9t2 = Text_EqUtf (m9a20, s, err);
@@ -12188,6 +12197,7 @@ bool Text_MatchUtf (m9_sl_UTF8 pattern, m9_sl_UTF8 s, m9_state *err)
   }
   starI = INT64_C(0);
   for (;;) {
+    M9_YCHK ();
     bool m9t1 = ((p < np) && (Text_Oc (pattern, p, err) == INT64_C(42)));
     if (err->exc) { m9ln = 2594; goto L_ret; };
     if (m9t1) {
@@ -12275,6 +12285,7 @@ bool Text_AllInUtf (m9_sl_UTF8 s, m9_sl_UTF8 set, m9_state *err)
   }
   { __typeof__(s) m9t2s = s;
   for (int64_t m9t2i = 0; m9t2i < m9t2s.len; ) { c = m9_utf_next (m9t2s, &m9t2i);
+    M9_YCHK ();
     { __typeof__(Text_BLen (set, err)) m9a21 = Text_BLen (set, err);
       if (err->exc) { m9ln = 2633; goto L_ret; };
     bool m9t3 = (Text_InSetUtf (set, a, m9a21, c, err) == neg);
@@ -13188,6 +13199,7 @@ static bool Text_InSetUtf (m9_sl_UTF8 pat, int64_t a, int64_t b, uint32_t c, m9_
   q = a;
   for (;;) {
     if (!((q < b))) break;
+    M9_YCHK ();
     q2 = q;
     { __typeof__(x) m9v = Text_NextCp (pat, &(q2), err);
       if (err->exc) { m9ln = 2542; goto L_ret; };
@@ -13401,6 +13413,7 @@ static m9_sl_BYTE Text_FromBase64Oct (m9_sl_BYTE s, m9_state *err)
   i = INT64_C(0);
   for (;;) {
     if (!((i < (s).len))) break;
+    M9_YCHK ();
     v = INT64_C(0);
     { __typeof__(k) m9t4to;
     k = INT64_C(0);

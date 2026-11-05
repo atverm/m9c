@@ -505,6 +505,7 @@ m9_sl_UTF8 Fmt_Sci (double v, int64_t decimals, m9_state *err)
     }
     }
     for (;;) {
+      M9_YCHK ();
       { __typeof__(m9_sub_i64 (decimals, k, err)) m9a3 = m9_sub_i64 (decimals, k, err);
         if (err->exc) { m9ln = 1193; goto L_ret; };
       { __typeof__(nn) m9v = Fmt_Scaled (f, e, m9a3, err);
@@ -833,11 +834,13 @@ m9_sl_UTF8 Fmt_Short (double v, m9_state *err)
   if (err->exc) { m9ln = 679; goto L_ret; };
   nd = INT64_C(0);
   for (;;) {
+    M9_YCHK ();
     d = INT64_C(0);
     for (;;) {
       bool m9t5 = (Fmt_BigCmp (&(r), &(s), err) >= INT64_C(0));
       if (err->exc) { m9ln = 688; goto L_ret; };
       if (!(m9t5)) break;
+      M9_YCHK ();
       Fmt_BigSub (&(r), &(s), err);
       if (err->exc) { m9ln = 689; goto L_ret; };
       { __typeof__(d) m9v = m9_add_i64 (d, INT64_C(1), err);
@@ -1101,6 +1104,7 @@ double Fmt_ParseF64Utf (m9_sl_UTF8 s, m9_state *err)
   if (err->exc) { m9ln = 1389; goto L_ret; };
   for (;;) {
     if (!((i < n))) break;
+    M9_YCHK ();
     bool m9t2 = (Fmt_Cc (o, i, err) == 46u);
     if (err->exc) { m9ln = 1391; goto L_ret; };
     if (m9t2) {
@@ -1323,6 +1327,7 @@ double Fmt_ParseF64Utf (m9_sl_UTF8 s, m9_state *err)
     b = m9v;
   }
   for (;;) {
+    M9_YCHK ();
     { __typeof__(q) m9v = m9_sub_i64 (b, INT64_C(52), err);
       if (err->exc) { m9ln = 1470; goto L_ret; };
       q = m9v;
@@ -1710,6 +1715,7 @@ static void Fmt_BigShl (Fmt_Big *a, int64_t k, m9_state *err)
   int64_t m = 0; (void) m;
   for (;;) {
     if (!((k >= INT64_C(30)))) break;
+    M9_YCHK ();
     Fmt_BigMul (a, INT64_C(1073741824), err);
     if (err->exc) { m9ln = 465; goto L_ret; };
     { __typeof__(k) m9v = m9_sub_i64 (k, INT64_C(30), err);
@@ -1751,6 +1757,7 @@ static void Fmt_BigTen (Fmt_Big *a, int64_t k, m9_state *err)
   int64_t m = 0; (void) m;
   for (;;) {
     if (!((k >= INT64_C(9)))) break;
+    M9_YCHK ();
     Fmt_BigMul (a, INT64_C(1000000000), err);
     if (err->exc) { m9ln = 480; goto L_ret; };
     { __typeof__(k) m9v = m9_sub_i64 (k, INT64_C(9), err);
@@ -2302,6 +2309,7 @@ static int64_t Fmt_Quot (Fmt_Big *a, Fmt_Big *b, m9_state *err)
     bool m9t2 = (Fmt_BigCmp (&(t), a, err) > INT64_C(0));
     if (err->exc) { m9ln = 868; goto L_ret; };
     if (!(m9t2)) break;
+    M9_YCHK ();
     Fmt_BigSub (&(t), b, err);
     if (err->exc) { m9ln = 869; goto L_ret; };
     { __typeof__(m) m9v = m9_sub_i64 (m, INT64_C(1), err);
@@ -2315,6 +2323,7 @@ static int64_t Fmt_Quot (Fmt_Big *a, Fmt_Big *b, m9_state *err)
     bool m9t3 = (Fmt_BigCmp (a, b, err) >= INT64_C(0));
     if (err->exc) { m9ln = 873; goto L_ret; };
     if (!(m9t3)) break;
+    M9_YCHK ();
     Fmt_BigSub (a, b, err);
     if (err->exc) { m9ln = 874; goto L_ret; };
     { __typeof__(m) m9v = m9_add_i64 (m, INT64_C(1), err);
@@ -2459,6 +2468,7 @@ static void Fmt_BigShr (Fmt_Big *a, int64_t k, m9_state *err)
   m9t1to = m9_sub_i64 (m9_sub_i64 ((*a).n, INT64_C(1), err), q, err);
   if (err->exc) { m9ln = 934; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__(lo) m9v = m9_div_i64 ((*(int64_t *) m9_at ((*a).d.v, m9_add_i64 (i, q, err), INT64_C(128), sizeof (int64_t), err)), Fmt_Pow2 (r, err), err);
       if (err->exc) { m9ln = 935; goto L_ret; };
       lo = m9v;
@@ -2654,6 +2664,7 @@ static m9_sl_UTF8 Fmt_BigDec (Fmt_Big *a, m9_state *err)
   nc = INT64_C(0);
   for (;;) {
     if (!(((*a).n > INT64_C(0)))) break;
+    M9_YCHK ();
     { __typeof__((*(int64_t *) m9_at (chunk.v, nc, INT64_C(160), sizeof (int64_t), err))) m9v = Fmt_BigDivSmall (a, INT64_C(1000000000), err);
       if (err->exc) { m9ln = 990; goto L_ret; };
       (*(int64_t *) m9_at (chunk.v, nc, INT64_C(160), sizeof (int64_t), err)) = m9v;
@@ -2676,6 +2687,7 @@ static m9_sl_UTF8 Fmt_BigDec (Fmt_Big *a, m9_state *err)
   m9t1to = INT64_C(0);
   if (err->exc) { m9ln = 994; goto L_ret; };
   if (i >= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(int64_t *) m9_at (chunk.v, i, INT64_C(160), sizeof (int64_t), err))) m9a32 = (*(int64_t *) m9_at (chunk.v, i, INT64_C(160), sizeof (int64_t), err));
       if (err->exc) { m9ln = 994; goto L_ret; };
     { __typeof__(s) m9v = m9_utf_cat (err->res, s, Fmt_I64PadUtf (m9a32, INT64_C(9), true, err), err);
@@ -2936,6 +2948,7 @@ static int64_t Fmt_Scaled (int64_t f, int64_t e, int64_t p, m9_state *err)
   j = INT64_C(61);
   m9t1to = INT64_C(0);
   if (j >= m9t1to) for (;;) {
+    M9_YCHK ();
     Fmt_BigShr (&(t), INT64_C(1), err);
     if (err->exc) { m9ln = 1134; goto L_ret; };
     { __typeof__(q) m9v = m9_mul_i64 (q, INT64_C(2), err);

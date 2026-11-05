@@ -1,0 +1,18 @@
+// Greet is the module the m9f gate's Hello imports.  Both are .m9f
+// only: m9c writes Greet.m9 and Hello.m9 and compiles those.
+definition module Greet
+
+procedure Line (n: I64) : I64 ;
+
+} Greet.
+
+
+implementation module Greet
+
+procedure Line (n: I64) : I64 =
+{
+  if n % 2 == 0 { return n * 10 }
+  return n
+} Line ;
+
+} Greet.

@@ -1,0 +1,5 @@
+# Files the m9f round trip skips, each with its reason.  m9f.sh fails
+# when a file named here is gone.
+parseprobes/missingsemi.m9                  the probe lacks a ; on purpose; .m9f supplies it
+docs/review-2026-10-21/fuzz/min/l5.m9       an unterminated comment, on purpose
+docs/review-2026-10-21/fuzz/min/l6.m9       an unterminated string, on purpose

@@ -48,6 +48,19 @@ found, each already formatted with its line:col.
        registries at a time and a process is the reset, which
        is the same rule m9c states in its own header.
 
+### NoteCount () : I64
+
+_(documented with the group below)_
+
+### NoteAt (i: I64) : UTF RAISES IndexError
+
+NoteCount and NoteAt answer the notes, which refuse nothing.  A
+note says that a name from another module is DEPRECATED, and what
+its definition says to write instead (par 3.9).  Each is
+formatted `line:col note: MSG', once per site.
+
+  i -- 0 .. NoteCount - 1.
+
 ### LedgerCount () : I64
 
 _(documented with the group below)_

@@ -176,6 +176,7 @@ void Sort_Strs (m9_sl_m9_sl_UTF8 *a, m9_state *err)
   m9t1to = m9_sub_i64 (((*a)).len, INT64_C(1), err);
   if (err->exc) { m9ln = 297; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     bool m9t2 = ((*(int64_t *) m9_at (idx.p, i, idx.len, sizeof (int64_t), err)) != i);
     if (err->exc) { m9ln = 298; goto L_ret; };
     if (m9t2) {
@@ -569,6 +570,7 @@ m9_sl_m9_sl_UTF8 Sort_UniqueStrs (m9_sl_m9_sl_UTF8 v, m9_state *err)
   m9t1to = m9_sub_i64 ((v).len, INT64_C(1), err);
   if (err->exc) { m9ln = 515; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     if ((i == INT64_C(0))) {
       n = INT64_C(1);
     } else {
@@ -598,6 +600,7 @@ m9_sl_m9_sl_UTF8 Sort_UniqueStrs (m9_sl_m9_sl_UTF8 v, m9_state *err)
   m9t3to = m9_sub_i64 ((v).len, INT64_C(1), err);
   if (err->exc) { m9ln = 525; goto L_ret; };
   if (i <= m9t3to) for (;;) {
+    M9_YCHK ();
     if ((i == INT64_C(0))) {
       { __typeof__((*(m9_sl_UTF8 *) m9_at (out.p, INT64_C(0), out.len, sizeof (m9_sl_UTF8), err))) m9v = m9_utf_cat (err->res, (*(m9_sl_UTF8 *) m9_at (v.p, (*(int64_t *) m9_at (idx.p, INT64_C(0), idx.len, sizeof (int64_t), err)), v.len, sizeof (m9_sl_UTF8), err)), ((m9_sl_UTF8){ NULL, 0 }), err);
         if (err->exc) { m9ln = 527; goto L_ret; };
@@ -904,6 +907,7 @@ int64_t Sort_FindStr (m9_sl_m9_sl_UTF8 a, m9_sl_UTF8 s, m9_state *err)
   hi = (a).len;
   for (;;) {
     if (!((lo < hi))) break;
+    M9_YCHK ();
     { __typeof__(mid) m9v = m9_add_i64 (lo, m9_div_i64 ((m9_sub_i64 (hi, lo, err)), INT64_C(2), err), err);
       if (err->exc) { m9ln = 616; goto L_ret; };
       mid = m9v;
@@ -1260,6 +1264,7 @@ static void Sort_MergeArgStrs (m9_sl_m9_sl_UTF8 v, m9_sl_I64 *idx, m9_sl_I64 *tm
   k = lo;
   for (;;) {
     if (!(((i < mid) && (j < hi)))) break;
+    M9_YCHK ();
     { __typeof__((*(m9_sl_UTF8 *) m9_at (v.p, (*(int64_t *) m9_at ((*idx).p, j, (*idx).len, sizeof (int64_t), err)), v.len, sizeof (m9_sl_UTF8), err))) m9a9 = (*(m9_sl_UTF8 *) m9_at (v.p, (*(int64_t *) m9_at ((*idx).p, j, (*idx).len, sizeof (int64_t), err)), v.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 243; goto L_ret; };
     { __typeof__((*(m9_sl_UTF8 *) m9_at (v.p, (*(int64_t *) m9_at ((*idx).p, i, (*idx).len, sizeof (int64_t), err)), v.len, sizeof (m9_sl_UTF8), err))) m9a10 = (*(m9_sl_UTF8 *) m9_at (v.p, (*(int64_t *) m9_at ((*idx).p, i, (*idx).len, sizeof (int64_t), err)), v.len, sizeof (m9_sl_UTF8), err));
@@ -1696,6 +1701,7 @@ static void Sort_MergeBy (m9_sl_I64 *a, m9_sl_I64 *tmp, Sort_Less less, int64_t 
   k = lo;
   for (;;) {
     if (!(((i < mid) && (j < hi)))) break;
+    M9_YCHK ();
     { __typeof__((*(int64_t *) m9_at ((*a).p, j, (*a).len, sizeof (int64_t), err))) m9a11 = (*(int64_t *) m9_at ((*a).p, j, (*a).len, sizeof (int64_t), err));
       if (err->exc) { m9ln = 421; goto L_ret; };
     { __typeof__((*(int64_t *) m9_at ((*a).p, i, (*a).len, sizeof (int64_t), err))) m9a12 = (*(int64_t *) m9_at ((*a).p, i, (*a).len, sizeof (int64_t), err));

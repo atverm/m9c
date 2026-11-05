@@ -2627,7 +2627,7 @@ BEGIN
   IF heat OR Text.BLen (spec.credit) > 0 THEN g.bottom := 26.0 ELSE g.bottom := 0.0 END ;
   fills := NEW (STR, Levels) ;
   FOR k := 0 TO Levels - 1 DO
-    fills[k] := Plot.CmapHex (Plot.Viridis (), F64 (k) / F64 (Levels - 1))
+    fills[k] := Plot.CmapHex (Plot.Cmap.Viridis, F64 (k) / F64 (Levels - 1))
   END ;
 
   d := DynStr.New (pool) ;

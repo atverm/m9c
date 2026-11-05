@@ -85,6 +85,17 @@ CONST
   Head = 10 ;                (* a cut list keeps this many at each end *)
   Edge = 5 ;                 (* a cut frame keeps this many rows at each end *)
   Mark = 01C ;               (* the HTML part's fence, U+0001 *)
+  (* A column's kind, as ColKind reads it off the column's
+     Frame.Data.  These were Frame's own kind codes until 0.27.0
+     deprecated them. *)
+  KF64 = 0 ;
+  KF32 = 1 ;
+  KI64 = 2 ;
+  KI32 = 3 ;
+  KI16 = 4 ;
+  KByte = 5 ;
+  KStr = 6 ;
+  KBool = 7 ;
 
 (* ---- pieces ---- *)
 
@@ -319,15 +330,32 @@ BEGIN
   RETURN n > MaxRows AND r = n - Edge
 END RowGap ;
 
+PROCEDURE ColKind (f: PTR Frame.Fr ; RO name: STR) : I64
+  RAISES Frame.Unknown =
+VAR c : Frame.Col ;
+BEGIN
+  c := Frame.GetCol (f, name) ;
+  CASE c.data OF
+  | Frame.Data.F64s (v64, m64) : RETURN KF64
+  | Frame.Data.F32s (v32, m32) : RETURN KF32
+  | Frame.Data.I64s (vi64, mi64) : RETURN KI64
+  | Frame.Data.I32s (vi32, mi32) : RETURN KI32
+  | Frame.Data.I16s (vi16, mi16) : RETURN KI16
+  | Frame.Data.Bytes (vb, mb) : RETURN KByte
+  | Frame.Data.Bools (vbo) : RETURN KBool
+  | Frame.Data.Strs (si) : RETURN KStr
+  END
+END ColKind ;
+
 PROCEDURE KindName (k: I64) : STR =
 BEGIN
-  IF k = Frame.KindF64 THEN RETURN 'F64' END ;
-  IF k = Frame.KindF32 THEN RETURN 'F32' END ;
-  IF k = Frame.KindI64 THEN RETURN 'I64' END ;
-  IF k = Frame.KindI32 THEN RETURN 'I32' END ;
-  IF k = Frame.KindI16 THEN RETURN 'I16' END ;
-  IF k = Frame.KindByte THEN RETURN 'BYTE' END ;
-  IF k = Frame.KindStr THEN RETURN 'STR' END ;
+  IF k = KF64 THEN RETURN 'F64' END ;
+  IF k = KF32 THEN RETURN 'F32' END ;
+  IF k = KI64 THEN RETURN 'I64' END ;
+  IF k = KI32 THEN RETURN 'I32' END ;
+  IF k = KI16 THEN RETURN 'I16' END ;
+  IF k = KByte THEN RETURN 'BYTE' END ;
+  IF k = KStr THEN RETURN 'STR' END ;
   RETURN 'BOOL'
 END KindName ;
 
@@ -350,27 +378,27 @@ VAR
   rbool : SLICE OF BOOL ;
 BEGIN
   out := NEW (pool, STR, LEN (rows)) ;
-  k := Frame.KindOf (f, name) ;
+  k := ColKind (f, name) ;
   FOR i := 0 TO LEN (rows) - 1 DO out[i] := Text.Keep (pool, 'null') END ;
-  IF k = Frame.KindF64 THEN
+  IF k = KF64 THEN
     rf := Frame.ColF64 (f, name) ;
     FOR i := 0 TO LEN (rows) - 1 DO
       r := rows[i] ;
       IF rf[r] = rf[r] THEN out[i] := Text.Keep (pool, Fmt.Short (rf[r])) END
     END
-  ELSIF k = Frame.KindF32 THEN
+  ELSIF k = KF32 THEN
     rs := Frame.ColF32 (f, name) ;
     FOR i := 0 TO LEN (rows) - 1 DO
       r := rows[i] ;
       IF rs[r] = rs[r] THEN out[i] := Text.Keep (pool, Fmt.Short (F64 (rs[r]))) END
     END
-  ELSIF k = Frame.KindI64 THEN
+  ELSIF k = KI64 THEN
     ri := Frame.ColI64 (f, name) ;
     FOR i := 0 TO LEN (rows) - 1 DO
       r := rows[i] ;
       IF ri[r] # Frame.MissI64 (f, name) THEN out[i] := Text.Keep (pool, Fmt.I64Str (ri[r])) END
     END
-  ELSIF k = Frame.KindI32 THEN
+  ELSIF k = KI32 THEN
     ri32 := Frame.ColI32 (f, name) ;
     FOR i := 0 TO LEN (rows) - 1 DO
       r := rows[i] ;
@@ -378,7 +406,7 @@ BEGIN
         out[i] := Text.Keep (pool, Fmt.I64Str (I64 (ri32[r])))
       END
     END
-  ELSIF k = Frame.KindI16 THEN
+  ELSIF k = KI16 THEN
     ri16 := Frame.ColI16 (f, name) ;
     FOR i := 0 TO LEN (rows) - 1 DO
       r := rows[i] ;
@@ -386,7 +414,7 @@ BEGIN
         out[i] := Text.Keep (pool, Fmt.I64Str (I64 (ri16[r])))
       END
     END
-  ELSIF k = Frame.KindByte THEN
+  ELSIF k = KByte THEN
     rb := Frame.ColBytes (f, name) ;
     FOR i := 0 TO LEN (rows) - 1 DO
       r := rows[i] ;
@@ -394,7 +422,7 @@ BEGIN
         out[i] := Text.Keep (pool, Fmt.I64Str (I64 (rb[r])))
       END
     END
-  ELSIF k = Frame.KindStr THEN
+  ELSIF k = KStr THEN
     rstr := Frame.ColStrs (f, name) ;
     FOR i := 0 TO LEN (rows) - 1 DO out[i] := Text.Keep (pool, rstr[rows[i]]) END
   ELSE
@@ -462,8 +490,8 @@ BEGIN
   END ;
   FOR c := c0 TO nc - 1 DO
     names[c] := Frame.NameAt (f, c - c0) ;
-    kinds[c] := KindName (Frame.KindOf (f, names[c])) ;
-    left[c] := Frame.KindOf (f, names[c]) = Frame.KindStr ;
+    kinds[c] := KindName (ColKind (f, names[c])) ;
+    left[c] := ColKind (f, names[c]) = KStr ;
     cells[c] := Cells (scratch, f, names[c], rows)
   END ;
 

@@ -80,7 +80,10 @@ together.
 
 KeepAtMost caps the large freed blocks the calling thread keeps
 for its next carves, 128 MB until it is called.  0 keeps none.  A
-THREAD started afterwards starts with the same cap.  So the code
+THREAD or a TASK started afterwards starts with the same cap.  A
+task's cap is its own, and moves with it.  The blocks it keeps go
+to its carrier, the thread it runs on, whose tasks share them; so
+32 carriers keep at most 32 caps' worth.  So the code
 that starts a server's workers decides what they hold between
 requests, instead of every worker keeping its largest request
 for the life of the process.  M9_BLOCK_REUSE=0 still turns
@@ -88,13 +91,14 @@ keeping off for the whole process.
 
 ### ReleaseKept ()
 
-ReleaseKept gives the calling thread's kept blocks back now.  The
-cap stays.  A worker calls it when it goes idle.
+ReleaseKept gives the calling thread's kept blocks back now, a
+task's carrier's for a task.  The cap stays.  A worker calls it
+when it goes idle.
 
 ### KeptBytes () : I64
 
 KeptBytes answers the bytes the calling thread keeps in large
-blocks now.
+blocks now, a task's carrier's for a task.
 
 ### Exec (VAR pool: POOL ; RO prog: UTF ; RO args: SLICE OF UTF ; RO input: UTF ; RO env: SLICE OF UTF) : ResultUtf RAISES ValueRange, Io.IOError
 

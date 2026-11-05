@@ -226,6 +226,7 @@ void DynUtf_AppendStr (DynUtf_DString * *d, m9_pool *d_pool, m9_sl_UTF8 s, m9_st
   uint32_t c = 0; (void) c;
   { __typeof__(s) m9t1s = s;
   for (int64_t m9t1i = 0; m9t1i < m9t1s.len; ) { c = m9_utf_next (m9t1s, &m9t1i);
+    M9_YCHK ();
     DynUtf_AppendChar (d, d_pool, c, err);
     if (err->exc) { m9ln = 195; goto L_ret; };
   } }
@@ -464,6 +465,7 @@ m9_sl_UTF8 DynUtf_Chars (m9_pool *pool, m9_sl_BYTE b, m9_state *err)
   m9t1to = m9_sub_i64 ((b).len, INT64_C(1), err);
   if (err->exc) { m9ln = 262; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__(m9_chr ((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))), err)) m9a11 = m9_chr ((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))), err);
       if (err->exc) { m9ln = 263; goto L_ret; };
     DynUtf_AppendChar (&(d), &((*pool)), m9a11, err);

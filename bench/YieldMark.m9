@@ -1,0 +1,380 @@
+#!/usr/bin/env -S m9c --run
+MODULE YieldMark ;
+
+(* YieldMark marks every loop of a C file m9c generated, for the yield
+   probe (bench/yieldprobe.sh; docs/task-plan.md, sections "Yield
+   checks, priced" and "Preemption").
+
+     YieldMark IN.c OUT.c
+
+   Every M9 loop is a C `for` with a braced body.  Each one, numbered
+   K within the file, becomes
+
+     { M9_YDECL(K) for (...) { M9_YCHK(K, LOOP, CALL, NONLEAF, NESTED); ... } }
+
+   with each fact 0 or 1: the body holds a loop; it calls an M9
+   procedure; it calls one that is not a leaf procedure (below); the
+   loop is inside another loop of its procedure.  yk.h turns the
+   facts into each variant's condition, a constant the compiler folds,
+   so one marked file builds every variant: a check in every loop,
+   only where a loop is not a leaf (the plan's option 2), a counted
+   check (option 3), and the sharper rules.
+
+   A call of an M9 procedure is `Module_Proc (` in the C: a capital,
+   an underscore, then a blank before the parenthesis.  The runtime's
+   own calls (m9_at, a bounds check) and the C macros (INT64_C(0),
+   M9_...) do not look like that.  Brackets inside a string, a
+   character constant or a comment are skipped.
+
+   A LEAF PROCEDURE has no loop and calls only leaf procedures.  A call
+   of one cannot delay a yield more than the loop's own code does, so
+   a loop that calls only leaf procedures is a leaf too.  Boids' hot
+   loops call Math.Sqrt and two small procedures of its own, and paid
+   the check where they need none (2026-11-02).  The leaf procedures
+   need the whole program, so they are a first pass:
+
+     YieldMark --leaves=LIST FILE.c ...
+     YieldMark --with=LIST IN.c OUT.c
+
+   The first writes LIST, the leaf procedures of all the files, one a
+   line.  The second marks IN.c with them.  Without --with no
+   procedure is a leaf.  A generator would know the same from its
+   call graph.
+
+   It prints the counts of leaf and other loops, or of leaf
+   procedures. *)
+
+IMPORT Io ;
+IMPORT Text ;
+IMPORT DynStr ;
+IMPORT System ;
+IMPORT Fmt ;
+IMPORT Sort ;
+IMPORT Bits ;
+IMPORT Seq ;
+
+VAR
+  pool : POOL ;
+
+PROCEDURE IsId (b: BYTE) : BOOL =
+BEGIN
+  RETURN (b >= 48 AND b <= 57) OR (b >= 65 AND b <= 90) OR
+         (b >= 97 AND b <= 122) OR b = 95
+END IsId ;
+
+PROCEDURE Brackets (RO s: STR ; VAR m: SLICE OF I64 ; VAR lit: SLICE OF BYTE)
+  RAISES IndexError =
+  (* Brackets sets m[i] to the position of the bracket that closes the
+     ( or { at i, and lit[i] to 1 inside a string, a character
+     constant or a comment.  An unclosed bracket keeps 0. *)
+VAR
+  stk : SLICE OF I64 ;
+  sp, i, n : I64 ;
+  b, q : BYTE ;
+BEGIN
+  n := Text.BLen (s) ;
+  stk := NEW (I64, n + 1) ;
+  sp := 0 ;
+  i := 0 ;
+  WHILE i < n DO
+    b := Text.BAt (s, i) ;
+    IF b = 34 OR b = 39 THEN                   (* " or ' *)
+      q := b ;
+      lit[i] := 1 ;
+      i := i + 1 ;
+      WHILE i < n AND Text.BAt (s, i) # q DO
+        lit[i] := 1 ;
+        IF Text.BAt (s, i) = 92 AND i + 1 < n THEN   (* a backslash *)
+          i := i + 1 ;
+          lit[i] := 1
+        END ;
+        i := i + 1
+      END ;
+      IF i < n THEN lit[i] := 1 END
+    ELSIF b = 47 AND i + 1 < n AND Text.BAt (s, i + 1) = 42 THEN   (* /* *)
+      WHILE i + 1 < n AND NOT (Text.BAt (s, i) = 42 AND Text.BAt (s, i + 1) = 47) DO
+        lit[i] := 1 ;
+        i := i + 1
+      END ;
+      lit[i] := 1 ;
+      IF i + 1 < n THEN i := i + 1 ; lit[i] := 1 END
+    ELSIF b = 47 AND i + 1 < n AND Text.BAt (s, i + 1) = 47 THEN   (* // *)
+      WHILE i < n AND Text.BAt (s, i) # 10 DO
+        lit[i] := 1 ;
+        i := i + 1
+      END
+    ELSIF b = 40 OR b = 123 THEN                 (* ( or { *)
+      stk[sp] := i ;
+      sp := sp + 1
+    ELSIF (b = 41 OR b = 125) AND sp > 0 THEN    (* ) or } *)
+      sp := sp - 1 ;
+      m[stk[sp]] := i
+    END ;
+    i := i + 1
+  END
+END Brackets ;
+
+PROCEDURE ForAt (RO s: STR ; RO lit: SLICE OF BYTE ; i: I64) : BOOL
+  RAISES IndexError =
+  (* ForAt answers whether the word `for` starts at i, outside a
+     literal. *)
+VAR n : I64 ;
+BEGIN
+  n := Text.BLen (s) ;
+  IF i + 3 >= n OR lit[i] # 0 THEN RETURN FALSE END ;
+  IF i > 0 AND IsId (Text.BAt (s, i - 1)) THEN RETURN FALSE END ;
+  RETURN Text.BAt (s, i) = 102 AND Text.BAt (s, i + 1) = 111 AND
+         Text.BAt (s, i + 2) = 114 AND NOT IsId (Text.BAt (s, i + 3))
+END ForAt ;
+
+PROCEDURE CallAt (RO s: STR ; RO lit: SLICE OF BYTE ; i, e: I64) : BOOL
+  RAISES IndexError =
+  (* CallAt answers whether an M9 procedure is called at i: a capital
+     starting a word, not M9_, an underscore in the word, and ` (`
+     after it, all before e. *)
+VAR
+  j : I64 ;
+  under : BOOL ;
+BEGIN
+  IF lit[i] # 0 OR Text.BAt (s, i) < 65 OR Text.BAt (s, i) > 90 THEN RETURN FALSE END ;
+  IF i > 0 AND IsId (Text.BAt (s, i - 1)) THEN RETURN FALSE END ;
+  IF i + 2 < e AND Text.BAt (s, i) = 77 AND Text.BAt (s, i + 1) = 57 THEN RETURN FALSE END ;
+  j := i ;
+  under := FALSE ;
+  WHILE j < e AND IsId (Text.BAt (s, j)) DO
+    IF Text.BAt (s, j) = 95 THEN under := TRUE END ;
+    j := j + 1
+  END ;
+  RETURN under AND j + 1 < e AND Text.BAt (s, j) = 32 AND Text.BAt (s, j + 1) = 40
+END CallAt ;
+
+PROCEDURE Name (RO s: STR ; i: I64) : STR RAISES IndexError =
+  (* Name answers the word that starts at i. *)
+VAR j : I64 ;
+BEGIN
+  j := i ;
+  WHILE j < Text.BLen (s) AND IsId (Text.BAt (s, j)) DO j := j + 1 END ;
+  RETURN SLICE (s, i, j - i)
+END Name ;
+
+(* ---- the first pass: the leaf procedures --------------------------- *)
+
+VAR
+  names : Seq.Strs ;            (* every procedure defined *)
+  loops : Seq.I64s ;            (* 1 when its body has a loop *)
+  from, upto : Seq.I64s ;       (* its callees: callees.at[from .. upto) *)
+  callees : Seq.Strs ;
+
+PROCEDURE Defs (RO s: STR) RAISES IndexError =
+  (* Defs adds the procedures s defines.  A definition starts a line
+     with its type, names a procedure, and ends the line without `;`;
+     its body's brace opens the next line. *)
+VAR
+  m : SLICE OF I64 ;
+  lit : SLICE OF BYTE ;
+  n, i, j, eol, b, e, k, loop : I64 ;
+BEGIN
+  n := Text.BLen (s) ;
+  m := NEW (I64, n + 1) ;
+  lit := NEW (BYTE, n + 1) ;
+  Brackets (s, m, lit) ;
+  i := 0 ;
+  WHILE i < n DO
+    eol := i ;
+    WHILE eol < n AND Text.BAt (s, eol) # 10 DO eol := eol + 1 END ;
+    IF eol > i AND eol + 1 < n AND Text.BAt (s, i) >= 97 AND Text.BAt (s, i) <= 122
+       AND Text.BAt (s, eol - 1) = 41 AND Text.BAt (s, eol + 1) = 123 AND m[eol + 1] > 0 THEN
+      j := i ;
+      WHILE j < eol AND NOT CallAt (s, lit, j, eol) DO j := j + 1 END ;
+      IF j < eol THEN
+        b := eol + 1 ;
+        e := m[b] ;
+        Seq.AddStr (pool, names, Text.Keep (pool, Name (s, j))) ;
+        Seq.AddI64 (pool, from, callees.n) ;
+        loop := 0 ;
+        FOR k := b + 1 TO e - 1 DO
+          IF ForAt (s, lit, k) THEN loop := 1 END ;
+          IF CallAt (s, lit, k, e) THEN Seq.AddStr (pool, callees, Text.Keep (pool, Name (s, k))) END
+        END ;
+        Seq.AddI64 (pool, loops, loop) ;
+        Seq.AddI64 (pool, upto, callees.n) ;
+        eol := e
+      END
+    END ;
+    i := eol + 1
+  END
+END Defs ;
+
+PROCEDURE Leaves () : SLICE OF STR RAISES IndexError =
+  (* Leaves answers the leaf procedures: no loop, and every callee a
+     leaf.  It starts from none and adds until nothing changes, so a
+     procedure in a cycle of calls is never one.  A callee is found by
+     a binary search in the names, sorted. *)
+VAR
+  defs, sorted : SLICE OF STR ;
+  idx : SLICE OF I64 ;
+  leaf : SLICE OF BOOL ;
+  out : Seq.Strs ;
+  k, c, p : I64 ;
+  changed, all : BOOL ;
+BEGIN
+  defs := Seq.StrsOf (pool, names) ;
+  idx := NEW (pool, I64, LEN (defs)) ;
+  Sort.ArgStr (defs, idx) ;
+  sorted := NEW (pool, STR, LEN (defs)) ;
+  FOR k := 0 TO LEN (defs) - 1 DO sorted[k] := defs[idx[k]] END ;
+  leaf := NEW (pool, BOOL, names.n + 1) ;
+  changed := TRUE ;
+  WHILE changed DO
+    changed := FALSE ;
+    FOR k := 0 TO names.n - 1 DO
+      IF NOT leaf[k] AND loops.at[k] = 0 THEN
+        all := TRUE ;
+        FOR c := from.at[k] TO upto.at[k] - 1 DO
+          p := Sort.FindStr (sorted, callees.at[c]) ;
+          IF p < 0 THEN all := FALSE
+          ELSIF NOT leaf[idx[p]] THEN all := FALSE
+          END
+        END ;
+        IF all THEN leaf[k] := TRUE ; changed := TRUE END
+      END
+    END
+  END ;
+  FOR k := 0 TO names.n - 1 DO
+    IF leaf[k] THEN Seq.AddStr (pool, out, names.at[k]) END
+  END ;
+  RETURN Seq.StrsOf (pool, out)
+END Leaves ;
+
+PROCEDURE Bit (f, b: I64) : STR =
+BEGIN
+  IF Bits.And (f, b) # 0 THEN RETURN '1' END ;
+  RETURN '0'
+END Bit ;
+
+PROCEDURE Mark (RO s: STR ; VAR d: PTR DynStr.DString ; RO lv: SLICE OF STR ;
+                VAR leaves, procs, others: I64)
+  RAISES IndexError, ValueRange =
+VAR
+  m, pre, chk, post : SLICE OF I64 ;
+  lit, kind : SLICE OF BYTE ;
+  n, i, j, b, e, k, from, q, f, openEnd : I64 ;
+BEGIN
+  n := Text.BLen (s) ;
+  m := NEW (I64, n + 1) ;
+  lit := NEW (BYTE, n + 1) ;
+  pre := NEW (I64, n + 2) ;       (* K + 1 where a loop's `for` starts *)
+  chk := NEW (I64, n + 2) ;       (* K + 1 after its body's brace *)
+  kind := NEW (BYTE, n + 2) ;     (* there: the loop's facts, below *)
+  openEnd := 0 ;                  (* the end of the outermost loop open *)
+  post := NEW (I64, n + 2) ;      (* 1 after the brace that closes it *)
+  Brackets (s, m, lit) ;
+  k := 0 ;
+  FOR i := 0 TO n - 1 DO
+    IF ForAt (s, lit, i) THEN
+      j := i + 3 ;
+      WHILE j < n AND Text.BAt (s, j) = 32 DO j := j + 1 END ;
+      IF j < n AND Text.BAt (s, j) = 40 AND m[j] > 0 THEN
+        j := m[j] + 1 ;
+        WHILE j < n AND Text.BAt (s, j) = 32 DO j := j + 1 END ;
+        IF j < n AND Text.BAt (s, j) = 123 AND m[j] > 0 THEN
+          b := j ;
+          e := m[j] ;
+          pre[i] := k + 1 ;
+          chk[b + 1] := k + 1 ;
+          f := 0 ;
+          FOR q := b + 1 TO e - 1 DO
+            IF ForAt (s, lit, q) THEN f := Bits.Or (f, 1) END ;
+            IF CallAt (s, lit, q, e) THEN
+              f := Bits.Or (f, 2) ;
+              IF Sort.FindStr (lv, Name (s, q)) < 0 THEN f := Bits.Or (f, 4) END
+            END
+          END ;
+          IF i < openEnd THEN f := Bits.Or (f, 8) ELSE openEnd := e END ;
+          kind[b + 1] := BYTE (f) ;
+          IF Bits.And (f, 3) = 0 THEN leaves := leaves + 1 END ;
+          IF Bits.And (f, 5) = 0 THEN procs := procs + 1 END ;
+          IF Bits.And (f, 8) = 0 THEN others := others + 1 END ;
+          post[e + 1] := 1 ;
+          k := k + 1
+        END
+      END
+    END
+  END ;
+  from := 0 ;
+  FOR i := 0 TO n DO
+    IF post[i] # 0 OR pre[i] # 0 OR chk[i] # 0 THEN
+      DynStr.Append (d, SLICE (s, from, i - from)) ;
+      from := i ;
+      IF post[i] # 0 THEN DynStr.Append (d, ' }') END ;
+      IF pre[i] # 0 THEN
+        DynStr.Append (d, '{ M9_YDECL(' + Fmt.I64Str (pre[i] - 1) + ') ')
+      END ;
+      IF chk[i] > 0 THEN
+        f := I64 (kind[i]) ;
+        DynStr.Append (d, ' M9_YCHK(' + Fmt.I64Str (chk[i] - 1)
+                       + ', ' + Bit (f, 1) + ', ' + Bit (f, 2)
+                       + ', ' + Bit (f, 4) + ', ' + Bit (f, 8) + ');')
+      END
+    END
+  END ;
+  DynStr.Append (d, SLICE (s, from, n - from))
+END Mark ;
+
+PROCEDURE Main () : I64 =
+VAR
+  args, lines, lf : SLICE OF STR ;
+  s, out, with : STR ;
+  d : PTR DynStr.DString IN pool ;
+  leaves, procs, others, k : I64 ;
+BEGIN
+  BEGIN
+    args := System.Positional (pool) ;
+    out := System.Value ('--leaves', '') ;
+    IF Text.BLen (out) > 0 THEN
+      FOR k := 0 TO LEN (args) - 1 DO Defs (Io.ReadFileUtf (args[k])) END ;
+      lf := Leaves () ;
+      d := DynStr.New (pool) ;
+      FOR k := 0 TO LEN (lf) - 1 DO DynStr.Append (d, lf[k] + 0AC) END ;
+      Io.WriteFile (out, DynStr.View (d)) ;
+      Io.WriteLine ('leaf procedures: ' + Fmt.I64Str (LEN (lf)) + ' of ' + Fmt.I64Str (names.n)) ;
+      RETURN 0
+    END ;
+    IF LEN (args) # 2 THEN
+      Io.ErrLine ('usage: YieldMark [--with=LIST] IN.c OUT.c | YieldMark --leaves=LIST FILE.c ...') ;
+      RETURN 2
+    END ;
+    with := System.Value ('--with', '') ;
+    lines := NEW (pool, STR, 0) ;
+    IF Text.BLen (with) > 0 THEN
+      lines := Text.Fields (Text.Keep (pool, Io.ReadFileUtf (with)), 0AC) ;
+      Sort.Strs (lines)
+    END ;
+    s := Io.ReadFileUtf (args[0]) ;
+    d := DynStr.New (pool) ;
+    DynStr.Append (d, '#include "yk.h"' + 0AC) ;
+    leaves := 0 ;
+    procs := 0 ;
+    others := 0 ;
+    Mark (s, d, lines, leaves, procs, others) ;
+    Io.WriteFile (args[1], DynStr.View (d)) ;
+    Io.WriteLine (args[0] + ': ' + Fmt.I64Str (leaves) + ' leaf loops, '
+                  + Fmt.I64Str (procs) + ' with no loop and only leaf calls, '
+                  + Fmt.I64Str (others) + ' outermost')
+  EXCEPT
+  | Io.IOError (msg) :
+      Io.ErrLine ('YieldMark: ' + msg) ;
+      RETURN 1
+  | ValueRange :
+      Io.ErrLine ('YieldMark: a value out of range') ;
+      RETURN 1
+  | IndexError :
+      Io.ErrLine ('YieldMark: an index out of range') ;
+      RETURN 1
+  END ;
+  RETURN 0
+END Main ;
+
+BEGIN
+  Io.Halt (Main ())
+END YieldMark.

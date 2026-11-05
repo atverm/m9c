@@ -56,29 +56,29 @@ void Tsk_Chunk (int64_t k, int64_t n, int64_t workers, int64_t *lo, int64_t *hi,
     goto L_ret;
   }
   { __typeof__(q) m9v = m9_div_i64 (n, workers, err);
-    if (err->exc) { m9ln = 180; goto L_ret; };
+    if (err->exc) { m9ln = 195; goto L_ret; };
     q = m9v;
   }
   { __typeof__(r) m9v = m9_mod_i64 (n, workers, err);
-    if (err->exc) { m9ln = 181; goto L_ret; };
+    if (err->exc) { m9ln = 196; goto L_ret; };
     r = m9v;
   }
   if ((k < r)) {
     { __typeof__((*lo)) m9v = m9_mul_i64 (k, (m9_add_i64 (q, INT64_C(1), err)), err);
-      if (err->exc) { m9ln = 183; goto L_ret; };
+      if (err->exc) { m9ln = 198; goto L_ret; };
       (*lo) = m9v;
     }
     { __typeof__((*hi)) m9v = m9_add_i64 (m9_add_i64 ((*lo), q, err), INT64_C(1), err);
-      if (err->exc) { m9ln = 184; goto L_ret; };
+      if (err->exc) { m9ln = 199; goto L_ret; };
       (*hi) = m9v;
     }
   } else {
     { __typeof__((*lo)) m9v = m9_add_i64 (m9_mul_i64 (r, (m9_add_i64 (q, INT64_C(1), err)), err), m9_mul_i64 ((m9_sub_i64 (k, r, err)), q, err), err);
-      if (err->exc) { m9ln = 186; goto L_ret; };
+      if (err->exc) { m9ln = 201; goto L_ret; };
       (*lo) = m9v;
     }
     { __typeof__((*hi)) m9v = m9_add_i64 ((*lo), q, err);
-      if (err->exc) { m9ln = 187; goto L_ret; };
+      if (err->exc) { m9ln = 202; goto L_ret; };
       (*hi) = m9v;
     }
   }
@@ -100,7 +100,7 @@ int64_t Tsk_Workers (int64_t n, m9_state *err)
   int64_t m9ret = 0;
   int64_t w = 0; (void) w;
   { __typeof__(w) m9v = System_Cores (err);
-    if (err->exc) { m9ln = 195; goto L_ret; };
+    if (err->exc) { m9ln = 210; goto L_ret; };
     w = m9v;
   }
   if ((w > n)) {
@@ -130,15 +130,15 @@ void Tsk_Start (Tsk_Crew *c, int64_t workers, m9_state *err)
   if ((workers < INT64_C(1))) {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s0, 22 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s0, 22 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
-    m9_site (err, 290, m9pn);
+    m9_site (err, 305, m9pn);
     goto L_ret;
   }
   bool m9t2 = (!Tsk_Size (&((*c).go), workers, err));
-  if (err->exc) { m9ln = 291; goto L_ret; };
+  if (err->exc) { m9ln = 306; goto L_ret; };
   if (m9t2) {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s1, 39 })) m9t3 = ((m9_sl_UTF8){ (uint8_t *) m9s1, 39 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Faults_BadArg);
-    m9_site (err, 292, m9pn);
+    m9_site (err, 307, m9pn);
     goto L_ret;
   }
 L_ret: ;
@@ -159,7 +159,7 @@ Tsk_Seat Tsk_Join (Tsk_Crew *c, m9_state *err)
   Tsk_Seat m9ret = {0};
   Tsk_Seat s = {0}; (void) s;
   { __typeof__(s.id) m9v = Tsk_TakeId (&((*c).go), err);
-    if (err->exc) { m9ln = 300; goto L_ret; };
+    if (err->exc) { m9ln = 315; goto L_ret; };
     s.id = m9v;
   }
   s.round_ = INT64_C(0);
@@ -189,18 +189,18 @@ bool Tsk_Next (Tsk_Crew *c, Tsk_Seat *s, m9_state *err)
   bool m9ret = false;
   if (((*s).round_ > INT64_C(0))) {
     Tsk_Finish (&((*c).done), (*s).failed, err);
-    if (err->exc) { m9ln = 312; goto L_ret; };
+    if (err->exc) { m9ln = 327; goto L_ret; };
   }
   (*s).failed = false;
   bool m9t1 = Tsk_Await (&((*c).go), s, err);
-  if (err->exc) { m9ln = 314; goto L_ret; };
+  if (err->exc) { m9ln = 329; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
     m9ret = true;
     goto L_ret;
   }
   Tsk_Leave (&((*c).done), err);
-  if (err->exc) { m9ln = 315; goto L_ret; };
+  if (err->exc) { m9ln = 330; goto L_ret; };
   err->res = m9res;
   m9ret = false;
   goto L_ret;
@@ -221,20 +221,20 @@ void Tsk_For (Tsk_Crew *c, int64_t n, int64_t op, m9_state *err)
   int32_t m9ln = 0; (void) m9ln;
   int64_t w = 0; (void) w;
   { __typeof__(w) m9v = Tsk_Open (&((*c).go), n, op, err);
-    if (err->exc) { m9ln = 323; goto L_ret; };
+    if (err->exc) { m9ln = 338; goto L_ret; };
     w = m9v;
   }
   if ((w == INT64_C(0))) {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s2, 49 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s2, 49 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
-    m9_site (err, 325, m9pn);
+    m9_site (err, 340, m9pn);
     goto L_ret;
   }
   bool m9t2 = (Tsk_AwaitRound (&((*c).done), w, err) > INT64_C(0));
-  if (err->exc) { m9ln = 327; goto L_ret; };
+  if (err->exc) { m9ln = 342; goto L_ret; };
   if (m9t2) {
     m9_raise (err, &Tsk_Failed);
-    m9_site (err, 327, m9pn);
+    m9_site (err, 342, m9pn);
     goto L_ret;
   }
 L_ret: ;
@@ -254,11 +254,11 @@ void Tsk_Stop (Tsk_Crew *c, m9_state *err)
   int32_t m9ln = 0; (void) m9ln;
   int64_t w = 0; (void) w;
   { __typeof__(w) m9v = Tsk_Halt (&((*c).go), err);
-    if (err->exc) { m9ln = 334; goto L_ret; };
+    if (err->exc) { m9ln = 349; goto L_ret; };
     w = m9v;
   }
   Tsk_AwaitLeft (&((*c).done), w, err);
-  if (err->exc) { m9ln = 335; goto L_ret; };
+  if (err->exc) { m9ln = 350; goto L_ret; };
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
@@ -276,6 +276,7 @@ static bool Tsk_Size (Tsk_Go *g, int64_t workers, m9_state *err)
   int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   m9_mon_enter (&(*g).m9mon);
+  if (m9_mon_poisoned (&(*g).m9mon)) { m9_raise (err, &m9_exc_Poisoned); goto L_ret; }
   if (((*g).workers > INT64_C(0))) {
     err->res = m9res;
     m9ret = false;
@@ -288,6 +289,7 @@ static bool Tsk_Size (Tsk_Go *g, int64_t workers, m9_state *err)
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
+  if (err->exc) m9_mon_taint (&(*g).m9mon, err);
   m9_mon_leave (&(*g).m9mon);
   m9_pool_free (&m9frame);
   return m9ret;
@@ -304,9 +306,10 @@ static int64_t Tsk_TakeId (Tsk_Go *g, m9_state *err)
   int64_t m9ret = 0;
   m9_mon_enter (&(*g).m9mon);
   int64_t id = 0; (void) id;
+  if (m9_mon_poisoned (&(*g).m9mon)) { m9_raise (err, &m9_exc_Poisoned); goto L_ret; }
   id = (*g).ids;
   { __typeof__((*g).ids) m9v = m9_add_i64 ((*g).ids, INT64_C(1), err);
-    if (err->exc) { m9ln = 216; goto L_ret; };
+    if (err->exc) { m9ln = 231; goto L_ret; };
     (*g).ids = m9v;
   }
   err->res = m9res;
@@ -315,6 +318,7 @@ static int64_t Tsk_TakeId (Tsk_Go *g, m9_state *err)
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
+  if (err->exc) m9_mon_taint (&(*g).m9mon, err);
   m9_mon_leave (&(*g).m9mon);
   m9_pool_free (&m9frame);
   return m9ret;
@@ -330,6 +334,7 @@ static bool Tsk_Await (Tsk_Go *g, Tsk_Seat *s, m9_state *err)
   int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   m9_mon_enter (&(*g).m9mon);
+  if (m9_mon_poisoned (&(*g).m9mon)) { m9_raise (err, &m9_exc_Poisoned); goto L_ret; }
   for (;;) {
     if (!(((((*g).round_ == (*s).round_)) && (!(*g).stop)))) break;
     m9_mon_wait (&((*g)).m9mon);
@@ -343,13 +348,14 @@ static bool Tsk_Await (Tsk_Go *g, Tsk_Seat *s, m9_state *err)
   (*s).n = (*g).n;
   (*s).op = (*g).op;
   Tsk_Chunk ((*s).id, (*g).n, (*g).workers, &((*s).lo), &((*s).hi), err);
-  if (err->exc) { m9ln = 229; goto L_ret; };
+  if (err->exc) { m9ln = 244; goto L_ret; };
   err->res = m9res;
   m9ret = true;
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
+  if (err->exc) m9_mon_taint (&(*g).m9mon, err);
   m9_mon_leave (&(*g).m9mon);
   m9_pool_free (&m9frame);
   return m9ret;
@@ -365,13 +371,14 @@ static int64_t Tsk_Open (Tsk_Go *g, int64_t n, int64_t op, m9_state *err)
   int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   m9_mon_enter (&(*g).m9mon);
+  if (m9_mon_poisoned (&(*g).m9mon)) { m9_raise (err, &m9_exc_Poisoned); goto L_ret; }
   if (((((*g).workers == INT64_C(0))) || (*g).stop)) {
     err->res = m9res;
     m9ret = INT64_C(0);
     goto L_ret;
   }
   { __typeof__((*g).round_) m9v = m9_add_i64 ((*g).round_, INT64_C(1), err);
-    if (err->exc) { m9ln = 238; goto L_ret; };
+    if (err->exc) { m9ln = 253; goto L_ret; };
     (*g).round_ = m9v;
   }
   (*g).n = n;
@@ -383,6 +390,7 @@ static int64_t Tsk_Open (Tsk_Go *g, int64_t n, int64_t op, m9_state *err)
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
+  if (err->exc) m9_mon_taint (&(*g).m9mon, err);
   m9_mon_leave (&(*g).m9mon);
   m9_pool_free (&m9frame);
   return m9ret;
@@ -398,6 +406,7 @@ static int64_t Tsk_Halt (Tsk_Go *g, m9_state *err)
   int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   m9_mon_enter (&(*g).m9mon);
+  if (m9_mon_poisoned (&(*g).m9mon)) { m9_raise (err, &m9_exc_Poisoned); goto L_ret; }
   (*g).stop = true;
   m9_mon_signal (&((*g)).m9mon);
   err->res = m9res;
@@ -406,6 +415,7 @@ static int64_t Tsk_Halt (Tsk_Go *g, m9_state *err)
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
+  if (err->exc) m9_mon_taint (&(*g).m9mon, err);
   m9_mon_leave (&(*g).m9mon);
   m9_pool_free (&m9frame);
   return m9ret;
@@ -420,13 +430,14 @@ static void Tsk_Finish (Tsk_Done *d, bool failed, m9_state *err)
   static const char m9pn[] = "Tsk.Finish"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   m9_mon_enter (&(*d).m9mon);
+  if (m9_mon_poisoned (&(*d).m9mon)) { m9_raise (err, &m9_exc_Poisoned); goto L_ret; }
   { __typeof__((*d).finished) m9v = m9_add_i64 ((*d).finished, INT64_C(1), err);
-    if (err->exc) { m9ln = 257; goto L_ret; };
+    if (err->exc) { m9ln = 272; goto L_ret; };
     (*d).finished = m9v;
   }
   if (failed) {
     { __typeof__((*d).failed) m9v = m9_add_i64 ((*d).failed, INT64_C(1), err);
-      if (err->exc) { m9ln = 258; goto L_ret; };
+      if (err->exc) { m9ln = 273; goto L_ret; };
       (*d).failed = m9v;
     }
   }
@@ -434,6 +445,7 @@ static void Tsk_Finish (Tsk_Done *d, bool failed, m9_state *err)
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
+  if (err->exc) m9_mon_taint (&(*d).m9mon, err);
   m9_mon_leave (&(*d).m9mon);
   m9_pool_free (&m9frame);
   return;
@@ -448,14 +460,16 @@ static void Tsk_Leave (Tsk_Done *d, m9_state *err)
   static const char m9pn[] = "Tsk.Leave"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   m9_mon_enter (&(*d).m9mon);
+  if (m9_mon_poisoned (&(*d).m9mon)) { m9_raise (err, &m9_exc_Poisoned); goto L_ret; }
   { __typeof__((*d).left) m9v = m9_add_i64 ((*d).left, INT64_C(1), err);
-    if (err->exc) { m9ln = 264; goto L_ret; };
+    if (err->exc) { m9ln = 279; goto L_ret; };
     (*d).left = m9v;
   }
   m9_mon_signal (&((*d)).m9mon);
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
+  if (err->exc) m9_mon_taint (&(*d).m9mon, err);
   m9_mon_leave (&(*d).m9mon);
   m9_pool_free (&m9frame);
   return;
@@ -472,6 +486,7 @@ static int64_t Tsk_AwaitRound (Tsk_Done *d, int64_t workers, m9_state *err)
   int64_t m9ret = 0;
   m9_mon_enter (&(*d).m9mon);
   int64_t f = 0; (void) f;
+  if (m9_mon_poisoned (&(*d).m9mon)) { m9_raise (err, &m9_exc_Poisoned); goto L_ret; }
   for (;;) {
     if (!(((*d).finished < workers))) break;
     m9_mon_wait (&((*d)).m9mon);
@@ -485,6 +500,7 @@ static int64_t Tsk_AwaitRound (Tsk_Done *d, int64_t workers, m9_state *err)
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
+  if (err->exc) m9_mon_taint (&(*d).m9mon, err);
   m9_mon_leave (&(*d).m9mon);
   m9_pool_free (&m9frame);
   return m9ret;
@@ -499,6 +515,7 @@ static void Tsk_AwaitLeft (Tsk_Done *d, int64_t workers, m9_state *err)
   static const char m9pn[] = "Tsk.AwaitLeft"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   m9_mon_enter (&(*d).m9mon);
+  if (m9_mon_poisoned (&(*d).m9mon)) { m9_raise (err, &m9_exc_Poisoned); goto L_ret; }
   for (;;) {
     if (!(((*d).left < workers))) break;
     m9_mon_wait (&((*d)).m9mon);
@@ -506,6 +523,7 @@ static void Tsk_AwaitLeft (Tsk_Done *d, int64_t workers, m9_state *err)
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
+  if (err->exc) m9_mon_taint (&(*d).m9mon, err);
   m9_mon_leave (&(*d).m9mon);
   m9_pool_free (&m9frame);
   return;

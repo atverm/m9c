@@ -111,6 +111,7 @@ bool Diag_Parse (m9_sl_UTF8 line, Diag_Finding *f, m9_pool *f_pool, m9_state *er
     bool m9t4 = (i < Text_BLen (line, err));
     if (err->exc) { m9ln = 223; goto L_ret; };
     if (!(m9t4)) break;
+    M9_YCHK ();
     bool m9t5 = (Diag_B (line, i, err) == (int64_t)(58u));
     if (err->exc) { m9ln = 224; goto L_ret; };
     if (m9t5) {
@@ -150,6 +151,7 @@ bool Diag_Parse (m9_sl_UTF8 line, Diag_Finding *f, m9_pool *f_pool, m9_state *er
     bool m9t10 = (i < Text_BLen (line, err));
     if (err->exc) { m9ln = 241; goto L_ret; };
     if (!(m9t10)) break;
+    M9_YCHK ();
     bool m9t11 = (Diag_B (line, i, err) == (int64_t)(58u));
     if (err->exc) { m9ln = 242; goto L_ret; };
     if (m9t11) {
@@ -340,6 +342,7 @@ m9_sl_Diag_Finding Diag_Check (m9_pool *pool, m9_sl_UTF8 m9c, m9_sl_UTF8 flags, 
     bool m9t6 = (i < Text_BLen (text, err));
     if (err->exc) { m9ln = 350; goto L_ret; };
     if (!(m9t6)) break;
+    M9_YCHK ();
     j = i;
     for (;;) {
       bool m9t7 = ((j < Text_BLen (text, err)) && (Diag_B (text, j, err) != INT64_C(10)));
@@ -582,6 +585,7 @@ m9_sl_UTF8 Diag_Json (m9_pool *pool, m9_sl_Diag_Finding fs, m9_state *err)
   m9t1to = m9_sub_i64 ((fs).len, INT64_C(1), err);
   if (err->exc) { m9ln = 440; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     if ((i > INT64_C(0))) {
       DynStr_AppendChar (&(d), &((*pool)), 44u, err);
       if (err->exc) { m9ln = 441; goto L_ret; };
@@ -654,6 +658,7 @@ m9_sl_UTF8 Diag_LexJson (m9_sl_UTF8 src, m9_state *err)
   if (err->exc) { m9ln = 470; goto L_ret; };
   first = true;
   for (;;) {
+    M9_YCHK ();
     Lex_Next (&(lx), err->res, &(t), err->res, err);
     if (err->exc) { m9ln = 473; goto L_ret; };
     if ((t.kind == INT64_C(0))) {
@@ -695,6 +700,7 @@ m9_sl_UTF8 Diag_LexJson (m9_sl_UTF8 src, m9_state *err)
   m9t1to = m9_sub_i64 (Lex_ComCount (err), INT64_C(1), err);
   if (err->exc) { m9ln = 490; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__(cm) m9v = Lex_ComAt (i, err);
       if (err->exc) { m9ln = 491; goto L_ret; };
       cm = m9v;
@@ -755,6 +761,7 @@ void Diag_JStrUtf (DynStr_DString * *d, m9_pool *d_pool, m9_sl_UTF8 s, m9_state 
   m9t1to = m9_sub_i64 (Text_BLen (s, err), INT64_C(1), err);
   if (err->exc) { m9ln = 153; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__(c) m9v = Diag_B (s, i, err);
       if (err->exc) { m9ln = 154; goto L_ret; };
       c = m9v;

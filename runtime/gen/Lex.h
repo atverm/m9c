@@ -91,6 +91,7 @@ struct Lex_Comment {
 void Lex_InitUtf (Lex_Lexer *lx, m9_pool *lx_pool, m9_sl_UTF8 src, m9_state *err);
 void Lex_Next (Lex_Lexer *lx, m9_pool *lx_pool, Lex_Token *t, m9_pool *t_pool, m9_state *err);
 m9_sl_UTF8 Lex_KindName (int64_t k, m9_state *err);
+bool Lex_IsKeyword (m9_sl_UTF8 w, m9_state *err);
 void Lex_Collect (bool on, m9_state *err);
 int64_t Lex_ComCount (m9_state *err);
 Lex_Comment Lex_ComAt (int64_t i, m9_state *err);

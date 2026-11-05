@@ -1,0 +1,297 @@
+MODULE ChanTest ;
+
+(* ChanTest holds Chan.Ints to a channel's contract.  The ring keeps
+   its order, wraps, and holds no more than its cap.  SetCap refuses a
+   cap out of range and a channel in use.  Close lets the ring drain,
+   then Receive answers FALSE, and Send raises Closed.  Then tasks:
+   four senders and one receiver through a ring of four, every value
+   received once and each sender's in its order; and the worker
+   shape, where workers take indices until the channel closes. *)
+
+IMPORT Check ;
+IMPORT Chan ;
+IMPORT Io ;
+
+CONST
+  Senders = 4 ;
+  PerSender = 5000 ;
+  Workers = 3 ;
+  Jobs = 1000 ;
+
+TYPE
+  (* Gate counts the tasks that finished. *)
+  Gate = MONITOR RECORD
+    n : I64 ;
+  END ;
+
+  Job = RECORD
+    c : Chan.Ints ;             (* the values the senders send *)
+    work : Chan.Ints ;          (* the indices the workers take *)
+    done : Gate ;
+    ids : Gate ;                (* hands out sender numbers *)
+    hits : SLICE OF I64 ;       (* work index k, taken by its worker *)
+  END [SHARABLE] ;
+
+VAR
+  t : Check.T ;
+  pool : POOL ;
+
+PROCEDURE Finish (VAR g: Gate) =
+BEGIN
+  g.n := g.n + 1 ;
+  SIGNAL (g)
+END Finish ;
+
+PROCEDURE Await (VAR g: Gate ; n: I64) =
+BEGIN
+  WHILE g.n < n DO WAIT (g) END
+END Await ;
+
+PROCEDURE NextId (VAR g: Gate) : I64 =
+BEGIN
+  g.n := g.n + 1 ;
+  RETURN g.n - 1
+END NextId ;
+
+PROCEDURE NewJob () : PTR Job IN pool =
+VAR j : PTR Job IN pool ;
+BEGIN
+  j := NEW (pool, Job) ;
+  j.hits := NEW (pool, I64, Jobs) ;
+  RETURN j
+END NewJob ;
+
+(* ---- one task: the ring ------------------------------------------- *)
+
+PROCEDURE Order () =
+VAR
+  j : PTR Job IN pool ;
+  v, i : I64 ;
+  ok : BOOL ;
+BEGIN
+  j := NewJob () ;
+  Check.EqI64 (t, 'a zeroed channel is empty', Chan.Count (j.c), 0) ;
+  Check.That (t, 'TryReceive on an empty channel answers FALSE', NOT Chan.TryReceive (j.c, v)) ;
+  BEGIN
+    ok := Chan.TrySend (j.c, 7) AND Chan.TrySend (j.c, 8) AND Chan.TrySend (j.c, 9)
+  EXCEPT
+  | Chan.Closed : ok := FALSE
+  END ;
+  Check.That (t, 'three TrySends to a zeroed channel', ok) ;
+  Check.EqI64 (t, 'and Count says three', Chan.Count (j.c), 3) ;
+  v := 0 ;
+  ok := Chan.TryReceive (j.c, v) ;
+  Check.EqI64 (t, 'the oldest comes first', v, 7) ;
+  ok := Chan.TryReceive (j.c, v) ;
+  Check.EqI64 (t, 'then the next', v, 8) ;
+  ok := Chan.TryReceive (j.c, v) ;
+  Check.EqI64 (t, 'then the last', v, 9) ;
+  Check.That (t, 'and the channel is empty again', NOT Chan.TryReceive (j.c, v)) ;
+  (* the ring wraps: 1,000 through a ring of three, in order *)
+  j := NewJob () ;
+  BEGIN
+    Chan.SetCap (j.c, 3)
+  EXCEPT
+  | ValueRange : Check.That (t, 'SetCap (3) on a fresh channel', FALSE)
+  END ;
+  ok := TRUE ;
+  FOR i := 1 TO 1000 DO
+    BEGIN
+      IF NOT Chan.TrySend (j.c, i) THEN ok := FALSE END
+    EXCEPT
+    | Chan.Closed : ok := FALSE
+    END ;
+    IF i MOD 2 = 0 THEN
+      IF NOT Chan.TryReceive (j.c, v) OR v # i - 1 THEN ok := FALSE END ;
+      IF NOT Chan.TryReceive (j.c, v) OR v # i THEN ok := FALSE END
+    END
+  END ;
+  Check.That (t, '1,000 values through a ring of three keep their order', ok)
+END Order ;
+
+PROCEDURE Caps () =
+VAR
+  j : PTR Job IN pool ;
+  ok : BOOL ;
+BEGIN
+  j := NewJob () ;
+  BEGIN
+    Chan.SetCap (j.c, 2) ;
+    ok := Chan.TrySend (j.c, 1) AND Chan.TrySend (j.c, 2) AND NOT Chan.TrySend (j.c, 3)
+  EXCEPT
+  | ValueRange : ok := FALSE
+  | Chan.Closed : ok := FALSE
+  END ;
+  Check.That (t, 'a ring of two takes two and refuses the third', ok) ;
+  Check.That (t, 'SetCap refuses a channel with values in it', CapRefused (j, 4)) ;
+  j := NewJob () ;
+  Check.That (t, 'SetCap refuses 0', CapRefused (j, 0)) ;
+  Check.That (t, 'SetCap refuses MaxCap + 1', CapRefused (j, Chan.MaxCap + 1)) ;
+  BEGIN
+    Chan.SetCap (j.c, Chan.MaxCap) ;
+    ok := TRUE
+  EXCEPT
+  | ValueRange : ok := FALSE
+  END ;
+  Check.That (t, 'SetCap takes MaxCap', ok)
+END Caps ;
+
+PROCEDURE CapRefused (VAR j: PTR Job ; cap: I64) : BOOL =
+BEGIN
+  Chan.SetCap (j.c, cap) ;
+  RETURN FALSE
+EXCEPT
+| ValueRange : RETURN TRUE
+END CapRefused ;
+
+PROCEDURE Closing () =
+VAR
+  j : PTR Job IN pool ;
+  v : I64 ;
+  ok : BOOL ;
+BEGIN
+  j := NewJob () ;
+  BEGIN
+    Chan.Send (j.c, 1) ;
+    Chan.Send (j.c, 2)
+  EXCEPT
+  | Chan.Closed : Check.That (t, 'Send to an open channel', FALSE)
+  END ;
+  Chan.Close (j.c) ;
+  Chan.Close (j.c) ;
+  v := 0 ;
+  ok := Chan.Receive (j.c, v) AND v = 1 ;
+  ok := ok AND Chan.Receive (j.c, v) AND v = 2 ;
+  Check.That (t, 'a closed channel still gives what it holds', ok) ;
+  Check.That (t, 'then Receive answers FALSE', NOT Chan.Receive (j.c, v)) ;
+  Check.EqI64 (t, 'and leaves v as it was', v, 2) ;
+  Check.That (t, 'Send to a closed channel raises Closed', SendRefused (j)) ;
+  Check.That (t, 'TrySend to a closed channel raises Closed', TrySendRefused (j))
+END Closing ;
+
+PROCEDURE SendRefused (VAR j: PTR Job) : BOOL =
+BEGIN
+  Chan.Send (j.c, 3) ;
+  RETURN FALSE
+EXCEPT
+| Chan.Closed : RETURN TRUE
+END SendRefused ;
+
+PROCEDURE TrySendRefused (VAR j: PTR Job) : BOOL =
+VAR ok : BOOL ;
+BEGIN
+  ok := Chan.TrySend (j.c, 3) ;
+  RETURN FALSE
+EXCEPT
+| Chan.Closed : RETURN TRUE
+END TrySendRefused ;
+
+(* ---- tasks -------------------------------------------------------- *)
+
+(* Sender sends PerSender values, each its number times a million
+   plus its count, so the receiver can tell whose it is and in what
+   order. *)
+PROCEDURE Sender (VAR j: Job) =
+VAR id, i : I64 ;
+BEGIN
+  id := NextId (j.ids) ;
+  BEGIN
+    FOR i := 1 TO PerSender DO Chan.Send (j.c, id * 1000000 + i) END
+  EXCEPT
+  | Chan.Closed :
+  END ;
+  Finish (j.done)
+END Sender ;
+
+PROCEDURE Closer (VAR j: Job) =
+BEGIN
+  Await (j.done, Senders) ;
+  Chan.Close (j.c)
+END Closer ;
+
+PROCEDURE Many () =
+VAR
+  j : PTR Job IN pool ;
+  last : ARRAY 4 OF I64 ;
+  v, k, got, sum, want : I64 ;
+  ordered : BOOL ;
+BEGIN
+  j := NewJob () ;
+  BEGIN
+    Chan.SetCap (j.c, 4)
+  EXCEPT
+  | ValueRange :
+  END ;
+  FOR k := 1 TO Senders DO TASK (Sender, j) END ;
+  TASK (Closer, j) ;
+  FOR k := 0 TO Senders - 1 DO last[k] := 0 END ;
+  got := 0 ;
+  sum := 0 ;
+  ordered := TRUE ;
+  v := 0 ;
+  WHILE Chan.Receive (j.c, v) DO
+    got := got + 1 ;
+    sum := sum + v MOD 1000000 ;
+    k := v DIV 1000000 ;
+    IF k < 0 OR k >= Senders THEN
+      ordered := FALSE
+    ELSIF v MOD 1000000 # last[k] + 1 THEN
+      ordered := FALSE
+    ELSE
+      last[k] := v MOD 1000000
+    END
+  END ;
+  want := Senders * PerSender ;
+  Check.EqI64 (t, 'four senders through a ring of four: every value once', got, want) ;
+  Check.EqI64 (t, 'and their sum', sum, Senders * (PerSender * (PerSender + 1) DIV 2)) ;
+  Check.That (t, "and each sender's values in its order", ordered)
+EXCEPT
+| IndexError : Check.That (t, 'Many: an index out of range', FALSE)
+END Many ;
+
+(* Worker takes work indices until the channel closes. *)
+PROCEDURE Worker (VAR j: Job) =
+VAR k : I64 ;
+BEGIN
+  k := 0 ;
+  WHILE Chan.Receive (j.work, k) DO
+    BEGIN
+      j.hits[k] := j.hits[k] + 1
+    EXCEPT
+    | IndexError :
+    END
+  END ;
+  Finish (j.done)
+END Worker ;
+
+PROCEDURE Crew () =
+VAR
+  j : PTR Job IN pool ;
+  k, once : I64 ;
+BEGIN
+  j := NewJob () ;
+  FOR k := 1 TO Workers DO TASK (Worker, j) END ;
+  BEGIN
+    FOR k := 0 TO Jobs - 1 DO Chan.Send (j.work, k) END
+  EXCEPT
+  | Chan.Closed :
+  END ;
+  Chan.Close (j.work) ;
+  Await (j.done, Workers) ;
+  once := 0 ;
+  FOR k := 0 TO Jobs - 1 DO
+    IF j.hits[k] = 1 THEN once := once + 1 END
+  END ;
+  Check.EqI64 (t, 'three workers take 1,000 indices, each once, and end at Close', once, Jobs)
+EXCEPT
+| IndexError : Check.That (t, 'Crew: an index out of range', FALSE)
+END Crew ;
+
+BEGIN
+  Order () ;
+  Caps () ;
+  Closing () ;
+  Many () ;
+  Crew () ;
+  Io.Halt (Check.Done (t, 'Chan'))
+END ChanTest.

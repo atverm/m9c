@@ -1,0 +1,109 @@
+// Breaks is written by hand in .m9f, not converted from M9.  Each
+// statement in its body sits where the line-break rule has to decide:
+// does this line end a statement or continue it?  Breaks.out holds
+// what the program prints.
+module Breaks
+
+import Io, Fmt
+
+type
+  Box = record { v : I64 }
+
+var
+  x, y : I64
+  ok : BOOL
+
+// Show prints a label and a number.
+procedure Show (ro label: STR ; v: I64) =
+{
+  Io.WriteLine (label + ' ' + Fmt.I64Str (v))
+} Show
+
+// Twice answers 2 * n.  Its heading goes on over two lines.  A line
+// break inside brackets is only a blank.
+procedure Twice (n: I64 ;
+                 ro why: STR) : I64 =
+{
+  return 2 * n
+} Twice
+
+// Bound answers the v of b when there is one, and 42 when there is
+// none.  A line ending in a name, followed by one starting with a
+// name, ends a statement.  So the binding in the if and the value of
+// the last return each need a backslash to go on.
+procedure Bound (b: opt ptr Box) : I64 =
+{
+  if b is some \
+     q {
+    return q.v
+  }
+  return \
+    Twice (21, 'none')
+} Bound
+
+// Boxes hands Bound a box and no box.
+procedure Boxes () =
+var b : ptr Box
+{
+  b = new (Box)
+  b.v = 7
+  Show ('a box', Bound (some (b)))
+  Show ('no box', Bound (none))
+} Boxes
+
+{
+  // A line ending in an operator continues.
+  x = 1 +
+      2
+  Show ('ends in +', x)
+
+  // A line starting with an operator continues the line before.
+  y = x
+      * 10
+  Show ('starts with *', y)
+
+  // Inside brackets a line break is only a blank.
+  Show ('in brackets',
+        Twice (
+          x,
+          'x'
+        ))
+
+  // A line starting with ( continues the call before it.
+  Show
+    ('call on two lines', 3)
+
+  // A comment between two statements does not join them.
+  x = 5   // x is 5 now
+  /* and y follows */
+  y = 6
+  Show ('comment', x * 10 + y)
+
+  // A line ending in true ends a statement, as a name does.
+  ok = true
+  x = 4
+  Show ('after true', x)
+
+  // } may stand on a line of its own before else or elsif.
+  if x > y {
+    Show ('then', 1)
+  }
+  else {
+    Show ('else', 2)
+  }
+  if x == 3 {
+    Show ('three', x)
+  }
+  elsif x == 4 {
+    Show ('elsif', x)
+  }
+
+  // A condition goes on after && or ||, and before them.
+  if x == 4 &&
+     y == 6
+     || !ok {
+    Show ('long condition', x + y)
+  }
+
+  Boxes ()
+} Breaks.

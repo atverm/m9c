@@ -121,9 +121,13 @@ an empty string restores the palette entry.
 
 ### Viridis () : Cmap
 
+**Deprecated** (report par 3.9): write `Plot.Cmap.Viridis` instead.  The name goes in the next release.
+
 _(documented with the group below)_
 
 ### Coolwarm () : Cmap
+
+**Deprecated** (report par 3.9): write `Plot.Cmap.Coolwarm` instead.  The name goes in the next release.
 
 _(documented with the group below)_
 

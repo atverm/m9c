@@ -1,11 +1,11 @@
-REVIEW Doc -- 30 procedures with a body, 25 of them functions; 2 headings in a DEFINITION
+REVIEW Doc -- 31 procedures with a body, 26 of them functions; 2 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              25
-  assignments                                   152
-  arguments                                     515
-  RETURN values                                  45
-  operands of a comparison or an operator       211
+  functions answering on every path              26
+  assignments                                   156
+  arguments                                     539
+  RETURN values                                  47
+  operands of a comparison or an operator       215
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -23,6 +23,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   DISPOSE                                         0
   SHARED (x)                                      0
   THREAD                                          0
+  TASK                                            0
   [SHARABLE] records                              0
   module variables                                0
 
@@ -43,3 +44,4 @@ COUNTED -- how much there was to check
   NEW in a named pool                             2
   calls of a STR form with a UTF twin             0
   STR subscripts, writes and LEN                  0
+  uses of a deprecated name                       0

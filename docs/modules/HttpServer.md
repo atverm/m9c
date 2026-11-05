@@ -21,8 +21,12 @@ accepting thread; it never grows.
 A HANDLER MAY RAISE ValueRange, and a handler that raises nothing
 fits the type as well (report par 2.2.3).  Anything that escapes
 it costs that one request a 500 and is counted; it never costs the
-process.  That covers ValueRange, and IndexError, Overflow and
-OutOfMemory, which the checker does not account for.  A procedure
+process.  That covers ValueRange, and IndexError, Overflow,
+OutOfMemory and Poisoned, which the checker does not account for.
+A handler that crashes inside a monitor of the program's poisons
+it (report par 6): every later request through it is a 500, until
+the program rebuilds it with a [RESET] procedure, as SrvFix's
+/count does.  A procedure
 value cannot capture.  So a handler's context is module state the
 program sets before Run (read-only from then on), state behind the
 program's own MONITOR, or state indexed by Request.worker.
@@ -99,6 +103,18 @@ answered, refusals included, is one line through Logger.Msg at
 Info: `http method=GET path=/x status=200 bytes=512 ms=3
 client=10.0.0.7 worker=2`.  The line stays whole even when every
 worker logs at once.
+
+CONNECTIONS AS TASKS (Config.tasks, 2026-11-02; stage 3 of
+docs/task-plan.md).  Each accepted connection gets a TASK of its
+own, up to Config.maxOpen at once; over it the answer is 503, as
+for a full ring.  A connection waiting for its next request parks
+in the poller and holds no thread, so 10,000 kept connections cost
+memory, not threads.  workers keeps its meaning for a handler: at
+most that many run at once, and each holds a worker's number
+(Request.worker) from the handler to the last octet sent.  So one
+database connection per worker is still right.  A refusal before
+any handler ran logs worker=-1.  On Windows a TASK is a THREAD,
+so there tasks is for tests, not for 10,000 connections.
 
 ### EXCEPTION BindError
 

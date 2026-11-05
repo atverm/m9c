@@ -444,6 +444,7 @@ static int64_t Dict_Slot (Dict_Dict * d, m9_sl_UTF8 key, m9_state *err)
     s = m9v;
   }
   for (;;) {
+    M9_YCHK ();
     { __typeof__(e) m9v = (*(int64_t *) m9_at (d->idx.p, s, d->idx.len, sizeof (int64_t), err));
       if (err->exc) { m9ln = 193; goto L_ret; };
       e = m9v;
@@ -511,6 +512,7 @@ static void Dict_Regrow (Dict_Dict * *d, m9_pool *d_pool, m9_state *err)
   m9t2to = m9_sub_i64 (({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, INT64_C(1), err);
   if (err->exc) { m9ln = 211; goto L_ret; };
   if (i <= m9t2to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(Dict_Ent *) m9_at (({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ents.p, i, ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ents.len, sizeof (Dict_Ent), err)).key) m9a3 = (*(Dict_Ent *) m9_at (({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ents.p, i, ({ __auto_type m9g = ((*d)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ents.len, sizeof (Dict_Ent), err)).key;
       if (err->exc) { m9ln = 212; goto L_ret; };
     { __typeof__(s) m9v = m9_mod_i64 (Dict_Hash (m9a3, err), cap, err);

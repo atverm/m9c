@@ -1,0 +1,24 @@
+(* EXPECT: [RESET] rebuilds the monitor its procedure is bound to, from zero; Clear is bound to none *)
+MODULE m ;
+(* [RESET] marks the one procedure that may enter a poisoned monitor;
+   the generated code zeroes the monitor's fields before its body
+   runs (par 6, 2026-11-02).  The legal form comes first: Rebuild is
+   bound to the monitor it rebuilds.  Clear takes a plain record, and
+   there is no monitor to rebuild. *)
+TYPE
+  Bank = MONITOR RECORD
+    balance : I64 ;
+  END ;
+  Plain = RECORD
+    balance : I64 ;
+  END ;
+PROCEDURE Rebuild (VAR b: Bank) [RESET] =
+BEGIN
+  b.balance := 100
+END Rebuild ;
+PROCEDURE Clear (VAR p: Plain) [RESET] =
+BEGIN
+  p.balance := 0
+END Clear ;
+BEGIN
+END m.

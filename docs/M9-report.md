@@ -52,6 +52,7 @@ to reduce, so the list is meant to shrink.
 | [9](#9-open-problems-stated-honestly) | Open problems, stated honestly |
 | [10](#10-grammar-complete-in-wirths-own-ebnf) | Grammar |
 | [11](#11-the-c11-mapping) | The C11 mapping |
+| [A](#appendix-a-the-m9f-notation) | The .m9f notation |
 
 ---
 
@@ -1175,9 +1176,10 @@ Rules:
    may raise only what it declares; a caller must handle or redeclare.
    Failure modes are part of the signature the way parameter types
    are. There are no unchecked exceptions except `Overflow`,
-   `IndexError`, and `OutOfMemory`, which any code may raise and any
-   frame may catch — they are the runtime checks of §1.3 made
-   catchable. *(Observed success to preserve: converting an abort
+   `IndexError`, `OutOfMemory` and `Poisoned`, which any code may raise
+   and any frame may catch — they are the runtime checks of §1.3 made
+   catchable, and `Poisoned` (since 2026-11-02, §6) the call into a
+   monitor one of them left. *(Observed success to preserve: converting an abort
    into `caught indexException` turned a corrupted stack into a
    loggable event. Observed failure to fix: `HALT` with unflushed
    stdout swallowed its own diagnosis three times in one day; in M9,
@@ -1427,6 +1429,29 @@ Rules:
    2026-10-08; until then the body was skipped and the first call of
    the inner procedure was `unknown procedure: Inner` -- refused,
    with the wrong words.)*
+9. **A name is retired by its definition.** A procedure heading or
+   a CONST in a DEFINITION may carry `[DEPRECATED 'text']`, the text
+   saying what to write instead; a CONST writes it before its `=`:
+
+   ```
+   PROCEDURE SetReal (VAR t: PTR Table ; c: I64) RAISES IndexError
+     [DEPRECATED 'Csv.SetKind (t, c, Csv.Kind.Real)'] ;
+   CONST
+     KindF64 [DEPRECATED 'Frame.Data.F64s, by CASE over a column'] = 0 ;
+   ```
+
+   The name works as before. Each use from another module gets a
+   note, which refuses nothing: `Main.m9:8:8: note: Csv.SetReal is
+   deprecated; write Csv.SetKind (t, c, Csv.Kind.Real)`. Uses inside
+   the module itself get none. The implementation's heading need not
+   repeat the attribute, and the signature comparison leaves it out.
+   It is refused anywhere but a definition, and without its text; no
+   other attribute carries a text. A deprecated name is removed in
+   the release after the one that marked it. *(Since 2026-11-05, for
+   the cross-module variant workarounds of `Csv`, `Frame` and `Plot`,
+   whose gap closed on 2026-09-15. Probes
+   `deprecated-not-in-definition`, `deprecated-without-text`,
+   `attribute-text-not-deprecated`, `const-attribute-not-deprecated`.)*
 
 ---
 
@@ -1982,9 +2007,10 @@ Exceptions are declared, with their payloads, in the definition
 module that owns the failure:
 `EXCEPTION ParseError (RO msg: STR ; line, col: I64) ;`
 — a RAISES clause may only cite an exception the reader can find.
-`Overflow`, `IndexError`, `OutOfMemory`, and `ValueRange` are
-predeclared; the first three are the unchecked runtime checks of §3,
-ValueRange is checked and raised by conversions.
+`Overflow`, `IndexError`, `OutOfMemory`, `Poisoned` and `ValueRange`
+are predeclared; the first four are unchecked (the runtime checks of
+§3, and the poisoned monitor of §6), ValueRange is checked and raised
+by conversions.
 
 A handler selects on the exception, and may bind its payload.
 *Specified, and not yet fully checked: matching is by exception name,
@@ -2062,8 +2088,8 @@ exceptions, `IndexError` carries `(index, length : I64)` — the index
 and the length as the check saw them, which for `VIEW`'s dropped axis
 is the extent and the axis, and for `GRID (s, ...)` the extents'
 product and the slice's length — so `| IndexError (i, n) :` binds
-two typed I64s (since 2026-10-09); `Overflow`, `ValueRange` and
-`OutOfMemory` carry nothing and bind nothing.
+two typed I64s (since 2026-10-09); `Overflow`, `ValueRange`,
+`OutOfMemory` and `Poisoned` carry nothing and bind nothing.
 Status-code style remains available and encouraged
 for *expected* conditions (`OPT`, BOOL returns) — RAISES is for
 contract violations and environmental failure, preserving Wirth's
@@ -2092,6 +2118,23 @@ TYPE at any depth: both checkers refuse it.  A monitor entered again
 through a procedure value, which the checker cannot follow, stops the
 program by name at run time; it does not hang.  A per-thread list of
 held monitors is checked at each entry.
+
+**A monitor a bug left is poisoned** (since 2026-11-02; stage 5 of
+docs/task-plan.md, Alex's rules).  A bound procedure can fail half way
+through its update, with the shared state half moved.  When
+`IndexError`, `Overflow`, `OutOfMemory` or `Poisoned` leaves a bound
+procedure, its monitor is marked, and every later call into it raises
+`Poisoned` before its body runs: no one reads the half-moved state.
+`Poisoned` is unchecked, as the bugs that cause it are, so no RAISES
+grows.  A checked exception raised on purpose (`Chan.Closed`) leaves
+the monitor as it is: the procedure chose to stop where its state is
+whole.  A poisoned monitor is normally never used again: a
+supervisor's restart gives its child fresh storage, and a new monitor
+starts clean.  One bound procedure marked `[RESET]` is the way back
+for a monitor that must outlive its users: it enters a poisoned
+monitor too, finds every field zero, as NEW gives a record, and its
+normal return cures the monitor.  A `[RESET]` body that fails leaves
+it poisoned.  (runtime/test/taskfix/Poison.m9.)
 
 - `THREAD (proc, arg)` starts a thread. `arg` must be of a
   **SHARABLE** type: immutable, or a MONITOR, or an owned value
@@ -2191,25 +2234,34 @@ held monitors is checked at each entry.
   `task-moves-its-argument`, `task-sharable`). A monitor may be shared
   by tasks and threads together. `WAIT` in a task parks the task, not
   its thread, and `SIGNAL` wakes waiting tasks and threads alike.
-  *(Stage 1 of `docs/task-plan.md`, 2026-11-01. A task runs on the
-  thread that starts it, its CARRIER; that thread's own code (the
-  module body, or a `THREAD`'s body) is itself a task. Scheduling is
-  cooperative: a task runs until it waits, at a `WAIT`, at a monitor
-  another holds, or at its end. A blocking call (I/O, `Time.Sleep`, a
-  foreign procedure) holds the carrier, and the tasks beside it wait.
-  The module body's end ends every task, as it ends every thread; a
-  `THREAD` whose body returns waits for its tasks. A task's stack is
-  fixed at 256 KB, with a guard page below it. A task that runs into
-  the guard stops the program by name ("task stack overflow in M.P").
-  A program whose every task waits, with no `THREAD` alive to wake
-  one, stops by name ("every task waits") and lists them. On Windows a
-  `TASK` is started as a `THREAD` for now: the rules are the same, the
-  scale is not. Measured on an M4 Mac against `THREAD`: a task starts
-  and finishes in 0.18 us (a thread in 12.6 us), a monitor round trip
-  between two tasks takes 0.085 us (4.3 us between two threads), and
-  100,000 tasks park and are freed in 0.4 s; `tasks.sh` holds the
-  counts. Several carriers, preemption and a poller for I/O are the
-  plan's later stages.)*
+  *(Stages 1 and 2 of `docs/task-plan.md`, 2026-11-01. Tasks run on
+  CARRIERS, one per core (`M9_CARRIERS` sets the count; 1 runs every
+  task on the main thread). The main thread joins as a carrier when
+  the module body starts a TASK, and the body is itself a task; a
+  `THREAD` that starts one is no carrier, and its tasks go to the
+  workers. A carrier with nothing to run takes work from another's
+  queue. Scheduling is cooperative: a task runs until it waits, at a
+  `WAIT`, at a monitor another holds, or at its end. A blocking call
+  (I/O, `Time.Sleep`, a foreign procedure) holds its carrier, and the
+  others run on. A task that holds a monitor is not moved, so the
+  thread that locked a monitor is the one that unlocks it. The module
+  body's end ends every task, as it ends every thread. A task's stack
+  is fixed at 256 KB, with a guard page below it. A task that runs
+  into the guard stops the program by name ("task stack overflow in
+  M.P"). A program whose every task waits, with no `THREAD` alive to
+  wake one, stops by name ("every task waits") and lists them. A
+  task's `System.KeepAtMost` cap is its own; the large blocks it keeps
+  belong to its carrier. On Windows a `TASK` is started as a `THREAD`
+  for now: the rules are the same, the scale is not. Measured on an
+  M4 Mac (18 carriers): a task starts and finishes in 0.3 us (a
+  thread in 12.6 us), a monitor round trip between two tasks takes
+  0.13 us (6.5 us between two threads), and a flock of 10,000 birds
+  as 1,000 tasks steps twice as fast as with 1,000 threads. A fresh
+  stack costs about 2 us, its guard page and first page fault
+  included, so starting 10,000 tasks at once costs 3.8 us each. TSan
+  is told of every switch and reports nothing over `tasks.sh`'s
+  programs. A poller for I/O and preemption are the plan's later
+  stages.)*
 - Coroutines remain (`TRANSFER`), unchanged since 1978, for when
   concurrency without parallelism is the honest tool. *(Observed:
   on a one-core container, the pthread benchmark's only truthful
@@ -2326,10 +2378,12 @@ END cblosc.
      builds in the caller's arena. The checker cannot read that C, so
      the attribute is the stated effect, and the region judgement takes
      the answer as built there. `Io.ReadFileUtf` is the library's one.
-   - The attributes are closed: a procedure takes `[PURE]` or, in an
-     UNSAFE implementation, `[FRESH]`; a record `[SHARABLE]`; a foreign
-     procedure `[SERIAL]` or `[REENTRANT]`. Any other name is refused,
-     where it was ignored.
+   - The attributes are closed: a procedure takes `[PURE]`, `[RESET]`
+     (bound to a monitor, §6), `[DEPRECATED 'text']` (in a definition,
+     §3 rule 9) or, in an UNSAFE implementation, `[FRESH]`; a CONST
+     in a definition `[DEPRECATED 'text']`; a record `[SHARABLE]`; a
+     foreign procedure `[SERIAL]` or `[REENTRANT]`. Any other name is
+     refused, where it was ignored.
    - `m9c --review` counts every `ADR` site under TRUSTED, the
      descriptors apart.
 
@@ -2507,7 +2561,7 @@ Import      = "FROM" ident "IMPORT" IdentList ";"
 
 Declaration = "CONST" { ConstDecl } | "TYPE" { TypeDecl }
             | "VAR" { VarDecl } | "EXCEPTION" { ExcDecl } | ProcDecl .
-ConstDecl   = ident "=" ( ConstExpr | Aggregate ) ";" .
+ConstDecl   = ident [ Attrib ] "=" ( ConstExpr | Aggregate ) ";" .
 Aggregate   = "[" ConstExpr { "," ConstExpr } "]" .
 TypeDecl    = ident [ "=" Type ] ";" .
 ExcDecl     = ident [ "(" FieldSeq ")" ] ";" .
@@ -2517,7 +2571,7 @@ ProcHead    = "PROCEDURE" ident [ "=" string ] "(" [ Params ] ")"
               [ ":" Type ] [ "RAISES" QualidentList ] [ Attrib ] .
 Params      = Param { ";" Param } .
 Param       = [ "VAR" | "OWN" | "RO" ] [ "KEPT" ] IdentList ":" Type .
-Attrib      = "[" ident "]" .
+Attrib      = "[" ident [ string ] "]" .
 ProcBody    = { Declaration } Block ident .
 
 Block       = "BEGIN" StmtSeq [ "EXCEPT" Handler { Handler } ]
@@ -2610,7 +2664,10 @@ Notes, each a decision:
    SERIAL, REENTRANT, RO are plain idents; the legal set and
    placement are semantic rules. This resolves the draft-0.1
    inconsistency where §10 quoted PURE as a terminal while the
-   lexer's keyword table had no such entry.
+   lexer's keyword table had no such entry. One attribute carries a
+   string, `[DEPRECATED 'text']` (§3 rule 9). A CONST's attribute
+   stands before its `=`: after the value, `0 [` would read as an
+   index.
 3. **EXCEPTION is a declaration** — RAISES names must come from
    somewhere a reader can find (§5). One new keyword; 58 total.
 4. **`IS` parses as the loosest operator** but the binding forms —
@@ -2745,6 +2802,123 @@ built: `THREAD` emits a pthread and a trampoline, `MONITOR` a
 gives. A thread whose body raises with nothing to catch it stops the
 program naming the exception, because a thread has no caller to read
 its error slot. `TRANSFER` is still unbuilt: no program has asked.
+
+---
+
+## Appendix A. The .m9f notation
+
+*Since 2026-11-04; decided 2026-11-01, to ship in 0.27.0.*
+
+`.m9f` is M9 written with a C-like face: braces, lower-case keywords,
+`==` and `!=`, and no semicolons at line ends. It is the same language,
+token for token. A module may be written in either notation. The
+notation is a feature of the language, not a separate tool, and this
+appendix states it.
+
+**The `.m9` file is canonical.** m9c is the preprocessor for `.m9f`.
+When `NAME.m9f` exists, m9c writes `NAME.m9` beside it and compiles the
+`.m9`. That `.m9` is the text that is committed, diffed and reviewed.
+m9c rewrites it only when the `.m9f` is as new as it or newer, and
+never when it was edited by hand since m9c wrote it: then m9c refuses
+and names both files. `m9c --to-m9f NAME.m9` writes the `.m9f` from the
+`.m9`. A diagnostic in a `.m9` written from a `.m9f` names the `.m9f`,
+at its column, and a parse error spells what it expected in `.m9f`
+words. `man m9c` gives the details.
+
+**No line moves.** Conversion keeps every token on its line, in both
+directions. So line N of the `.m9f` is line N of the `.m9`; only
+columns differ. M9 → `.m9f` → M9 gives the file back byte for byte, for
+every M9 file that parses. A gate holds this for every `.m9` in the
+repository (`runtime/test/m9f.sh`).
+
+### A.1 The tokens
+
+| M9 | `.m9f` |
+|---|---|
+| `BEGIN … END` | `{ … }` |
+| `IF c THEN a ELSIF d THEN b ELSE e END` | `if c { a } elsif d { b } else { e }` |
+| `WHILE c DO … END`, `FOR i := 0 TO n DO … END` | `while c { … }`, `for i = 0 to n { … }` |
+| `CASE x OF \| 1 : a ELSE b END` | `case x { \| 1 : a default b }` |
+| `RECORD … END`, `LOOP … END` | `record { … }`, `loop { … }` |
+| `x := e`, in a statement | `x = e` |
+| `a = b`, `a # b`, in a statement | `a == b`, `a != b` |
+| `AND`, `OR`, `NOT`, `MOD` | `&&`, `\|\|`, `!`, `%` |
+| every other keyword | the keyword in lower case: `procedure`, `var`, `ro`, `new` |
+| `(* note *)` ending its line | `// note` |
+| any other comment | `/* note */` |
+| `;` at the end of a line | left out (A.2) |
+
+Outside a statement nothing changes: a `CONST` or `TYPE` declaration
+still writes `=`, and `OF` still follows `ARRAY`. A name that is not a
+keyword keeps its spelling, so `LEN`, `MAX`, `I64` and `BOOL` stay in
+capitals. The keywords are those of §10. A comment that
+holds `*/`, or another comment, stays `(* … *)`, which `.m9f` also
+reads. `#` is not a comment in `.m9f`, and not `!=` either: m9c refuses
+it and says which to write.
+
+Precedence needs no table of its own. M9 binds a comparison tighter
+than `AND`, and `AND` tighter than `OR` (§10), as C does. So `&&` and
+`||` mean what a C reader expects.
+
+### A.2 The line-break rule
+
+A line break stands for `;` when three things hold:
+
+1. The line's last token can end a statement. These can: a name, a
+   number, a string, `)`, `]`, `^`, a `}` that closes a block, and the
+   keywords `return`, `exit`, `true`, `false`, `none`, `some` and
+   `pool`.
+2. The next line's first token can start a statement or a
+   declaration. These can: a name, and the keywords `if`, `while`,
+   `for`, `case`, `loop`, `return`, `raise`, `exit`, `var`, `const`,
+   `type`, `procedure`, `begin`, `import`, `from`, `exception`,
+   `dispose`, `signal`, `wait`, `thread`, `task`, `transfer`, `unsafe`,
+   `stateful`, `definition`, `implementation` and `module`.
+3. The break is outside every `( )` and `[ ]`.
+
+Comments do not count: the rule reads the last token before the break
+and the first after it. So a line that ends in an operator, a comma or
+an open bracket continues, and so does a line followed by one that
+starts with an operator, `(`, `{`, `}`, `else` or `elsif`.
+
+A line that ends in `\` continues whatever follows. Two places need
+it, and both are rare: a name or `return` ending a line before a line
+that starts with a name.
+
+```
+if b is some \
+   q {
+  return q.v
+}
+```
+
+**Where a `;` is still written.** Some `;` in M9 stand before `END`.
+The rule adds none there, because `}` does not start a statement. So a
+`.m9f` writes these by hand:
+
+- after each procedure heading in a definition module;
+- after the `} Name` of the last procedure, before the module's `}`.
+
+A statement before `}` needs no `;`, since M9 needs none there.
+
+When a misread line break causes a parse error, m9c says so once per
+file and names the backslash.
+
+### A.3 Names spelled like keywords
+
+The lower-case form of every keyword is reserved in `.m9f`, and so is
+`default`. An M9 name spelled like one gets a trailing underscore:
+`to` is `to_`, `in` is `in_`. An M9 name cannot hold `_`, so the
+mapping stays one to one, and an M9 file never changes for it. A
+keyword added to the language reserves its lower-case form, and a
+`.m9f` that used it as a name then writes `name_`. That is the same
+cost an M9 program pays when one of its names becomes a keyword.
+
+A keyword written in capitals in a `.m9f` is still read as the
+keyword. The conversion from M9 writes lower case.
+
+The programs in `examples/m9f/` are written by hand in `.m9f`, and the
+gate runs them. They hold the places where the rule has to decide.
 
 ---
 

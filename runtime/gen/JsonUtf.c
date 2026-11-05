@@ -213,6 +213,7 @@ JsonUtf_Node * JsonUtf_Field (JsonUtf_Node * obj, m9_sl_UTF8 name, m9_state *err
   for (;;) {
     JsonUtf_Node * p = c;
     if (!(p != NULL)) break;
+    M9_YCHK ();
     bool m9t2 = Text_EqUtf (p->name, name, err);
     if (err->exc) { m9ln = 439; goto L_ret; };
     if (m9t2) {
@@ -893,6 +894,7 @@ void JsonUtf_AppendF64 (DynStr_DString * *d, m9_pool *d_pool, double r, m9_state
   m9t3to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) { m9ln = 772; goto L_ret; };
   if (i <= m9t3to) for (;;) {
+    M9_YCHK ();
     { __typeof__(m9_chr ((int64_t)((*(uint8_t *) m9_at (buf.v, i, INT64_C(32), sizeof (uint8_t), err))), err)) m9a1 = m9_chr ((int64_t)((*(uint8_t *) m9_at (buf.v, i, INT64_C(32), sizeof (uint8_t), err))), err);
       if (err->exc) { m9ln = 773; goto L_ret; };
     DynStr_AppendChar (d, d_pool, m9a1, err);
@@ -1428,6 +1430,7 @@ void JsonUtf_Set (JsonUtf_Node * *obj, m9_pool *obj_pool, m9_sl_UTF8 name, JsonU
   for (;;) {
     JsonUtf_Node * p = cur;
     if (!(p != NULL)) break;
+    M9_YCHK ();
     bool m9t3 = Text_EqUtf (p->name, name, err);
     if (err->exc) { m9ln = 1255; goto L_ret; };
     if (m9t3) {
@@ -1689,6 +1692,7 @@ static void JsonUtf_Skip (JsonUtf_Cursor * *c, m9_pool *c_pool, m9_state *err)
     bool m9t1 = ((((JsonUtf_Cur (c, c_pool, err) == 32u) || (JsonUtf_Cur (c, c_pool, err) == 9u)) || (JsonUtf_Cur (c, c_pool, err) == 10u)) || (JsonUtf_Cur (c, c_pool, err) == 13u));
     if (err->exc) { m9ln = 189; goto L_ret; };
     if (!(m9t1)) break;
+    M9_YCHK ();
     JsonUtf_Bump (c, c_pool, err);
     if (err->exc) { m9ln = 190; goto L_ret; };
   }
@@ -1863,6 +1867,7 @@ static JsonUtf_Node * JsonUtf_ParseObject (JsonUtf_Cursor * *c, m9_pool *c_pool,
     goto L_ret;
   }
   for (;;) {
+    M9_YCHK ();
     JsonUtf_Skip (c, c_pool, err);
     if (err->exc) { m9ln = 241; goto L_ret; };
     { __typeof__(nm) m9v = JsonUtf_ParseString (c, c_pool, err);
@@ -1963,6 +1968,7 @@ static JsonUtf_Node * JsonUtf_ParseArray (JsonUtf_Cursor * *c, m9_pool *c_pool, 
     goto L_ret;
   }
   for (;;) {
+    M9_YCHK ();
     { __typeof__(child) m9v = JsonUtf_ParseValue (c, c_pool, err);
       if (err->exc) { m9ln = 276; goto L_ret; };
       child = m9v;
@@ -2038,6 +2044,7 @@ static m9_sl_UTF8 JsonUtf_ParseString (JsonUtf_Cursor * *c, m9_pool *c_pool, m9_
     bool m9t4 = (JsonUtf_Cur (c, c_pool, err) != 34u);
     if (err->exc) { m9ln = 303; goto L_hdl_m9t1; };
     if (!(m9t4)) break;
+    M9_YCHK ();
     bool m9t5 = (({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->pos >= Text_BLen (({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->src, err));
     if (err->exc) { m9ln = 304; goto L_hdl_m9t1; };
     if (m9t5) {
@@ -2130,6 +2137,7 @@ static JsonUtf_Node * JsonUtf_ParseNumber (JsonUtf_Cursor * *c, m9_pool *c_pool,
     bool m9t5 = ((JsonUtf_Cur (c, c_pool, err) >= 48u) && (JsonUtf_Cur (c, c_pool, err) <= 57u));
     if (err->exc) { m9ln = 330; goto L_hdl_m9t1; };
     if (!(m9t5)) break;
+    M9_YCHK ();
     { __typeof__(d) m9v = m9_sub_i64 ((int64_t)(JsonUtf_Cur (c, c_pool, err)), (int64_t)(48u), err);
       if (err->exc) { m9ln = 331; goto L_hdl_m9t1; };
       d = m9v;
@@ -2166,6 +2174,7 @@ static JsonUtf_Node * JsonUtf_ParseNumber (JsonUtf_Cursor * *c, m9_pool *c_pool,
       bool m9t9 = ((JsonUtf_Cur (c, c_pool, err) >= 48u) && (JsonUtf_Cur (c, c_pool, err) <= 57u));
       if (err->exc) { m9ln = 343; goto L_hdl_m9t1; };
       if (!(m9t9)) break;
+      M9_YCHK ();
       { __typeof__(frac) m9v = (frac + (sc * (double)(m9_sub_i64 ((int64_t)(JsonUtf_Cur (c, c_pool, err)), (int64_t)(48u), err))));
         if (err->exc) { m9ln = 344; goto L_hdl_m9t1; };
         frac = m9v;
@@ -2207,6 +2216,7 @@ static JsonUtf_Node * JsonUtf_ParseNumber (JsonUtf_Cursor * *c, m9_pool *c_pool,
       bool m9t14 = ((JsonUtf_Cur (c, c_pool, err) >= 48u) && (JsonUtf_Cur (c, c_pool, err) <= 57u));
       if (err->exc) { m9ln = 359; goto L_hdl_m9t1; };
       if (!(m9t14)) break;
+      M9_YCHK ();
       if ((ex < INT64_C(1000))) {
         { __typeof__(ex) m9v = m9_sub_i64 (m9_add_i64 (m9_mul_i64 (ex, INT64_C(10), err), (int64_t)(JsonUtf_Cur (c, c_pool, err)), err), (int64_t)(48u), err);
           if (err->exc) { m9ln = 360; goto L_hdl_m9t1; };
@@ -2549,6 +2559,7 @@ static m9_sl_UTF8 JsonUtf_DecodeChars (m9_sl_UTF8 t, m9_state *err)
     bool m9t1 = (i < Text_BLen (t, err));
     if (err->exc) { m9ln = 638; goto L_ret; };
     if (!(m9t1)) break;
+    M9_YCHK ();
     bool m9t2 = ((int64_t)(Text_BAt (t, i, err)) == INT64_C(92));
     if (err->exc) { m9ln = 639; goto L_ret; };
     if (m9t2) {
@@ -2754,6 +2765,7 @@ static void JsonUtf_EscapeBody (DynStr_DString * *d, m9_pool *d_pool, m9_sl_UTF8
   uint32_t ch = 0; (void) ch;
   { __typeof__(t) m9t1s = t;
   for (int64_t m9t1i = 0; m9t1i < m9t1s.len; ) { ch = m9_utf_next (m9t1s, &m9t1i);
+    M9_YCHK ();
     v = (int64_t)(ch);
     if ((ch == 34u)) {
       DynStr_AppendChar (d, d_pool, 92u, err);
@@ -2907,6 +2919,7 @@ static void JsonUtf_EmitVal (DynStr_DString * *d, m9_pool *d_pool, JsonUtf_Node 
     for (;;) {
       JsonUtf_Node * p = c;
       if (!(p != NULL)) break;
+      M9_YCHK ();
       if (sep) {
         DynStr_AppendChar (d, d_pool, 44u, err);
         if (err->exc) { m9ln = 799; goto L_ret; };
@@ -2944,6 +2957,7 @@ static void JsonUtf_EmitVal (DynStr_DString * *d, m9_pool *d_pool, JsonUtf_Node 
     for (;;) {
       JsonUtf_Node * p = c;
       if (!(p != NULL)) break;
+      M9_YCHK ();
       if (sep) {
         DynStr_AppendChar (d, d_pool, 44u, err);
         if (err->exc) { m9ln = 816; goto L_ret; };
@@ -3045,6 +3059,7 @@ static void JsonUtf_EmitSorted (DynStr_DString * *d, m9_pool *d_pool, JsonUtf_No
     for (;;) {
       JsonUtf_Node * p = c;
       if (!(p != NULL)) break;
+      M9_YCHK ();
       (*(JsonUtf_Node * *) m9_at (ms.p, cnt, ms.len, sizeof (JsonUtf_Node *), err)) = p;
       if (err->exc) { m9ln = 880; goto L_ret; };
       { __typeof__((*(m9_sl_UTF8 *) m9_at (nms.p, cnt, nms.len, sizeof (m9_sl_UTF8), err))) m9v = JsonUtf_DecodeStr (p->name, err);
@@ -3063,6 +3078,7 @@ static void JsonUtf_EmitSorted (DynStr_DString * *d, m9_pool *d_pool, JsonUtf_No
     m9t2to = m9_sub_i64 (cnt, INT64_C(1), err);
     if (err->exc) { m9ln = 885; goto L_ret; };
     if (i <= m9t2to) for (;;) {
+      M9_YCHK ();
       j = i;
       for (;;) {
         bool m9t4 = ({ bool m9t3 = (j > INT64_C(0)); if (m9t3) { { __typeof__((*(m9_sl_UTF8 *) m9_at (nms.p, j, nms.len, sizeof (m9_sl_UTF8), err))) m9a22 = (*(m9_sl_UTF8 *) m9_at (nms.p, j, nms.len, sizeof (m9_sl_UTF8), err));   if (err->exc) { m9ln = 887; goto L_ret; }; { __typeof__((*(m9_sl_UTF8 *) m9_at (nms.p, m9_sub_i64 (j, INT64_C(1), err), nms.len, sizeof (m9_sl_UTF8), err))) m9a23 = (*(m9_sl_UTF8 *) m9_at (nms.p, m9_sub_i64 (j, INT64_C(1), err), nms.len, sizeof (m9_sl_UTF8), err));   if (err->exc) { m9ln = 887; goto L_ret; }; m9t3 = ((Text_CompareUtf (m9a22, m9a23, err) < INT64_C(0))); } } } m9t3; });
@@ -3106,6 +3122,7 @@ static void JsonUtf_EmitSorted (DynStr_DString * *d, m9_pool *d_pool, JsonUtf_No
     m9t5to = m9_sub_i64 (cnt, INT64_C(1), err);
     if (err->exc) { m9ln = 895; goto L_ret; };
     if (i <= m9t5to) for (;;) {
+      M9_YCHK ();
       if (sep) {
         DynStr_AppendChar (d, d_pool, 44u, err);
         if (err->exc) { m9ln = 896; goto L_ret; };
@@ -3139,6 +3156,7 @@ static void JsonUtf_EmitSorted (DynStr_DString * *d, m9_pool *d_pool, JsonUtf_No
     for (;;) {
       JsonUtf_Node * p = c;
       if (!(p != NULL)) break;
+      M9_YCHK ();
       if (sep) {
         DynStr_AppendChar (d, d_pool, 44u, err);
         if (err->exc) { m9ln = 908; goto L_ret; };
@@ -3180,6 +3198,7 @@ static void JsonUtf_Indent (DynStr_DString * *d, m9_pool *d_pool, int64_t depth,
   m9t1to = m9_mul_i64 (depth, INT64_C(2), err);
   if (err->exc) { m9ln = 935; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     DynStr_AppendChar (d, d_pool, 32u, err);
     if (err->exc) { m9ln = 935; goto L_ret; };
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
@@ -3231,6 +3250,7 @@ static void JsonUtf_EmitPretty (DynStr_DString * *d, m9_pool *d_pool, JsonUtf_No
     for (;;) {
       JsonUtf_Node * p = c;
       if (!(p != NULL)) break;
+      M9_YCHK ();
       if (sep) {
         DynStr_AppendChar (d, d_pool, 44u, err);
         if (err->exc) { m9ln = 955; goto L_ret; };
@@ -3275,6 +3295,7 @@ static void JsonUtf_EmitPretty (DynStr_DString * *d, m9_pool *d_pool, JsonUtf_No
     for (;;) {
       JsonUtf_Node * p = c;
       if (!(p != NULL)) break;
+      M9_YCHK ();
       if (sep) {
         DynStr_AppendChar (d, d_pool, 44u, err);
         if (err->exc) { m9ln = 971; goto L_ret; };
@@ -3355,6 +3376,7 @@ static void JsonUtf_CopyInto (JsonUtf_Node * *root, m9_pool *root_pool, JsonUtf_
     for (;;) {
       JsonUtf_Node * p = cur;
       if (!(p != NULL)) break;
+      M9_YCHK ();
       { __typeof__(cc) m9v = (JsonUtf_Node *) m9_pool_alloc (root_pool, sizeof (JsonUtf_Node), 1, err);
         if (err->exc) { m9ln = 1043; goto L_ret; };
         cc = m9v;
@@ -3387,6 +3409,7 @@ static void JsonUtf_CopyInto (JsonUtf_Node * *root, m9_pool *root_pool, JsonUtf_
     for (;;) {
       JsonUtf_Node * p = cur;
       if (!(p != NULL)) break;
+      M9_YCHK ();
       { __typeof__(cc) m9v = (JsonUtf_Node *) m9_pool_alloc (root_pool, sizeof (JsonUtf_Node), 1, err);
         if (err->exc) { m9ln = 1056; goto L_ret; };
         cc = m9v;

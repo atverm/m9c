@@ -442,6 +442,7 @@ Zip_Archive * Zip_Open (m9_pool *pool, m9_sl_UTF8 path, m9_state *err)
   }
   for (;;) {
     if (!(((at >= INT64_C(0)) && (eocd < INT64_C(0))))) break;
+    M9_YCHK ();
     bool m9t4 = (Zip_U (tail, at, INT64_C(4), err) == Zip_SigEocd);
     if (err->exc) { m9ln = 361; goto L_hdl_m9t1; };
     if (m9t4) {
@@ -550,6 +551,7 @@ Zip_Archive * Zip_Open (m9_pool *pool, m9_sl_UTF8 path, m9_state *err)
   m9t12to = m9_sub_i64 (nent, INT64_C(1), err);
   if (err->exc) { m9ln = 399; goto L_hdl_m9t1; };
   if (i <= m9t12to) for (;;) {
+    M9_YCHK ();
     bool m9t13 = (m9_add_i64 (p, INT64_C(46), err) > (cd).len);
     if (err->exc) { m9ln = 400; goto L_hdl_m9t1; };
     if (m9t13) {
@@ -672,6 +674,7 @@ Zip_Archive * Zip_Open (m9_pool *pool, m9_sl_UTF8 path, m9_state *err)
       bool m9t22 = (m9_add_i64 (q, INT64_C(4), err) <= need);
       if (err->exc) { m9ln = 430; goto L_hdl_m9t1; };
       if (!(m9t22)) break;
+      M9_YCHK ();
       { __typeof__(id) m9v = Zip_U (cd, q, INT64_C(2), err);
         if (err->exc) { m9ln = 431; goto L_hdl_m9t1; };
         id = m9v;
@@ -899,6 +902,7 @@ int64_t Zip_Find (Zip_Archive * a, m9_sl_UTF8 name, m9_state *err)
   m9t1to = m9_sub_i64 (a->n, INT64_C(1), err);
   if (err->exc) { m9ln = 489; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).name) m9a20 = (*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).name;
       if (err->exc) { m9ln = 490; goto L_ret; };
     bool m9t2 = Text_EqUtf (m9a20, name, err);
@@ -1100,6 +1104,7 @@ int64_t Zip_Read (Zip_Member * *m, m9_pool *m_pool, m9_sl_BYTE *dst, m9_state *e
   }
   out = INT64_C(0);
   for (;;) {
+    M9_YCHK ();
     Zip_Fill (m, m_pool, err);
     if (err->exc) { m9ln = 1213; goto L_ret; };
     prev = out;
@@ -1255,6 +1260,7 @@ m9_sl_BYTE Zip_GunzipBytes (m9_pool *pool, m9_sl_BYTE data, m9_state *err)
   total = INT64_C(0);
   for (;;) {
     if (!((at < n))) break;
+    M9_YCHK ();
     { __typeof__(at) m9v = Zip_GzHeader (data, at, err);
       if (err->exc) { m9ln = 1308; goto L_ret; };
       at = m9v;
@@ -1264,6 +1270,7 @@ m9_sl_BYTE Zip_GunzipBytes (m9_pool *pool, m9_sl_BYTE data, m9_state *err)
     if (err->exc) { m9ln = 1310; goto L_ret; };
     z.inPos = at;
     for (;;) {
+      M9_YCHK ();
       { __typeof__(total) m9v = Zip_Step (&(z), err->res, &(buf), total, err);
         if (err->exc) { m9ln = 1313; goto L_ret; };
         total = m9v;
@@ -1509,6 +1516,7 @@ m9_sl_BYTE Zip_Decompress (m9_pool *pool, m9_sl_BYTE data, m9_state *err)
   z.inPos = INT64_C(2);
   total = INT64_C(0);
   for (;;) {
+    M9_YCHK ();
     { __typeof__(total) m9v = Zip_Step (&(z), err->res, &(buf), total, err);
       if (err->exc) { m9ln = 1654; goto L_ret; };
       total = m9v;
@@ -1746,6 +1754,7 @@ int64_t Zip_Adler32 (m9_sl_BYTE b, m9_state *err)
   i = INT64_C(0);
   for (;;) {
     if (!((i < n))) break;
+    M9_YCHK ();
     { __typeof__(stop) m9v = m9_add_i64 (i, INT64_C(5552), err);
       if (err->exc) { m9ln = 1577; goto L_ret; };
       stop = m9v;
@@ -1883,6 +1892,7 @@ void Zip_AddBytes (Zip_Writer * *w, m9_pool *w_pool, m9_sl_UTF8 name, m9_sl_BYTE
   m9t5to = m9_sub_i64 (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, INT64_C(1), err);
   if (err->exc) { m9ln = 1790; goto L_ret; };
   if (i <= m9t5to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).name) m9a35 = (*(Zip_WEntry *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->e.len, sizeof (Zip_WEntry), err)).name;
       if (err->exc) { m9ln = 1791; goto L_ret; };
     bool m9t6 = Zip_SameBytes (m9a35, nm, err);
@@ -2062,6 +2072,7 @@ m9_sl_BYTE Zip_Finish (Zip_Writer * *w, m9_pool *w_pool, m9_state *err)
   m9t2to = m9_sub_i64 (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, INT64_C(1), err);
   if (err->exc) { m9ln = 1836; goto L_ret; };
   if (i <= m9t2to) for (;;) {
+    M9_YCHK ();
     Zip_PutLow (&(out), at, Zip_SigLoc, INT64_C(4), err);
     if (err->exc) { m9ln = 1837; goto L_ret; };
     { __typeof__(m9_add_i64 (at, INT64_C(4), err)) m9a39 = m9_add_i64 (at, INT64_C(4), err);
@@ -2182,6 +2193,7 @@ m9_sl_BYTE Zip_Finish (Zip_Writer * *w, m9_pool *w_pool, m9_state *err)
   m9t5to = m9_sub_i64 (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, INT64_C(1), err);
   if (err->exc) { m9ln = 1855; goto L_ret; };
   if (i <= m9t5to) for (;;) {
+    M9_YCHK ();
     Zip_PutLow (&(out), at, Zip_SigCen, INT64_C(4), err);
     if (err->exc) { m9ln = 1856; goto L_ret; };
     { __typeof__(m9_add_i64 (at, INT64_C(4), err)) m9a56 = m9_add_i64 (at, INT64_C(4), err);
@@ -2882,6 +2894,7 @@ static int64_t Zip_Build (m9_sl_I64 *fast, m9_sl_I64 *count, m9_sl_I64 *symbol, 
   m9t9to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) { m9ln = 684; goto L_ret; };
   if (s <= m9t9to) for (;;) {
+    M9_YCHK ();
     { __typeof__(len) m9v = (*(int64_t *) m9_at (lens.p, m9_add_i64 (from, s, err), lens.len, sizeof (int64_t), err));
       if (err->exc) { m9ln = 685; goto L_ret; };
       len = m9v;
@@ -3078,6 +3091,7 @@ static void Zip_Dynamic (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
   m9t2to = m9_sub_i64 (ncode, INT64_C(1), err);
   if (err->exc) { m9ln = 733; goto L_ret; };
   if (i <= m9t2to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(int64_t *) m9_at ((*z).lens.p, (*(int64_t *) m9_at ((*Order).v, i, INT64_C(19), sizeof (int64_t), err)), (*z).lens.len, sizeof (int64_t), err))) m9v = Zip_Take (z, z_pool, INT64_C(3), err);
       if (err->exc) { m9ln = 733; goto L_ret; };
       (*(int64_t *) m9_at ((*z).lens.p, (*(int64_t *) m9_at ((*Order).v, i, INT64_C(19), sizeof (int64_t), err)), (*z).lens.len, sizeof (int64_t), err)) = m9v;
@@ -3102,6 +3116,7 @@ static void Zip_Dynamic (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
     bool m9t5 = (i < m9_add_i64 (nlen, ndist, err));
     if (err->exc) { m9ln = 741; goto L_ret; };
     if (!(m9t5)) break;
+    M9_YCHK ();
     Zip_Refill (z, z_pool, err);
     if (err->exc) { m9ln = 742; goto L_ret; };
     { __typeof__(s) m9v = Zip_Sym (z, z_pool, (*z).lfast, (*z).lcount, (*z).lsym, err);
@@ -3374,6 +3389,7 @@ static int64_t Zip_Fast (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
   ring = (!(*z).whole);
   for (;;) {
     if (!(((out <= room) && (ip <= stop)))) break;
+    M9_YCHK ();
     for (;;) {
       if (!((bits <= INT64_C(48)))) break;
       { __typeof__((int64_t)((*(uint8_t *) m9_at (inb.p, ip, inb.len, sizeof (uint8_t), err)))) m9a95 = (int64_t)((*(uint8_t *) m9_at (inb.p, ip, inb.len, sizeof (uint8_t), err)));
@@ -3633,6 +3649,7 @@ static int64_t Zip_Step (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
   out = at;
   n = ((*dst)).len;
   for (;;) {
+    M9_YCHK ();
     if ((((*z).bad || (*z).short_) || ((*z).state == Zip_StDone))) {
       err->res = m9res;
       m9ret = out;
@@ -3704,6 +3721,7 @@ static int64_t Zip_Step (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
       if (((*z).state == Zip_StStored)) {
         for (;;) {
           if (!(((((*z).storedLeft > INT64_C(0)) && (out < n)) && ((((*z).bits >= INT64_C(8)) || ((*z).inPos < (*z).inLen)))))) break;
+          M9_YCHK ();
           if (((*z).bits >= INT64_C(8))) {
             { __typeof__(b) m9v = m9_byte (Zip_Take (z, z_pool, INT64_C(8), err), err);
               if (err->exc) { m9ln = 983; goto L_ret; };
@@ -4446,6 +4464,7 @@ static void Zip_FixedBlock (m9_pool *pool, m9_sl_BYTE data, Zip_Sink *o, m9_pool
   i = INT64_C(0);
   for (;;) {
     if (!((i < n))) break;
+    M9_YCHK ();
     best = INT64_C(0);
     bestAt = INT64_C(0);
     bool m9t1 = (m9_add_i64 (i, Zip_MinMatch, err) <= n);
@@ -4595,6 +4614,7 @@ static m9_sl_BYTE Zip_StoredBlocks (m9_pool *pool, m9_sl_BYTE data, m9_state *er
   at = INT64_C(0);
   w = INT64_C(0);
   for (;;) {
+    M9_YCHK ();
     { __typeof__(len) m9v = m9_sub_i64 (n, at, err);
       if (err->exc) { m9ln = 1519; goto L_ret; };
       len = m9v;

@@ -552,6 +552,7 @@ m9_sl_UTF8 Smtp_Wire (Smtp_Message * m, m9_state *err)
     m9t2to = m9_sub_i64 (m->nparts, INT64_C(1), err);
     if (err->exc) { m9ln = 572; goto L_ret; };
     if (i <= m9t2to) for (;;) {
+      M9_YCHK ();
       DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s13, 2 }), err);
       if (err->exc) { m9ln = 573; goto L_ret; };
       DynStr_Append (&(d), &(scratch), boundary, err);
@@ -733,6 +734,7 @@ void Smtp_SendText (m9_sl_UTF8 host, int64_t port, int64_t security, m9_sl_UTF8 
   m9t1to = m9_sub_i64 ((to).len, INT64_C(1), err);
   if (err->exc) { m9ln = 939; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(m9_sl_UTF8 *) m9_at (to.p, i, to.len, sizeof (m9_sl_UTF8), err))) m9a11 = (*(m9_sl_UTF8 *) m9_at (to.p, i, to.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 939; goto L_ret; };
     Smtp_AddTo (&(m), &(scratch), m9a11, err);
@@ -884,6 +886,7 @@ m9_sl_UTF8 Smtp_Stuffed (m9_sl_UTF8 text, m9_state *err)
   prev = 10u;
   { __typeof__(text) m9t1s = text;
   for (int64_t m9t1i = 0; m9t1i < m9t1s.len; ) { c = m9_utf_next (m9t1s, &m9t1i);
+    M9_YCHK ();
     if (((c == 46u) && (prev == 10u))) {
       DynStr_AppendChar (&(d), &(scratch), 46u, err);
       if (err->exc) { m9ln = 607; goto L_ret; };
@@ -1435,6 +1438,7 @@ static m9_sl_UTF8 Smtp_QpWord (m9_sl_BYTE b, m9_state *err)
   m9t1to = m9_sub_i64 ((b).len, INT64_C(1), err);
   if (err->exc) { m9ln = 421; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__(v) m9v = (int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)));
       if (err->exc) { m9ln = 422; goto L_ret; };
       v = m9v;
@@ -1579,6 +1583,7 @@ static m9_sl_UTF8 Smtp_EncodedWord (m9_sl_UTF8 s, m9_state *err)
   i = INT64_C(0);
   for (;;) {
     if (!((i < (all).len))) break;
+    M9_YCHK ();
     nx = i;
     { __typeof__(c) m9v = Text_NextCp (s, &(nx), err);
       if (err->exc) { m9ln = 474; goto L_ret; };
@@ -1672,6 +1677,7 @@ static void Smtp_Lines (DynStr_DString * *d, m9_pool *d_pool, m9_sl_UTF8 b64, m9
     bool m9t1 = (i < Text_BLen (b64, err));
     if (err->exc) { m9ln = 498; goto L_ret; };
     if (!(m9t1)) break;
+    M9_YCHK ();
     { __typeof__(n) m9v = m9_sub_i64 (Text_BLen (b64, err), i, err);
       if (err->exc) { m9ln = 499; goto L_ret; };
       n = m9v;
@@ -1720,6 +1726,7 @@ static void Smtp_Addresses (DynStr_DString * *d, m9_pool *d_pool, m9_sl_UTF8 nam
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) { m9ln = 514; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     if ((i > INT64_C(0))) {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s55, 2 }), err);
       if (err->exc) { m9ln = 515; goto L_ret; };
@@ -1937,6 +1944,7 @@ static int64_t Smtp_Reply (Smtp_Conn *c, m9_sl_UTF8 *text, m9_state *err)
   code = INT64_C(0);
   for (;;) {
     if (!((!done))) break;
+    M9_YCHK ();
     if ((total >= Smtp_ReplyMax)) {
       { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s59, 31 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s59, 31 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
       err->i[0] = INT64_C(0);
@@ -2094,6 +2102,7 @@ static bool Smtp_Offers (m9_sl_UTF8 ehlo, m9_sl_UTF8 word, m9_state *err)
   m9t1to = m9_sub_i64 ((lines).len, INT64_C(1), err);
   if (err->exc) { m9ln = 734; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__(Text_TrimUtf ((*(m9_sl_UTF8 *) m9_at (lines.p, i, lines.len, sizeof (m9_sl_UTF8), err)), err)) m9a41 = Text_TrimUtf ((*(m9_sl_UTF8 *) m9_at (lines.p, i, lines.len, sizeof (m9_sl_UTF8), err)), err);
       if (err->exc) { m9ln = 735; goto L_ret; };
     { __typeof__(l) m9v = Text_UpperUtf (m9a41, err);
@@ -2266,6 +2275,7 @@ static bool Smtp_NeedsUtf8 (m9_sl_UTF8 from, m9_sl_m9_sl_UTF8 rcpts, m9_sl_BYTE 
   }
   { __typeof__(rcpts) m9t2s = rcpts;
   for (int64_t m9t2i = 0; m9t2i < m9t2s.len; m9t2i++) { r = m9t2s.p[m9t2i];
+    M9_YCHK ();
     bool m9t3 = Smtp_HasHigh (m9_utf_octets (r), err);
     if (err->exc) { m9ln = 853; goto L_ret; };
     if (m9t3) {
@@ -2416,6 +2426,7 @@ static void Smtp_Dialogue (m9_sl_UTF8 host, int64_t port, int64_t security, m9_s
   m9t19to = m9_sub_i64 ((rcpts).len, INT64_C(1), err);
   if (err->exc) { m9ln = 913; goto L_fin_m9t8; };
   if (i <= m9t19to) for (;;) {
+    M9_YCHK ();
     m9_mark m9t20 = m9_pool_mark (err->res);
     { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s94, 9 }), (*(m9_sl_UTF8 *) m9_at (rcpts.p, i, rcpts.len, sizeof (m9_sl_UTF8), err)), err), ((m9_sl_UTF8){ (uint8_t *) m9s95, 1 }), err)) m9a48 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s94, 9 }), (*(m9_sl_UTF8 *) m9_at (rcpts.p, i, rcpts.len, sizeof (m9_sl_UTF8), err)), err), ((m9_sl_UTF8){ (uint8_t *) m9s95, 1 }), err);
       if (err->exc) { m9ln = 914; goto L_fin_m9t8; };

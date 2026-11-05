@@ -25,6 +25,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <pthread.h>
 #include "m9rt.h"
 
 static int bad = 0, checks = 0;
@@ -209,17 +210,17 @@ static void mixed (void)
 
 typedef struct { m9_mon m; int v; } Cell;
 static Cell ca, cb;
-static int order[4], norder = 0;
+static int a_released, entrant_saw, entrant_done, holding;
 
 static void *holder (void *arg, m9_pool *pool)
 {
   (void) arg; (void) pool;
   m9_mon_enter (&ca.m);
-  order[norder++] = 1;
   m9_mon_enter (&cb.m);
+  __atomic_store_n (&holding, 1, __ATOMIC_RELEASE);   /* B is released only in the WAIT */
   while (!cb.v) m9_mon_wait (&cb.m);   /* holds A, parks in B */
   m9_mon_leave (&cb.m);
-  order[norder++] = 3;
+  a_released = 1;
   m9_mon_leave (&ca.m);
   return NULL;
 }
@@ -231,11 +232,10 @@ static void *entrant (void *arg, m9_pool *pool)
   cb.v = 1;
   m9_mon_signal (&cb.m);
   m9_mon_leave (&cb.m);
-  order[norder++] = 2;
   m9_mon_enter (&ca.m);         /* parks until holder leaves A */
-  order[norder++] = 4;
-  ca.v = 1;
+  entrant_saw = a_released;
   m9_mon_leave (&ca.m);
+  __atomic_store_n (&entrant_done, 1, __ATOMIC_RELEASE);
   return NULL;
 }
 
@@ -244,10 +244,56 @@ static void nested (void)
   m9_state err;
   memset (&err, 0, sizeof err);
   m9_task_start2 (holder, NULL, NULL, "holder", &err);
+  while (!__atomic_load_n (&holding, __ATOMIC_ACQUIRE)) m9_task_yield ();
   m9_task_start2 (entrant, NULL, NULL, "entrant", &err);
-  while (!ca.v) m9_task_yield ();
-  ok ("an entrant parks on a monitor a waiting task holds, then gets it",
-      norder == 4 && order[0] == 1 && order[1] == 2 && order[2] == 3 && order[3] == 4);
+  while (!__atomic_load_n (&entrant_done, __ATOMIC_ACQUIRE)) m9_task_yield ();
+  ok ("an entrant gets a monitor only after the task waiting while it held it leaves",
+      entrant_saw == 1);
+}
+
+/* ---- 5b. tasks run on more than one carrier ---- */
+
+#define SPREAD 64
+static pthread_t spread_on[SPREAD];
+typedef struct { m9_mon m; int done; } Spread;
+static Spread spread;
+
+static void *spreader (void *arg, m9_pool *pool)
+{
+  volatile double x = 0;
+  long i;
+  (void) pool;
+  for (i = 0; i < 2000000; i++) x += (double) i * 1e-9;
+  if (x < 0) printf ("never\n");
+  spread_on[(intptr_t) arg] = pthread_self ();
+  m9_mon_enter (&spread.m);
+  spread.done++;
+  m9_mon_signal (&spread.m);
+  m9_mon_leave (&spread.m);
+  return NULL;
+}
+
+static void spreads (void)
+{
+  m9_state err;
+  intptr_t i;
+  int j, distinct = 0;
+  const char *e = getenv ("M9_CARRIERS");
+  memset (&err, 0, sizeof err);
+  for (i = 0; i < SPREAD; i++) m9_task_start2 (spreader, (void *) i, NULL, "spreader", &err);
+  m9_mon_enter (&spread.m);
+  while (spread.done < SPREAD) m9_mon_wait (&spread.m);
+  m9_mon_leave (&spread.m);
+  for (i = 0; i < SPREAD; i++) {
+    for (j = 0; j < i; j++) if (pthread_equal (spread_on[i], spread_on[j])) break;
+    if (j == i) distinct++;
+  }
+  if (e != NULL && atoi (e) == 1)
+    ok ("M9_CARRIERS=1 runs every task on one carrier", distinct == 1);
+  else {
+    ok ("64 busy tasks run on more than one carrier", distinct > 1);
+    printf ("     spread: 64 tasks on %d carriers\n", distinct);
+  }
 }
 
 /* ---- 6. a THREAD carries tasks ---- */
@@ -288,6 +334,139 @@ static void thread_carries (void)
     usleep (1000);
   }
   ok ("a THREAD that returns runs its 1,000 tasks to the end", car.n == 1000);
+}
+
+/* ---- 6b. the poller: sleeps and descriptors (stage 3) ---- */
+
+#define SLEEPERS 10000
+typedef struct { m9_mon m; int64_t n; } Count;
+static Count slept;
+
+static void *sleeper (void *arg, m9_pool *pool)
+{
+  (void) pool;
+  m9_sleep_ms (50 + (intptr_t) arg % 10);
+  m9_mon_enter (&slept.m);
+  slept.n++;
+  m9_mon_signal (&slept.m);
+  m9_mon_leave (&slept.m);
+  return NULL;
+}
+
+static int64_t ticks;
+static void *ticker (void *arg, m9_pool *pool)
+{
+  int i;
+  (void) arg; (void) pool;
+  for (i = 0; i < 1000; i++) { __atomic_add_fetch (&ticks, 1, __ATOMIC_RELAXED); m9_task_yield (); }
+  return NULL;
+}
+
+static int pipefd[2];
+static int read_why = -9, late_why = -9;
+static void *reader (void *arg, m9_pool *pool)
+{
+  char b;
+  (void) arg; (void) pool;
+  read_why = m9_task_wait_fd (pipefd[0], 0, -1);
+  if (read (pipefd[0], &b, 1) != 1) read_why = -2;
+  return NULL;
+}
+
+static void *writer (void *arg, m9_pool *pool)
+{
+  (void) arg; (void) pool;
+  m9_sleep_ms (20);
+  if (write (pipefd[1], "x", 1) != 1) read_why = -3;
+  return NULL;
+}
+
+static int nothing[2];
+static double late_s;
+static void *late (void *arg, m9_pool *pool)
+{
+  double t0 = now ();
+  (void) arg; (void) pool;
+  late_why = m9_task_wait_fd (nothing[0], 0, 30);
+  late_s = now () - t0;
+  return NULL;
+}
+
+static void poller (void)
+{
+  m9_state err;
+  intptr_t i;
+  double t0, t1;
+  int64_t before;
+  memset (&err, 0, sizeof err);
+  t0 = now ();
+  for (i = 0; i < SLEEPERS; i++) m9_task_start2 (sleeper, (void *) i, NULL, "sleeper", &err);
+  m9_mon_enter (&slept.m);
+  while (slept.n < SLEEPERS) m9_mon_wait (&slept.m);
+  m9_mon_leave (&slept.m);
+  t1 = now ();
+  ok ("10,000 tasks sleep 50-59 ms each, all at once", slept.n == SLEEPERS && t1 - t0 < 2.0);
+  printf ("     sleepers: 10,000 slept in %.0f ms\n", (t1 - t0) * 1e3);
+
+  /* The module body sleeps; a ticker on its carrier runs meanwhile. */
+  before = ticks;
+  m9_task_start2 (ticker, NULL, NULL, "ticker", &err);
+  m9_sleep_ms (100);
+  ok ("a sleeping task leaves its carrier to the others", __atomic_load_n (&ticks, __ATOMIC_RELAXED) - before == 1000);
+
+  if (pipe (pipefd) != 0 || pipe (nothing) != 0) { ok ("pipes", 0); return; }
+  m9_task_start2 (reader, NULL, NULL, "reader", &err);
+  m9_task_start2 (writer, NULL, NULL, "writer", &err);
+  m9_task_start2 (late, NULL, NULL, "late", &err);
+  m9_sleep_ms (200);
+  ok ("a task waiting on a pipe wakes when another writes", read_why == 1);
+  ok ("a wait with a 30 ms limit ends at the limit", late_why == 0 && late_s >= 0.029 && late_s < 0.5);
+}
+
+/* ---- 6c. the monitor hands a stuck carrier's work on (stage 3) ---- */
+
+static int64_t handed, handed_seen = -1;
+static Count handdone;
+
+static void *blocker (void *arg, m9_pool *pool)
+{
+  (void) arg; (void) pool;
+  usleep (300000);             /* a blocking call the runtime cannot see */
+  handed_seen = __atomic_load_n (&handed, __ATOMIC_ACQUIRE);
+  m9_mon_enter (&handdone.m);
+  handdone.n++;
+  m9_mon_signal (&handdone.m);
+  m9_mon_leave (&handdone.m);
+  return NULL;
+}
+
+static void *queued (void *arg, m9_pool *pool)
+{
+  (void) arg; (void) pool;
+  __atomic_add_fetch (&handed, 1, __ATOMIC_RELEASE);
+  m9_mon_enter (&handdone.m);
+  handdone.n++;
+  m9_mon_signal (&handdone.m);
+  m9_mon_leave (&handdone.m);
+  return NULL;
+}
+
+static void handoff (void)
+{
+  m9_state err;
+  int i;
+  memset (&err, 0, sizeof err);
+  /* The 1,000 are queued first, the blocker last: a new task runs
+     next, so the yield runs the blocker on this carrier, with the
+     1,000 queued behind it. */
+  for (i = 0; i < 1000; i++) m9_task_start2 (queued, NULL, NULL, "queued", &err);
+  m9_task_start2 (blocker, NULL, NULL, "blocker", &err);
+  m9_task_yield ();
+  m9_mon_enter (&handdone.m);
+  while (handdone.n < 1001) m9_mon_wait (&handdone.m);
+  m9_mon_leave (&handdone.m);
+  printf ("     handoff: %lld of 1,000 ran during the blocking call\n", (long long) handed_seen);
+  ok ("tasks queued behind a blocking call run on another carrier meanwhile", handed_seen == 1000);
 }
 
 /* ---- 7, 8. the stops, each in a child ---- */
@@ -370,6 +549,7 @@ int main (void)
 {
   char *e;
   int sig;
+  setvbuf (stdout, NULL, _IOLBF, 0);
   /* The stops run first: a child forked while a THREAD is still
      ending would count it alive, and the deadlock test would wait. */
   e = stop (child_deadlock, &sig);
@@ -385,6 +565,9 @@ int main (void)
   parked ();
   mixed ();
   nested ();
+  spreads ();
+  poller ();
+  handoff ();
   thread_carries ();
   printf ("%s: %d checks, %d failed\n", bad ? "FAIL" : "PASS", checks, bad);
   return bad != 0;

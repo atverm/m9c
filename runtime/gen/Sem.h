@@ -155,6 +155,8 @@ void Sem_LoadFile (Ast_Node * *root, m9_pool *root_pool, m9_state *err);
 void Sem_CheckFile (Ast_Node * *root, m9_pool *root_pool, m9_state *err);
 int64_t Sem_ErrCount (m9_state *err);
 m9_sl_UTF8 Sem_ErrAt (int64_t i, m9_state *err);
+int64_t Sem_NoteCount (m9_state *err);
+m9_sl_UTF8 Sem_NoteAt (int64_t i, m9_state *err);
 int64_t Sem_LedgerCount (m9_state *err);
 m9_sl_UTF8 Sem_LedgerAt (int64_t i, m9_state *err);
 void Sem_SetStrUtf (bool on, m9_state *err);

@@ -238,6 +238,7 @@ m9_sl_UTF8 ApiSpec_Render (ApiSpec_Spec * s, m9_state *err)
   m9t1to = m9_sub_i64 (s->count, INT64_C(1), err);
   if (err->exc) { m9ln = 351; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     bool m9t2 = (!ApiSpec_PathSeen (s, i, err));
     if (err->exc) { m9ln = 352; goto L_ret; };
     if (m9t2) {
@@ -259,6 +260,7 @@ m9_sl_UTF8 ApiSpec_Render (ApiSpec_Spec * s, m9_state *err)
         m9t3to = m9_sub_i64 (s->count, INT64_C(1), err);
         if (err->exc) { m9ln = 363; goto L_ret; };
         if (j <= m9t3to) for (;;) {
+          M9_YCHK ();
           { ApiSpec_Op * oj = ApiSpec_OpAt (s, j, err);
           if (err->exc) { m9ln = 364; goto L_ret; };
           if (oj != NULL) {
@@ -340,6 +342,7 @@ static void ApiSpec_Str (DynStr_DString * *d, m9_pool *d_pool, m9_sl_UTF8 s, m9_
   if (err->exc) { m9ln = 184; goto L_ret; };
   { __typeof__(s) m9t1s = s;
   for (int64_t m9t1i = 0; m9t1i < m9t1s.len; ) { ch = m9_utf_next (m9t1s, &m9t1i);
+    M9_YCHK ();
     v = (int64_t)(ch);
     if ((ch == 34u)) {
       DynStr_AppendChar (d, d_pool, 92u, err);
@@ -603,6 +606,7 @@ static void ApiSpec_EmitOp (DynStr_DString * *d, m9_pool *d_pool, ApiSpec_Op * o
     for (;;) {
       ApiSpec_Param * q = c;
       if (!(q != NULL)) break;
+      M9_YCHK ();
       if ((!firstQ)) {
         DynStr_AppendChar (d, d_pool, 44u, err);
         if (err->exc) { m9ln = 293; goto L_ret; };
@@ -693,6 +697,7 @@ static bool ApiSpec_PathSeen (ApiSpec_Spec * s, int64_t i, m9_state *err)
     m9t1to = m9_sub_i64 (i, INT64_C(1), err);
     if (err->exc) { m9ln = 326; goto L_ret; };
     if (j <= m9t1to) for (;;) {
+      M9_YCHK ();
       { ApiSpec_Op * oj = ApiSpec_OpAt (s, j, err);
       if (err->exc) { m9ln = 327; goto L_ret; };
       if (oj != NULL) {

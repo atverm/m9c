@@ -140,6 +140,7 @@ TYPE
     resultText : UTF ;
     raisesJson : UTF ;
     attribText : UTF ;
+    deprecated : UTF ;    (* [DEPRECATED 'text']'s text, '' for none *)
   END ;
 
 (* Doc keeps NO MODULE STATE, deliberately.  The anchor table was a
@@ -199,11 +200,15 @@ BEGIN
       END
     END
   END ;
+  (* [DEPRECATED] gets a line of its own on the page, not the
+     heading *)
   IF p.nkids > 3 THEN
     IF p.kids[3] IS SOME at THEN
-      DynStr.Append (d, ' [') ;
-      DynStr.Append (d, at.au) ;
-      DynStr.AppendChar (d, ']')
+      IF NOT Text.Eq (at.au, 'DEPRECATED') THEN
+        DynStr.Append (d, ' [') ;
+        DynStr.Append (d, at.au) ;
+        DynStr.AppendChar (d, ']')
+      END
     END
   END ;
   RETURN DynStr.ViewIn (pool, d)
@@ -419,10 +424,22 @@ END RaisesJson ;
 PROCEDURE AttribText (p: PTR Ast.Node) : UTF RAISES IndexError =
 BEGIN
   IF p.nkids > 3 THEN
-    IF p.kids[3] IS SOME at THEN RETURN at.au END
+    IF p.kids[3] IS SOME at THEN
+      IF NOT Text.Eq (at.au, 'DEPRECATED') THEN RETURN at.au END
+    END
   END ;
   RETURN ''
 END AttribText ;
+
+(* DepText answers the text of a [DEPRECATED 'text'] attribute, and ''
+   for any other attribute or none (report par 3.9). *)
+PROCEDURE DepText (k: Ast.Kid) : UTF =
+BEGIN
+  IF k IS SOME at THEN
+    IF Text.Eq (at.au, 'DEPRECATED') THEN RETURN at.bu END
+  END ;
+  RETURN ''
+END DepText ;
 
 (* ---- anchors ---- *)
 
@@ -464,6 +481,7 @@ BEGIN
               ELSE
                 anch[nanch].attribText := ''
               END ;
+              anch[nanch].deprecated := '' ;
               nanch := nanch + 1
             END
           END
@@ -485,6 +503,10 @@ BEGIN
     anch[nanch].resultText := '' ;
     anch[nanch].raisesJson := '[]' ;
     anch[nanch].attribText := '' ;
+    anch[nanch].deprecated := '' ;
+    IF n.kind = Ast.NConstDecl AND n.nkids > 1 THEN
+      anch[nanch].deprecated := DepText (n.kids[1])
+    END ;
     IF n.kind = Ast.NExcDecl THEN
       (* The payload goes in as a procedure's params: a handler arm
          needs the arity and the types (cp-kernel's issue 11,
@@ -497,7 +519,8 @@ BEGIN
       anch[nanch].paramsJson := ParamsJson (pool, n) ;
       anch[nanch].resultText := ResultText (pool, n) ;
       anch[nanch].raisesJson := RaisesJson (pool, n) ;
-      anch[nanch].attribText := AttribText (n)
+      anch[nanch].attribText := AttribText (n) ;
+      anch[nanch].deprecated := DepText (n.kids[3])
     END ;
     nanch := nanch + 1
   END ;
@@ -996,6 +1019,10 @@ BEGIN
           JsonStr (d, anch[i].name) ;
           DynStr.Append (d, ',"line":') ;
           DynStr.AppendI64 (d, anch[i].line) ;
+          IF Text.BLen (anch[i].deprecated) > 0 THEN
+            DynStr.Append (d, ',"deprecated":') ;
+            JsonStr (d, anch[i].deprecated)
+          END ;
           IF anch[i].kind = Ast.NProcDecl THEN
             DynStr.Append (d, ',"signature":') ;
             JsonStr (d, anch[i].sig) ;
@@ -1136,6 +1163,13 @@ BEGIN
             DynStr.Append (d, ' is ') ;
             DynStr.Append (d, anch[i].name) ;
             DynStr.Append (d, 'Utf, whose heading this is.') ;
+            DynStr.AppendChar (d, 0AC) ;
+            DynStr.AppendChar (d, 0AC)
+          END ;
+          IF Text.BLen (anch[i].deprecated) > 0 THEN
+            DynStr.Append (d, '**Deprecated** (report par 3.9): write `') ;
+            DynStr.Append (d, anch[i].deprecated) ;
+            DynStr.Append (d, '` instead.  The name goes in the next release.') ;
             DynStr.AppendChar (d, 0AC) ;
             DynStr.AppendChar (d, 0AC)
           END ;

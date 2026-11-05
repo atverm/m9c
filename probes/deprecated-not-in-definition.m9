@@ -1,0 +1,17 @@
+(* EXPECT: [DEPRECATED] belongs on the definition, which its callers read *)
+DEFINITION MODULE m ;
+(* [DEPRECATED 'text'] retires a name for one release: each use from
+   another module gets a note saying what to write instead (par 3.9,
+   2026-11-05).  The callers read the definition, so the attribute
+   stands there.  The legal form comes first: Twice is marked in the
+   definition.  The implementation marks Half, which no caller
+   reads. *)
+PROCEDURE Twice (n: I64) : I64 [DEPRECATED 'm.Double (n)'] ;
+PROCEDURE Double (n: I64) : I64 ;
+PROCEDURE Half (n: I64) : I64 ;
+END m.
+IMPLEMENTATION MODULE m ;
+PROCEDURE Twice (n: I64) : I64 = BEGIN RETURN n + n END Twice ;
+PROCEDURE Double (n: I64) : I64 = BEGIN RETURN n + n END Double ;
+PROCEDURE Half (n: I64) : I64 [DEPRECATED 'n DIV 2'] = BEGIN RETURN n DIV 2 END Half ;
+END m.

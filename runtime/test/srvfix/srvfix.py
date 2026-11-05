@@ -57,6 +57,9 @@ POPEN_KW = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if NATIVE_WIN 
 STOPSIG = (signal.SIGINT if WINE else
            signal.CTRL_BREAK_EVENT if NATIVE_WIN else signal.SIGTERM)
 BASE = int(os.environ.get("SRVFIX_PORT", "18350"))
+# words added to every server's command line: "--tasks" runs the whole
+# suite again with a task per connection (httpserver.sh does both)
+EXTRA = os.environ.get("SRVFIX_ARGS", "").split()
 checks = 0
 fails = []
 
@@ -111,7 +114,7 @@ class Server:
         # blocked writing its 105th line and answered nothing more
         # (the VM, 2026-10-19)
         self.log = tempfile.TemporaryFile() if NATIVE_WIN else None
-        self.p = subprocess.Popen([*WRAP, BIN, f"--port={port}", *args],
+        self.p = subprocess.Popen([*WRAP, BIN, f"--port={port}", *args, *EXTRA],
                                   stdout=self.log if NATIVE_WIN else subprocess.PIPE,
                                   stderr=subprocess.STDOUT, **POPEN_KW)
         STARTED.append(self)
@@ -1143,8 +1146,11 @@ raw(P10, b"BAD\r\n\r\n")
 st_, hd_, body_ = get(P10, b"/probe", b"X-Forwarded-For: 203.0.113.9\r\n")
 ck(body_.endswith(b" client=127.0.0.1"), f"no trusted proxy: X-Forwarded-For ignored: {body_!r}")
 out = b10.stop()
+# With --tasks a refusal comes before any handler took a worker's
+# number, and says worker=-1.
+TASKS = "--tasks" in EXTRA
 LINE = re.compile(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z INFO http method=(\S+) path=(\S+) "
-                  r"status=(\d+) bytes=(\d+) ms=(\d+) client=(\S+) worker=([0-3])")
+                  r"status=(\d+) bytes=(\d+) ms=(\d+) client=(\S+) worker=(" + ("-1|" if TASKS else "") + r"[0-3])")
 lines = [l for l in out.splitlines() if " http " in l or "INFO" in l]
 good = [LINE.fullmatch(l) for l in lines]
 ck(all(good) and len(lines) == 403,
@@ -1154,7 +1160,9 @@ ck(sum(1 for g_ in ms_ if g_[1].startswith("/concat") and g_[2] == "200") == 400
    "access log: the 400 concatenations, 200 each")
 ck(("GET", "/hello", "200", "5") in [g_[:4] for g_ in ms_], "access log: /hello sent 5 octets")
 ck(("-", "-", "400") in [g_[:3] for g_ in ms_], "access log: a refusal is logged too")
-ck(len(set(g_[6] for g_ in ms_)) > 1, "access log: more than one worker wrote")
+ck(all(g_[6] != "-1" for g_ in ms_ if g_[0] != "-"),
+   "access log: every answer from a handler names its worker")
+ck(len(set(g_[6] for g_ in ms_ if g_[6] != "-1")) > 1, "access log: more than one worker wrote")
 
 ck(not thread_errors, f"no client thread raised: {thread_errors[:2]}")
 

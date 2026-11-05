@@ -16,11 +16,11 @@ load () {
   if [ -r /proc/loadavg ]; then l="$l now=$(cut -d' ' -f4 /proc/loadavg)"; fi
   echo "$l"
 }
-# case NAME DIR ARGS... : each variant y0 y1 y2 of DIR's program.
+# case NAME DIR ARGS... : each variant y0 to y9 of DIR's program.
 # The word OUT in ARGS becomes a file per variant, compared like stdout.
 tcase () {
   name=$1; prog=$2; shift 2
-  for v in 0 1 2; do
+  for v in 0 1 2 3 4 5 6 7 8 9; do
     exe=$O/yp-$prog/$prog-y$v
     f=$LOG/y-$name-y$v.log
     : > "$f"

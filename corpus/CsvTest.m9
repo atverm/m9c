@@ -29,9 +29,9 @@ BEGIN
   opt := Csv.Defaults () ;
   opt.quoted := TRUE ;
   tab := Csv.OpenBytes (pool, OCTETS (doc), opt) ;
-  Csv.SetText (tab, 0) ;
-  Csv.SetText (tab, 1) ;
-  Csv.SetInt (tab, 2) ;
+  Csv.SetKind (tab, 0, Csv.Kind.Text) ;
+  Csv.SetKind (tab, 1, Csv.Kind.Text) ;
+  Csv.SetKind (tab, 2, Csv.Kind.Int) ;
   Csv.Parse (pool, tab) ;
   Check.EqI64 (t, 'three columns', Csv.Cols (tab), 3) ;
   Check.EqI64 (t, 'two rows', Csv.Rows (tab), 2) ;

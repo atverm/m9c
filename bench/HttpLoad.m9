@@ -1,0 +1,158 @@
+MODULE HttpLoad ;
+
+(* HttpLoad drives an HTTP server on this machine, to measure its
+   latency and throughput with an M9 client instead of Python's or
+   ab's (docs/task-plan.md, the server on tasks).
+
+     HttpLoad PORT PATH CONNS REQS
+
+   CONNS client TASKs each open one kept connection to 127.0.0.1:PORT
+   (Http.Client) and ask GET PATH REQS times, one after the other,
+   timing every answer.  It prints the requests a second over the whole
+   run, and the answers' times at p50, p99 and p99.9 in microseconds:
+
+     conns 8 reqs 160000 rps 141000 p50 52 p99 120 p999 310 errors 0
+
+   An answer that is not a 200, or a transport error, counts as an
+   error and is not timed.  M9_CARRIERS limits the cores the driver
+   takes from the server it measures. *)
+
+IMPORT Io ;
+IMPORT Fmt ;
+IMPORT Http ;
+IMPORT Time ;
+IMPORT Sort ;
+
+TYPE
+  Gate = MONITOR RECORD
+    ids, done, errors : I64 ;
+  END ;
+
+  Job = RECORD
+    gate : Gate ;
+    port : I64 ;
+    path : STR ;
+    reqs : I64 ;
+    lat : SLICE OF F64 ;        (* client k writes lat[k * reqs ..] *)
+  END [SHARABLE] ;
+
+PROCEDURE NextId (VAR g: Gate) : I64 =
+BEGIN
+  g.ids := g.ids + 1 ;
+  RETURN g.ids - 1
+END NextId ;
+
+PROCEDURE Finish (VAR g: Gate ; errors: I64) =
+BEGIN
+  g.done := g.done + 1 ;
+  g.errors := g.errors + errors ;
+  SIGNAL (g)
+END Finish ;
+
+PROCEDURE AwaitAll (VAR g: Gate ; n: I64 ; VAR errors: I64) =
+BEGIN
+  WHILE g.done < n DO WAIT (g) END ;
+  errors := g.errors
+END AwaitAll ;
+
+PROCEDURE Client (VAR j: Job) =
+VAR
+  pool : POOL ;
+  cl : PTR Http.Client IN pool ;
+  none : SLICE OF BYTE ;
+  body : SLICE OF BYTE ;
+  heads, url : STR ;
+  k, i, status, errors : I64 ;
+  t0 : Time.Instant ;
+BEGIN
+  k := NextId (j.gate) ;
+  errors := 0 ;
+  cl := Http.NewClient (pool) ;
+  none := NEW (pool, BYTE, 0) ;
+  url := 'http://127.0.0.1:' + Fmt.I64Str (j.port) + j.path ;
+  FOR i := 0 TO j.reqs - 1 DO
+    BEGIN
+      t0 := Time.Now () ;
+      body := Http.Send (pool, cl, 'GET', url, '', none, 1048576, status, heads) ;
+      IF status = 200 THEN
+        j.lat[k * j.reqs + i] := Time.Elapsed (t0, Time.Now ()) * 1000000.0
+      ELSE
+        j.lat[k * j.reqs + i] := -1.0 ;
+        errors := errors + 1
+      END
+    EXCEPT
+    | Http.TransportError (m) :
+        errors := errors + 1 ;
+        j.lat[k * j.reqs + i] := -1.0
+    | ValueRange :
+        errors := errors + 1 ;
+        j.lat[k * j.reqs + i] := -1.0
+    END
+  END ;
+  BEGIN
+    Http.CloseClient (cl)
+  EXCEPT
+  | ValueRange :
+  END ;
+  Finish (j.gate, errors)
+EXCEPT
+| IndexError : Finish (j.gate, j.reqs)
+END Client ;
+
+PROCEDURE At (RO a: SLICE OF F64 ; p: F64) : I64 RAISES IndexError, ValueRange =
+VAR i : I64 ;
+BEGIN
+  i := I64 (F64 (LEN (a)) * p) ;
+  IF i >= LEN (a) THEN i := LEN (a) - 1 END ;
+  RETURN I64 (a[i] + 0.5)
+END At ;
+
+VAR
+  pool : POOL ;
+  j : PTR Job ;
+  conns, k, n, errors : I64 ;
+  timed : SLICE OF F64 ;
+  t0 : Time.Instant ;
+  secs : F64 ;
+
+BEGIN
+  IF Io.ArgCount () < 5 THEN
+    Io.ErrLine ('usage: HttpLoad PORT PATH CONNS REQS') ;
+    Io.Halt (2)
+  END ;
+  j := NEW (pool, Job) ;
+  j.port := Io.ParseI64 (Io.Arg (pool, 1)) ;
+  j.path := Io.Arg (pool, 2) ;
+  conns := Io.ParseI64 (Io.Arg (pool, 3)) ;
+  j.reqs := Io.ParseI64 (Io.Arg (pool, 4)) ;
+  j.lat := NEW (pool, F64, conns * j.reqs) ;
+  t0 := Time.Now () ;
+  FOR k := 1 TO conns DO TASK (Client, j) END ;
+  errors := 0 ;
+  AwaitAll (j.gate, conns, errors) ;
+  secs := Time.Elapsed (t0, Time.Now ()) ;
+  (* the timed answers, sorted *)
+  n := 0 ;
+  FOR k := 0 TO LEN (j.lat) - 1 DO
+    IF j.lat[k] >= 0.0 THEN n := n + 1 END
+  END ;
+  timed := NEW (pool, F64, n) ;
+  n := 0 ;
+  FOR k := 0 TO LEN (j.lat) - 1 DO
+    IF j.lat[k] >= 0.0 THEN timed[n] := j.lat[k] ; n := n + 1 END
+  END ;
+  Sort.F64s (timed) ;
+  IF n = 0 THEN
+    Io.WriteLine ('conns ' + Fmt.I64Str (conns) + ' no answer timed, errors ' + Fmt.I64Str (errors))
+  ELSE
+    Io.WriteLine ('conns ' + Fmt.I64Str (conns) + ' reqs ' + Fmt.I64Str (conns * j.reqs)
+                  + ' rps ' + Fmt.I64Str (I64 (F64 (n) / secs))
+                  + ' p50 ' + Fmt.I64Str (At (timed, 0.5)) + ' p99 ' + Fmt.I64Str (At (timed, 0.99))
+                  + ' p999 ' + Fmt.I64Str (At (timed, 0.999)) + ' errors ' + Fmt.I64Str (errors))
+  END
+EXCEPT
+| ValueRange : Io.ErrLine ('HttpLoad: an argument out of range') ; Io.Halt (2)
+| IndexError : Io.ErrLine ('HttpLoad: an index out of range') ; Io.Halt (1)
+| Sort.NotANumber : Io.ErrLine ('HttpLoad: a time that is not a number') ; Io.Halt (1)
+| OutOfMemory : Io.ErrLine ('HttpLoad: out of memory') ; Io.Halt (1)
+END HttpLoad.

@@ -1,0 +1,947 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
+DEFINITION MODULE M9f ;
+
+(* M9f converts M9 text to the .m9f notation and back.
+
+   The .m9f notation is the same language with a C-like face, token
+   for token:
+
+     M9                           .m9f
+     BEGIN ... END                { ... }
+     IF c THEN a                  if c { a
+     ELSIF d THEN b               } elsif d { b
+     ELSE e END                   } else { e }
+     WHILE c DO ... END           while c { ... }
+     FOR i := 0 TO n DO ... END   for i = 0 to n { ... }
+     CASE x OF | 1 : a            case x { | 1 : a
+     ELSE b END                   default b }
+     RECORD ... END               record { ... }
+     LOOP ... END                 loop { ... }
+     x := e                       x = e             in statements
+     a = b    a # b               a == b   a != b   in statements
+     AND  OR  NOT  MOD            &&  ||  !  %
+     every other keyword          lower case: return, var, procedure
+     a comment ending a line      // note
+     any other comment            /* note */
+     ; at the end of a line       left out
+
+   A line break separates statements.  So a line of .m9f ends one
+   unless it plainly continues.  A line continues when it ends in an
+   operator, a comma or an open bracket, or when the next line starts
+   with one.  A line that continues anyway ends in a backslash.
+
+   Every keyword of Lex is reserved in its lower-case form.  An M9
+   name spelled like one (to, in, default) gets a trailing underscore
+   in .m9f.  M9 names cannot hold an underscore at the end, so the
+   mapping stays one to one.
+
+   No line moves.  A position in the generated text lies on the same
+   line as in the source; only its column can differ, and the map
+   answers it. *)
+
+TYPE
+  Place = RECORD
+    (* Place pairs a token's place in the M9 text, l9 and c9, with its
+       place in the .m9f text, lf and cf. *)
+    l9, c9 : I64 ;
+    lf, cf : I64 ;
+    semi : BOOL ;       (* ToM9 inserted a ; after this token *)
+  END ;
+
+  Result = RECORD
+    (* Result holds a conversion's text, its map and its errors. *)
+    text : UTF ;
+    map : SLICE OF Place ;   (* ToM9 fills it, in text order *)
+    n : I64 ;                (* the places in map *)
+    errs : UTF ;             (* one LINE:COL: message line per error *)
+    nerr : I64 ;
+  END ;
+
+PROCEDURE ToM9 (VAR pool: POOL ; RO KEPT src: UTF) : PTR Result IN pool
+  RAISES IndexError ;
+  (* ToM9 converts .m9f text into M9.  A mistake in src does not stop
+     it: the answer counts each one in nerr, and its text is then not
+     M9 to compile.  The text, map and errors are in pool.  An
+     IndexError means a nest deeper than 1024 blocks. *)
+
+PROCEDURE ToM9f (VAR pool: POOL ; RO KEPT src: UTF) : PTR Result IN pool
+  RAISES IndexError ;
+  (* ToM9f converts M9 text into .m9f.  It answers no map.  ToM9 of
+     its text gives src back, byte for byte, for any M9 that parses. *)
+
+PROCEDURE Where (r: PTR Result ; line, col: I64 ; VAR lf, cf: I64)
+  RAISES IndexError ;
+  (* Where answers the .m9f position of line, col in the M9 that ToM9
+     wrote.  A position between two places keeps its distance from the
+     place before it. *)
+
+PROCEDURE AfterBreak (r: PTR Result ; line, col: I64) : BOOL
+  RAISES IndexError ;
+  (* AfterBreak answers whether the last token before line, col in the
+     M9 that ToM9 wrote ends a line where ToM9 inserted a ;.  A parse
+     error there is often a line break read as the end of a statement. *)
+
+PROCEDURE TokenAt (RO src: UTF ; line, col: I64) : UTF ;
+  (* TokenAt answers the .m9f token that starts at line, col of src:
+     a name or number, a string, or an operator of one or two
+     characters.  It answers empty at the end of src. *)
+
+PROCEDURE Spelling (RO w: UTF) : UTF ;
+  (* Spelling answers how .m9f writes the M9 token w that a message
+     names: { for THEN, DO and BEGIN, } for END, = for :=, the
+     operators for AND, OR, NOT and MOD, and every other keyword in
+     lower case.  OF is "of, or { after case".  Any other w is answered
+     as it is. *)
+
+END M9f.
+
+
+IMPLEMENTATION MODULE M9f ;
+
+IMPORT DynStr ;
+IMPORT Lex ;
+IMPORT Text ;
+
+CONST
+  (* token kinds *)
+  TEof = 0 ; TIdent = 1 ; TNum = 2 ; TStr = 3 ; TOp = 4 ;
+  TBlock = 5 ; TLine = 6 ; TBang = 7 ; TBad = 8 ;
+
+  (* block frames on the context stack *)
+  FModule = 1 ; FProc = 2 ; FBlock = 3 ; FIf = 4 ; FWhile = 5 ;
+  FFor = 6 ; FCase = 7 ; FRecord = 8 ; FLoop = 9 ;
+
+  MaxNest = 1024 ;
+
+  (* Starters can open a statement or a declaration. *)
+  Starters = [
+    'IF', 'WHILE', 'FOR', 'CASE', 'LOOP', 'RETURN', 'RAISE', 'EXIT',
+    'VAR', 'CONST', 'TYPE', 'PROCEDURE', 'BEGIN', 'IMPORT', 'FROM',
+    'EXCEPTION', 'DISPOSE', 'SIGNAL', 'WAIT', 'THREAD', 'TASK', 'TRANSFER',
+    'UNSAFE', 'STATEFUL', 'DEFINITION', 'IMPLEMENTATION', 'MODULE'
+  ] ;
+
+  (* Enders are the keywords that can close a statement. *)
+  Enders = ['END', 'RETURN', 'EXIT', 'TRUE', 'FALSE', 'NONE', 'SOME', 'POOL'] ;
+
+  Ops2 = [':=', '<=', '>=', '..', '+%', '-%', '*%'] ;
+  Ops2F = ['==', '!=', '&&', '||'] ;
+
+TYPE
+  Tok = RECORD
+    kind, line, col : I64 ;
+    text : UTF ;
+    gap : UTF ;         (* the blanks before the token, verbatim *)
+  END ;
+
+  Toks = RECORD
+    t : SLICE OF Tok ;
+    n : I64 ;
+  END ;
+
+  Scanner = RECORD
+    pos, line, col : I64 ;
+  END ;
+
+  Frame = RECORD
+    kind : I64 ;
+    body : BOOL ;       (* a module or procedure past its BEGIN *)
+    await : BOOL ;      (* THEN, DO or OF still to come *)
+  END ;
+
+  Ctx = RECORD
+    st : SLICE OF Frame ;
+    sp, depth, headDepth : I64 ;
+    head : BOOL ;       (* inside a PROCEDURE heading *)
+    afterEq : BOOL ;    (* the heading just ended in = *)
+    afterModule : BOOL ;
+  END ;
+
+  Out = RECORD
+    d : PTR DynStr.DString ;
+    line, col : I64 ;
+    last : CHAR ;
+    map : SLICE OF Place ;
+    n : I64 ;
+    err : PTR DynStr.DString ;
+    nerr : I64 ;
+  END ;
+
+(* ---- characters ---- *)
+
+PROCEDURE IsLetter (c: CHAR) : BOOL =
+BEGIN
+  RETURN (c >= 'a' AND c <= 'z') OR (c >= 'A' AND c <= 'Z') OR c = '_'
+END IsLetter ;
+
+PROCEDURE IsDigit (c: CHAR) : BOOL =
+BEGIN
+  RETURN c >= '0' AND c <= '9'
+END IsDigit ;
+
+PROCEDURE IsWord (c: CHAR) : BOOL =
+BEGIN
+  RETURN IsLetter (c) OR IsDigit (c) OR c = 80C
+END IsWord ;
+
+(* At answers the byte at i as a CHAR, and 0C past the end.  Every
+   byte past ASCII answers 80C.  The scanner treats 80C as part of a
+   word and never cuts a slice there. *)
+PROCEDURE At (RO s: UTF ; i: I64) : CHAR =
+BEGIN
+  IF i < 0 OR i >= Text.BLen (s) THEN RETURN 0C END ;
+  IF I64 (Text.BAt (s, i)) >= 128 THEN RETURN 80C END ;
+  RETURN Text.BChar (s, i)
+END At ;
+
+PROCEDURE IsBlank (c: CHAR) : BOOL =
+BEGIN
+  RETURN c = ' ' OR c = 09C OR c = 0AC OR c = 0DC
+END IsBlank ;
+
+(* ---- scanning, both notations ---- *)
+
+(* Bump moves one byte on.  A column counts characters, so a
+   continuation byte of UTF-8 does not advance it. *)
+PROCEDURE Bump (RO s: UTF ; VAR sc: Scanner) =
+VAR b : I64 ;
+BEGIN
+  b := I64 (Text.BAt (s, sc.pos)) ;
+  IF b = 10 THEN
+    sc.line := sc.line + 1 ;
+    sc.col := 1
+  ELSIF b < 128 OR b >= 192 THEN
+    sc.col := sc.col + 1
+  END ;
+  sc.pos := sc.pos + 1
+END Bump ;
+
+PROCEDURE Add (VAR ts: Toks ; kind, line, col: I64 ; RO KEPT text, gap: UTF) =
+VAR
+  nt : SLICE OF Tok ;
+  i : I64 ;
+BEGIN
+  IF ts.n = LEN (ts.t) THEN
+    nt := NEW (ts, Tok, 2 * LEN (ts.t) + 256) ;
+    FOR i := 0 TO ts.n - 1 DO nt[i] := ts.t[i] END ;
+    ts.t := nt
+  END ;
+  ts.t[ts.n] := Tok (kind, line, col, text, gap) ;
+  ts.n := ts.n + 1
+END Add ;
+
+(* Scan cuts s into tokens.  Blanks go into the gap of the token after
+   them, and comments are tokens of their own.  So the tokens and gaps
+   together spell s exactly.  The last token is always TEof. *)
+PROCEDURE Scan (VAR pool: POOL ; RO KEPT s: UTF ; m9f: BOOL) : Toks =
+VAR
+  ts : Toks ;
+  sc : Scanner ;
+  gs, start, l, c, depth, kind, n : I64 ;
+  ch, nx, q : CHAR ;
+  dot : BOOL ;
+BEGIN
+  ts.t := NEW (pool, Tok, 256) ;
+  ts.n := 0 ;
+  sc := Scanner (0, 1, 1) ;
+  n := Text.BLen (s) ;
+  IF Text.StartsWith (s, '#!') THEN
+    WHILE sc.pos < n AND At (s, sc.pos) # 0AC DO Bump (s, sc) END ;
+    Add (ts, TBang, 1, 1, SLICE (s, 0, sc.pos), '')
+  END ;
+  LOOP
+    gs := sc.pos ;
+    WHILE IsBlank (At (s, sc.pos)) DO Bump (s, sc) END ;
+    start := sc.pos ;
+    l := sc.line ;
+    c := sc.col ;
+    IF sc.pos >= n THEN
+      Add (ts, TEof, l, c, '', SLICE (s, gs, start - gs)) ;
+      EXIT
+    END ;
+    ch := At (s, sc.pos) ;
+    nx := At (s, sc.pos + 1) ;
+    IF ch = '(' AND nx = '*' THEN
+      kind := TBlock ;
+      depth := 0 ;
+      LOOP
+        IF sc.pos >= n THEN kind := TBad ; EXIT END ;
+        IF At (s, sc.pos) = '(' AND At (s, sc.pos + 1) = '*' THEN
+          depth := depth + 1 ; Bump (s, sc) ; Bump (s, sc)
+        ELSIF At (s, sc.pos) = '*' AND At (s, sc.pos + 1) = ')' THEN
+          depth := depth - 1 ; Bump (s, sc) ; Bump (s, sc) ;
+          IF depth = 0 THEN EXIT END
+        ELSE
+          Bump (s, sc)
+        END
+      END
+    ELSIF m9f AND ch = '/' AND nx = '*' THEN
+      kind := TBlock ;
+      Bump (s, sc) ; Bump (s, sc) ;
+      LOOP
+        IF sc.pos >= n THEN kind := TBad ; EXIT END ;
+        IF At (s, sc.pos) = '*' AND At (s, sc.pos + 1) = '/' THEN
+          Bump (s, sc) ; Bump (s, sc) ;
+          EXIT
+        END ;
+        Bump (s, sc)
+      END
+    ELSIF m9f AND ch = '/' AND nx = '/' THEN
+      kind := TLine ;
+      WHILE sc.pos < n AND At (s, sc.pos) # 0AC AND At (s, sc.pos) # 0DC DO
+        Bump (s, sc)
+      END
+    ELSIF IsLetter (ch) OR ch = 80C THEN
+      kind := TIdent ;
+      WHILE IsWord (At (s, sc.pos)) DO Bump (s, sc) END
+    ELSIF IsDigit (ch) THEN
+      kind := TNum ;
+      dot := FALSE ;
+      LOOP
+        ch := At (s, sc.pos) ;
+        IF IsLetter (ch) OR IsDigit (ch) THEN
+          Bump (s, sc)
+        ELSIF ch = '.' AND NOT dot AND At (s, sc.pos + 1) # '.' THEN
+          dot := TRUE ;
+          Bump (s, sc)
+        ELSIF (ch = '+' OR ch = '-') AND dot
+              AND (At (s, sc.pos - 1) = 'E' OR At (s, sc.pos - 1) = 'e') THEN
+          Bump (s, sc)
+        ELSE
+          EXIT
+        END
+      END
+    ELSIF ch = "'" OR ch = '"' THEN
+      kind := TStr ;
+      q := ch ;
+      Bump (s, sc) ;
+      WHILE sc.pos < n AND At (s, sc.pos) # q AND At (s, sc.pos) # 0AC DO
+        Bump (s, sc)
+      END ;
+      IF At (s, sc.pos) = q THEN Bump (s, sc) ELSE kind := TBad END
+    ELSE
+      kind := TOp ;
+      IF nx # 0C AND nx # 80C
+         AND (Text.IndexOf (Ops2, SLICE (s, sc.pos, 2)) >= 0
+              OR (m9f AND Text.IndexOf (Ops2F, SLICE (s, sc.pos, 2)) >= 0)) THEN
+        Bump (s, sc)
+      END ;
+      Bump (s, sc)
+    END ;
+    Add (ts, kind, l, c, SLICE (s, start, sc.pos - start),
+         SLICE (s, gs, start - gs))
+  END ;
+  RETURN ts
+END Scan ;
+
+(* NextCode answers the index of the next token after i that is not a
+   comment.  TEof stops the search. *)
+PROCEDURE NextCode (RO ts: Toks ; i: I64) : I64 RAISES IndexError =
+VAR j : I64 ;
+BEGIN
+  j := i + 1 ;
+  WHILE j < ts.n - 1 AND (ts.t[j].kind = TBlock OR ts.t[j].kind = TLine) DO
+    j := j + 1
+  END ;
+  RETURN j
+END NextCode ;
+
+(* LineFinal tells whether token i is the last code on its line. *)
+PROCEDURE LineFinal (RO ts: Toks ; i: I64) : BOOL RAISES IndexError =
+VAR j : I64 ;
+BEGIN
+  j := NextCode (ts, i) ;
+  RETURN ts.t[j].kind = TEof OR ts.t[j].line > ts.t[i].line
+END LineFinal ;
+
+(* ---- the block context, fed M9 words in both directions ---- *)
+
+(* Reserved tells whether an M9 name collides with an .m9f keyword. *)
+PROCEDURE Reserved (RO w: UTF) : BOOL =
+BEGIN
+  IF Text.Eq (w, 'default') THEN RETURN TRUE END ;
+  RETURN Text.Eq (w, Text.Lower (w)) AND Lex.IsKeyword (Text.Upper (w))
+END Reserved ;
+
+PROCEDURE NewCtx (VAR pool: POOL) : Ctx =
+VAR cx : Ctx ;
+BEGIN
+  cx.st := NEW (pool, Frame, MaxNest) ;
+  cx.sp := 0 ;
+  cx.depth := 0 ;
+  cx.headDepth := 0 ;
+  cx.head := FALSE ;
+  cx.afterEq := FALSE ;
+  cx.afterModule := FALSE ;
+  RETURN cx
+END NewCtx ;
+
+PROCEDURE Top (RO cx: Ctx) : I64 RAISES IndexError =
+BEGIN
+  IF cx.sp = 0 THEN RETURN 0 END ;
+  RETURN cx.st[cx.sp - 1].kind
+END Top ;
+
+PROCEDURE Awaiting (RO cx: Ctx) : BOOL RAISES IndexError =
+BEGIN
+  IF cx.sp = 0 THEN RETURN FALSE END ;
+  RETURN cx.st[cx.sp - 1].await
+END Awaiting ;
+
+(* InStmt tells whether the next token stands among statements, where
+   .m9f writes := as = and = as ==. *)
+PROCEDURE InStmt (RO cx: Ctx) : BOOL RAISES IndexError =
+VAR k : I64 ;
+BEGIN
+  k := Top (cx) ;
+  IF k = FModule OR k = FProc THEN RETURN cx.st[cx.sp - 1].body END ;
+  RETURN k # 0 AND k # FRecord
+END InStmt ;
+
+PROCEDURE Push (VAR cx: Ctx ; kind: I64 ; await: BOOL) RAISES IndexError =
+BEGIN
+  cx.st[cx.sp] := Frame (kind, FALSE, await) ;
+  cx.sp := cx.sp + 1
+END Push ;
+
+(* Opener answers the M9 keyword that a { stands for when the top
+   frame still awaits one, and the empty string otherwise. *)
+PROCEDURE Opener (RO cx: Ctx) : UTF RAISES IndexError =
+BEGIN
+  IF NOT Awaiting (cx) THEN RETURN '' END ;
+  CASE Top (cx) OF
+  | FIf : RETURN 'THEN'
+  | FWhile, FFor : RETURN 'DO'
+  | FCase : RETURN 'OF'
+  ELSE RETURN ''
+  END
+END Opener ;
+
+(* Step feeds one M9 token to the context. *)
+PROCEDURE Step (VAR cx: Ctx ; kind: I64 ; RO w: UTF) RAISES IndexError =
+VAR wasModule : BOOL ;
+BEGIN
+  IF cx.afterEq THEN
+    (* A heading that ends in = has a body, unless a C name follows. *)
+    cx.afterEq := FALSE ;
+    IF kind # TStr THEN Push (cx, FProc, FALSE) END
+  END ;
+  wasModule := cx.afterModule ;
+  cx.afterModule := FALSE ;
+  IF kind = TOp THEN
+    IF Text.Eq (w, '(') OR Text.Eq (w, '[') THEN
+      cx.depth := cx.depth + 1
+    ELSIF Text.Eq (w, ')') OR Text.Eq (w, ']') THEN
+      cx.depth := cx.depth - 1 ;
+      IF cx.head AND cx.depth < cx.headDepth THEN cx.head := FALSE END
+    ELSIF cx.head AND cx.depth = cx.headDepth AND Text.Eq (w, ';') THEN
+      cx.head := FALSE
+    ELSIF cx.head AND cx.depth = cx.headDepth AND Text.Eq (w, '=') THEN
+      cx.head := FALSE ;
+      cx.afterEq := TRUE
+    END
+  ELSIF kind = TIdent THEN
+    IF Text.Eq (w, 'PROCEDURE') THEN
+      cx.head := TRUE ;
+      cx.headDepth := cx.depth
+    ELSIF Text.Eq (w, 'MODULE') THEN
+      Push (cx, FModule, FALSE) ;
+      cx.afterModule := TRUE
+    ELSIF Text.Eq (w, 'BEGIN') THEN
+      IF (Top (cx) = FModule OR Top (cx) = FProc)
+         AND NOT cx.st[cx.sp - 1].body THEN
+        cx.st[cx.sp - 1].body := TRUE
+      ELSE
+        Push (cx, FBlock, FALSE)
+      END
+    ELSIF Text.Eq (w, 'IF') THEN
+      Push (cx, FIf, TRUE)
+    ELSIF Text.Eq (w, 'ELSIF') THEN
+      IF Top (cx) = FIf THEN cx.st[cx.sp - 1].await := TRUE END
+    ELSIF Text.Eq (w, 'WHILE') THEN
+      Push (cx, FWhile, TRUE)
+    ELSIF Text.Eq (w, 'FOR') THEN
+      (* FOR "C" names a foreign unit, not a loop. *)
+      IF NOT wasModule THEN Push (cx, FFor, TRUE) END
+    ELSIF Text.Eq (w, 'CASE') THEN
+      Push (cx, FCase, TRUE)
+    ELSIF Text.Eq (w, 'THEN') OR Text.Eq (w, 'DO') OR Text.Eq (w, 'OF') THEN
+      IF Text.Eq (Opener (cx), w) THEN cx.st[cx.sp - 1].await := FALSE END
+    ELSIF Text.Eq (w, 'RECORD') THEN
+      IF Top (cx) = FCase AND Awaiting (cx) THEN
+        cx.st[cx.sp - 1].kind := FRecord ;
+        cx.st[cx.sp - 1].await := FALSE
+      ELSE
+        Push (cx, FRecord, FALSE)
+      END
+    ELSIF Text.Eq (w, 'LOOP') THEN
+      Push (cx, FLoop, FALSE)
+    ELSIF Text.Eq (w, 'END') THEN
+      IF cx.sp > 0 THEN cx.sp := cx.sp - 1 END
+    END
+  END
+END Step ;
+
+(* ---- where a line break means a semicolon ---- *)
+
+PROCEDURE CanEnd (kind: I64 ; RO w: UTF) : BOOL =
+BEGIN
+  CASE kind OF
+  | TIdent :
+      IF Lex.IsKeyword (w) THEN RETURN Text.IndexOf (Enders, w) >= 0 END ;
+      RETURN TRUE
+  | TNum, TStr : RETURN TRUE
+  | TOp : RETURN Text.Eq (w, ')') OR Text.Eq (w, ']') OR Text.Eq (w, '^')
+  ELSE RETURN FALSE
+  END
+END CanEnd ;
+
+PROCEDURE CanStart (kind: I64 ; RO w: UTF) : BOOL =
+BEGIN
+  IF kind # TIdent OR Text.BLen (w) = 0 THEN RETURN FALSE END ;
+  IF Lex.IsKeyword (w) THEN RETURN Text.IndexOf (Starters, w) >= 0 END ;
+  RETURN TRUE
+END CanStart ;
+
+(* NeedSemi is the one rule both directions share.  A line ending in
+   p, followed by a line starting with q, needs a semicolon between
+   them.  Both words are M9 words. *)
+PROCEDURE NeedSemi (RO cx: Ctx ; pk: I64 ; RO p: UTF ; qk: I64 ; RO q: UTF) : BOOL =
+BEGIN
+  IF cx.depth > 0 THEN RETURN FALSE END ;
+  RETURN CanEnd (pk, p) AND CanStart (qk, q)
+END NeedSemi ;
+
+(* ---- output ---- *)
+
+PROCEDURE NewOut (VAR pool: POOL) : Out =
+VAR o : Out ;
+BEGIN
+  o.d := DynStr.New (pool) ;
+  o.err := DynStr.New (pool) ;
+  o.line := 1 ;
+  o.col := 1 ;
+  o.last := 0AC ;
+  o.map := NEW (pool, Place, 256) ;
+  o.n := 0 ;
+  o.nerr := 0 ;
+  RETURN o
+END NewOut ;
+
+PROCEDURE Emit (VAR o: Out ; RO s: UTF) =
+VAR i, b : I64 ;
+BEGIN
+  DynStr.Append (o.d, s) ;
+  FOR i := 0 TO Text.BLen (s) - 1 DO
+    b := I64 (Text.BAt (s, i)) ;
+    IF b = 10 THEN
+      o.line := o.line + 1 ;
+      o.col := 1
+    ELSIF b < 128 OR b >= 192 THEN
+      o.col := o.col + 1
+    END
+  END ;
+  IF Text.BLen (s) > 0 THEN o.last := At (s, Text.BLen (s) - 1) END
+END Emit ;
+
+(* Mark records that the output position stands for line l, column c
+   of the input. *)
+PROCEDURE Mark (VAR o: Out ; l, c: I64) RAISES IndexError =
+VAR
+  nm : SLICE OF Place ;
+  i : I64 ;
+BEGIN
+  IF o.n = LEN (o.map) THEN
+    nm := NEW (o, Place, 2 * LEN (o.map)) ;
+    FOR i := 0 TO o.n - 1 DO nm[i] := o.map[i] END ;
+    o.map := nm
+  END ;
+  o.map[o.n] := Place (o.line, o.col, l, c, FALSE) ;
+  o.n := o.n + 1
+END Mark ;
+
+PROCEDURE Fail (VAR o: Out ; RO t: Tok ; RO msg: UTF) =
+BEGIN
+  (* Fmt is not part of the compiler, so the numbers go in through
+     DynStr. *)
+  DynStr.AppendI64 (o.err, t.line) ;
+  DynStr.AppendChar (o.err, ':') ;
+  DynStr.AppendI64 (o.err, t.col) ;
+  DynStr.Append (o.err, ': ' + msg + 0AC) ;
+  o.nerr := o.nerr + 1
+END Fail ;
+
+(* Answer copies what o holds into a Result in pool. *)
+PROCEDURE Answer (VAR pool: POOL ; RO o: Out) : PTR Result IN pool =
+VAR r : PTR Result IN pool ;
+BEGIN
+  r := NEW (pool, Result) ;
+  r.text := DynStr.ViewIn (pool, o.d) ;
+  r.map := o.map ;
+  r.n := o.n ;
+  r.errs := DynStr.ViewIn (pool, o.err) ;
+  r.nerr := o.nerr ;
+  RETURN r
+END Answer ;
+
+(* ---- M9 to .m9f ---- *)
+
+(* Comment9 answers the .m9f spelling of an M9 comment.  A one-line
+   comment that ends its line and ends in a blank becomes //, so the
+   way back can add the blank again.  A comment holding another comment
+   stays as it is. *)
+PROCEDURE Comment9 (RO text: UTF ; lineEnd: BOOL) : UTF =
+VAR body : UTF ;
+BEGIN
+  body := SLICE (text, 2, Text.BLen (text) - 4) ;
+  IF Text.Contains (body, '(*') OR Text.Contains (body, '*)') THEN
+    RETURN text
+  END ;
+  IF lineEnd AND Text.CountChar (text, 0AC) = 0 AND Text.EndsWith (body, ' ') THEN
+    RETURN '//' + SLICE (body, 0, Text.BLen (body) - 1)
+  END ;
+  IF Text.Contains (body, '*/') THEN RETURN text END ;
+  RETURN '/*' + body + '*/'
+END Comment9 ;
+
+(* Word9 answers the .m9f spelling of one M9 code token, read in the
+   context before it. *)
+PROCEDURE Word9 (RO cx: Ctx ; RO t: Tok) : UTF RAISES IndexError =
+VAR w : UTF ;
+BEGIN
+  w := t.text ;
+  IF t.kind = TIdent THEN
+    IF NOT Lex.IsKeyword (w) THEN
+      IF Reserved (w) OR Text.EndsWith (w, '_') THEN RETURN w + '_' END ;
+      RETURN w
+    END ;
+    IF Text.Eq (w, 'BEGIN') THEN RETURN '{'
+    ELSIF Text.Eq (w, 'END') THEN RETURN '}'
+    ELSIF Text.Eq (w, 'THEN') OR Text.Eq (w, 'DO') OR Text.Eq (w, 'OF') THEN
+      IF Text.Eq (Opener (cx), w) THEN RETURN '{' END
+    ELSIF Text.Eq (w, 'ELSIF') THEN RETURN '} elsif'
+    ELSIF Text.Eq (w, 'ELSE') THEN
+      IF Top (cx) = FIf THEN RETURN '} else {' END ;
+      IF Top (cx) = FCase THEN RETURN 'default' END
+    ELSIF Text.Eq (w, 'RECORD') THEN RETURN 'record {'
+    ELSIF Text.Eq (w, 'LOOP') THEN RETURN 'loop {'
+    ELSIF Text.Eq (w, 'AND') THEN RETURN '&&'
+    ELSIF Text.Eq (w, 'OR') THEN RETURN '||'
+    ELSIF Text.Eq (w, 'NOT') THEN RETURN '!'
+    ELSIF Text.Eq (w, 'MOD') THEN RETURN '%'
+    END ;
+    RETURN Text.Lower (w)
+  ELSIF t.kind = TOp THEN
+    IF Text.Eq (w, '#') THEN RETURN '!=' END ;
+    IF InStmt (cx) THEN
+      IF Text.Eq (w, ':=') THEN RETURN '=' END ;
+      IF Text.Eq (w, '=') THEN RETURN '==' END
+    END
+  END ;
+  RETURN w
+END Word9 ;
+
+PROCEDURE ToM9f (VAR pool: POOL ; RO KEPT src: UTF) : PTR Result IN pool
+  RAISES IndexError =
+VAR
+  sp : POOL ;           (* the tokens and the block stack *)
+  ts : Toks ;
+  cx : Ctx ;
+  o : Out ;
+  t, q : Tok ;
+  i, lastK : I64 ;
+  lastW : UTF ;
+  lineEnd : BOOL ;
+BEGIN
+  ts := Scan (sp, src, FALSE) ;
+  cx := NewCtx (sp) ;
+  o := NewOut (pool) ;
+  lastK := TEof ;
+  lastW := '' ;
+  FOR i := 0 TO ts.n - 1 DO
+    t := ts.t[i] ;
+    CASE t.kind OF
+    | TEof, TBang, TBad :
+        Emit (o, t.gap) ;
+        Emit (o, t.text)
+    | TBlock :
+        lineEnd := ts.t[i + 1].kind = TEof
+                   OR Text.CountChar (ts.t[i + 1].gap, 0AC) > 0 ;
+        Emit (o, t.gap) ;
+        Emit (o, Comment9 (t.text, lineEnd))
+    | TIdent, TNum, TStr, TOp :
+        q := ts.t[NextCode (ts, i)] ;
+        IF t.kind = TOp AND Text.Eq (t.text, ';') AND Text.Eq (t.gap, ' ')
+           AND LineFinal (ts, i) AND NeedSemi (cx, lastK, lastW, q.kind, q.text) THEN
+          (* The way back puts this semicolon in again. *)
+        ELSE
+          Emit (o, t.gap) ;
+          Emit (o, Word9 (cx, t))
+        END ;
+        Step (cx, t.kind, t.text) ;
+        IF LineFinal (ts, i) AND NeedSemi (cx, t.kind, t.text, q.kind, q.text) THEN
+          (* The way back would put a semicolon here; the M9 has none. *)
+          Emit (o, ' \')
+        END ;
+        lastK := t.kind ;
+        lastW := t.text
+    ELSE
+      Emit (o, t.gap) ;
+      Emit (o, t.text)
+    END
+  END ;
+  RETURN Answer (pool, o)
+END ToM9f ;
+
+(* ---- .m9f to M9 ---- *)
+
+(* Meaning answers the M9 word that .m9f token i stands for, read in
+   the context before it.  An empty word means the token only frames
+   another one and goes away. *)
+PROCEDURE Meaning (RO cx: Ctx ; RO ts: Toks ; i: I64 ; VAR k: I64 ; VAR w: UTF)
+  RAISES IndexError =
+VAR
+  t, nx : Tok ;
+  up : UTF ;
+BEGIN
+  t := ts.t[i] ;
+  k := t.kind ;
+  w := t.text ;
+  IF k = TIdent THEN
+    up := Text.Upper (w) ;
+    IF Text.Eq (w, 'default') THEN
+      w := 'ELSE'
+    ELSIF Text.Eq (w, Text.Lower (w)) AND Lex.IsKeyword (up) THEN
+      w := up
+    ELSIF Text.EndsWith (w, '_') THEN
+      w := SLICE (w, 0, Text.BLen (w) - 1)
+    END
+  ELSIF k = TOp THEN
+    IF Text.Eq (w, '{') THEN
+      k := TIdent ;
+      w := Opener (cx) ;
+      IF Text.BLen (w) = 0 THEN w := 'BEGIN' END
+    ELSIF Text.Eq (w, '}') THEN
+      k := TIdent ;
+      nx := ts.t[NextCode (ts, i)] ;
+      IF Top (cx) = FIf AND (Text.Eq (nx.text, 'else') OR Text.Eq (nx.text, 'elsif')) THEN
+        w := ''
+      ELSE
+        w := 'END'
+      END
+    ELSIF Text.Eq (w, '=') THEN
+      IF InStmt (cx) THEN w := ':=' END
+    ELSIF Text.Eq (w, '==') THEN w := '='
+    ELSIF Text.Eq (w, '!=') THEN w := '#'
+    ELSIF Text.Eq (w, '&&') THEN k := TIdent ; w := 'AND'
+    ELSIF Text.Eq (w, '||') THEN k := TIdent ; w := 'OR'
+    ELSIF Text.Eq (w, '!') THEN k := TIdent ; w := 'NOT'
+    ELSIF Text.Eq (w, '%') THEN k := TIdent ; w := 'MOD'
+    ELSIF Text.Eq (w, '\') THEN w := ''
+    END
+  END
+END Meaning ;
+
+(* Comment3 answers the M9 spelling of an .m9f comment. *)
+PROCEDURE Comment3 (VAR o: Out ; RO t: Tok) : UTF =
+VAR body : UTF ;
+BEGIN
+  IF t.kind = TBlock AND Text.StartsWith (t.text, '(*') THEN RETURN t.text END ;
+  IF t.kind = TBlock THEN
+    body := SLICE (t.text, 2, Text.BLen (t.text) - 4)
+  ELSE
+    body := SLICE (t.text, 2, Text.BLen (t.text) - 2) + ' '
+  END ;
+  IF Text.Contains (body, '(*') OR Text.Contains (body, '*)') THEN
+    Fail (o, t, 'a comment may not hold an M9 comment bracket')
+  END ;
+  RETURN '(*' + body + '*)'
+END Comment3 ;
+
+PROCEDURE ToM9 (VAR pool: POOL ; RO KEPT src: UTF) : PTR Result IN pool
+  RAISES IndexError =
+VAR
+  sp : POOL ;           (* the tokens and the block stack *)
+  ts : Toks ;
+  cx : Ctx ;
+  o : Out ;
+  t : Tok ;
+  i, k, qk : I64 ;
+  w, qw : UTF ;
+  wantBrace, dropGap, brace : BOOL ;
+BEGIN
+  ts := Scan (sp, src, TRUE) ;
+  cx := NewCtx (sp) ;
+  o := NewOut (pool) ;
+  wantBrace := FALSE ;
+  dropGap := FALSE ;
+  FOR i := 0 TO ts.n - 1 DO
+    t := ts.t[i] ;
+    CASE t.kind OF
+    | TEof, TBang :
+        Emit (o, t.gap) ;
+        Emit (o, t.text)
+    | TBad :
+        Emit (o, t.gap) ;
+        Emit (o, t.text) ;
+        Fail (o, t, 'cannot read this')
+    | TBlock, TLine :
+        Emit (o, t.gap) ;
+        Emit (o, Comment3 (o, t))
+    | TIdent, TNum, TStr, TOp :
+        IF t.kind = TOp AND Text.Eq (t.text, '#') THEN
+          Fail (o, t, "write != for not equal, and // for a comment")
+        END ;
+        IF wantBrace THEN
+          (* record, loop and an IF's else are followed by a brace of
+             their own that stands for nothing in M9 *)
+          wantBrace := FALSE ;
+          IF t.kind = TOp AND Text.Eq (t.text, '{') THEN
+            k := TOp ;
+            w := '' ;
+            dropGap := TRUE
+          ELSE
+            Fail (o, t, 'expected {') ;
+            Meaning (cx, ts, i, k, w)
+          END
+        ELSE
+          Meaning (cx, ts, i, k, w)
+        END ;
+        IF dropGap THEN
+          dropGap := FALSE ;
+          IF Text.CountChar (t.gap, 0AC) > 0 THEN Emit (o, t.gap) END
+        ELSE
+          Emit (o, t.gap)
+        END ;
+        IF Text.BLen (w) > 0 THEN
+          IF Text.BLen (t.gap) = 0 AND IsWord (o.last) AND IsWord (At (w, 0)) THEN
+            Emit (o, ' ')
+          END ;
+          Mark (o, t.line, t.col) ;
+          brace := Text.Eq (w, 'RECORD') OR Text.Eq (w, 'LOOP')
+                   OR (Text.Eq (w, 'ELSE') AND Text.Eq (t.text, 'else') AND Top (cx) = FIf) ;
+          Emit (o, w) ;
+          Step (cx, k, w) ;
+          wantBrace := brace ;
+          IF LineFinal (ts, i) THEN
+            Meaning (cx, ts, NextCode (ts, i), qk, qw) ;
+            IF NeedSemi (cx, k, w, qk, qw) THEN
+              o.map[o.n - 1].semi := TRUE ;
+              Emit (o, ' ;') ;
+              Step (cx, TOp, ';')
+            END
+          END
+        ELSIF Text.Eq (t.text, '}') THEN
+          (* } before else: the else's own gap goes with it *)
+          dropGap := TRUE
+        END
+    ELSE
+      Emit (o, t.gap) ;
+      Emit (o, t.text)
+    END
+  END ;
+  IF cx.sp > 0 THEN Fail (o, ts.t[ts.n - 1], 'a { is still open at the end of the file') END ;
+  RETURN Answer (pool, o)
+END ToM9 ;
+
+PROCEDURE Where (r: PTR Result ; line, col: I64 ; VAR lf, cf: I64)
+  RAISES IndexError =
+VAR
+  lo, hi, mid : I64 ;
+  p : Place ;
+BEGIN
+  (* lo ends as the count of places at or before line, col. *)
+  lo := 0 ;
+  hi := r.n ;
+  WHILE lo < hi DO
+    mid := (lo + hi) DIV 2 ;
+    p := r.map[mid] ;
+    IF p.l9 < line OR (p.l9 = line AND p.c9 <= col) THEN
+      lo := mid + 1
+    ELSE
+      hi := mid
+    END
+  END ;
+  lf := line ;
+  cf := col ;
+  IF lo > 0 THEN
+    p := r.map[lo - 1] ;
+    lf := p.lf + (line - p.l9) ;
+    IF p.l9 = line THEN cf := p.cf + (col - p.c9) END
+  END
+END Where ;
+
+PROCEDURE AfterBreak (r: PTR Result ; line, col: I64) : BOOL
+  RAISES IndexError =
+VAR
+  lo, hi, mid : I64 ;
+  p : Place ;
+BEGIN
+  (* lo ends as the count of places strictly before line, col. *)
+  lo := 0 ;
+  hi := r.n ;
+  WHILE lo < hi DO
+    mid := (lo + hi) DIV 2 ;
+    p := r.map[mid] ;
+    IF p.l9 < line OR (p.l9 = line AND p.c9 < col) THEN
+      lo := mid + 1
+    ELSE
+      hi := mid
+    END
+  END ;
+  IF lo = 0 THEN RETURN FALSE END ;
+  RETURN r.map[lo - 1].semi
+END AfterBreak ;
+
+PROCEDURE TokenAt (RO src: UTF ; line, col: I64) : UTF =
+VAR
+  sc : Scanner ;
+  start, n : I64 ;
+  ch, q : CHAR ;
+BEGIN
+  sc := Scanner (0, 1, 1) ;
+  n := Text.BLen (src) ;
+  WHILE sc.pos < n AND (sc.line < line OR (sc.line = line AND sc.col < col)) DO
+    Bump (src, sc)
+  END ;
+  WHILE IsBlank (At (src, sc.pos)) DO Bump (src, sc) END ;
+  IF sc.pos >= n THEN RETURN '' END ;
+  start := sc.pos ;
+  ch := At (src, sc.pos) ;
+  IF IsWord (ch) THEN
+    WHILE IsWord (At (src, sc.pos)) DO Bump (src, sc) END
+  ELSIF ch = "'" OR ch = '"' THEN
+    q := ch ;
+    Bump (src, sc) ;
+    WHILE sc.pos < n AND At (src, sc.pos) # q AND At (src, sc.pos) # 0AC DO
+      Bump (src, sc)
+    END ;
+    IF At (src, sc.pos) = q THEN Bump (src, sc) END
+  ELSE
+    IF sc.pos + 1 < n AND At (src, sc.pos + 1) # 80C
+       AND (Text.IndexOf (Ops2, SLICE (src, sc.pos, 2)) >= 0
+            OR Text.IndexOf (Ops2F, SLICE (src, sc.pos, 2)) >= 0) THEN
+      Bump (src, sc)
+    END ;
+    Bump (src, sc)
+  END ;
+  RETURN SLICE (src, start, sc.pos - start)
+END TokenAt ;
+
+PROCEDURE Spelling (RO w: UTF) : UTF =
+BEGIN
+  IF Text.Eq (w, ':=') THEN RETURN '=' END ;
+  IF NOT Lex.IsKeyword (w) THEN RETURN w END ;
+  IF Text.Eq (w, 'THEN') OR Text.Eq (w, 'DO') OR Text.Eq (w, 'BEGIN') THEN
+    RETURN '{'
+  ELSIF Text.Eq (w, 'END') THEN RETURN '}'
+  ELSIF Text.Eq (w, 'OF') THEN RETURN 'of, or { after case'
+  ELSIF Text.Eq (w, 'AND') THEN RETURN '&&'
+  ELSIF Text.Eq (w, 'OR') THEN RETURN '||'
+  ELSIF Text.Eq (w, 'NOT') THEN RETURN '!'
+  ELSIF Text.Eq (w, 'MOD') THEN RETURN '%'
+  END ;
+  RETURN Text.Lower (w)
+END Spelling ;
+
+END M9f.

@@ -180,37 +180,55 @@ quoted with "" doubling.
 
 ### CONST KindF64
 
+**Deprecated** (report par 3.9): write `Frame.Data.F64s, by CASE over Frame.GetCol (f, name).data` instead.  The name goes in the next release.
+
 _(documented with the group below)_
 
 ### CONST KindF32
+
+**Deprecated** (report par 3.9): write `Frame.Data.F32s, by CASE over Frame.GetCol (f, name).data` instead.  The name goes in the next release.
 
 _(documented with the group below)_
 
 ### CONST KindI64
 
+**Deprecated** (report par 3.9): write `Frame.Data.I64s, by CASE over Frame.GetCol (f, name).data` instead.  The name goes in the next release.
+
 _(documented with the group below)_
 
 ### CONST KindI32
+
+**Deprecated** (report par 3.9): write `Frame.Data.I32s, by CASE over Frame.GetCol (f, name).data` instead.  The name goes in the next release.
 
 _(documented with the group below)_
 
 ### CONST KindI16
 
+**Deprecated** (report par 3.9): write `Frame.Data.I16s, by CASE over Frame.GetCol (f, name).data` instead.  The name goes in the next release.
+
 _(documented with the group below)_
 
 ### CONST KindByte
+
+**Deprecated** (report par 3.9): write `Frame.Data.Bytes, by CASE over Frame.GetCol (f, name).data` instead.  The name goes in the next release.
 
 _(documented with the group below)_
 
 ### CONST KindStr
 
+**Deprecated** (report par 3.9): write `Frame.Data.Strs, by CASE over Frame.GetCol (f, name).data` instead.  The name goes in the next release.
+
 _(documented with the group below)_
 
 ### CONST KindBool
 
+**Deprecated** (report par 3.9): write `Frame.Data.Bools, by CASE over Frame.GetCol (f, name).data` instead.  The name goes in the next release.
+
 _(documented with the group below)_
 
 ### KindOf (f: PTR Fr ; RO name: STR) : I64 RAISES Unknown
+
+**Deprecated** (report par 3.9): write `CASE Frame.GetCol (f, name).data OF | Frame.Data.F64s (v, m) : ...` instead.  The name goes in the next release.
 
 _(documented with the group below)_
 
@@ -327,37 +345,55 @@ _(undocumented)_
 
 ### HowMean () : How
 
+**Deprecated** (report par 3.9): write `Frame.How.Mean` instead.  The name goes in the next release.
+
 _(documented with the group below)_
 
 ### HowSum () : How
+
+**Deprecated** (report par 3.9): write `Frame.How.Sum` instead.  The name goes in the next release.
 
 _(documented with the group below)_
 
 ### HowLo () : How
 
+**Deprecated** (report par 3.9): write `Frame.How.Lo` instead.  The name goes in the next release.
+
 _(documented with the group below)_
 
 ### HowHi () : How
+
+**Deprecated** (report par 3.9): write `Frame.How.Hi` instead.  The name goes in the next release.
 
 _(documented with the group below)_
 
 ### HowFirst () : How
 
+**Deprecated** (report par 3.9): write `Frame.How.First` instead.  The name goes in the next release.
+
 _(documented with the group below)_
 
 ### HowLast () : How
+
+**Deprecated** (report par 3.9): write `Frame.How.Last` instead.  The name goes in the next release.
 
 _(documented with the group below)_
 
 ### ConvStart () : Conv
 
+**Deprecated** (report par 3.9): write `Frame.Conv.AtStart` instead.  The name goes in the next release.
+
 _(documented with the group below)_
 
 ### ConvEnd () : Conv
 
+**Deprecated** (report par 3.9): write `Frame.Conv.AtEnd` instead.  The name goes in the next release.
+
 _(documented with the group below)_
 
 ### ConvMid () : Conv
+
+**Deprecated** (report par 3.9): write `Frame.Conv.AtMid` instead.  The name goes in the next release.
 
 _(documented with the group below)_
 

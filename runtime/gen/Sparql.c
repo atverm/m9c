@@ -273,6 +273,7 @@ L_dn_m9t2: ;
   m9t10to = m9_sub_i64 (r->nvars, INT64_C(1), err);
   if (err->exc) { m9ln = 183; goto L_hdl_m9t4; };
   if (j <= m9t10to) for (;;) {
+    M9_YCHK ();
     { __typeof__(Json_Item (vars, j, err)) m9a1 = Json_Item (vars, j, err);
       if (err->exc) { m9ln = 184; goto L_hdl_m9t4; };
     { __typeof__(Json_Text (m9a1, err)) m9a2 = Json_Text (m9a1, err);
@@ -300,6 +301,7 @@ L_dn_m9t2: ;
   m9t11to = m9_sub_i64 (r->nrows, INT64_C(1), err);
   if (err->exc) { m9ln = 188; goto L_hdl_m9t4; };
   if (i <= m9t11to) for (;;) {
+    M9_YCHK ();
     { __typeof__(row) m9v = Json_Item (bindings, i, err);
       if (err->exc) { m9ln = 189; goto L_hdl_m9t4; };
       row = m9v;
@@ -309,6 +311,7 @@ L_dn_m9t2: ;
     m9t12to = m9_sub_i64 (r->nvars, INT64_C(1), err);
     if (err->exc) { m9ln = 190; goto L_hdl_m9t4; };
     if (j <= m9t12to) for (;;) {
+      M9_YCHK ();
       { Json_Node * b = Json_Field (row, (*(m9_sl_UTF8 *) m9_at (r->vars.p, j, r->vars.len, sizeof (m9_sl_UTF8), err)), err);
       if (err->exc) { m9ln = 191; goto L_hdl_m9t4; };
       if (b != NULL) {
@@ -501,6 +504,7 @@ int64_t Sparql_Column (Sparql_Results * r, m9_sl_UTF8 name, m9_state *err)
   m9t1to = m9_sub_i64 (r->nvars, INT64_C(1), err);
   if (err->exc) { m9ln = 307; goto L_ret; };
   if (j <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(m9_sl_UTF8 *) m9_at (r->vars.p, j, r->vars.len, sizeof (m9_sl_UTF8), err))) m9a3 = (*(m9_sl_UTF8 *) m9_at (r->vars.p, j, r->vars.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 308; goto L_ret; };
     bool m9t2 = Text_EqUtf (m9a3, name, err);

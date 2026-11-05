@@ -2,13 +2,13 @@ REVIEW Parquet -- 90 procedures with a body, 41 of them functions; 8 headings in
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              41
-  assignments                                   464
+  assignments                                   465
   arguments                                    1242
-  RETURN values                                  65
+  RETURN values                                  72
   operands of a comparison or an operator       662
   CASE labels                                     0
   THREAD arguments                                0
-  CASE over variants, proved total                0
+  CASE over variants, proved total                1
 
 CAN TRAP AT RUN TIME -- a byte cut a character can straddle
   text compared through a byte cut                0
@@ -23,6 +23,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   DISPOSE                                         0
   SHARED (x)                                      0
   THREAD                                          0
+  TASK                                            0
   [SHARABLE] records                              0
   module variables                                0
 
@@ -36,10 +37,11 @@ TRUSTED -- outside what the checker can see
     of them filling a descriptor ([FRESH])        0
 
 COUNTED -- how much there was to check
-  CASE statements                                 0
+  CASE statements                                 1
   RAISE statements                               99
   handlers                                       40
   NEW in the frame                                1
   NEW in a named pool                            38
   calls of a STR form with a UTF twin             0
   STR subscripts, writes and LEN                  0
+  uses of a deprecated name                       0

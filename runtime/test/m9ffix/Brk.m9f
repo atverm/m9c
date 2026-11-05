@@ -1,0 +1,8 @@
+module Brk
+type Box = record { v : I64 }
+var p : opt ptr Box
+var a : I64
+{
+  if p is some
+     q { a = q.v }
+} Brk.

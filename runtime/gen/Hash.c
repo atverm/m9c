@@ -389,6 +389,7 @@ m9_sl_BYTE Hash_Pbkdf2 (m9_sl_BYTE password, m9_sl_BYTE salt, int64_t iterations
   block = INT64_C(1);
   for (;;) {
     if (!((have < length))) break;
+    M9_YCHK ();
     { __typeof__(Bits_Shr (block, INT64_C(24), err)) m9a5 = Bits_Shr (block, INT64_C(24), err);
       if (err->exc) { m9ln = 203; goto L_ret; };
     { __typeof__((*(uint8_t *) m9_at (ctr.v, INT64_C(0), INT64_C(4), sizeof (uint8_t), err))) m9v = m9_byte (Bits_And (m9a5, INT64_C(0xFF), err), err);

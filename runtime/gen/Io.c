@@ -727,6 +727,7 @@ void Io_MkDirsUtf (m9_sl_UTF8 path, m9_state *err)
   m9t1to = m9_sub_i64 ((o).len, INT64_C(1), err);
   if (err->exc) { m9ln = 1086; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     bool m9t2 = (((*(uint8_t *) m9_at (o.p, i, o.len, sizeof (uint8_t), err)) == m9_byte (INT64_C(47), err)) || ((*(uint8_t *) m9_at (o.p, i, o.len, sizeof (uint8_t), err)) == m9_byte (INT64_C(92), err)));
     if (err->exc) { m9ln = 1087; goto L_ret; };
     if (m9t2) {

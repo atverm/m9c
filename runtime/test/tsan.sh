@@ -55,7 +55,9 @@ fail=0 ; n=0
 for spec in "thrtest.m9 $HERE" "IoPar.m9 $HERE" "ExecPar.m9 $HERE" \
             "docs/tutorial/examples/C16Hash.m9 $ROOT/docs/tutorial/examples" \
             "docs/tutorial/examples/C16Mat.m9 $ROOT/docs/tutorial/examples" \
-            "corpus/MatTest.m9 $ROOT" "corpus/TskTest.m9 $ROOT"; do
+            "corpus/MatTest.m9 $ROOT" "corpus/TskTest.m9 $ROOT" "corpus/SupTest.m9 $ROOT" \
+            "taskfix/Mixed.m9 $HERE" "taskfix/Herd.m9 $HERE" \
+            "examples/traffic/Traffic.m9 $ROOT/examples/traffic"; do
   set -- $spec
   f=$1 ; dir=$2
   case $f in /*) src=$f ;; *.m9) [ -f "$HERE/$f" ] && src="$HERE/$f" || src="$ROOT/$f" ;; esac
@@ -78,7 +80,11 @@ for spec in "thrtest.m9 $HERE" "IoPar.m9 $HERE" "ExecPar.m9 $HERE" \
     [ $reported = 1 ] || { echo "tsan: FAIL $name is owed but reported nothing in two runs -- remove it from tsan.owed"; fail=$((fail + 1)); }
   elif [ $reported = 1 ]; then
     echo "tsan: FAIL $name: a data race reported:"
-    grep -h -A8 'WARNING: ThreadSanitizer' "$W/$name.1" "$W/$name.2" | grep -v '^    #[1-9][0-9]' | head -16 | sed 's/^/    /'
+    # The whole first report, both accesses and where the memory came
+    # from: 16 lines showed the free and hid the access it raced with
+    # (Herd on ct121, 2026-11-02).
+    cat "$W/$name.1" "$W/$name.2" | awk '/WARNING: ThreadSanitizer/ {on = 1} on {print} /^SUMMARY: ThreadSanitizer/ && on {exit}' |
+      grep -v '^    #[1-9][0-9]' | head -80 | sed 's/^/    /'
     fail=$((fail + 1))
   fi
 done

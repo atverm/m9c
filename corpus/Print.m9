@@ -402,6 +402,10 @@ PROCEDURE ELabel (VAR d: PTR DynStr.DString ;
                   n: PTR Ast.Node) =
 BEGIN
   IF n.kind = Ast.NLabelPattern THEN
+    IF Text.BLen (n.bu) > 0 THEN
+      DynStr.Append (d, n.bu) ;
+      DynStr.AppendChar (d, '.')
+    END ;
     DynStr.Append (d, n.au) ;
     DynStr.Append (d, ' (') ;
     IF n.kids[0] IS SOME ids THEN Idents (d, ids) END ;
@@ -708,6 +712,20 @@ END EParams ;
 PROCEDURE EDecl (VAR d: PTR DynStr.DString ;
                  n: PTR Ast.Node ; ind: I64) ;
 
+(* Attrib prints ` [NAME]', or ` [NAME 'text']' when it carries one. *)
+PROCEDURE Attrib (VAR d: PTR DynStr.DString ; k: Ast.Kid) =
+BEGIN
+  IF k IS SOME at THEN
+    DynStr.Append (d, ' [') ;
+    DynStr.Append (d, at.au) ;
+    IF Text.BLen (at.bu) > 0 THEN
+      DynStr.AppendChar (d, ' ') ;
+      Quoted (d, at.bu)
+    END ;
+    DynStr.AppendChar (d, ']')
+  END
+END Attrib ;
+
 PROCEDURE EProc (VAR d: PTR DynStr.DString ;
                  n: PTR Ast.Node ; ind: I64) =
 VAR i : I64 ;
@@ -736,11 +754,7 @@ BEGIN
       IF rs.kids[i] IS SOME q THEN Qual (d, q) END
     END
   END ;
-  IF n.kids[3] IS SOME at THEN
-    DynStr.Append (d, ' [') ;
-    DynStr.Append (d, at.au) ;
-    DynStr.AppendChar (d, ']')
-  END ;
+  Attrib (d, n.kids[3]) ;
   IF n.kids[4] IS SOME body THEN
     DynStr.Append (d, ' =') ;
     DynStr.AppendChar (d, 0AC) ;
@@ -806,6 +820,7 @@ BEGIN
         IF n.kids[i] IS SOME c THEN
           Sp (d, ind + 1) ;
           DynStr.Append (d, c.au) ;
+          IF c.nkids > 1 THEN Attrib (d, c.kids[1]) END ;
           DynStr.Append (d, ' = ') ;
           IF IsAggregate (c.kids[0]) THEN
             EAggregate (d, c.kids[0], ind + 1)

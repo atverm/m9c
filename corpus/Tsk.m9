@@ -2,10 +2,11 @@
 DEFINITION MODULE Tsk ;
 
 (* Tsk is the module of the task-side helpers.  Today it holds one:
-   Tsk.For, a loop over the indices 0 .. n - 1 on a crew of THREADs,
-   one static chunk a worker.  TASK comes in stage 1 of
-   docs/task-plan.md.  Then the loop runs on tasks, under the same
-   name, and the other helpers join it here.
+   Tsk.For, a loop over the indices 0 .. n - 1 on a crew of workers,
+   one static chunk a worker.  The workers are THREADs or TASKs, as
+   the program starts them: Tsk's monitors are task-aware (stage 4 of
+   docs/task-plan.md).  A crew of TASKs costs no OS thread a worker,
+   and its workers park between rounds.  Chan holds the channel.
 
    The loop is the per-core shape of the plan's boids table (7.8x
    serial at 10,000 birds on the Mac, 9.1x on ct121).  A program no
@@ -20,9 +21,10 @@ DEFINITION MODULE Tsk ;
    procedure cannot take "any record" and hand it to a thread.  A
    procedure value cannot carry one either: there are no closures.
    And a THREAD's target must be a procedure of the module that
-   starts it.  So the program declares its own job record and puts a
-   Crew in it.  It starts the workers itself, and its own worker runs
-   the body.  docs/par-plan.md weighs the other forms.
+   starts it.  So Start cannot start the workers.  The program
+   declares its own job record and puts a Crew in it.  It starts the
+   workers itself, then tells Start how many started, and its own
+   worker runs the body.  docs/par-plan.md weighs the other forms.
 
      TYPE Job = RECORD
        crew : Tsk.Crew ;
@@ -42,9 +44,16 @@ DEFINITION MODULE Tsk ;
        END
      END Worker ;
 
-     w := Tsk.Workers (n) ;
-     Tsk.Start (j.crew, w) ;
-     FOR k := 1 TO w DO THREAD (Worker, j) END ;
+     started := 0 ;
+     FOR k := 1 TO Tsk.Workers (n) DO
+       BEGIN
+         THREAD (Worker, j) ;
+         started := started + 1
+       EXCEPT
+       | OutOfMemory : Io.ErrLine ('a worker did not start')
+       END
+     END ;
+     Tsk.Start (j.crew, started) ;   (* the workers that run *)
      Tsk.For (j.crew, n, 0) ;   (* one round: 0 .. n - 1 *)
      Tsk.For (j.crew, n, 0) ;   (* the same workers again *)
      Tsk.Stop (j.crew)
@@ -72,10 +81,16 @@ DEFINITION MODULE Tsk ;
    worker is still writing when the program handles it.  The crew
    stays usable: the next For runs a new round.
 
-   THE WORKERS MUST ALL START.  For waits for every worker named in
-   Start.  A program that starts fewer waits forever.  THREAD raises
-   OutOfMemory when the system refuses a thread.  The program that
-   catches it must stop instead of calling For. *)
+   START COUNTS THE WORKERS THAT RUN.  For waits for every worker
+   Start was told of, so Start comes after the THREAD statements, with
+   the number that succeeded.  THREAD raises OutOfMemory when the
+   system refuses a thread; the crew is then smaller, and the chunks
+   are cut for its size.  A worker that joins before Start waits in
+   Next as any other: its chunk is cut when a round opens.  Until
+   2026-11-01 Start came first, and a program that started fewer
+   workers than it named waited for ever (Alex: "why not start them
+   automatically in Start?"; the rules above say why not, and this
+   order removes the hang). *)
 
 IMPORT Faults ;
 
@@ -137,8 +152,8 @@ PROCEDURE Workers (n: I64) : I64 ;
      process may run on (System.Cores), at most n, at least 1 *)
 
 PROCEDURE Start (VAR c: Crew ; workers: I64) RAISES Faults.BadArg ;
-  (* Start sets the crew's size.  It comes before the program starts
-     its workers, and the program then starts exactly that many.  It
+  (* Start sets the crew's size: the workers the program started.  It
+     comes after their THREAD statements, before the first For.  It
      raises Faults.BadArg when workers < 1 or the crew has started
      already *)
 

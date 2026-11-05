@@ -1,0 +1,6 @@
+module Hash
+var n : I64
+{
+  n = 1
+  if n # 2 { n = 2 }
+} Hash.

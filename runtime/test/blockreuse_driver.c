@@ -8,7 +8,8 @@
      a block above the 128 MB cap is not kept.
      m9_release_kept leaves nothing kept.  A cap of 0 from
      m9_keep_at_most keeps nothing, and a lower cap gives back what is
-     over it at once.  A THREAD starts with its starter's cap: under a
+     over it at once.  A THREAD, and a TASK, starts with its starter's
+     cap (a TASK's blocks are kept by its carrier): under a
      cap of 0 it keeps nothing, under the default it keeps its block
      (when the cache is on).
      Ten M9 threads, one at a time, that each carve 100 MB and return
@@ -88,6 +89,26 @@ static int64_t held_in_thread (void)
   return __atomic_load_n (&held_seen, __ATOMIC_RELAXED);
 }
 
+/* held_in_task runs held_worker as a TASK (stage 2 of
+   docs/task-plan.md).  The kept blocks belong to the carrier, and the
+   cap to the task, inherited from its starter.  The starter yields
+   until the task is done, so that it runs on this carrier or another. */
+static void *held_task (void *arg, m9_pool *pool)
+{
+  (void) pool;
+  return held_worker (arg);
+}
+
+static int64_t held_in_task (void)
+{
+  m9_state err;
+  int64_t want = __atomic_load_n (&hdone, __ATOMIC_ACQUIRE) + 1;
+  memset (&err, 0, sizeof err);
+  if (m9_task_start2 (held_task, NULL, NULL, "held_task", &err) != 0) { printf ("FAIL task start\n"); bad++; return -1; }
+  while (__atomic_load_n (&hdone, __ATOMIC_ACQUIRE) < want) m9_task_yield ();
+  return __atomic_load_n (&held_seen, __ATOMIC_RELAXED);
+}
+
 static long maxrss_bytes (void)
 {
   struct rusage ru;
@@ -164,6 +185,15 @@ int main (void)
   {
     int64_t h = held_in_thread ();
     ok ("a THREAD started under the 128 MB cap keeps its block (when the cache is on)",
+        on ? h > 0 : h == 0);
+  }
+  m9_release_kept ();
+  m9_keep_at_most (0);
+  ok ("a TASK started under a cap of 0 keeps nothing", held_in_task () == 0);
+  m9_keep_at_most (128 << 20);
+  {
+    int64_t h = held_in_task ();
+    ok ("a TASK started under the 128 MB cap keeps its block on its carrier (when the cache is on)",
         on ? h > 0 : h == 0);
   }
   m9_release_kept ();

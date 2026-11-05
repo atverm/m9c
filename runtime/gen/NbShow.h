@@ -18,6 +18,14 @@ void NbShow_m9init (m9_state *err);
 #define NbShow_Head INT64_C(10)
 #define NbShow_Edge INT64_C(5)
 #define NbShow_Mark (1u)
+#define NbShow_KF64 INT64_C(0)
+#define NbShow_KF32 INT64_C(1)
+#define NbShow_KI64 INT64_C(2)
+#define NbShow_KI32 INT64_C(3)
+#define NbShow_KI16 INT64_C(4)
+#define NbShow_KByte INT64_C(5)
+#define NbShow_KStr INT64_C(6)
+#define NbShow_KBool INT64_C(7)
 
 #ifndef M9SL_m9_sl_m9_sl_UTF8
 #define M9SL_m9_sl_m9_sl_UTF8

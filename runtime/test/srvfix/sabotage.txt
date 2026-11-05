@@ -80,7 +80,7 @@ IF resp.status < 100
 @name a handler's IndexError not caught where it is called
 @old
           | IndexError :
-              w.s.st[w.k].faults := w.s.st[w.k].faults + 1
+              w.st.faults := w.st.faults + 1
           | Overflow :
 @new
           | Overflow :
@@ -133,11 +133,11 @@ IF FALSE THEN
 @name a handler's ValueRange not counted
 @old
           | ValueRange :
-              w.s.st[w.k].faults := w.s.st[w.k].faults + 1
+              w.st.faults := w.st.faults + 1
           | IndexError :
 @new
           | ValueRange :
-              w.s.st[w.k].faults := w.s.st[w.k].faults + 0
+              w.st.faults := w.st.faults + 0
           | IndexError :
 @end
 
@@ -279,10 +279,10 @@ IF w.s.cfg.gzipMin > 0 AND
 @name a producer that raised taken as done
 @old
   | ValueRange :
-      w.s.st[w.k].faults := w.s.st[w.k].faults + 1 ; RETURN -1
+      w.st.faults := w.st.faults + 1 ; RETURN -1
 @new
   | ValueRange :
-      w.s.st[w.k].faults := w.s.st[w.k].faults + 1 ; RETURN 1
+      w.st.faults := w.st.faults + 1 ; RETURN 1
 @end
 
 @name a file read whole

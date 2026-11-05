@@ -542,6 +542,7 @@ Xml_Event Xml_Next (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
     goto L_ret;
   }
   for (;;) {
+    M9_YCHK ();
     if ((({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->state == Xml_SDone)) {
       Xml_Where (r, r_pool, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, &(line), &(col), err);
       if (err->exc) { m9ln = 1207; goto L_ret; };
@@ -737,6 +738,7 @@ Xml_Element * Xml_Parse (m9_pool *pool, m9_sl_BYTE doc, m9_state *err)
   }
   last = root;
   for (;;) {
+    M9_YCHK ();
     { __typeof__(ev) m9v = Xml_Next (&(r), &((*pool)), err);
       if (err->exc) { m9ln = 1289; goto L_ret; };
       ev = m9v;
@@ -876,6 +878,7 @@ Xml_Element * Xml_Child (Xml_Element * e, m9_sl_UTF8 ns, m9_sl_UTF8 local, m9_st
   m9t1to = m9_sub_i64 ((e->kids).len, INT64_C(1), err);
   if (err->exc) { m9ln = 1337; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__(({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) { m9ln = 1338; goto L_ret; }; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ns) m9a9 = ({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) { m9ln = 1338; goto L_ret; }; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ns;
       if (err->exc) { m9ln = 1338; goto L_ret; };
     bool m9t3 = ({ bool m9t2 = Text_EqUtf (m9a9, ns, err); if (m9t2) { { __typeof__(({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) { m9ln = 1338; goto L_ret; }; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->local) m9a10 = ({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) { m9ln = 1338; goto L_ret; }; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->local;   if (err->exc) { m9ln = 1338; goto L_ret; }; m9t2 = (Text_EqUtf (m9a10, local, err)); } } m9t2; });
@@ -915,6 +918,7 @@ bool Xml_HasAttr (Xml_Element * e, m9_sl_UTF8 ns, m9_sl_UTF8 local, m9_state *er
   m9t1to = m9_sub_i64 ((e->attrs).len, INT64_C(1), err);
   if (err->exc) { m9ln = 1348; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a11 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
       if (err->exc) { m9ln = 1349; goto L_ret; };
     bool m9t3 = ({ bool m9t2 = Text_EqUtf (m9a11, ns, err); if (m9t2) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local) m9a12 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) { m9ln = 1349; goto L_ret; }; m9t2 = (Text_EqUtf (m9a12, local, err)); } } m9t2; });
@@ -952,6 +956,7 @@ m9_sl_UTF8 Xml_AttrValue (Xml_Element * e, m9_sl_UTF8 ns, m9_sl_UTF8 local, m9_s
   m9t1to = m9_sub_i64 ((e->attrs).len, INT64_C(1), err);
   if (err->exc) { m9ln = 1357; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a13 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
       if (err->exc) { m9ln = 1358; goto L_ret; };
     bool m9t3 = ({ bool m9t2 = Text_EqUtf (m9a13, ns, err); if (m9t2) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local) m9a14 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) { m9ln = 1358; goto L_ret; }; m9t2 = (Text_EqUtf (m9a14, local, err)); } } m9t2; });
@@ -1738,6 +1743,7 @@ static m9_sl_UTF8 Xml_Name (Xml_Reader * *r, m9_pool *r_pool, m9_sl_UTF8 what, m
     bool m9t4 = ({ bool m9t3 = (!Xml_AtEnd (r, r_pool, err)); if (m9t3) { { __typeof__(Xml_CpAtPos (r, r_pool, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, err)) m9a23 = Xml_CpAtPos (r, r_pool, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, err);   if (err->exc) { m9ln = 336; goto L_ret; }; m9t3 = (Xml_IsNameChar (m9a23, err)); } } m9t3; });
     if (err->exc) { m9ln = 336; goto L_ret; };
     if (!(m9t4)) break;
+    M9_YCHK ();
     Xml_Step (r, r_pool, &(nx), err);
     if (err->exc) { m9ln = 337; goto L_ret; };
     ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = nx;
@@ -1786,6 +1792,7 @@ static int64_t Xml_CharRef (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
   v = INT64_C(0);
   any = false;
   for (;;) {
+    M9_YCHK ();
     bool m9t2 = Xml_AtEnd (r, r_pool, err);
     if (err->exc) { m9ln = 358; goto L_ret; };
     if (m9t2) {
@@ -2176,6 +2183,7 @@ static m9_sl_UTF8 Xml_CharData (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
   }
   n = INT64_C(0);
   for (;;) {
+    M9_YCHK ();
     bool m9t1 = Xml_AtEnd (r, r_pool, err);
     if (err->exc) { m9ln = 470; goto L_ret; };
     if (m9t1) {
@@ -2209,6 +2217,7 @@ static m9_sl_UTF8 Xml_CharData (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
         ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = m9v;
       }
       for (;;) {
+        M9_YCHK ();
         bool m9t5 = Xml_AtEnd (r, r_pool, err);
         if (err->exc) { m9ln = 482; goto L_ret; };
         if (m9t5) {
@@ -2349,6 +2358,7 @@ static m9_sl_UTF8 Xml_AttValue (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
   }
   n = INT64_C(0);
   for (;;) {
+    M9_YCHK ();
     bool m9t1 = Xml_AtEnd (r, r_pool, err);
     if (err->exc) { m9ln = 529; goto L_ret; };
     if (m9t1) {
@@ -2448,6 +2458,7 @@ static m9_sl_UTF8 Xml_CommentBody (Xml_Reader * *r, m9_pool *r_pool, m9_state *e
   }
   start = ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos;
   for (;;) {
+    M9_YCHK ();
     bool m9t1 = Xml_AtEnd (r, r_pool, err);
     if (err->exc) { m9ln = 563; goto L_ret; };
     if (m9t1) {
@@ -2532,6 +2543,7 @@ static m9_sl_UTF8 Xml_PiBody (Xml_Reader * *r, m9_pool *r_pool, m9_sl_UTF8 *targ
   if (err->exc) { m9ln = 588; goto L_ret; };
   start = ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos;
   for (;;) {
+    M9_YCHK ();
     bool m9t4 = Xml_AtEnd (r, r_pool, err);
     if (err->exc) { m9ln = 591; goto L_ret; };
     if (m9t4) {
@@ -2825,6 +2837,7 @@ static bool Xml_PubidOk (m9_sl_UTF8 s, m9_state *err)
   m9t1to = m9_sub_i64 (Text_BLen (s, err), INT64_C(1), err);
   if (err->exc) { m9ln = 677; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__(c) m9v = Text_BChar (s, i, err);
       if (err->exc) { m9ln = 678; goto L_ret; };
       c = m9v;
@@ -2963,6 +2976,7 @@ static void Xml_ContentParticle (Xml_Reader * *r, m9_pool *r_pool, m9_state *err
         bool m9t4 = (Xml_Cur (r, r_pool, err) == sep);
         if (err->exc) { m9ln = 734; goto L_ret; };
         if (!(m9t4)) break;
+        M9_YCHK ();
         { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(1), err);
           if (err->exc) { m9ln = 735; goto L_ret; };
           ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = m9v;
@@ -3063,6 +3077,7 @@ static void Xml_ElementDecl (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
         }
         more = false;
         for (;;) {
+          M9_YCHK ();
           bool m9t6 = Xml_SkipSpace (r, r_pool, err);
           if (err->exc) { m9ln = 770; goto L_ret; };
           if (m9t6) {
@@ -3349,6 +3364,7 @@ static bool Xml_Lookup (Xml_Reader * *r, m9_pool *r_pool, m9_sl_UTF8 p, m9_sl_UT
   }
   for (;;) {
     if (!((i >= INT64_C(0)))) break;
+    M9_YCHK ();
     { __typeof__((*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pfx.p, i, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pfx.len, sizeof (m9_sl_UTF8), err))) m9a39 = (*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pfx.p, i, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pfx.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 874; goto L_ret; };
     bool m9t2 = Text_EqUtf (m9a39, p, err);
@@ -3400,6 +3416,7 @@ static void Xml_Split (Xml_Reader * *r, m9_pool *r_pool, m9_sl_UTF8 q, m9_sl_UTF
   m9t1to = m9_sub_i64 (Text_BLen (q, err), INT64_C(1), err);
   if (err->exc) { m9ln = 887; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     bool m9t2 = Text_BIs (q, i, 58u, err);
     if (err->exc) { m9ln = 888; goto L_ret; };
     if (m9t2) {
@@ -3577,6 +3594,7 @@ static void Xml_StartTagEv (Xml_Reader * *r, m9_pool *r_pool, Xml_Event *ev, m9_
   na = INT64_C(0);
   nsMark = ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nns;
   for (;;) {
+    M9_YCHK ();
     bool m9t1 = (Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s145, 1 }), err) || Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s146, 2 }), err));
     if (err->exc) { m9ln = 941; goto L_ret; };
     if (m9t1) {
@@ -3618,6 +3636,7 @@ static void Xml_StartTagEv (Xml_Reader * *r, m9_pool *r_pool, Xml_Event *ev, m9_
     m9t6to = m9_sub_i64 (na, INT64_C(1), err);
     if (err->exc) { m9ln = 950; goto L_ret; };
     if (i <= m9t6to) for (;;) {
+      M9_YCHK ();
       { __typeof__((*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).name) m9a44 = (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).name;
         if (err->exc) { m9ln = 951; goto L_ret; };
       bool m9t7 = Text_EqUtf (m9a44, an, err);
@@ -3672,6 +3691,7 @@ static void Xml_StartTagEv (Xml_Reader * *r, m9_pool *r_pool, Xml_Event *ev, m9_
   m9t9to = m9_sub_i64 (na, INT64_C(1), err);
   if (err->exc) { m9ln = 968; goto L_ret; };
   if (i <= m9t9to) for (;;) {
+    M9_YCHK ();
     { __typeof__(an) m9v = (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).name;
       if (err->exc) { m9ln = 969; goto L_ret; };
       an = m9v;
@@ -3753,6 +3773,7 @@ static void Xml_StartTagEv (Xml_Reader * *r, m9_pool *r_pool, Xml_Event *ev, m9_
   m9t17to = m9_sub_i64 (na, INT64_C(1), err);
   if (err->exc) { m9ln = 992; goto L_ret; };
   if (i <= m9t17to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).ns) m9a49 = (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).ns;
       if (err->exc) { m9ln = 993; goto L_ret; };
     bool m9t18 = (!Text_EqUtf (m9a49, ((m9_sl_UTF8){ (uint8_t *) m9s171, 29 }), err));
@@ -3785,6 +3806,7 @@ static void Xml_StartTagEv (Xml_Reader * *r, m9_pool *r_pool, Xml_Event *ev, m9_
       m9t21to = m9_sub_i64 (i, INT64_C(1), err);
       if (err->exc) { m9ln = 1000; goto L_ret; };
       if (j <= m9t21to) for (;;) {
+        M9_YCHK ();
         { __typeof__((*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).ns) m9a52 = (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).ns;
           if (err->exc) { m9ln = 1001; goto L_ret; };
         bool m9t24 = ({ bool m9t23 = ({ bool m9t22 = (Text_BLen (m9a52, err) > INT64_C(0)); if (m9t22) { { __typeof__((*(Xml_Attr *) m9_at (attrs.p, j, attrs.len, sizeof (Xml_Attr), err)).ns) m9a53 = (*(Xml_Attr *) m9_at (attrs.p, j, attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) { m9ln = 1001; goto L_ret; }; { __typeof__((*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).ns) m9a54 = (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) { m9ln = 1001; goto L_ret; }; m9t22 = (Text_EqUtf (m9a53, m9a54, err)); } } } m9t22; }); if (m9t23) { { __typeof__((*(Xml_Attr *) m9_at (attrs.p, j, attrs.len, sizeof (Xml_Attr), err)).local) m9a55 = (*(Xml_Attr *) m9_at (attrs.p, j, attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) { m9ln = 1001; goto L_ret; }; { __typeof__((*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).local) m9a56 = (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) { m9ln = 1001; goto L_ret; }; m9t23 = (Text_EqUtf (m9a55, m9a56, err)); } } } m9t23; });
@@ -3950,6 +3972,7 @@ static void Xml_CheckChars (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
     bool m9t1 = (i < Text_BLen (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src, err));
     if (err->exc) { m9ln = 1061; goto L_ret; };
     if (!(m9t1)) break;
+    M9_YCHK ();
     at = i;
     { __typeof__(c) m9v = Text_NextCp (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src, &(i), err);
       if (err->exc) { m9ln = 1063; goto L_ret; };
@@ -4135,6 +4158,7 @@ static void Xml_AddText (Xml_Element * e, DynStr_DString * *d, m9_pool *d_pool, 
   m9t1to = m9_sub_i64 ((e->kids).len, INT64_C(1), err);
   if (err->exc) { m9ln = 1369; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__(({ __auto_type m9n = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a65 = ({ __auto_type m9n = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
       if (err->exc) { m9ln = 1370; goto L_ret; };
     Xml_AddText (m9a65, d, d_pool, err);
@@ -4190,6 +4214,7 @@ static void Xml_Escaped (Xml_Writer * *w, m9_pool *w_pool, m9_sl_UTF8 s, bool at
   i = INT64_C(0);
   { __typeof__(s) m9t1s = s;
   for (int64_t m9t1i = 0; m9t1i < m9t1s.len; ) { c = m9_utf_next (m9t1s, &m9t1i);
+    M9_YCHK ();
     bool m9t2 = (!Xml_IsChar ((int64_t)(c), err));
     if (err->exc) { m9ln = 1414; goto L_ret; };
     if (m9t2) {

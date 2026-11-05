@@ -15,14 +15,16 @@
 COMPILERC=$(sed -n 's/^COMPILER="\(.*\)"/\1/p' ../../build.sh | tr ' ' '\n' | sed '/^$/d; s#^#../gen/#; s#$#.c#' | tr '\n' ' ')
 [ -n "$COMPILERC" ] || { echo "lib/mods.sh: no COMPILER line in build.sh" >&2; exit 1; }
 
-MODS="DynStr Faults Mat Stats System Frame Parquet NbCells NbShow Json JsonUtf Chars DynUtf Tsk Http HttpServer OpenApi ApiSpec Arrow ZarrStore Zarr Plot Lex Ast Print Parse Dict Fmt Io Time Text Math Bits Sort Seq Check Arrays Numeric Csv Delim Zip Png Pg Sparql Regex Xml Rdf Hash Smtp Rsa Map NetCDF Grib Syslog Logger Hello Concat Narrow ProcUse AggUse ShareUse ExportDef ExportUse Gen Sem Doc Review M9c Diag"
+MODS="DynStr Faults Mat Stats System Frame Parquet NbCells NbShow Json JsonUtf Chars DynUtf Tsk Chan Sup Http HttpServer OpenApi ApiSpec Arrow ZarrStore Zarr Plot Lex M9f Ast Print Parse Dict Fmt Io Time Text Math Bits Sort Seq Check Arrays Numeric Csv Delim Zip Png Pg Sparql Regex Xml Rdf Hash Smtp Rsa Map NetCDF Grib Syslog Logger Hello Concat Narrow ProcUse AggUse ShareUse ExportDef ExportUse Gen Sem Doc Review M9c Diag"
 deps_of () {
   case $1 in
     Json)          echo DynStr Text ;;
     Lex)           echo DynStr Text ;;
+    M9f)           echo DynStr Lex Text ;;
     JsonUtf)       echo DynStr Text ;;
     Chars)         echo Bits Faults Text ;;
     Tsk)           echo Faults System ;;
+    Sup)           echo Faults Time Io Fmt ;;
     Http)          echo DynStr Io Text ;;
     ApiSpec)       echo DynStr Text ;;
     Arrow)         echo DynStr Faults Text ;;
@@ -65,7 +67,7 @@ deps_of () {
     Grib)          echo DynStr Faults ;;
     Ast)           echo Text ;;
     Dict)          echo Text ;;
-    Syslog)        echo ;;
+    Syslog|Chan)   echo ;;
     Logger)        echo DynStr Fmt Io Syslog Time Text ;;
     Hello)         echo Io DynStr ;;
     Concat)        echo Io DynStr Text ;;
@@ -73,7 +75,7 @@ deps_of () {
     ProcUse|AggUse) echo Io Text ;;
     ExportDef)     echo Io Fmt ;;
     ExportUse)     echo ExportDef Io Fmt ;;
-    M9c)           echo Io Ast Parse Gen Sem DynStr Doc Review Lex System Text ;;
+    M9c)           echo Io Ast Parse Gen Sem DynStr Doc Review Lex M9f System Text ;;
     Review)        echo Ast DynStr Text ;;
     Sem)           echo Ast DynStr Print Text ;;
     Doc)           echo Ast DynStr Text Print Lex ;;

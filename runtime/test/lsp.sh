@@ -7,7 +7,8 @@
 # exact byte counts.  The SERVER half is the M9 under test.  Checks:
 # initialize answers the name and version; a broken file yields
 # publishDiagnostics carrying m9c's own message at its position; a
-# clean file yields an empty list; an unknown REQUEST is answered
+# clean file yields an empty list; a .m9f is reported at the .m9f's
+# own column, which m9c answers; an unknown REQUEST is answered
 # -32601 (a notification is not); shutdown/exit end the process with
 # status 0.
 set -e
@@ -71,12 +72,22 @@ BEGIN
 END Late.
 LATE
 
+# A .m9f.  m9c writes BrokeF.m9 and checks it, and names the .m9f at
+# its column: 7 here, where the .m9 has 8 (:= against =).
+cat > BrokeF.m9f <<'BRF'
+module BrokeF
+var i : I64
+{
+  i = 'text'
+} BrokeF.
+BRF
+
 # The version the server announces is gated against debian/changelog,
 # exactly as m9c --version is in m9c.sh.  0.4.1 shipped an m9lsp that
 # said 0.4.0, because Lsp.m9's Version is a second hand-bumped
 # constant and nothing compared it to anything.
 CLV=$(cd "$SRC/.." && sh tools/release/version.sh)
-M9LSP_M9C=$W/m9c M9LIBRARY="$SRC" M9_CLV="$CLV" python3 - "$W" <<'PY'
+M9LSP_M9C=$W/m9c M9LIBRARY="$SRC" M9CACHE="$W/cache" M9_CLV="$CLV" python3 - "$W" <<'PY'
 import json, subprocess, sys, os
 
 w = sys.argv[1]
@@ -146,6 +157,17 @@ check(ds and 'gen: VAR arguments whose storage lives in two pools' in ds[0]['mes
 check(ds and ds[0]['range']['start']['line'] == 8,
       'anchored at the call, 0-based 8')
 
+uri4 = 'file://' + w + '/BrokeF.m9f'
+send({'jsonrpc':'2.0','method':'textDocument/didOpen',
+      'params':{'textDocument':{'uri':uri4,'languageId':'m9f','version':1,
+                                'text':open(w+'/BrokeF.m9f').read()}}})
+r = recv()
+check(r['params']['uri'] == uri4, 'the .m9f answers')
+ds = r['params']['diagnostics']
+check(ds and 'cannot assign' in ds[0]['message'], "a .m9f gets m9c's message")
+check(ds and ds[0]['range']['start'] == {'line': 3, 'character': 6},
+      "at the .m9f's own column, 0-based 3:6")
+
 send({'jsonrpc':'2.0','id':7,'method':'no/such','params':{}})
 r = recv()
 check(r.get('id') == 7 and r.get('error',{}).get('code') == -32601,
@@ -162,4 +184,4 @@ sys.exit(1 if fails else 0)
 PY
 st=$?
 [ $st -eq 0 ] || { echo "lsp: FAIL"; exit 1; }
-echo "lsp: 12 checks -- a framed session against the tree's own m9c"
+echo "lsp: 21 checks -- a framed session against the tree's own m9c"

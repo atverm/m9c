@@ -1,0 +1,8 @@
+module Hello
+import Io, Fmt, Greet
+var i : I64
+{
+  for i = 1 to 3 {
+    Io.WriteLine ('line ' + Fmt.I64Str (Greet.Line (i)))
+  }
+} Hello.

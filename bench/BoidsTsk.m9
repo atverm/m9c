@@ -3,7 +3,7 @@ MODULE BoidsTsk ;
 (* BoidsTsk is Boids.m9's per-core shape on Tsk.For, the library form
    of docs/task-plan.md's parallel loop.
 
-     BoidsTsk N STEPS THREADS
+     BoidsTsk N STEPS THREADS [task]
 
    The kernel below is Boids.m9's, copied unchanged (wip/task-plan,
    bench/Boids.m9 at f6aefab5): Init, BuildGrid, StepRange, Report.
@@ -16,13 +16,19 @@ MODULE BoidsTsk ;
    loop around Tsk.Next.  A step is BuildGrid, then one Tsk.For with
    the buffer to read as its op.  The birds are cut as Tsk.Chunk cuts
    them, not as Boids.m9's t * N / THREADS.  The cut cannot change the
-   numbers: a bird's new state depends on the old states only. *)
+   numbers: a bird's new state depends on the old states only.
+
+   With the word task, the crew's workers are TASKs, not THREADs
+   (stage 4 of docs/task-plan.md: Tsk.For on tasks).  Tsk's monitors
+   are task-aware, so nothing else changes, and the line printed is
+   the same. *)
 
 IMPORT Io ;
 IMPORT Fmt ;
 IMPORT Math ;
 IMPORT Faults ;
 IMPORT Tsk ;
+IMPORT Text ;
 
 CONST
   Density = 2.0 ;                (* birds per unit area *)
@@ -239,7 +245,7 @@ VAR
 
 BEGIN
   IF Io.ArgCount () < 4 THEN
-    Io.ErrLine ('usage: BoidsTsk N STEPS THREADS (0: the cores)') ;
+    Io.ErrLine ('usage: BoidsTsk N STEPS THREADS (0: the cores) [task]') ;
     Io.Halt (2)
   END ;
   n := Io.ParseI64 (Io.Arg (pool, 1)) ;
@@ -248,8 +254,12 @@ BEGIN
   IF threads < 1 THEN threads := Tsk.Workers (n) END ;
   j := NEW (pool, Job) ;
   Init (pool, j.w, n) ;
+  IF Io.ArgCount () > 4 AND Text.Eq (Io.Arg (pool, 4), 'task') THEN
+    FOR t := 1 TO threads DO TASK (Worker, j) END
+  ELSE
+    FOR t := 1 TO threads DO THREAD (Worker, j) END
+  END ;
   Tsk.Start (j.crew, threads) ;
-  FOR t := 1 TO threads DO THREAD (Worker, j) END ;
   cur := 0 ;
   FOR s := 1 TO steps DO
     BuildGrid (j.w, cur) ;

@@ -285,6 +285,7 @@ void Mat_ColReduce (Mat_Matrix * m, Mat_ReduceOp op, m9_sl_F64 out, m9_state *er
   m9t1to = m9_sub_i64 ((m->d).n[INT64_C(1)], INT64_C(1), err);
   if (err->exc) { m9ln = 338; goto L_ret; };
   if (c <= m9t1to) for (;;) {
+    M9_YCHK ();
     n = INT64_C(0);
     acc = 0.0;
     { __typeof__(r) m9t2to;
@@ -410,6 +411,7 @@ Mat_Matrix * Mat_SubRowVector (m9_pool *pool, Mat_Matrix * m, m9_sl_F64 v, m9_st
   m9t1to = m9_sub_i64 ((m->d).n[INT64_C(0)], INT64_C(1), err);
   if (err->exc) { m9ln = 388; goto L_ret; };
   if (r <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__(c) m9t2to;
     c = INT64_C(0);
     m9t2to = m9_sub_i64 ((m->d).n[INT64_C(1)], INT64_C(1), err);
@@ -457,6 +459,7 @@ void Mat_MinMax (Mat_Matrix * m, double *mn, double *mx, m9_state *err)
   m9t1to = m9_sub_i64 ((m->d).n[INT64_C(0)], INT64_C(1), err);
   if (err->exc) { m9ln = 405; goto L_ret; };
   if (r <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__(c) m9t2to;
     c = INT64_C(0);
     m9t2to = m9_sub_i64 ((m->d).n[INT64_C(1)], INT64_C(1), err);
@@ -533,6 +536,7 @@ Mat_Matrix * Mat_MulM (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state *
   m9t2to = m9_sub_i64 (Mat_Rows (a, err), INT64_C(1), err);
   if (err->exc) { m9ln = 432; goto L_ret; };
   if (r <= m9t2to) for (;;) {
+    M9_YCHK ();
     { __typeof__(c) m9t3to;
     c = INT64_C(0);
     m9t3to = m9_sub_i64 (Mat_Cols (b, err), INT64_C(1), err);
@@ -604,6 +608,7 @@ Mat_Matrix * Mat_MulV (m9_pool *pool, Mat_Matrix * a, m9_sl_F64 x, m9_state *err
   m9t2to = m9_sub_i64 (Mat_Rows (a, err), INT64_C(1), err);
   if (err->exc) { m9ln = 454; goto L_ret; };
   if (r <= m9t2to) for (;;) {
+    M9_YCHK ();
     acc = 0.0;
     { __typeof__(k) m9t3to;
     k = INT64_C(0);
@@ -660,6 +665,7 @@ Mat_Matrix * Mat_Transpose (m9_pool *pool, Mat_Matrix * m, m9_state *err)
   m9t1to = m9_sub_i64 (Mat_Rows (m, err), INT64_C(1), err);
   if (err->exc) { m9ln = 471; goto L_ret; };
   if (r <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__(c) m9t2to;
     c = INT64_C(0);
     m9t2to = m9_sub_i64 (Mat_Cols (m, err), INT64_C(1), err);
@@ -716,6 +722,7 @@ Mat_Matrix * Mat_AddM (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state *
   m9t1to = m9_sub_i64 (Mat_Rows (a, err), INT64_C(1), err);
   if (err->exc) { m9ln = 493; goto L_ret; };
   if (r <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__(c) m9t2to;
     c = INT64_C(0);
     m9t2to = m9_sub_i64 (Mat_Cols (a, err), INT64_C(1), err);
@@ -772,6 +779,7 @@ Mat_Matrix * Mat_SubM (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state *
   m9t1to = m9_sub_i64 (Mat_Rows (a, err), INT64_C(1), err);
   if (err->exc) { m9ln = 509; goto L_ret; };
   if (r <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__(c) m9t2to;
     c = INT64_C(0);
     m9t2to = m9_sub_i64 (Mat_Cols (a, err), INT64_C(1), err);
@@ -816,6 +824,7 @@ void Mat_Scale (Mat_Matrix * *m, m9_pool *m_pool, double s, m9_state *err)
   m9t1to = m9_sub_i64 (Mat_Rows (m9a10, err), INT64_C(1), err);
   if (err->exc) { m9ln = 520; goto L_ret; };
   if (r <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__(c) m9t2to;
     c = INT64_C(0);
     { __typeof__(({ __auto_type m9n = ((*m)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a11 = ({ __auto_type m9n = ((*m)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
@@ -907,6 +916,7 @@ Mat_Matrix * Mat_CopyM (m9_pool *pool, Mat_Matrix * m, m9_state *err)
   m9t1to = m9_sub_i64 (Mat_Rows (m, err), INT64_C(1), err);
   if (err->exc) { m9ln = 547; goto L_ret; };
   if (r <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__(c) m9t2to;
     c = INT64_C(0);
     m9t2to = m9_sub_i64 (Mat_Cols (m, err), INT64_C(1), err);
@@ -971,6 +981,7 @@ Mat_Matrix * Mat_Cholesky (m9_pool *pool, Mat_Matrix * a, m9_state *err)
   m9t2to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) { m9ln = 566; goto L_ret; };
   if (i <= m9t2to) for (;;) {
+    M9_YCHK ();
     { __typeof__(j) m9t3to;
     j = INT64_C(0);
     m9t3to = i;
@@ -1073,6 +1084,7 @@ Mat_Matrix * Mat_CholSolve (m9_pool *pool, Mat_Matrix * l, Mat_Matrix * b, m9_st
   m9t3to = m9_sub_i64 (Mat_Cols (b, err), INT64_C(1), err);
   if (err->exc) { m9ln = 598; goto L_ret; };
   if (c <= m9t3to) for (;;) {
+    M9_YCHK ();
     { __typeof__(i) m9t4to;
     i = INT64_C(0);
     m9t4to = m9_sub_i64 (n, INT64_C(1), err);
@@ -1219,6 +1231,7 @@ Mat_Matrix * Mat_CholeskyT (m9_pool *pool, Mat_Matrix * a, int64_t threads, m9_s
   m9t2to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) { m9ln = 822; goto L_ret; };
   if (i <= m9t2to) for (;;) {
+    M9_YCHK ();
     { __typeof__(jj) m9t3to;
     jj = INT64_C(0);
     m9t3to = i;
@@ -1247,6 +1260,7 @@ Mat_Matrix * Mat_CholeskyT (m9_pool *pool, Mat_Matrix * a, int64_t threads, m9_s
   k0 = INT64_C(0);
   for (;;) {
     if (!((k0 < n))) break;
+    M9_YCHK ();
     { __typeof__(k1) m9v = m9_add_i64 (k0, nb, err);
       if (err->exc) { m9ln = 832; goto L_ret; };
       k1 = m9v;
@@ -1483,6 +1497,7 @@ void Mat_AddNormal (Mat_Matrix * h, m9_sl_F64 w, Mat_Matrix * *k, m9_pool *k_poo
   m9t5to = m9_sub_i64 (j->n, INT64_C(1), err);
   if (err->exc) { m9ln = 950; goto L_ret; };
   if (c <= m9t5to) for (;;) {
+    M9_YCHK ();
     { __typeof__(cc) m9t6to;
     cc = INT64_C(0);
     m9t6to = m9_sub_i64 (c, INT64_C(1), err);
@@ -1580,6 +1595,7 @@ Mat_Matrix * Mat_Solve (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state 
   m9t3to = m9_sub_i64 (Mat_Cols (b, err), INT64_C(1), err);
   if (err->exc) { m9ln = 1028; goto L_ret; };
   if (c <= m9t3to) for (;;) {
+    M9_YCHK ();
     { __typeof__(i) m9t4to;
     i = INT64_C(0);
     m9t4to = m9_sub_i64 (n, INT64_C(1), err);
@@ -1802,6 +1818,7 @@ void Mat_Qr (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * *q, m9_pool *q_pool, Ma
   m9t1to = m9_sub_i64 (k, INT64_C(1), err);
   if (err->exc) { m9ln = 1137; goto L_ret; };
   if (j <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(double *) m9_at (vv.p, j, vv.len, sizeof (double), err))) m9v = Mat_Reflector (&(w), &(scratch), &(h), &(scratch), j, err);
       if (err->exc) { m9ln = 1138; goto L_ret; };
       (*(double *) m9_at (vv.p, j, vv.len, sizeof (double), err)) = m9v;
@@ -1824,6 +1841,7 @@ void Mat_Qr (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * *q, m9_pool *q_pool, Ma
   m9t2to = m9_sub_i64 (k, INT64_C(1), err);
   if (err->exc) { m9ln = 1143; goto L_ret; };
   if (i <= m9t2to) for (;;) {
+    M9_YCHK ();
     { __typeof__(j) m9t3to;
     j = i;
     m9t3to = m9_sub_i64 (n, INT64_C(1), err);
@@ -1859,6 +1877,7 @@ void Mat_Qr (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * *q, m9_pool *q_pool, Ma
   m9t5to = INT64_C(0);
   if (err->exc) { m9ln = 1150; goto L_ret; };
   if (j >= m9t5to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(double *) m9_at (vv.p, j, vv.len, sizeof (double), err))) m9a22 = (*(double *) m9_at (vv.p, j, vv.len, sizeof (double), err));
       if (err->exc) { m9ln = 1151; goto L_ret; };
     Mat_Reflect (q, q_pool, h, j, m9a22, INT64_C(0), err);
@@ -1872,6 +1891,7 @@ void Mat_Qr (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * *q, m9_pool *q_pool, Ma
   m9t6to = m9_sub_i64 (k, INT64_C(1), err);
   if (err->exc) { m9ln = 1154; goto L_ret; };
   if (i <= m9t6to) for (;;) {
+    M9_YCHK ();
     bool m9t7 = ((*(double *) m9_gat2 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, i, err)) < 0.0);
     if (err->exc) { m9ln = 1155; goto L_ret; };
     if (m9t7) {
@@ -2006,6 +2026,7 @@ Mat_Matrix * Mat_LstSq (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state 
   m9t6to = m9_sub_i64 (Mat_Cols (b, err), INT64_C(1), err);
   if (err->exc) { m9ln = 1189; goto L_ret; };
   if (c <= m9t6to) for (;;) {
+    M9_YCHK ();
     { __typeof__(i) m9t7to;
     i = INT64_C(0);
     m9t7to = m9_sub_i64 (n, INT64_C(1), err);
@@ -2136,6 +2157,7 @@ void Mat_Svd (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * *u, m9_pool *u_pool, m
   m9t1to = m9_sub_i64 (m, INT64_C(1), err);
   if (err->exc) { m9ln = 1369; goto L_ret; };
   if (k <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__(({ __auto_type m9n = ((*vt)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a24 = ({ __auto_type m9n = ((*vt)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
       if (err->exc) { m9ln = 1370; goto L_ret; };
     { __typeof__(f) m9v = Mat_RowSign (m9a24, k, err);
@@ -2245,6 +2267,7 @@ void Mat_EigSym (m9_pool *pool, Mat_Matrix * a, m9_sl_F64 *w, Mat_Matrix * *v, m
   m9t2to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) { m9ln = 1395; goto L_ret; };
   if (i <= m9t2to) for (;;) {
+    M9_YCHK ();
     { __typeof__(j) m9t3to;
     j = INT64_C(0);
     m9t3to = i;
@@ -2273,6 +2296,7 @@ void Mat_EigSym (m9_pool *pool, Mat_Matrix * a, m9_sl_F64 *w, Mat_Matrix * *v, m
   sweep = INT64_C(0);
   for (;;) {
     if (!((!settled))) break;
+    M9_YCHK ();
     { __typeof__(sweep) m9v = m9_add_i64 (sweep, INT64_C(1), err);
       if (err->exc) { m9ln = 1405; goto L_ret; };
       sweep = m9v;
@@ -2289,11 +2313,13 @@ void Mat_EigSym (m9_pool *pool, Mat_Matrix * a, m9_sl_F64 *w, Mat_Matrix * *v, m
     m9t4to = m9_sub_i64 (n, INT64_C(2), err);
     if (err->exc) { m9ln = 1408; goto L_ret; };
     if (p <= m9t4to) for (;;) {
+      M9_YCHK ();
       { __typeof__(q) m9t5to;
       q = m9_add_i64 (p, INT64_C(1), err);
       m9t5to = m9_sub_i64 (n, INT64_C(1), err);
       if (err->exc) { m9ln = 1409; goto L_ret; };
       if (q <= m9t5to) for (;;) {
+        M9_YCHK ();
         { __typeof__(apq) m9v = (*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], p, q, err));
           if (err->exc) { m9ln = 1410; goto L_ret; };
           apq = m9v;
@@ -2376,6 +2402,7 @@ void Mat_EigSym (m9_pool *pool, Mat_Matrix * a, m9_sl_F64 *w, Mat_Matrix * *v, m
   m9t9to = m9_sub_i64 (n, INT64_C(2), err);
   if (err->exc) { m9ln = 1434; goto L_ret; };
   if (k <= m9t9to) for (;;) {
+    M9_YCHK ();
     best = k;
     { __typeof__(j) m9t10to;
     j = m9_add_i64 (k, INT64_C(1), err);
@@ -2425,6 +2452,7 @@ void Mat_EigSym (m9_pool *pool, Mat_Matrix * a, m9_sl_F64 *w, Mat_Matrix * *v, m
   m9t13to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) { m9ln = 1448; goto L_ret; };
   if (k <= m9t13to) for (;;) {
+    M9_YCHK ();
     { __typeof__(j) m9v = (*(int64_t *) m9_at (order.p, k, order.len, sizeof (int64_t), err));
       if (err->exc) { m9ln = 1449; goto L_ret; };
       j = m9v;
@@ -2508,6 +2536,7 @@ static int64_t Mat_Claim (Mat_Work *w, m9_state *err)
   int64_t m9ret = 0;
   m9_mon_enter (&(*w).m9mon);
   int64_t b = 0; (void) b;
+  if (m9_mon_poisoned (&(*w).m9mon)) { m9_raise (err, &m9_exc_Poisoned); goto L_ret; }
   b = (*w).next;
   { __typeof__((*w).next) m9v = m9_add_i64 ((*w).next, INT64_C(1), err);
     if (err->exc) { m9ln = 657; goto L_ret; };
@@ -2519,6 +2548,7 @@ static int64_t Mat_Claim (Mat_Work *w, m9_state *err)
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
+  if (err->exc) m9_mon_taint (&(*w).m9mon, err);
   m9_mon_leave (&(*w).m9mon);
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2533,6 +2563,7 @@ static void Mat_Finish (Mat_Work *w, m9_state *err)
   static const char m9pn[] = "Mat.Finish"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   m9_mon_enter (&(*w).m9mon);
+  if (m9_mon_poisoned (&(*w).m9mon)) { m9_raise (err, &m9_exc_Poisoned); goto L_ret; }
   { __typeof__((*w).done) m9v = m9_add_i64 ((*w).done, INT64_C(1), err);
     if (err->exc) { m9ln = 663; goto L_ret; };
     (*w).done = m9v;
@@ -2541,6 +2572,7 @@ static void Mat_Finish (Mat_Work *w, m9_state *err)
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
+  if (err->exc) m9_mon_taint (&(*w).m9mon, err);
   m9_mon_leave (&(*w).m9mon);
   m9_pool_free (&m9frame);
   return;
@@ -2555,6 +2587,7 @@ static void Mat_AwaitAll (Mat_Work *w, int64_t want, m9_state *err)
   static const char m9pn[] = "Mat.AwaitAll"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   m9_mon_enter (&(*w).m9mon);
+  if (m9_mon_poisoned (&(*w).m9mon)) { m9_raise (err, &m9_exc_Poisoned); goto L_ret; }
   for (;;) {
     if (!(((*w).done < want))) break;
     m9_mon_wait (&((*w)).m9mon);
@@ -2562,6 +2595,7 @@ static void Mat_AwaitAll (Mat_Work *w, int64_t want, m9_state *err)
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
+  if (err->exc) m9_mon_taint (&(*w).m9mon, err);
   m9_mon_leave (&(*w).m9mon);
   m9_pool_free (&m9frame);
   return;
@@ -2576,11 +2610,13 @@ static void Mat_ResetWork (Mat_Work *w, m9_state *err)
   static const char m9pn[] = "Mat.ResetWork"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   m9_mon_enter (&(*w).m9mon);
+  if (m9_mon_poisoned (&(*w).m9mon)) { m9_raise (err, &m9_exc_Poisoned); goto L_ret; }
   (*w).done = INT64_C(0);
   (*w).next = INT64_C(0);
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
+  if (err->exc) m9_mon_taint (&(*w).m9mon, err);
   m9_mon_leave (&(*w).m9mon);
   m9_pool_free (&m9frame);
   return;
@@ -2628,6 +2664,7 @@ static void Mat_InvBand (Mat_InvJob *j, m9_pool *j_pool, int64_t b, m9_state *er
     m9t1to = m9_sub_i64 (c1, INT64_C(1), err);
     if (err->exc) { m9ln = 693; goto L_ret; };
     if (col <= m9t1to) for (;;) {
+      M9_YCHK ();
       { __typeof__(i) m9t2to;
       i = col;
       m9t2to = m9_sub_i64 (n, INT64_C(1), err);
@@ -2690,6 +2727,7 @@ static void Mat_InvBand (Mat_InvJob *j, m9_pool *j_pool, int64_t b, m9_state *er
     m9t6to = m9_sub_i64 (c1, INT64_C(1), err);
     if (err->exc) { m9ln = 706; goto L_ret; };
     if (a <= m9t6to) for (;;) {
+      M9_YCHK ();
       { __typeof__(bb) m9t7to;
       bb = a;
       m9t7to = m9_sub_i64 (n, INT64_C(1), err);
@@ -2745,6 +2783,7 @@ static void Mat_InvWorker (Mat_InvJob *j, m9_pool *j_pool, m9_state *err)
   }
   for (;;) {
     if (!((b < (*j).nbands))) break;
+    M9_YCHK ();
     Mat_InvBand (j, j_pool, b, err);
     if (err->exc) { m9ln = 724; goto L_ret; };
     { __typeof__(b) m9v = Mat_Claim (&((*j).w), err);
@@ -2831,6 +2870,7 @@ static void Mat_CholBand (Mat_CholJob *j, m9_pool *j_pool, int64_t b, m9_state *
     m9t1to = m9_sub_i64 (r1, INT64_C(1), err);
     if (err->exc) { m9ln = 764; goto L_ret; };
     if (i <= m9t1to) for (;;) {
+      M9_YCHK ();
       { __typeof__(jj) m9t2to;
       jj = (*j).k0;
       m9t2to = m9_sub_i64 ((*j).k1, INT64_C(1), err);
@@ -2869,6 +2909,7 @@ static void Mat_CholBand (Mat_CholJob *j, m9_pool *j_pool, int64_t b, m9_state *
     m9t4to = m9_sub_i64 (r1, INT64_C(1), err);
     if (err->exc) { m9ln = 777; goto L_ret; };
     if (i <= m9t4to) for (;;) {
+      M9_YCHK ();
       { __typeof__(jj) m9t5to;
       jj = (*j).k1;
       m9t5to = i;
@@ -2921,6 +2962,7 @@ static void Mat_CholWorker (Mat_CholJob *j, m9_pool *j_pool, m9_state *err)
   }
   for (;;) {
     if (!((b < (*j).nbands))) break;
+    M9_YCHK ();
     Mat_CholBand (j, j_pool, b, err);
     if (err->exc) { m9ln = 794; goto L_ret; };
     { __typeof__(b) m9v = Mat_Claim (&((*j).w), err);
@@ -3005,6 +3047,7 @@ static void Mat_NormalBand (Mat_NormalJob *j, m9_pool *j_pool, int64_t b, m9_sta
   m9t1to = m9_sub_i64 ((*j).m, INT64_C(1), err);
   if (err->exc) { m9ln = 901; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__(c) m9t2to;
     c = r0;
     m9t2to = m9_sub_i64 (r1, INT64_C(1), err);
@@ -3070,6 +3113,7 @@ static void Mat_NormalWorker (Mat_NormalJob *j, m9_pool *j_pool, m9_state *err)
   }
   for (;;) {
     if (!((b < (*j).nbands))) break;
+    M9_YCHK ();
     Mat_NormalBand (j, j_pool, b, err);
     if (err->exc) { m9ln = 922; goto L_ret; };
     { __typeof__(b) m9v = Mat_Claim (&((*j).w), err);
@@ -3131,6 +3175,7 @@ static int64_t Mat_Factor (Mat_Matrix * *lu, m9_pool *lu_pool, m9_sl_I64 *perm, 
   m9t2to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) { m9ln = 977; goto L_ret; };
   if (k <= m9t2to) for (;;) {
+    M9_YCHK ();
     p = k;
     { __typeof__((*(double *) m9_gat2 (({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], k, k, err))) m9a29 = (*(double *) m9_gat2 (({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], k, k, err));
       if (err->exc) { m9ln = 979; goto L_ret; };
@@ -3364,6 +3409,7 @@ static void Mat_Reflect (Mat_Matrix * *t, m9_pool *t_pool, Mat_Matrix * h, int64
   m9t1to = m9_sub_i64 (Mat_Cols (m9a33, err), INT64_C(1), err);
   if (err->exc) { m9ln = 1114; goto L_ret; };
   if (c <= m9t1to) for (;;) {
+    M9_YCHK ();
     acc = 0.0;
     { __typeof__(i) m9t2to;
     i = j;
@@ -3510,17 +3556,20 @@ static void Mat_Orthogonalise (Mat_Matrix * *w, m9_pool *w_pool, Mat_Matrix * *v
   sweep = INT64_C(1);
   m9t1to = Mat_MaxSweeps;
   if (sweep <= m9t1to) for (;;) {
+    M9_YCHK ();
     turned = INT64_C(0);
     { __typeof__(p) m9t2to;
     p = INT64_C(0);
     m9t2to = m9_sub_i64 (n, INT64_C(2), err);
     if (err->exc) { m9ln = 1254; goto L_ret; };
     if (p <= m9t2to) for (;;) {
+      M9_YCHK ();
       { __typeof__(q) m9t3to;
       q = m9_add_i64 (p, INT64_C(1), err);
       m9t3to = m9_sub_i64 (n, INT64_C(1), err);
       if (err->exc) { m9ln = 1255; goto L_ret; };
       if (q <= m9t3to) for (;;) {
+        M9_YCHK ();
         alpha = 0.0;
         beta = 0.0;
         gamma = 0.0;
@@ -3695,6 +3744,7 @@ static void Mat_SvdTall (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * *u, m9_pool
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) { m9ln = 1316; goto L_ret; };
   if (j <= m9t1to) for (;;) {
+    M9_YCHK ();
     acc = 0.0;
     { __typeof__(i) m9t2to;
     i = INT64_C(0);
@@ -3723,6 +3773,7 @@ static void Mat_SvdTall (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * *u, m9_pool
   m9t3to = m9_sub_i64 (n, INT64_C(2), err);
   if (err->exc) { m9ln = 1323; goto L_ret; };
   if (k <= m9t3to) for (;;) {
+    M9_YCHK ();
     best = k;
     { __typeof__(j) m9t4to;
     j = m9_add_i64 (k, INT64_C(1), err);
@@ -3772,6 +3823,7 @@ static void Mat_SvdTall (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * *u, m9_pool
   m9t7to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) { m9ln = 1334; goto L_ret; };
   if (k <= m9t7to) for (;;) {
+    M9_YCHK ();
     { __typeof__(j) m9v = (*(int64_t *) m9_at (order.p, k, order.len, sizeof (int64_t), err));
       if (err->exc) { m9ln = 1335; goto L_ret; };
       j = m9v;

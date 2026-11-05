@@ -1,0 +1,7 @@
+module Col
+import Io
+var a, b : I64
+{
+  if a == 1 && b != 2 { a = 'x' }
+  Io.WriteLine ('ok')
+} Col.

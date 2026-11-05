@@ -1,10 +1,10 @@
-REVIEW Lex -- 25 procedures with a body, 16 of them functions; 7 headings in a DEFINITION
+REVIEW Lex -- 26 procedures with a body, 17 of them functions; 8 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              16
+  functions answering on every path              17
   assignments                                   103
-  arguments                                     528
-  RETURN values                                 142
+  arguments                                     531
+  RETURN values                                 144
   operands of a comparison or an operator       187
   CASE labels                                    95
   THREAD arguments                                0
@@ -23,6 +23,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   DISPOSE                                         0
   SHARED (x)                                      0
   THREAD                                          0
+  TASK                                            0
   [SHARABLE] records                              0
   module variables                                3   comOn, coms, ncom
 
@@ -43,3 +44,4 @@ COUNTED -- how much there was to check
   NEW in a named pool                             2
   calls of a STR form with a UTF twin             0
   STR subscripts, writes and LEN                  0
+  uses of a deprecated name                       0

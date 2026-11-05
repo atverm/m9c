@@ -11,13 +11,14 @@
 #include "Doc.h"
 #include "Review.h"
 #include "Lex.h"
+#include "M9f.h"
 #include "System.h"
 #include "Text.h"
 
 
 static const uint8_t M9c_StdLib_d[11] = { 47, 117, 115, 114, 47, 108, 105, 98, 47, 109, 57 };
 #define M9c_StdLib ((m9_sl_UTF8){ (uint8_t *) M9c_StdLib_d, 11 })
-static const uint8_t M9c_Version_d[6] = { 48, 46, 50, 54, 46, 50 };
+static const uint8_t M9c_Version_d[6] = { 48, 46, 50, 55, 46, 48 };
 #define M9c_Version ((m9_sl_UTF8){ (uint8_t *) M9c_Version_d, 6 })
 static const uint8_t M9c_StdInclude_d[15] = { 47, 117, 115, 114, 47, 105, 110, 99, 108, 117, 100, 101, 47, 109, 57 };
 #define M9c_StdInclude ((m9_sl_UTF8){ (uint8_t *) M9c_StdInclude_d, 15 })
@@ -27,6 +28,10 @@ static const uint8_t M9c_StdArchive_d[18] = { 47, 117, 115, 114, 47, 108, 105, 9
 #ifndef M9SL_m9_sl_m9_sl_UTF8
 #define M9SL_m9_sl_m9_sl_UTF8
 typedef struct { m9_sl_UTF8 *p; int64_t len; } m9_sl_m9_sl_UTF8;
+#endif
+#ifndef M9SL_m9_sl_M9f_Resultp
+#define M9SL_m9_sl_M9f_Resultp
+typedef struct { M9f_Result * *p; int64_t len; } m9_sl_M9f_Resultp;
 #endif
 #ifndef M9SL_m9_sl_Ast_Nodep
 #define M9SL_m9_sl_Ast_Nodep

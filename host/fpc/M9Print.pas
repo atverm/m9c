@@ -41,6 +41,17 @@ begin
     Result := '''' + s + '''';
 end;
 
+{ AttribStr is ' [NAME]', or ' [NAME ''text'']' when it carries one;
+  it mirrors Print.Attrib. }
+function AttribStr (n: TNode): string;
+begin
+  Result := '';
+  if n = nil then Exit;
+  Result := ' [' + n.a;
+  if n.b <> '' then Result := Result + ' ' + QuoteStr (n.b);
+  Result := Result + ']';
+end;
+
 function QualStr (n: TNode): string;
 begin
   Result := n.a;
@@ -292,7 +303,10 @@ end;
 function LabelStr (n: TNode): string;
 begin
   if n.kind = nkLabelPattern then
-    Result := n.a + ' (' + IdentsStr (n.kids[0]) + ')'
+  begin
+    Result := n.a + ' (' + IdentsStr (n.kids[0]) + ')';
+    if n.b <> '' then Result := n.b + '.' + Result;
+  end
   else
   begin
     Result := E (n.kids[0]);
@@ -502,8 +516,7 @@ begin
       hdr := hdr + QualStr (n.kids[2].kids[i]);
     end;
   end;
-  if n.kids[3] <> nil then
-    hdr := hdr + ' [' + n.kids[3].a + ']';
+  hdr := hdr + AttribStr (n.kids[3]);
   body := n.kids[4];
   if body = nil then
   begin
@@ -531,7 +544,10 @@ begin
         for i := 0 to High (n.kids) do
         begin
           d := n.kids[i].kids[0];
-          Result := Result + Sp (ind + 1) + n.kids[i].a + ' = ';
+          Result := Result + Sp (ind + 1) + n.kids[i].a;
+          if Length (n.kids[i].kids) > 1 then
+            Result := Result + AttribStr (n.kids[i].kids[1]);
+          Result := Result + ' = ';
           if (d <> nil) and (d.kind = nkAggregate) then
           begin
             { A CONST's aggregate prints one element to a line,

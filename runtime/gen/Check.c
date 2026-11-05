@@ -428,6 +428,7 @@ void Check_EqStrs (Check_T *t, m9_sl_UTF8 label, m9_sl_m9_sl_UTF8 got, m9_sl_m9_
     m9t2to = m9_sub_i64 ((want).len, INT64_C(1), err);
     if (err->exc) { m9ln = 354; goto L_ret; };
     if (i <= m9t2to) for (;;) {
+      M9_YCHK ();
       { __typeof__((*(m9_sl_UTF8 *) m9_at (got.p, i, got.len, sizeof (m9_sl_UTF8), err))) m9a10 = (*(m9_sl_UTF8 *) m9_at (got.p, i, got.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) { m9ln = 355; goto L_ret; };
       { __typeof__((*(m9_sl_UTF8 *) m9_at (want.p, i, want.len, sizeof (m9_sl_UTF8), err))) m9a11 = (*(m9_sl_UTF8 *) m9_at (want.p, i, want.len, sizeof (m9_sl_UTF8), err));
@@ -741,6 +742,7 @@ m9_sl_F64 Check_GoldF64s (Check_T *t, m9_sl_UTF8 path, m9_sl_UTF8 name, m9_state
   m9t3to = m9_sub_i64 ((f).len, INT64_C(1), err);
   if (err->exc) { m9ln = 549; goto L_hdl_m9t1; };
   if (i <= m9t3to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(m9_sl_UTF8 *) m9_at (f.p, i, f.len, sizeof (m9_sl_UTF8), err))) m9a29 = (*(m9_sl_UTF8 *) m9_at (f.p, i, f.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 550; goto L_hdl_m9t1; };
     { __typeof__((*(double *) m9_at (out.p, m9_sub_i64 (i, INT64_C(3), err), out.len, sizeof (double), err))) m9v = Fmt_ParseBitsUtf (m9a29, err);
@@ -814,6 +816,7 @@ m9_sl_I64 Check_GoldI64s (Check_T *t, m9_sl_UTF8 path, m9_sl_UTF8 name, m9_state
   m9t1to = m9_sub_i64 ((f).len, INT64_C(1), err);
   if (err->exc) { m9ln = 571; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(m9_sl_UTF8 *) m9_at (f.p, i, f.len, sizeof (m9_sl_UTF8), err))) m9a31 = (*(m9_sl_UTF8 *) m9_at (f.p, i, f.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 572; goto L_ret; };
     { __typeof__((*(int64_t *) m9_at (out.p, m9_sub_i64 (i, INT64_C(3), err), out.len, sizeof (int64_t), err))) m9v = Check_Int (m9a31, &(ok), err);
@@ -880,6 +883,7 @@ m9_sl_BOOL Check_GoldBools (Check_T *t, m9_sl_UTF8 path, m9_sl_UTF8 name, m9_sta
   m9t1to = m9_sub_i64 ((f).len, INT64_C(1), err);
   if (err->exc) { m9ln = 592; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(m9_sl_UTF8 *) m9_at (f.p, i, f.len, sizeof (m9_sl_UTF8), err))) m9a33 = (*(m9_sl_UTF8 *) m9_at (f.p, i, f.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 593; goto L_ret; };
     bool m9t2 = Text_EqUtf (m9a33, ((m9_sl_UTF8){ (uint8_t *) m9s26, 1 }), err);
@@ -953,6 +957,7 @@ m9_sl_m9_sl_UTF8 Check_GoldStrs (Check_T *t, m9_sl_UTF8 path, m9_sl_UTF8 name, m
   m9t1to = m9_sub_i64 ((f).len, INT64_C(1), err);
   if (err->exc) { m9ln = 615; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(m9_sl_UTF8 *) m9_at (f.p, i, f.len, sizeof (m9_sl_UTF8), err))) m9a36 = (*(m9_sl_UTF8 *) m9_at (f.p, i, f.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 618; goto L_ret; };
     bool m9t2 = Text_EqUtf (m9a36, ((m9_sl_UTF8){ (uint8_t *) m9s30, 2 }), err);
@@ -1535,6 +1540,7 @@ static m9_sl_m9_sl_UTF8 Check_GoldLine (Check_T *t, m9_pool *scratch, m9_sl_UTF8
   m9t3to = m9_sub_i64 ((lines).len, INT64_C(1), err);
   if (err->exc) { m9ln = 506; goto L_hdl_m9t1; };
   if (i <= m9t3to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(m9_sl_UTF8 *) m9_at (lines.p, i, lines.len, sizeof (m9_sl_UTF8), err))) m9a49 = (*(m9_sl_UTF8 *) m9_at (lines.p, i, lines.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 507; goto L_hdl_m9t1; };
     bool m9t4 = Text_StartsWithUtf (m9a49, name, err);

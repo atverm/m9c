@@ -1023,6 +1023,7 @@ m9_sl_m9_sl_UTF8 ZarrStore_ReadStrs (m9_pool *pool, ZarrStore_Array * *a, m9_poo
   m9t6to = m9_sub_i64 (({ __auto_type m9g = ((*a)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->meta.rank, INT64_C(1), err);
   if (err->exc) { m9ln = 915; goto L_hdl_m9t1; };
   if (i <= m9t6to) for (;;) {
+    M9_YCHK ();
     if ((i > INT64_C(0))) {
       DynStr_AppendChar (&(d), &(scratch), ({ __auto_type m9g = ((*a)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->meta.sep, err);
       if (err->exc) { m9ln = 916; goto L_hdl_m9t1; };
@@ -1058,6 +1059,7 @@ L_hdl_m9t7: ;
     m9t9to = m9_sub_i64 (n, INT64_C(1), err);
     if (err->exc) { m9ln = 925; goto L_hdl_m9t1; };
     if (i <= m9t9to) for (;;) {
+      M9_YCHK ();
       { __typeof__((*(m9_sl_UTF8 *) m9_at (out.p, i, out.len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (pool, ({ __auto_type m9g = ((*a)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->meta.fillS, err);
         if (err->exc) { m9ln = 925; goto L_hdl_m9t1; };
         (*(m9_sl_UTF8 *) m9_at (out.p, i, out.len, sizeof (m9_sl_UTF8), err)) = m9v;
@@ -1505,6 +1507,7 @@ static int64_t ZarrStore_ReadDims (Json_Node * sh, m9_arr_8_int64_t *out, m9_sta
   m9t2to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) { m9ln = 319; goto L_ret; };
   if (i <= m9t2to) for (;;) {
+    M9_YCHK ();
     { __typeof__(Json_Item (sh, i, err)) m9a16 = Json_Item (sh, i, err);
       if (err->exc) { m9ln = 320; goto L_ret; };
     { __typeof__((*(int64_t *) m9_at ((*out).v, i, INT64_C(8), sizeof (int64_t), err))) m9v = Json_AsI64 (m9a16, err);
@@ -1900,6 +1903,7 @@ static void ZarrStore_FillChunk (ZarrStore_Array * *a, m9_pool *a_pool, ZarrStor
     m9t2to = m9_sub_i64 (n, INT64_C(1), err);
     if (err->exc) { m9ln = 667; goto L_ret; };
     if (i <= m9t2to) for (;;) {
+      M9_YCHK ();
       if ((w == INT64_C(8))) {
         m9_f64_to_le (({ __auto_type m9g = ((*a)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->meta.fillF, ({ __auto_type m9t3 = ({ __auto_type m9g = ((*p)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->buf; int64_t m9t3a = m9_mul_i64 (i, INT64_C(8), err), m9t3n = INT64_C(8); int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; }), err);
         if (err->exc) { m9ln = 669; goto L_ret; };
@@ -1924,6 +1928,7 @@ static void ZarrStore_FillChunk (ZarrStore_Array * *a, m9_pool *a_pool, ZarrStor
     m9t5to = m9_sub_i64 (n, INT64_C(1), err);
     if (err->exc) { m9ln = 677; goto L_ret; };
     if (i <= m9t5to) for (;;) {
+      M9_YCHK ();
       { __typeof__(k) m9t6to;
       k = INT64_C(0);
       m9t6to = m9_sub_i64 (w, INT64_C(1), err);
@@ -2004,6 +2009,7 @@ static ZarrStore_ChunkBuf * ZarrStore_GetChunk (ZarrStore_Array * *a, m9_pool *a
   m9t5to = m9_sub_i64 (({ __auto_type m9g = ((*a)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t3; } m9g; })->meta.rank, INT64_C(1), err);
   if (err->exc) { m9ln = 708; goto L_hdl_m9t3; };
   if (i <= m9t5to) for (;;) {
+    M9_YCHK ();
     if ((i > INT64_C(0))) {
       DynStr_AppendChar (&(d), &(scratch), ({ __auto_type m9g = ((*a)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t3; } m9g; })->meta.sep, err);
       if (err->exc) { m9ln = 709; goto L_hdl_m9t3; };

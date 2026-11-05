@@ -1,8 +1,8 @@
 {
   "name": "m9-lang",
   "displayName": "M9 Language",
-  "description": "Syntax highlighting, hover documentation and completion for the M9 language (grammar kept in sync with host/fpc/M9Lex.pas; docstrings come from `m9c --doc`, never from a second scanner)",
-  "version": "0.2.0",
+  "description": "Syntax highlighting, hover documentation, completion and m9c's diagnostics for M9 and its .m9f notation (grammar kept in sync with host/fpc/M9Lex.pas; docstrings come from `m9c --doc` and diagnostics from `m9c --check`, never from a second scanner)",
+  "version": "0.3.0",
   "publisher": "atverm",
   "icon": "images/m9-icon.png",
   "license": "SEE LICENSE IN ../../LICENSE",
@@ -28,6 +28,21 @@
           "light": "./images/m9.svg",
           "dark": "./images/m9.svg"
         }
+      },
+      {
+        "id": "m9f",
+        "aliases": [
+          "M9f",
+          "m9f"
+        ],
+        "extensions": [
+          ".m9f"
+        ],
+        "configuration": "./language-configuration-m9f.json",
+        "icon": {
+          "light": "./images/m9.svg",
+          "dark": "./images/m9.svg"
+        }
       }
     ],
     "grammars": [
@@ -35,6 +50,11 @@
         "language": "m9",
         "scopeName": "source.m9",
         "path": "./syntaxes/m9.tmLanguage.json"
+      },
+      {
+        "language": "m9f",
+        "scopeName": "source.m9f",
+        "path": "./syntaxes/m9f.tmLanguage.json"
       }
     ],
     "configuration": {
@@ -60,12 +80,33 @@
           },
           "default": [],
           "description": "$M9LIBRARY for m9c --doc; <workspace>/corpus is always appended"
+        },
+        "m9.checkOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Run m9c --check on a .m9 or .m9f file when it is opened or saved, and show what it says"
         }
       }
+    },
+    "commands": [
+      {
+        "command": "m9.showOther",
+        "title": "M9: Show in the Other Notation",
+        "enablement": "editorLangId == m9f || editorLangId == m9"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "m9.showOther",
+          "when": "editorLangId == m9f || editorLangId == m9"
+        }
+      ]
     }
   },
   "main": "./extension.js",
   "activationEvents": [
-    "onLanguage:m9"
+    "onLanguage:m9",
+    "onLanguage:m9f"
   ]
 }

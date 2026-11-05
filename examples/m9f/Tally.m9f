@@ -1,0 +1,38 @@
+// Tally is a module written by hand in .m9f, for Shapes to import.
+// A definition's headings end in a semicolon of their own.  The line
+// break after the last heading comes before }, and a } does not start
+// a statement, so the rule adds none there.
+definition module Tally
+
+type
+  Counts = record {
+    small, big : I64
+    in_ : I64         // in is a keyword, so the field is in_
+  }
+
+procedure Add (var c: Counts ; n: I64) ;
+procedure Total (ro c: Counts) : I64 ;
+
+} Tally.
+
+
+implementation module Tally
+
+procedure Add (var c: Counts ; n: I64) =
+{
+  case n {
+  | 0 .. 9 : c.small = c.small + 1
+  | 10 .. 99 : c.big = c.big + 1
+  default
+    c.in_ = c.in_ + 1
+  }
+} Add
+
+// The last procedure's } Name ends in a semicolon, for the same
+// reason as the headings above.
+procedure Total (ro c: Counts) : I64 =
+{
+  return c.small + c.big + c.in_
+} Total ;
+
+} Tally.

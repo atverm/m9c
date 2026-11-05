@@ -10768,6 +10768,7 @@ bool Map_Range (Map_Scale *scale, m9_gd2_double values, double *lo, double *hi, 
   m9t3to = m9_sub_i64 ((values).n[INT64_C(0)], INT64_C(1), err);
   if (err->exc) { m9ln = 2394; goto L_hdl_m9t1; };
   if (r <= m9t3to) for (;;) {
+    M9_YCHK ();
     { __typeof__(c) m9t4to;
     c = INT64_C(0);
     m9t4to = m9_sub_i64 ((values).n[INT64_C(1)], INT64_C(1), err);
@@ -10977,15 +10978,13 @@ m9_sl_UTF8 Map_Render (Map_Spec *spec, m9_sl_F64 lons, m9_sl_F64 lats, m9_gd2_do
   m9t10to = m9_sub_i64 (Map_Levels, INT64_C(1), err);
   if (err->exc) { m9ln = 2629; goto L_ret; };
   if (k <= m9t10to) for (;;) {
-    { __typeof__(Plot_Viridis (err)) m9a3 = Plot_Viridis (err);
+    M9_YCHK ();
+    { __typeof__(((double)(k) / (double)(m9_sub_i64 (Map_Levels, INT64_C(1), err)))) m9a3 = ((double)(k) / (double)(m9_sub_i64 (Map_Levels, INT64_C(1), err)));
       if (err->exc) { m9ln = 2630; goto L_ret; };
-    { __typeof__(((double)(k) / (double)(m9_sub_i64 (Map_Levels, INT64_C(1), err)))) m9a4 = ((double)(k) / (double)(m9_sub_i64 (Map_Levels, INT64_C(1), err)));
-      if (err->exc) { m9ln = 2630; goto L_ret; };
-    { __typeof__((*(m9_sl_UTF8 *) m9_at (fills.p, k, fills.len, sizeof (m9_sl_UTF8), err))) m9v = Plot_CmapHex (m9a3, m9a4, err);
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (fills.p, k, fills.len, sizeof (m9_sl_UTF8), err))) m9v = Plot_CmapHex (((Plot_Cmap){ .tag = Plot_Cmap_Viridis }), m9a3, err);
       if (err->exc) { m9ln = 2630; goto L_ret; };
       (*(m9_sl_UTF8 *) m9_at (fills.p, k, fills.len, sizeof (m9_sl_UTF8), err)) = m9v;
       if (err->exc) { m9ln = 2630; goto L_ret; };
-    }
     }
     }
     if ((uint64_t) m9t10to - (uint64_t) k < (uint64_t) 1) break;
@@ -11149,11 +11148,13 @@ m9_sl_BYTE Map_Warp (m9_pool *pool, m9_sl_BYTE rgb, int64_t w, int64_t h, Map_Un
   m9t2to = m9_sub_i64 (outH, INT64_C(1), err);
   if (err->exc) { m9ln = 2688; goto L_ret; };
   if (r <= m9t2to) for (;;) {
+    M9_YCHK ();
     { __typeof__(c) m9t3to;
     c = INT64_C(0);
     m9t3to = m9_sub_i64 (outW, INT64_C(1), err);
     if (err->exc) { m9ln = 2689; goto L_ret; };
     if (c <= m9t3to) for (;;) {
+      M9_YCHK ();
       x = (x0 + (((((double)(c) + 0.5)) / (double)(outW)) * ((x1 - x0))));
       y = (y1_ - (((((double)(r) + 0.5)) / (double)(outH)) * ((y1_ - y0_))));
       unproj (x, y, &(lon), &(lat), err);
@@ -11487,9 +11488,9 @@ static void Map_Project (Map_Spec *spec, double lon, double lat, double *x, doub
   err->res = &m9frame;
   static const char m9pn[] = "Map.Project"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
-  { __typeof__(Map_Shift (spec, lon, err)) m9a5 = Map_Shift (spec, lon, err);
+  { __typeof__(Map_Shift (spec, lon, err)) m9a4 = Map_Shift (spec, lon, err);
     if (err->exc) { m9ln = 2082; goto L_ret; };
-  Map_ProjectRel (spec, m9a5, lat, x, y, err);
+  Map_ProjectRel (spec, m9a4, lat, x, y, err);
   if (err->exc) { m9ln = 2082; goto L_ret; };
   }
 L_ret: ;
@@ -11685,6 +11686,7 @@ static int64_t Map_Outline (Map_Spec *spec, m9_sl_F64 *xs, m9_sl_F64 *ys, m9_sta
   k = INT64_C(0);
   m9t1to = nlon;
   if (k <= m9t1to) for (;;) {
+    M9_YCHK ();
     lon = (west + ((double)(k) * step));
     Map_Edge (spec, whole, lon, (*spec).window.south, &(x), &(y), err);
     if (err->exc) { m9ln = 2163; goto L_ret; };
@@ -11704,6 +11706,7 @@ static int64_t Map_Outline (Map_Spec *spec, m9_sl_F64 *xs, m9_sl_F64 *ys, m9_sta
   k = INT64_C(1);
   m9t2to = nlat;
   if (k <= m9t2to) for (;;) {
+    M9_YCHK ();
     lat = ((*spec).window.south + ((double)(k) * step));
     Map_Edge (spec, whole, (west + span), lat, &(x), &(y), err);
     if (err->exc) { m9ln = 2170; goto L_ret; };
@@ -11723,6 +11726,7 @@ static int64_t Map_Outline (Map_Spec *spec, m9_sl_F64 *xs, m9_sl_F64 *ys, m9_sta
   k = INT64_C(1);
   m9t3to = nlon;
   if (k <= m9t3to) for (;;) {
+    M9_YCHK ();
     lon = ((west + span) - ((double)(k) * step));
     Map_Edge (spec, whole, lon, (*spec).window.north, &(x), &(y), err);
     if (err->exc) { m9ln = 2177; goto L_ret; };
@@ -11743,6 +11747,7 @@ static int64_t Map_Outline (Map_Spec *spec, m9_sl_F64 *xs, m9_sl_F64 *ys, m9_sta
   m9t4to = m9_sub_i64 (nlat, INT64_C(1), err);
   if (err->exc) { m9ln = 2182; goto L_ret; };
   if (k <= m9t4to) for (;;) {
+    M9_YCHK ();
     lat = ((*spec).window.north - ((double)(k) * step));
     Map_Edge (spec, whole, west, lat, &(x), &(y), err);
     if (err->exc) { m9ln = 2184; goto L_ret; };
@@ -11780,6 +11785,7 @@ static void Map_Esc (DynStr_DString * *d, m9_pool *d_pool, m9_sl_UTF8 t, m9_stat
   uint32_t c = 0; (void) c;
   { __typeof__(t) m9t1s = t;
   for (int64_t m9t1i = 0; m9t1i < m9t1s.len; ) { c = m9_utf_next (m9t1s, &m9t1i);
+    M9_YCHK ();
     if ((c == 38u)) {
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s23, 5 }), err);
       if (err->exc) { m9ln = 2200; goto L_ret; };
@@ -11823,9 +11829,9 @@ static void Map_Num (DynStr_DString * *d, m9_pool *d_pool, double v, m9_state *e
   if (((v > (- 0.05)) && (v < 0.05))) {
     v = 0.0;
   }
-  { __typeof__(Fmt_FixedUtf (v, INT64_C(1), err)) m9a6 = Fmt_FixedUtf (v, INT64_C(1), err);
+  { __typeof__(Fmt_FixedUtf (v, INT64_C(1), err)) m9a5 = Fmt_FixedUtf (v, INT64_C(1), err);
     if (err->exc) { m9ln = 2214; goto L_ret; };
-  DynStr_Append (d, d_pool, m9a6, err);
+  DynStr_Append (d, d_pool, m9a5, err);
   if (err->exc) { m9ln = 2214; goto L_ret; };
   }
 L_ret: ;
@@ -11862,9 +11868,9 @@ static m9_sl_UTF8 Map_Pretty (double v, m9_state *err)
     if (err->exc) { m9ln = 2226; goto L_ret; };
     goto L_ret;
   }
-  { __typeof__(Math_Log10 (a, err)) m9a7 = Math_Log10 (a, err);
+  { __typeof__(Math_Log10 (a, err)) m9a6 = Math_Log10 (a, err);
     if (err->exc) { m9ln = 2227; goto L_ret; };
-  { __typeof__(decimals) m9v = m9_sub_i64 (INT64_C(2), m9_i64_f64 ((double)(Math_Floor (m9a7, err)), err), err);
+  { __typeof__(decimals) m9v = m9_sub_i64 (INT64_C(2), m9_i64_f64 ((double)(Math_Floor (m9a6, err)), err), err);
     if (err->exc) { m9ln = 2227; goto L_ret; };
     decimals = m9v;
   }
@@ -11967,6 +11973,7 @@ static void Map_OutlinePath (DynStr_DString * *d, m9_pool *d_pool, Map_Geo *g, m
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) { m9ln = 2261; goto L_ret; };
   if (k <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__(px) m9v = (((((*(double *) m9_at (xs.p, k, xs.len, sizeof (double), err)) - (*g).x0)) / (((*g).x1 - (*g).x0))) * (*g).w);
       if (err->exc) { m9ln = 2262; goto L_ret; };
       px = m9v;
@@ -12065,19 +12072,20 @@ static void Map_Line (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) { m9ln = 2301; goto L_ret; };
   if (k <= m9t1to) for (;;) {
-    { __typeof__((*(double *) m9_at (lons.p, k, lons.len, sizeof (double), err))) m9a8 = (*(double *) m9_at (lons.p, k, lons.len, sizeof (double), err));
+    M9_YCHK ();
+    { __typeof__((*(double *) m9_at (lons.p, k, lons.len, sizeof (double), err))) m9a7 = (*(double *) m9_at (lons.p, k, lons.len, sizeof (double), err));
       if (err->exc) { m9ln = 2302; goto L_ret; };
-    { __typeof__((*(double *) m9_at (lats.p, k, lats.len, sizeof (double), err))) m9a9 = (*(double *) m9_at (lats.p, k, lats.len, sizeof (double), err));
+    { __typeof__((*(double *) m9_at (lats.p, k, lats.len, sizeof (double), err))) m9a8 = (*(double *) m9_at (lats.p, k, lats.len, sizeof (double), err));
       if (err->exc) { m9ln = 2302; goto L_ret; };
-    { __typeof__(inside) m9v = Map_Inside (&((*spec).window), m9a8, m9a9, err);
+    { __typeof__(inside) m9v = Map_Inside (&((*spec).window), m9a7, m9a8, err);
       if (err->exc) { m9ln = 2302; goto L_ret; };
       inside = m9v;
     }
     }
     }
-    { __typeof__((*(double *) m9_at (lons.p, k, lons.len, sizeof (double), err))) m9a10 = (*(double *) m9_at (lons.p, k, lons.len, sizeof (double), err));
+    { __typeof__((*(double *) m9_at (lons.p, k, lons.len, sizeof (double), err))) m9a9 = (*(double *) m9_at (lons.p, k, lons.len, sizeof (double), err));
       if (err->exc) { m9ln = 2303; goto L_ret; };
-    { __typeof__(dl) m9v = Map_Shift (spec, m9a10, err);
+    { __typeof__(dl) m9v = Map_Shift (spec, m9a9, err);
       if (err->exc) { m9ln = 2303; goto L_ret; };
       dl = m9v;
     }
@@ -12088,11 +12096,11 @@ static void Map_Line (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_
       open = false;
     }
     if ((inside || wasInside)) {
-      { __typeof__((*(double *) m9_at (lons.p, k, lons.len, sizeof (double), err))) m9a11 = (*(double *) m9_at (lons.p, k, lons.len, sizeof (double), err));
+      { __typeof__((*(double *) m9_at (lons.p, k, lons.len, sizeof (double), err))) m9a10 = (*(double *) m9_at (lons.p, k, lons.len, sizeof (double), err));
         if (err->exc) { m9ln = 2306; goto L_ret; };
-      { __typeof__((*(double *) m9_at (lats.p, k, lats.len, sizeof (double), err))) m9a12 = (*(double *) m9_at (lats.p, k, lats.len, sizeof (double), err));
+      { __typeof__((*(double *) m9_at (lats.p, k, lats.len, sizeof (double), err))) m9a11 = (*(double *) m9_at (lats.p, k, lats.len, sizeof (double), err));
         if (err->exc) { m9ln = 2306; goto L_ret; };
-      Map_Place (spec, g, m9a11, m9a12, &(px), &(py), err);
+      Map_Place (spec, g, m9a10, m9a11, &(px), &(py), err);
       if (err->exc) { m9ln = 2306; goto L_ret; };
       }
       }
@@ -12137,6 +12145,7 @@ static void Map_Coast (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map
   m9t1to = m9_sub_i64 (INT64_C(135), INT64_C(2), err);
   if (err->exc) { m9ln = 2324; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__(a) m9v = (*(int64_t *) m9_at ((*CoastStart).v, i, INT64_C(135), sizeof (int64_t), err));
       if (err->exc) { m9ln = 2325; goto L_ret; };
       a = m9v;
@@ -12221,6 +12230,7 @@ static void Map_Graticule (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec,
   lon = (- 180.0);
   for (;;) {
     if (!((lon <= 180.0))) break;
+    M9_YCHK ();
     bool m9t1 = Map_InLon (&((*spec).window), lon, err);
     if (err->exc) { m9ln = 2356; goto L_ret; };
     if (m9t1) {
@@ -12253,6 +12263,7 @@ static void Map_Graticule (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec,
   lat = ((- 90.0) + (*spec).graticule);
   for (;;) {
     if (!((lat < 90.0))) break;
+    M9_YCHK ();
     if (((lat >= (*spec).window.south) && (lat <= (*spec).window.north))) {
       { __typeof__(k) m9t3to;
       k = INT64_C(0);
@@ -12338,9 +12349,9 @@ static int64_t Map_Level (Map_Scale *scale, double lo, double hi, double v, m9_s
     t = 1.0;
   }
   err->res = m9res;
-  { __typeof__(((t * (double)(m9_sub_i64 (Map_Levels, INT64_C(1), err))) + 0.5)) m9a13 = ((t * (double)(m9_sub_i64 (Map_Levels, INT64_C(1), err))) + 0.5);
+  { __typeof__(((t * (double)(m9_sub_i64 (Map_Levels, INT64_C(1), err))) + 0.5)) m9a12 = ((t * (double)(m9_sub_i64 (Map_Levels, INT64_C(1), err))) + 0.5);
     if (err->exc) { m9ln = 2428; goto L_ret; };
-  m9ret = m9_i64_f64 ((double)(Math_Floor (m9a13, err)), err);
+  m9ret = m9_i64_f64 ((double)(Math_Floor (m9a12, err)), err);
   if (err->exc) { m9ln = 2428; goto L_ret; };
   }
   goto L_ret;
@@ -12442,9 +12453,9 @@ static void Map_Cell (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_
   if (err->exc) { m9ln = 2468; goto L_ret; };
   DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s47, 16 }), err);
   if (err->exc) { m9ln = 2469; goto L_ret; };
-  { __typeof__(Fmt_FixedUtf ((*spec).scale.alpha, INT64_C(2), err)) m9a14 = Fmt_FixedUtf ((*spec).scale.alpha, INT64_C(2), err);
+  { __typeof__(Fmt_FixedUtf ((*spec).scale.alpha, INT64_C(2), err)) m9a13 = Fmt_FixedUtf ((*spec).scale.alpha, INT64_C(2), err);
     if (err->exc) { m9ln = 2470; goto L_ret; };
-  DynStr_Append (d, d_pool, m9a14, err);
+  DynStr_Append (d, d_pool, m9a13, err);
   if (err->exc) { m9ln = 2470; goto L_ret; };
   }
   DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s48, 10 }), err);
@@ -12453,9 +12464,9 @@ static void Map_Cell (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_
   if (err->exc) { m9ln = 2472; goto L_ret; };
   DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s49, 18 }), err);
   if (err->exc) { m9ln = 2473; goto L_ret; };
-  { __typeof__(Fmt_FixedUtf ((*spec).scale.alpha, INT64_C(2), err)) m9a15 = Fmt_FixedUtf ((*spec).scale.alpha, INT64_C(2), err);
+  { __typeof__(Fmt_FixedUtf ((*spec).scale.alpha, INT64_C(2), err)) m9a14 = Fmt_FixedUtf ((*spec).scale.alpha, INT64_C(2), err);
     if (err->exc) { m9ln = 2474; goto L_ret; };
-  DynStr_Append (d, d_pool, m9a15, err);
+  DynStr_Append (d, d_pool, m9a14, err);
   if (err->exc) { m9ln = 2474; goto L_ret; };
   }
   DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s50, 24 }), err);
@@ -12465,11 +12476,12 @@ static void Map_Cell (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_
   m9t1to = m9_add_i64 (c1, INT64_C(1), err);
   if (err->exc) { m9ln = 2476; goto L_ret; };
   if (c <= m9t1to) for (;;) {
-    { __typeof__((*(double *) m9_at (lonE.p, c, lonE.len, sizeof (double), err))) m9a16 = (*(double *) m9_at (lonE.p, c, lonE.len, sizeof (double), err));
+    M9_YCHK ();
+    { __typeof__((*(double *) m9_at (lonE.p, c, lonE.len, sizeof (double), err))) m9a15 = (*(double *) m9_at (lonE.p, c, lonE.len, sizeof (double), err));
       if (err->exc) { m9ln = 2477; goto L_ret; };
-    { __typeof__((*(double *) m9_at (latE.p, r, latE.len, sizeof (double), err))) m9a17 = (*(double *) m9_at (latE.p, r, latE.len, sizeof (double), err));
+    { __typeof__((*(double *) m9_at (latE.p, r, latE.len, sizeof (double), err))) m9a16 = (*(double *) m9_at (latE.p, r, latE.len, sizeof (double), err));
       if (err->exc) { m9ln = 2477; goto L_ret; };
-    Map_Place (spec, g, m9a16, m9a17, &(px), &(py), err);
+    Map_Place (spec, g, m9a15, m9a16, &(px), &(py), err);
     if (err->exc) { m9ln = 2477; goto L_ret; };
     }
     }
@@ -12483,11 +12495,12 @@ static void Map_Cell (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_
   m9t2to = c0;
   if (err->exc) { m9ln = 2480; goto L_ret; };
   if (c >= m9t2to) for (;;) {
-    { __typeof__((*(double *) m9_at (lonE.p, c, lonE.len, sizeof (double), err))) m9a18 = (*(double *) m9_at (lonE.p, c, lonE.len, sizeof (double), err));
+    M9_YCHK ();
+    { __typeof__((*(double *) m9_at (lonE.p, c, lonE.len, sizeof (double), err))) m9a17 = (*(double *) m9_at (lonE.p, c, lonE.len, sizeof (double), err));
       if (err->exc) { m9ln = 2481; goto L_ret; };
-    { __typeof__((*(double *) m9_at (latE.p, m9_add_i64 (r, INT64_C(1), err), latE.len, sizeof (double), err))) m9a19 = (*(double *) m9_at (latE.p, m9_add_i64 (r, INT64_C(1), err), latE.len, sizeof (double), err));
+    { __typeof__((*(double *) m9_at (latE.p, m9_add_i64 (r, INT64_C(1), err), latE.len, sizeof (double), err))) m9a18 = (*(double *) m9_at (latE.p, m9_add_i64 (r, INT64_C(1), err), latE.len, sizeof (double), err));
       if (err->exc) { m9ln = 2481; goto L_ret; };
-    Map_Place (spec, g, m9a18, m9a19, &(px), &(py), err);
+    Map_Place (spec, g, m9a17, m9a18, &(px), &(py), err);
     if (err->exc) { m9ln = 2481; goto L_ret; };
     }
     }
@@ -12576,6 +12589,7 @@ static void Map_Heat (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_
   m9t1to = m9_sub_i64 ((lats).len, INT64_C(1), err);
   if (err->exc) { m9ln = 2512; goto L_ret; };
   if (r <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__(run) m9v = m9_neg_i64 (INT64_C(1), err);
       if (err->exc) { m9ln = 2513; goto L_ret; };
       run = m9v;
@@ -12586,14 +12600,15 @@ static void Map_Heat (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_
     m9t2to = m9_sub_i64 ((lons).len, INT64_C(1), err);
     if (err->exc) { m9ln = 2515; goto L_ret; };
     if (c <= m9t2to) for (;;) {
-      { __typeof__((*(double *) m9_gat2 (values.p, sizeof (double), values.n[0], values.n[1], values.s[0], values.s[1], r, c, err))) m9a20 = (*(double *) m9_gat2 (values.p, sizeof (double), values.n[0], values.n[1], values.s[0], values.s[1], r, c, err));
+      M9_YCHK ();
+      { __typeof__((*(double *) m9_gat2 (values.p, sizeof (double), values.n[0], values.n[1], values.s[0], values.s[1], r, c, err))) m9a19 = (*(double *) m9_gat2 (values.p, sizeof (double), values.n[0], values.n[1], values.s[0], values.s[1], r, c, err));
         if (err->exc) { m9ln = 2516; goto L_ret; };
-      { __typeof__(lv) m9v = Map_Level (&((*spec).scale), lo, hi, m9a20, err);
+      { __typeof__(lv) m9v = Map_Level (&((*spec).scale), lo, hi, m9a19, err);
         if (err->exc) { m9ln = 2516; goto L_ret; };
         lv = m9v;
       }
       }
-      bool m9t4 = ({ bool m9t3 = (lv >= INT64_C(0)); if (m9t3) { { __typeof__((*(double *) m9_at (lonE.p, c, lonE.len, sizeof (double), err))) m9a21 = (*(double *) m9_at (lonE.p, c, lonE.len, sizeof (double), err));   if (err->exc) { m9ln = 2517; goto L_ret; }; { __typeof__((*(double *) m9_at (lonE.p, m9_add_i64 (c, INT64_C(1), err), lonE.len, sizeof (double), err))) m9a22 = (*(double *) m9_at (lonE.p, m9_add_i64 (c, INT64_C(1), err), lonE.len, sizeof (double), err));   if (err->exc) { m9ln = 2517; goto L_ret; }; { __typeof__((*(double *) m9_at (latE.p, r, latE.len, sizeof (double), err))) m9a23 = (*(double *) m9_at (latE.p, r, latE.len, sizeof (double), err));   if (err->exc) { m9ln = 2517; goto L_ret; }; { __typeof__((*(double *) m9_at (latE.p, m9_add_i64 (r, INT64_C(1), err), latE.len, sizeof (double), err))) m9a24 = (*(double *) m9_at (latE.p, m9_add_i64 (r, INT64_C(1), err), latE.len, sizeof (double), err));   if (err->exc) { m9ln = 2517; goto L_ret; }; m9t3 = ((!Map_CellShown (spec, m9a21, m9a22, m9a23, m9a24, err))); } } } } } m9t3; });
+      bool m9t4 = ({ bool m9t3 = (lv >= INT64_C(0)); if (m9t3) { { __typeof__((*(double *) m9_at (lonE.p, c, lonE.len, sizeof (double), err))) m9a20 = (*(double *) m9_at (lonE.p, c, lonE.len, sizeof (double), err));   if (err->exc) { m9ln = 2517; goto L_ret; }; { __typeof__((*(double *) m9_at (lonE.p, m9_add_i64 (c, INT64_C(1), err), lonE.len, sizeof (double), err))) m9a21 = (*(double *) m9_at (lonE.p, m9_add_i64 (c, INT64_C(1), err), lonE.len, sizeof (double), err));   if (err->exc) { m9ln = 2517; goto L_ret; }; { __typeof__((*(double *) m9_at (latE.p, r, latE.len, sizeof (double), err))) m9a22 = (*(double *) m9_at (latE.p, r, latE.len, sizeof (double), err));   if (err->exc) { m9ln = 2517; goto L_ret; }; { __typeof__((*(double *) m9_at (latE.p, m9_add_i64 (r, INT64_C(1), err), latE.len, sizeof (double), err))) m9a23 = (*(double *) m9_at (latE.p, m9_add_i64 (r, INT64_C(1), err), latE.len, sizeof (double), err));   if (err->exc) { m9ln = 2517; goto L_ret; }; m9t3 = ((!Map_CellShown (spec, m9a20, m9a21, m9a22, m9a23, err))); } } } } } m9t3; });
       if (err->exc) { m9ln = 2517; goto L_ret; };
       if (m9t4) {
         { __typeof__(lv) m9v = m9_neg_i64 (INT64_C(1), err);
@@ -12603,11 +12618,11 @@ static void Map_Heat (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_
       }
       if ((lv != run)) {
         if ((run >= INT64_C(0))) {
-          { __typeof__(m9_sub_i64 (c, INT64_C(1), err)) m9a25 = m9_sub_i64 (c, INT64_C(1), err);
+          { __typeof__(m9_sub_i64 (c, INT64_C(1), err)) m9a24 = m9_sub_i64 (c, INT64_C(1), err);
             if (err->exc) { m9ln = 2521; goto L_ret; };
-          { __typeof__((*(m9_sl_UTF8 *) m9_at (fills.p, run, fills.len, sizeof (m9_sl_UTF8), err))) m9a26 = (*(m9_sl_UTF8 *) m9_at (fills.p, run, fills.len, sizeof (m9_sl_UTF8), err));
+          { __typeof__((*(m9_sl_UTF8 *) m9_at (fills.p, run, fills.len, sizeof (m9_sl_UTF8), err))) m9a25 = (*(m9_sl_UTF8 *) m9_at (fills.p, run, fills.len, sizeof (m9_sl_UTF8), err));
             if (err->exc) { m9ln = 2521; goto L_ret; };
-          Map_Cell (d, d_pool, spec, g, lonE, latE, r, c0, m9a25, m9a26, err);
+          Map_Cell (d, d_pool, spec, g, lonE, latE, r, c0, m9a24, m9a25, err);
           if (err->exc) { m9ln = 2521; goto L_ret; };
           }
           }
@@ -12619,11 +12634,11 @@ static void Map_Heat (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_
       c += 1;
     } }
     if ((run >= INT64_C(0))) {
-      { __typeof__(m9_sub_i64 ((lons).len, INT64_C(1), err)) m9a27 = m9_sub_i64 ((lons).len, INT64_C(1), err);
+      { __typeof__(m9_sub_i64 ((lons).len, INT64_C(1), err)) m9a26 = m9_sub_i64 ((lons).len, INT64_C(1), err);
         if (err->exc) { m9ln = 2526; goto L_ret; };
-      { __typeof__((*(m9_sl_UTF8 *) m9_at (fills.p, run, fills.len, sizeof (m9_sl_UTF8), err))) m9a28 = (*(m9_sl_UTF8 *) m9_at (fills.p, run, fills.len, sizeof (m9_sl_UTF8), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (fills.p, run, fills.len, sizeof (m9_sl_UTF8), err))) m9a27 = (*(m9_sl_UTF8 *) m9_at (fills.p, run, fills.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) { m9ln = 2526; goto L_ret; };
-      Map_Cell (d, d_pool, spec, g, lonE, latE, r, c0, m9a27, m9a28, err);
+      Map_Cell (d, d_pool, spec, g, lonE, latE, r, c0, m9a26, m9a27, err);
       if (err->exc) { m9ln = 2526; goto L_ret; };
       }
       }
@@ -12661,9 +12676,10 @@ static void Map_Legend (DynStr_DString * *d, m9_pool *d_pool, Map_Geo *g, double
   m9t1to = m9_sub_i64 (Map_Levels, INT64_C(1), err);
   if (err->exc) { m9ln = 2543; goto L_ret; };
   if (k <= m9t1to) for (;;) {
-    { __typeof__((*(m9_sl_UTF8 *) m9_at (fills.p, k, fills.len, sizeof (m9_sl_UTF8), err))) m9a29 = (*(m9_sl_UTF8 *) m9_at (fills.p, k, fills.len, sizeof (m9_sl_UTF8), err));
+    M9_YCHK ();
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (fills.p, k, fills.len, sizeof (m9_sl_UTF8), err))) m9a28 = (*(m9_sl_UTF8 *) m9_at (fills.p, k, fills.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 2544; goto L_ret; };
-    Map_Rect (d, d_pool, (x + ((double)(k) * w)), y, (w + 0.3), 7.0, m9a29, err);
+    Map_Rect (d, d_pool, (x + ((double)(k) * w)), y, (w + 0.3), 7.0, m9a28, err);
     if (err->exc) { m9ln = 2544; goto L_ret; };
     }
     if ((uint64_t) m9t1to - (uint64_t) k < (uint64_t) 1) break;
@@ -12679,9 +12695,9 @@ static void Map_Legend (DynStr_DString * *d, m9_pool *d_pool, Map_Geo *g, double
   if (err->exc) { m9ln = 2547; goto L_ret; };
   DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s58, 28 }), err);
   if (err->exc) { m9ln = 2548; goto L_ret; };
-  { __typeof__(Map_Pretty (lo, err)) m9a30 = Map_Pretty (lo, err);
+  { __typeof__(Map_Pretty (lo, err)) m9a29 = Map_Pretty (lo, err);
     if (err->exc) { m9ln = 2549; goto L_ret; };
-  DynStr_Append (d, d_pool, m9a30, err);
+  DynStr_Append (d, d_pool, m9a29, err);
   if (err->exc) { m9ln = 2549; goto L_ret; };
   }
   DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s59, 16 }), err);
@@ -12694,9 +12710,9 @@ static void Map_Legend (DynStr_DString * *d, m9_pool *d_pool, Map_Geo *g, double
   if (err->exc) { m9ln = 2551; goto L_ret; };
   DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s61, 46 }), err);
   if (err->exc) { m9ln = 2552; goto L_ret; };
-  { __typeof__(Map_Pretty (hi, err)) m9a31 = Map_Pretty (hi, err);
+  { __typeof__(Map_Pretty (hi, err)) m9a30 = Map_Pretty (hi, err);
     if (err->exc) { m9ln = 2553; goto L_ret; };
-  DynStr_Append (d, d_pool, m9a31, err);
+  DynStr_Append (d, d_pool, m9a30, err);
   if (err->exc) { m9ln = 2553; goto L_ret; };
   }
   DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s62, 7 }), err);
@@ -12725,18 +12741,19 @@ static void Map_Markers (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, M
   m9t1to = m9_sub_i64 ((markers).len, INT64_C(1), err);
   if (err->exc) { m9ln = 2564; goto L_ret; };
   if (i <= m9t1to) for (;;) {
-    { __typeof__((*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).lon) m9a32 = (*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).lon;
+    M9_YCHK ();
+    { __typeof__((*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).lon) m9a31 = (*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).lon;
       if (err->exc) { m9ln = 2565; goto L_ret; };
-    { __typeof__((*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).lat) m9a33 = (*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).lat;
+    { __typeof__((*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).lat) m9a32 = (*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).lat;
       if (err->exc) { m9ln = 2565; goto L_ret; };
-    bool m9t2 = Map_Inside (&((*spec).window), m9a32, m9a33, err);
+    bool m9t2 = Map_Inside (&((*spec).window), m9a31, m9a32, err);
     if (err->exc) { m9ln = 2565; goto L_ret; };
     if (m9t2) {
-      { __typeof__((*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).lon) m9a34 = (*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).lon;
+      { __typeof__((*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).lon) m9a33 = (*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).lon;
         if (err->exc) { m9ln = 2566; goto L_ret; };
-      { __typeof__((*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).lat) m9a35 = (*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).lat;
+      { __typeof__((*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).lat) m9a34 = (*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).lat;
         if (err->exc) { m9ln = 2566; goto L_ret; };
-      Map_Place (spec, g, m9a34, m9a35, &(px), &(py), err);
+      Map_Place (spec, g, m9a33, m9a34, &(px), &(py), err);
       if (err->exc) { m9ln = 2566; goto L_ret; };
       }
       }
@@ -12750,14 +12767,14 @@ static void Map_Markers (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, M
       if (err->exc) { m9ln = 2568; goto L_ret; };
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s65, 14 }), err);
       if (err->exc) { m9ln = 2569; goto L_ret; };
-      { __typeof__((*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).colour) m9a36 = (*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).colour;
+      { __typeof__((*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).colour) m9a35 = (*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).colour;
         if (err->exc) { m9ln = 2570; goto L_ret; };
-      bool m9t3 = (Text_BLen (m9a36, err) > INT64_C(0));
+      bool m9t3 = (Text_BLen (m9a35, err) > INT64_C(0));
       if (err->exc) { m9ln = 2570; goto L_ret; };
       if (m9t3) {
-        { __typeof__((*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).colour) m9a37 = (*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).colour;
+        { __typeof__((*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).colour) m9a36 = (*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).colour;
           if (err->exc) { m9ln = 2570; goto L_ret; };
-        Map_Esc (d, d_pool, m9a37, err);
+        Map_Esc (d, d_pool, m9a36, err);
         if (err->exc) { m9ln = 2570; goto L_ret; };
         }
       } else {
@@ -12766,16 +12783,16 @@ static void Map_Markers (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, M
       } }
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s67, 42 }), err);
       if (err->exc) { m9ln = 2572; goto L_ret; };
-      { __typeof__((*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).label) m9a38 = (*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).label;
+      { __typeof__((*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).label) m9a37 = (*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).label;
         if (err->exc) { m9ln = 2573; goto L_ret; };
-      Map_Esc (d, d_pool, m9a38, err);
+      Map_Esc (d, d_pool, m9a37, err);
       if (err->exc) { m9ln = 2573; goto L_ret; };
       }
       DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s68, 17 }), err);
       if (err->exc) { m9ln = 2574; goto L_ret; };
-      { __typeof__((*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).label) m9a39 = (*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).label;
+      { __typeof__((*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).label) m9a38 = (*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).label;
         if (err->exc) { m9ln = 2575; goto L_ret; };
-      bool m9t4 = (Text_BLen (m9a39, err) > INT64_C(0));
+      bool m9t4 = (Text_BLen (m9a38, err) > INT64_C(0));
       if (err->exc) { m9ln = 2575; goto L_ret; };
       if (m9t4) {
         DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s69, 9 }), err);
@@ -12788,9 +12805,9 @@ static void Map_Markers (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, M
         if (err->exc) { m9ln = 2577; goto L_ret; };
         DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s71, 123 }), err);
         if (err->exc) { m9ln = 2578; goto L_ret; };
-        { __typeof__((*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).label) m9a40 = (*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).label;
+        { __typeof__((*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).label) m9a39 = (*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).label;
           if (err->exc) { m9ln = 2579; goto L_ret; };
-        Map_Esc (d, d_pool, m9a40, err);
+        Map_Esc (d, d_pool, m9a39, err);
         if (err->exc) { m9ln = 2579; goto L_ret; };
         }
         DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s72, 7 }), err);

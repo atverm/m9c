@@ -1,4 +1,4 @@
-(* EXPECT: a procedure takes the attribute [PURE] or, in an UNSAFE implementation, [FRESH] (par 3.2, par 7), not [PUER] *)
+(* EXPECT: a procedure takes the attribute [PURE], [RESET] (bound to a monitor), [DEPRECATED 'text'] (in a definition) or, in an UNSAFE implementation, [FRESH] (par 3.2, par 3.9, par 6, par 7), not [PUER] *)
 MODULE m ;
 (* A procedure's attribute was read where it was known and ignored where
    it was not.  `[PUER]' compiled as no attribute at all, and the purity

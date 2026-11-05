@@ -1749,6 +1749,7 @@ static m9_sl_Arrays_Acc Arrays_Along (m9_gd2_double g, int64_t axis, m9_state *e
     m9t1to = m9_sub_i64 ((g).n[INT64_C(0)], INT64_C(1), err);
     if (err->exc) { m9ln = 565; goto L_ret; };
     if (r <= m9t1to) for (;;) {
+      M9_YCHK ();
       { __typeof__(c) m9t2to;
       c = INT64_C(0);
       m9t2to = m9_sub_i64 ((g).n[INT64_C(1)], INT64_C(1), err);
@@ -1776,6 +1777,7 @@ static m9_sl_Arrays_Acc Arrays_Along (m9_gd2_double g, int64_t axis, m9_state *e
       m9t3to = m9_sub_i64 ((g).n[INT64_C(0)], INT64_C(1), err);
       if (err->exc) { m9ln = 570; goto L_ret; };
       if (r <= m9t3to) for (;;) {
+        M9_YCHK ();
         { __typeof__(c) m9t4to;
         c = INT64_C(0);
         m9t4to = m9_sub_i64 ((g).n[INT64_C(1)], INT64_C(1), err);
@@ -1831,6 +1833,7 @@ static Arrays_Acc Arrays_Whole (m9_gd2_double g, m9_state *err)
   m9t1to = m9_sub_i64 ((g).n[INT64_C(0)], INT64_C(1), err);
   if (err->exc) { m9ln = 654; goto L_ret; };
   if (r <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__(c) m9t2to;
     c = INT64_C(0);
     m9t2to = m9_sub_i64 ((g).n[INT64_C(1)], INT64_C(1), err);

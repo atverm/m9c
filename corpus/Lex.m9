@@ -71,6 +71,11 @@ PROCEDURE KindName (k: I64) : STR ;
   (* KindName answers the FPC oracle's names, for dumps and
      diagnostics. *)
 
+PROCEDURE IsKeyword (RO w: STR) : BOOL ;
+  (* IsKeyword answers whether w spells a keyword, in capitals.  M9f
+     asks it to reserve each keyword's lower-case .m9f form, so a
+     keyword appended to the table is reserved there too. *)
+
 (* ---- comments, BESIDE the token stream ----
 
    Comments are not tokens and never will be: making one a token
@@ -334,6 +339,15 @@ BEGIN
   ELSE RETURN '?'
   END
 END KindName ;
+
+PROCEDURE IsKeyword (RO w: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  FOR i := KwFirst TO KwLast DO
+    IF Text.Eq (w, KwName (i)) THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END IsKeyword ;
 
 (* At answers the character the byte at i of u is, for an ASCII run
    (digits, names): 0C for a byte past ASCII, which no such run

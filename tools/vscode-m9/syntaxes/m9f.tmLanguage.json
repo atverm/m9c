@@ -1,0 +1,134 @@
+{
+  "scopeName": "source.m9f",
+  "name": "M9f",
+  "fileTypes": [
+    "m9f"
+  ],
+  "patterns": [
+    {
+      "name": "comment.line.shebang.m9f",
+      "match": "\\A#!.*$"
+    },
+    {
+      "include": "#comment"
+    },
+    {
+      "name": "comment.line.double-slash.m9f",
+      "match": "//.*$"
+    },
+    {
+      "name": "comment.block.m9f",
+      "begin": "/\\*",
+      "end": "\\*/"
+    },
+    {
+      "name": "string.quoted.m9f",
+      "match": "'[^']*'|\"[^\"]*\""
+    },
+    {
+      "name": "storage.modifier.attribute.m9f",
+      "match": "\\[\\s*(READONLY|SERIAL|REENTRANT|SHARABLE)\\s*\\]"
+    },
+    {
+      "match": "\\b(procedure)\\s+([A-Za-z][A-Za-z0-9_]*)",
+      "captures": {
+        "1": {
+          "name": "keyword.declaration.m9f"
+        },
+        "2": {
+          "name": "entity.name.function.m9f"
+        }
+      }
+    },
+    {
+      "match": "\\b(module)\\s+([A-Za-z][A-Za-z0-9_]*)",
+      "captures": {
+        "1": {
+          "name": "keyword.declaration.m9f"
+        },
+        "2": {
+          "name": "entity.name.namespace.m9f"
+        }
+      }
+    },
+    {
+      "match": "(\\})\\s+(?!(?:else|elsif)\\b)([A-Za-z][A-Za-z0-9_]*)\\b(?!\\s*[(\\[])",
+      "captures": {
+        "1": {
+          "name": "punctuation.section.block.end.m9f"
+        },
+        "2": {
+          "name": "entity.name.function.m9f"
+        }
+      }
+    },
+    {
+      "name": "keyword.control.m9f",
+      "match": "\\b(if|elsif|else|case|default|of|while|loop|exit|for|to|by|return|raise|except|finally|wait|signal|transfer)\\b"
+    },
+    {
+      "name": "keyword.declaration.m9f",
+      "match": "\\b(module|definition|implementation|import|from|procedure|type|const|var|own|ro|kept|record|monitor|array|slice|grid|ptr|opt|shared|pool|raises|exception|stateful|unsafe|new|dispose|thread|task|some|link)\\b"
+    },
+    {
+      "name": "keyword.operator.word.m9f",
+      "match": "\\b(div|in|is)\\b"
+    },
+    {
+      "name": "constant.language.m9f",
+      "match": "\\b(true|false|none|ALL|HEAP)\\b"
+    },
+    {
+      "name": "storage.type.m9f",
+      "match": "\\b(I8|I16|I32|I64|U8|U16|U32|U64|F32|F64|BYTE|BOOL|CHAR|STR|UTF)\\b"
+    },
+    {
+      "name": "support.type.foreign.m9f",
+      "match": "\\bC\\.[A-Za-z][A-Za-z0-9]*\\b"
+    },
+    {
+      "name": "constant.numeric.real.m9f",
+      "match": "\\b[0-9]+\\.[0-9]+([eE][+-]?[0-9]+)?\\b"
+    },
+    {
+      "name": "constant.character.m9f",
+      "match": "\\b[0-9][0-9A-Fa-f]*C\\b"
+    },
+    {
+      "name": "constant.numeric.hex.m9f",
+      "match": "\\b[0-9][0-9A-Fa-f]*H\\b"
+    },
+    {
+      "name": "constant.numeric.integer.m9f",
+      "match": "\\b[0-9]+\\b"
+    },
+    {
+      "name": "punctuation.section.block.m9f",
+      "match": "[{}]"
+    },
+    {
+      "name": "keyword.operator.logical.m9f",
+      "match": "&&|\\|\\||!(?!=)"
+    },
+    {
+      "name": "keyword.operator.m9f",
+      "match": "==|!=|:=|\\.\\.|\\+%|-%|\\*%|<=|>=|[=<>+*/%^-]|\\|"
+    },
+    {
+      "name": "punctuation.separator.continuation.m9f",
+      "match": "\\\\$"
+    }
+  ],
+  "repository": {
+    "comment": {
+      "name": "comment.block.m9f",
+      "begin": "\\(\\*",
+      "end": "\\*\\)",
+      "patterns": [
+        {
+          "include": "#comment"
+        }
+      ]
+    }
+  }
+}

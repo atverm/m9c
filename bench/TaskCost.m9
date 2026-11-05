@@ -13,6 +13,10 @@ MODULE TaskCost ;
      TaskCost idle N       N tasks parked in WAIT on one monitor, then
                            released; the runner reads the peak RSS
                            around it.
+     TaskCost chan N       N round trips of a value between the module
+                           body and one TASK, through two Chan.Ints of
+                           room 1: Go's ping-pong over unbuffered
+                           channels (stage 4).
 
    Stage 1 runs every task on the thread that starts it, here the main
    one.  The module body is itself a task: its WAIT lets the others
@@ -22,6 +26,7 @@ IMPORT Io ;
 IMPORT Fmt ;
 IMPORT Text ;
 IMPORT Time ;
+IMPORT Chan ;
 
 TYPE
   Count = MONITOR RECORD
@@ -41,6 +46,7 @@ TYPE
     c : Count ;
     g : Gate ;
     b : Ball ;
+    ping, pong : Chan.Ints ;     (* chan: the body sends on ping *)
     rounds : I64 ;               (* set before any worker starts *)
   END [SHARABLE] ;
 
@@ -104,6 +110,18 @@ BEGIN
   Finish (j.c)
 END Pong ;
 
+PROCEDURE ChanPong (VAR j: Job) =
+VAR v : I64 ;
+BEGIN
+  v := 0 ;
+  BEGIN
+    WHILE Chan.Receive (j.ping, v) DO Chan.Send (j.pong, v + 1) END
+  EXCEPT
+  | Chan.Closed :
+  END ;
+  Finish (j.c)
+END ChanPong ;
+
 PROCEDURE Report (RO mode: STR ; n: I64 ; secs: F64 ; RO unit: STR) RAISES ValueRange =
 BEGIN
   Io.WriteLine (mode + ' n=' + Fmt.I64Str (n) + ' total_s=' + Fmt.Short (secs)
@@ -114,12 +132,12 @@ VAR
   pool : POOL ;
   j : PTR Job ;
   mode : STR ;
-  n, i : I64 ;
+  n, i, v : I64 ;
   t0, t1, t2 : Time.Instant ;
 
 BEGIN
   IF Io.ArgCount () < 3 THEN
-    Io.ErrLine ('usage: TaskCost create|burst|pingpong|idle N') ;
+    Io.ErrLine ('usage: TaskCost create|burst|pingpong|idle|chan N') ;
     Io.Halt (2)
   END ;
   mode := Io.Arg (pool, 1) ;
@@ -150,6 +168,28 @@ BEGIN
     t1 := Time.Now () ;
     AwaitCount (j.c, 1) ;
     Report ('pingpong', n, Time.Elapsed (t0, t1), 'per round trip')
+  ELSIF Text.Eq (mode, 'chan') THEN
+    Chan.SetCap (j.ping, 1) ;
+    Chan.SetCap (j.pong, 1) ;
+    TASK (ChanPong, j) ;
+    t0 := Time.Now () ;
+    v := 0 ;
+    BEGIN
+      FOR i := 1 TO n DO
+        Chan.Send (j.ping, v) ;
+        IF NOT Chan.Receive (j.pong, v) THEN Io.ErrLine ('chan: pong closed') END
+      END
+    EXCEPT
+    | Chan.Closed : Io.ErrLine ('chan: ping closed')
+    END ;
+    t1 := Time.Now () ;
+    Chan.Close (j.ping) ;
+    AwaitCount (j.c, 1) ;
+    IF v # n THEN
+      Io.ErrLine ('chan: the value came back as ' + Fmt.I64Str (v)) ;
+      Io.Halt (1)
+    END ;
+    Report ('chan', n, Time.Elapsed (t0, t1), 'per round trip')
   ELSIF Text.Eq (mode, 'idle') THEN
     t0 := Time.Now () ;
     FOR i := 1 TO n DO TASK (Idle, j) END ;

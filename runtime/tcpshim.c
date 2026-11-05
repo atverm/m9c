@@ -68,6 +68,64 @@ int accept4 (int fd, struct sockaddr *addr, socklen_t *len, int flags);
 #include <limits.h>
 #include <errno.h>
 
+#ifndef _WIN32
+/* A TASK WAITS FOR ITS SOCKET IN THE POLLER (stage 3 of
+   docs/task-plan.md).  Where a THREAD blocks in poll, recv or send, a
+   task parks, and its carrier runs the other tasks.  These two come
+   from m9rt.c, which is in every link.  A THREAD takes the code that
+   was here before, unchanged. */
+int m9_in_task (void);
+int m9_task_wait_fd (int fd, int write, int64_t ms);
+
+/* rcv_ms answers the socket's SO_RCVTIMEO in ms, or -1 for none.  It
+   is read on the slow path only, when a task's read would wait. */
+static int64_t rcv_ms (int fd)
+{
+  struct timeval tv;
+  socklen_t l = sizeof tv;
+  if (getsockopt (fd, SOL_SOCKET, SO_RCVTIMEO, &tv, &l) != 0) return -1;
+  if (tv.tv_sec == 0 && tv.tv_usec == 0) return -1;
+  return (int64_t) tv.tv_sec * 1000 + tv.tv_usec / 1000;
+}
+
+/* errno IS A THREAD-LOCAL TOO.  A task that parks may resume on
+   another carrier, and the compiler takes errno's address for a
+   constant within a function (glibc declares __errno_location
+   const).  A read of errno after a park then read the old carrier's,
+   and a timeout came back as ENOENT about one run in three (ct121,
+   2026-11-02).  So on a task's path errno is read and set only inside
+   these calls, which are never inlined. */
+#if defined (__clang__)
+#define M9_NOINL __attribute__ ((noinline))
+#else
+#define M9_NOINL __attribute__ ((noinline, noipa))
+#endif
+
+M9_NOINL static ssize_t try_io (int fd, void *buf, size_t n, int w, int *e)
+{
+  ssize_t r = w ? send (fd, buf, n, MSG_DONTWAIT) : recv (fd, buf, n, MSG_DONTWAIT);
+  *e = r < 0 ? errno : 0;
+  return r;
+}
+
+M9_NOINL static int try_accept (int fd, int *e)
+{
+  int s2 = m9_accept (fd);
+  if (s2 >= 0) { m9_ce (s2); *e = 0; } else *e = errno;
+  return s2;
+}
+
+M9_NOINL static void set_errno (int e) { errno = e; }
+
+/* A task's listener is non-blocking: two acceptors woken for one
+   client must not hold a carrier in accept. */
+static void nonblock (int fd)
+{
+  int f = fcntl (fd, F_GETFL);
+  if (f >= 0 && !(f & O_NONBLOCK)) fcntl (fd, F_SETFL, f | O_NONBLOCK);
+}
+#endif
+
 #ifdef _WIN32
 typedef SOCKET sock_t;
 #define BAD_SOCK INVALID_SOCKET
@@ -254,6 +312,19 @@ int tcp_accept_wait (int fd, int64_t ms)
 #else
   struct pollfd p;
   int r;
+  if (m9_in_task ()) {
+    nonblock (fd);
+    for (;;) {
+      int s2, e;
+      r = m9_task_wait_fd (fd, 0, ms);
+      if (r == 0) return -2;
+      if (r < 0) break;                  /* the poller refused it: poll below */
+      s2 = try_accept (fd, &e);
+      if (s2 >= 0) return s2;
+      if (e == EAGAIN || e == EWOULDBLOCK || e == EINTR || e == ECONNABORTED) continue;
+      return tcp_accept (fd);            /* the rest as a thread's accept */
+    }
+  }
   p.fd = fd;
   p.events = POLLIN;
   p.revents = 0;
@@ -284,6 +355,10 @@ int tcp_readable (int fd, int64_t ms)
   return WSAPoll (&p, 1, (INT) m9_poll_ms (ms)) > 0 ? 1 : 0;
 #else
   struct pollfd p;
+  if (m9_in_task ()) {
+    int r = m9_task_wait_fd (fd, 0, ms);
+    if (r >= 0) return r;
+  }
   p.fd = fd;
   p.events = POLLIN;
   p.revents = 0;
@@ -321,8 +396,16 @@ int tcp_accept (int fd)
       /* Linux additionally reports a peer's network errors through
          accept (its man page lists them).  The three that POSIX does
          not name are guarded, so the file still compiles elsewhere. */
-      if (e == EINTR || e == ECONNABORTED || e == EAGAIN ||
-          e == EWOULDBLOCK || e == ENETDOWN || e == ENOPROTOOPT ||
+      if (e == EAGAIN || e == EWOULDBLOCK) {
+        /* A listener a task made non-blocking: wait, not spin. */
+        struct pollfd p;
+        p.fd = fd;
+        p.events = POLLIN;
+        p.revents = 0;
+        poll (&p, 1, -1);
+        continue;
+      }
+      if (e == EINTR || e == ECONNABORTED || e == ENETDOWN || e == ENOPROTOOPT ||
           e == EHOSTUNREACH || e == EOPNOTSUPP || e == ENETUNREACH
 #ifdef EPROTO
           || e == EPROTO
@@ -365,6 +448,25 @@ int tcp_connect (const char *host, int port)
     fd = socket (ai->ai_family, ai->ai_socktype | M9_SOCK_CE, ai->ai_protocol);
     if (fd == BAD_SOCK) continue;
     m9_ce (fd);
+#ifndef _WIN32
+    /* A task connects without blocking, and parks until the socket
+       is writable.  The socket goes back to blocking after: read and
+       write choose per call. */
+    if (m9_in_task ()) {
+      int f = fcntl (fd, F_GETFL), err = 0;
+      socklen_t l = sizeof err;
+      fcntl (fd, F_SETFL, f | O_NONBLOCK);
+      if (connect (fd, ai->ai_addr, (socklen_t) ai->ai_addrlen) == 0
+          || (errno == EINPROGRESS && m9_task_wait_fd (fd, 1, -1) == 1
+              && getsockopt (fd, SOL_SOCKET, SO_ERROR, &err, &l) == 0 && err == 0)) {
+        fcntl (fd, F_SETFL, f);
+        break;
+      }
+      sock_close (fd);
+      fd = BAD_SOCK;
+      continue;
+    }
+#endif
     if (connect (fd, ai->ai_addr, (socklen_t) ai->ai_addrlen) == 0) break;
     sock_close (fd);
     fd = BAD_SOCK;
@@ -379,6 +481,20 @@ int64_t tcp_read (int fd, void *buf, size_t n)
   if (n > (size_t) INT_MAX) n = (size_t) INT_MAX;
   return recv (sock_of (fd), (char *) buf, (int) n, 0);   /* -1 on error */
 #else
+  if (m9_in_task ()) {
+    for (;;) {
+      int e;
+      ssize_t r = try_io (fd, buf, n, 0, &e);
+      if (r >= 0) return (int64_t) r;
+      if (e == EINTR) continue;
+      if (e != EAGAIN && e != EWOULDBLOCK) { set_errno (e); return -1; }
+      {
+        int w = m9_task_wait_fd (fd, 0, rcv_ms (fd));
+        if (w == 0) { set_errno (EAGAIN); return -1; }    /* SO_RCVTIMEO, as a thread sees it */
+        if (w < 0) return (int64_t) read (fd, buf, n);
+      }
+    }
+  }
   return (int64_t) read (fd, buf, n);
 #endif
 }
@@ -392,6 +508,16 @@ int64_t tcp_write (int fd, const void *buf, size_t n)
   if (n > (size_t) INT_MAX) n = (size_t) INT_MAX;
   return send (sock_of (fd), (const char *) buf, (int) n, 0);
 #else
+  if (m9_in_task ()) {
+    for (;;) {
+      int e;
+      ssize_t r = try_io (fd, (void *) buf, n, 1, &e);
+      if (r >= 0) return (int64_t) r;
+      if (e == EINTR) continue;
+      if (e != EAGAIN && e != EWOULDBLOCK) { set_errno (e); return -1; }
+      if (m9_task_wait_fd (fd, 1, -1) < 0) return (int64_t) write (fd, buf, n);
+    }
+  }
   return (int64_t) write (fd, buf, n);
 #endif
 }

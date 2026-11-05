@@ -1,0 +1,16 @@
+(* EXPECT: only [DEPRECATED] carries a text; [PURE] takes none *)
+MODULE m ;
+(* An attribute may carry a text since 2026-11-05, for [DEPRECATED]
+   (par 3.9).  Every other attribute is a bare name, and a text on
+   one would be read by nothing.  The legal form comes first: Id is
+   [PURE] with no text. *)
+PROCEDURE Id (n: I64) : I64 [PURE] =
+BEGIN
+  RETURN n
+END Id ;
+PROCEDURE Same (n: I64) : I64 [PURE 'it writes nothing'] =
+BEGIN
+  RETURN n
+END Same ;
+BEGIN
+END m.

@@ -1,0 +1,145 @@
+MODULE Poison ;
+
+(* A MONITOR A BUG LEFT IS POISONED (stage 5 of docs/task-plan.md; Alex,
+   2026-11-02: Poisoned is unchecked).
+
+   Bad moves money between two accounts and fails half way, with an
+   IndexError, after the first account is already debited.  The
+   caller catches it.  The next call into that monitor must raise
+   Poisoned, so nobody reads the half-moved money.  Refuse raises a
+   checked exception on purpose; its monitor must stay usable.  And a
+   task that crashes inside a monitor, and catches the crash as a
+   supervised child will, leaves the monitor poisoned for the module
+   body.  Rebuild, marked [RESET], is the one call that enters a
+   poisoned monitor: it finds every field zero, sets the bank up again,
+   and its normal return cures the monitor.  It prints
+
+     bug: Poisoned
+     reset: still usable, balance 250
+     checked: still usable, balance 100
+     task: Poisoned *)
+
+IMPORT Io ;
+IMPORT Fmt ;
+
+EXCEPTION
+  Refused ;
+
+TYPE
+  Bank = MONITOR RECORD
+    acct : ARRAY 2 OF I64 ;
+    balance : I64 ;
+  END ;
+
+  Job = RECORD
+    b : Bank ;
+    crashed : BOOL ;
+  END [SHARABLE] ;
+
+  Done = MONITOR RECORD
+    n : I64 ;
+  END ;
+
+VAR
+  d : Done ;
+
+PROCEDURE Fill (VAR b: Bank) =
+BEGIN
+  b.acct[0] := 100 ;
+  b.acct[1] := 0 ;
+  b.balance := 100
+EXCEPT
+| IndexError :
+END Fill ;
+
+PROCEDURE Bad (VAR b: Bank ; to: I64) =
+  (* Bad debits account 0, then credits account to, which is out of
+     range: the money is half moved when the IndexError leaves. *)
+BEGIN
+  b.acct[0] := b.acct[0] - 10 ;
+  b.acct[to] := b.acct[to] + 10
+END Bad ;
+
+(* Rebuild starts from zero: the balance it adds to is 0, not the
+   100 the bank held. *)
+PROCEDURE Rebuild (VAR b: Bank) [RESET] =
+BEGIN
+  b.acct[0] := 250 ;
+  b.balance := b.balance + 250
+EXCEPT
+| IndexError :
+END Rebuild ;
+
+PROCEDURE Refuse (VAR b: Bank) RAISES Refused =
+BEGIN
+  RAISE Refused
+END Refuse ;
+
+PROCEDURE Total (VAR b: Bank) : I64 =
+BEGIN
+  RETURN b.balance
+END Total ;
+
+PROCEDURE Finish (VAR g: Done) =
+BEGIN
+  g.n := g.n + 1 ;
+  SIGNAL (g)
+END Finish ;
+
+PROCEDURE AwaitOne (VAR g: Done) =
+BEGIN
+  WHILE g.n < 1 DO WAIT (g) END
+END AwaitOne ;
+
+(* Child crashes inside the monitor and catches the crash, as a
+   supervised child's loop does. *)
+PROCEDURE Child (VAR j: Job) =
+BEGIN
+  BEGIN
+    Bad (j.b, 5)
+  EXCEPT
+  | IndexError : j.crashed := TRUE
+  END ;
+  Finish (d)
+END Child ;
+
+PROCEDURE Says (VAR j: PTR Job) : STR =
+VAR t : I64 ;
+BEGIN
+  t := Total (j.b) ;
+  RETURN 'still usable, balance ' + Fmt.I64Str (t)
+EXCEPT
+| Poisoned : RETURN 'Poisoned'
+END Says ;
+
+VAR
+  pool : POOL ;
+  one, two, three : PTR Job ;
+
+BEGIN
+  one := NEW (pool, Job) ;
+  Fill (one.b) ;
+  BEGIN
+    Bad (one.b, 2)
+  EXCEPT
+  | IndexError :
+  END ;
+  Io.WriteLine ('bug: ' + Says (one)) ;
+  Rebuild (one.b) ;
+  Io.WriteLine ('reset: ' + Says (one)) ;
+
+  two := NEW (pool, Job) ;
+  Fill (two.b) ;
+  BEGIN
+    Refuse (two.b)
+  EXCEPT
+  | Refused :
+  END ;
+  Io.WriteLine ('checked: ' + Says (two)) ;
+
+  three := NEW (pool, Job) ;
+  Fill (three.b) ;
+  TASK (Child, three) ;
+  AwaitOne (d) ;
+  Io.WriteLine ('task: ' + Says (three))
+END Poison.

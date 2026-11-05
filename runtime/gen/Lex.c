@@ -331,27 +331,27 @@ void Lex_InitUtf (Lex_Lexer *lx, m9_pool *lx_pool, m9_sl_UTF8 src, m9_state *err
   (*lx).line = INT64_C(1);
   (*lx).col = INT64_C(1);
   bool m9t1 = (Text_BLen (src, err) >= INT64_C(3));
-  if (err->exc) { m9ln = 391; goto L_ret; };
+  if (err->exc) { m9ln = 405; goto L_ret; };
   if (m9t1) {
     at = INT64_C(0);
     bool m9t2 = (Text_NextCp (src, &(at), err) == 65279u);
-    if (err->exc) { m9ln = 393; goto L_ret; };
+    if (err->exc) { m9ln = 407; goto L_ret; };
     if (m9t2) {
       (*lx).pos = at;
     }
   }
   bool m9t3 = (Text_BLen (src, err) >= m9_add_i64 ((*lx).pos, INT64_C(2), err));
-  if (err->exc) { m9ln = 395; goto L_ret; };
+  if (err->exc) { m9ln = 409; goto L_ret; };
   if (m9t3) {
-    bool m9t5 = ({ bool m9t4 = (Lex_At (src, (*lx).pos, err) == 35u); if (m9t4) { { __typeof__(m9_add_i64 ((*lx).pos, INT64_C(1), err)) m9a1 = m9_add_i64 ((*lx).pos, INT64_C(1), err);   if (err->exc) { m9ln = 396; goto L_ret; }; m9t4 = ((Lex_At (src, m9a1, err) == 33u)); } } m9t4; });
-    if (err->exc) { m9ln = 396; goto L_ret; };
+    bool m9t5 = ({ bool m9t4 = (Lex_At (src, (*lx).pos, err) == 35u); if (m9t4) { { __typeof__(m9_add_i64 ((*lx).pos, INT64_C(1), err)) m9a1 = m9_add_i64 ((*lx).pos, INT64_C(1), err);   if (err->exc) { m9ln = 410; goto L_ret; }; m9t4 = ((Lex_At (src, m9a1, err) == 33u)); } } m9t4; });
+    if (err->exc) { m9ln = 410; goto L_ret; };
     if (m9t5) {
       for (;;) {
         bool m9t6 = (((*lx).pos < Text_BLen (src, err)) && (Lex_At (src, (*lx).pos, err) != 10u));
-        if (err->exc) { m9ln = 397; goto L_ret; };
+        if (err->exc) { m9ln = 411; goto L_ret; };
         if (!(m9t6)) break;
         { __typeof__((*lx).pos) m9v = m9_add_i64 ((*lx).pos, INT64_C(1), err);
-          if (err->exc) { m9ln = 398; goto L_ret; };
+          if (err->exc) { m9ln = 412; goto L_ret; };
           (*lx).pos = m9v;
         }
       }
@@ -385,117 +385,119 @@ void Lex_Next (Lex_Lexer *lx, m9_pool *lx_pool, Lex_Token *t, m9_pool *t_pool, m
   uint32_t q = 0; (void) q;
   m9_sl_UTF8 msg = {0}; (void) msg;
   Lex_Skip (lx, lx_pool, &(bad), &(ln), &(cl), err);
-  if (err->exc) { m9ln = 809; goto L_ret; };
+  if (err->exc) { m9ln = 823; goto L_ret; };
   if (bad) {
     Lex_Mk (t, t_pool, Lex_KError, ((m9_sl_UTF8){ (uint8_t *) m9s0, 34 }), ln, cl, err);
-    if (err->exc) { m9ln = 811; goto L_ret; };
+    if (err->exc) { m9ln = 825; goto L_ret; };
     goto L_ret;
   }
   ln = (*lx).line;
   cl = (*lx).col;
   start = (*lx).pos;
   { __typeof__(c) m9v = Lex_Peek (lx, lx_pool, INT64_C(0), err);
-    if (err->exc) { m9ln = 818; goto L_ret; };
+    if (err->exc) { m9ln = 832; goto L_ret; };
     c = m9v;
   }
   if ((c == 0u)) {
     bool m9t1 = ((*lx).pos < Text_BLen ((*lx).src, err));
-    if (err->exc) { m9ln = 823; goto L_ret; };
+    if (err->exc) { m9ln = 837; goto L_ret; };
     if (m9t1) {
       Lex_Advance (lx, lx_pool, err);
-      if (err->exc) { m9ln = 824; goto L_ret; };
+      if (err->exc) { m9ln = 838; goto L_ret; };
       Lex_Mk (t, t_pool, Lex_KError, ((m9_sl_UTF8){ (uint8_t *) m9s1, 25 }), ln, cl, err);
-      if (err->exc) { m9ln = 825; goto L_ret; };
+      if (err->exc) { m9ln = 839; goto L_ret; };
       goto L_ret;
     }
     Lex_Mk (t, t_pool, Lex_KEOF, ((m9_sl_UTF8){ NULL, 0 }), ln, cl, err);
-    if (err->exc) { m9ln = 828; goto L_ret; };
+    if (err->exc) { m9ln = 842; goto L_ret; };
     goto L_ret;
   }
   bool m9t2 = Lex_IsLetter (c, err);
-  if (err->exc) { m9ln = 832; goto L_ret; };
+  if (err->exc) { m9ln = 846; goto L_ret; };
   if (m9t2) {
     for (;;) {
       { __typeof__(Lex_Peek (lx, lx_pool, INT64_C(0), err)) m9a2 = Lex_Peek (lx, lx_pool, INT64_C(0), err);
-        if (err->exc) { m9ln = 833; goto L_ret; };
-      bool m9t4 = ({ bool m9t3 = Lex_IsLetter (m9a2, err); if (!m9t3) { { __typeof__(Lex_Peek (lx, lx_pool, INT64_C(0), err)) m9a3 = Lex_Peek (lx, lx_pool, INT64_C(0), err);   if (err->exc) { m9ln = 833; goto L_ret; }; m9t3 = (Lex_IsDigit (m9a3, err)); } } m9t3; });
-      if (err->exc) { m9ln = 833; goto L_ret; };
+        if (err->exc) { m9ln = 847; goto L_ret; };
+      bool m9t4 = ({ bool m9t3 = Lex_IsLetter (m9a2, err); if (!m9t3) { { __typeof__(Lex_Peek (lx, lx_pool, INT64_C(0), err)) m9a3 = Lex_Peek (lx, lx_pool, INT64_C(0), err);   if (err->exc) { m9ln = 847; goto L_ret; }; m9t3 = (Lex_IsDigit (m9a3, err)); } } m9t3; });
+      if (err->exc) { m9ln = 847; goto L_ret; };
       if (!(m9t4)) break;
+      M9_YCHK ();
       Lex_Advance (lx, lx_pool, err);
-      if (err->exc) { m9ln = 834; goto L_ret; };
+      if (err->exc) { m9ln = 848; goto L_ret; };
       }
     }
     { __typeof__(m9_utf_slice ((*lx).src, start, m9_sub_i64 ((*lx).pos, start, err), err)) m9a4 = m9_utf_slice ((*lx).src, start, m9_sub_i64 ((*lx).pos, start, err), err);
-      if (err->exc) { m9ln = 836; goto L_ret; };
+      if (err->exc) { m9ln = 850; goto L_ret; };
     Lex_Mk (t, t_pool, Lex_KIdent, m9a4, ln, cl, err);
-    if (err->exc) { m9ln = 836; goto L_ret; };
+    if (err->exc) { m9ln = 850; goto L_ret; };
     }
     { __typeof__((*t).kind) m9v = Lex_Lookup ((*t).text, err);
-      if (err->exc) { m9ln = 837; goto L_ret; };
+      if (err->exc) { m9ln = 851; goto L_ret; };
       (*t).kind = m9v;
     }
     bool m9t6 = (Lex_Peek (lx, lx_pool, INT64_C(0), err) == 95u);
-    if (err->exc) { m9ln = 838; goto L_ret; };
+    if (err->exc) { m9ln = 852; goto L_ret; };
     if (m9t6) {
       Lex_Mk (t, t_pool, Lex_KError, ((m9_sl_UTF8){ (uint8_t *) m9s2, 45 }), (*lx).line, (*lx).col, err);
-      if (err->exc) { m9ln = 839; goto L_ret; };
+      if (err->exc) { m9ln = 853; goto L_ret; };
     }
     goto L_ret;
   }
   bool m9t7 = Lex_IsDigit (c, err);
-  if (err->exc) { m9ln = 845; goto L_ret; };
+  if (err->exc) { m9ln = 859; goto L_ret; };
   if (m9t7) {
     Lex_Number (lx, lx_pool, t, t_pool, ln, cl, start, err);
-    if (err->exc) { m9ln = 846; goto L_ret; };
+    if (err->exc) { m9ln = 860; goto L_ret; };
     goto L_ret;
   }
   if (((c == 39u) || (c == 34u))) {
     q = c;
     Lex_Advance (lx, lx_pool, err);
-    if (err->exc) { m9ln = 852; goto L_ret; };
+    if (err->exc) { m9ln = 866; goto L_ret; };
     start = (*lx).pos;
     for (;;) {
       bool m9t8 = (((Lex_Peek (lx, lx_pool, INT64_C(0), err) != q) && (Lex_Peek (lx, lx_pool, INT64_C(0), err) != 0u)) && (Lex_Peek (lx, lx_pool, INT64_C(0), err) != 10u));
-      if (err->exc) { m9ln = 854; goto L_ret; };
+      if (err->exc) { m9ln = 868; goto L_ret; };
       if (!(m9t8)) break;
+      M9_YCHK ();
       Lex_Advance (lx, lx_pool, err);
-      if (err->exc) { m9ln = 856; goto L_ret; };
+      if (err->exc) { m9ln = 870; goto L_ret; };
     }
     bool m9t9 = (Lex_Peek (lx, lx_pool, INT64_C(0), err) != q);
-    if (err->exc) { m9ln = 858; goto L_ret; };
+    if (err->exc) { m9ln = 872; goto L_ret; };
     if (m9t9) {
       Lex_Mk (t, t_pool, Lex_KError, ((m9_sl_UTF8){ (uint8_t *) m9s3, 19 }), ln, cl, err);
-      if (err->exc) { m9ln = 859; goto L_ret; };
+      if (err->exc) { m9ln = 873; goto L_ret; };
       goto L_ret;
     }
     { __typeof__(m9_utf_slice ((*lx).src, start, m9_sub_i64 ((*lx).pos, start, err), err)) m9a5 = m9_utf_slice ((*lx).src, start, m9_sub_i64 ((*lx).pos, start, err), err);
-      if (err->exc) { m9ln = 862; goto L_ret; };
+      if (err->exc) { m9ln = 876; goto L_ret; };
     Lex_Mk (t, t_pool, Lex_KStr, m9a5, ln, cl, err);
-    if (err->exc) { m9ln = 862; goto L_ret; };
+    if (err->exc) { m9ln = 876; goto L_ret; };
     }
     Lex_Advance (lx, lx_pool, err);
-    if (err->exc) { m9ln = 863; goto L_ret; };
+    if (err->exc) { m9ln = 877; goto L_ret; };
     goto L_ret;
   }
   bool m9t11 = Lex_Punct (lx, lx_pool, t, t_pool, c, ln, cl, err);
-  if (err->exc) { m9ln = 867; goto L_ret; };
+  if (err->exc) { m9ln = 881; goto L_ret; };
   if (m9t11) {
     goto L_ret;
   }
   Lex_Advance (lx, lx_pool, err);
-  if (err->exc) { m9ln = 872; goto L_ret; };
+  if (err->exc) { m9ln = 886; goto L_ret; };
   { __typeof__(n) m9v = (int64_t)(Text_NextCp ((*lx).src, &(start), err));
-    if (err->exc) { m9ln = 873; goto L_ret; };
+    if (err->exc) { m9ln = 887; goto L_ret; };
     n = m9v;
   }
   if ((n < INT64_C(128))) {
     msg = ((m9_sl_UTF8){ (uint8_t *) m9s4, 23 });
     { __typeof__(m9_mod_i64 ((m9_div_i64 (n, INT64_C(16), err)), INT64_C(16), err)) m9a6 = m9_mod_i64 ((m9_div_i64 (n, INT64_C(16), err)), INT64_C(16), err);
-      if (err->exc) { m9ln = 879; goto L_ret; };
+      if (err->exc) { m9ln = 893; goto L_ret; };
     { __typeof__(m9_mod_i64 (n, INT64_C(16), err)) m9a7 = m9_mod_i64 (n, INT64_C(16), err);
-      if (err->exc) { m9ln = 879; goto L_ret; };
+      if (err->exc) { m9ln = 893; goto L_ret; };
     { __typeof__(msg) m9v = m9_utf_cat (err->res, m9_utf_cat (err->res, msg, m9_utf_of_char (err->res, Text_BChar (((m9_sl_UTF8){ (uint8_t *) m9s5, 16 }), m9a6, err), err), err), m9_utf_of_char (err->res, Text_BChar (((m9_sl_UTF8){ (uint8_t *) m9s6, 16 }), m9a7, err), err), err);
-      if (err->exc) { m9ln = 879; goto L_ret; };
+      if (err->exc) { m9ln = 893; goto L_ret; };
       msg = m9v;
     }
     }
@@ -515,7 +517,7 @@ void Lex_Next (Lex_Lexer *lx, m9_pool *lx_pool, Lex_Token *t, m9_pool *t_pool, m
     m9t12to = nd;
     if (k <= m9t12to) for (;;) {
       { __typeof__(p) m9v = m9_mul_i64 (p, INT64_C(16), err);
-        if (err->exc) { m9ln = 889; goto L_ret; };
+        if (err->exc) { m9ln = 903; goto L_ret; };
         p = m9v;
       }
       if ((uint64_t) m9t12to - (uint64_t) k < (uint64_t) 1) break;
@@ -524,20 +526,20 @@ void Lex_Next (Lex_Lexer *lx, m9_pool *lx_pool, Lex_Token *t, m9_pool *t_pool, m
     for (;;) {
       if (!((p > INT64_C(0)))) break;
       { __typeof__(m9_mod_i64 ((m9_div_i64 (n, p, err)), INT64_C(16), err)) m9a8 = m9_mod_i64 ((m9_div_i64 (n, p, err)), INT64_C(16), err);
-        if (err->exc) { m9ln = 891; goto L_ret; };
+        if (err->exc) { m9ln = 905; goto L_ret; };
       { __typeof__(msg) m9v = m9_utf_cat (err->res, msg, m9_utf_of_char (err->res, Text_BChar (((m9_sl_UTF8){ (uint8_t *) m9s8, 16 }), m9a8, err), err), err);
-        if (err->exc) { m9ln = 891; goto L_ret; };
+        if (err->exc) { m9ln = 905; goto L_ret; };
         msg = m9v;
       }
       }
       { __typeof__(p) m9v = m9_div_i64 (p, INT64_C(16), err);
-        if (err->exc) { m9ln = 892; goto L_ret; };
+        if (err->exc) { m9ln = 906; goto L_ret; };
         p = m9v;
       }
     }
   }
   Lex_Mk (t, t_pool, Lex_KError, msg, ln, cl, err);
-  if (err->exc) { m9ln = 895; goto L_ret; };
+  if (err->exc) { m9ln = 909; goto L_ret; };
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
@@ -560,7 +562,7 @@ m9_sl_UTF8 Lex_KindName (int64_t k, m9_state *err)
     if ((k <= Lex_KwLast)) {
       err->res = m9res;
       m9ret = Lex_KwName (k, err);
-      if (err->exc) { m9ln = 299; goto L_ret; };
+      if (err->exc) { m9ln = 304; goto L_ret; };
       goto L_ret;
     }
   }
@@ -772,6 +774,43 @@ L_ret: ;
   return m9ret;
 }
 
+bool Lex_IsKeyword (m9_sl_UTF8 w, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  static const char m9pn[] = "Lex.IsKeyword"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
+  bool m9ret = false;
+  int64_t i = 0; (void) i;
+  { __typeof__(i) m9t1to;
+  i = Lex_KwFirst;
+  m9t1to = Lex_KwLast;
+  if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
+    { __typeof__(Lex_KwName (i, err)) m9a9 = Lex_KwName (i, err);
+      if (err->exc) { m9ln = 347; goto L_ret; };
+    bool m9t2 = Text_EqUtf (w, m9a9, err);
+    if (err->exc) { m9ln = 347; goto L_ret; };
+    if (m9t2) {
+      err->res = m9res;
+      m9ret = true;
+      goto L_ret;
+    } }
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
+  } }
+  err->res = m9res;
+  m9ret = false;
+  goto L_ret;
+L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
 void Lex_Collect (bool on, m9_state *err)
 {
   m9_pool m9frame = {0};
@@ -823,12 +862,12 @@ Lex_Comment Lex_ComAt (int64_t i, m9_state *err)
     err->i[0] = i;
     err->i[1] = ncom;
     m9_raise (err, &m9_exc_IndexError);
-    m9_site (err, 192, m9pn);
+    m9_site (err, 197, m9pn);
     goto L_ret;
   }
   err->res = m9res;
   m9ret = (*(Lex_Comment *) m9_at (coms.p, i, coms.len, sizeof (Lex_Comment), err));
-  if (err->exc) { m9ln = 193; goto L_ret; };
+  if (err->exc) { m9ln = 198; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -851,24 +890,24 @@ static void Lex_Note (int64_t line, int64_t col, int64_t endLine, m9_sl_UTF8 tex
   if ((ncom == (coms).len)) {
     if (((coms).len == INT64_C(0))) {
       { __typeof__(nc) m9v = M9_POOL_SL (m9_sl_Lex_Comment, Lex_Comment, &(m9_heap), INT64_C(64), err);
-        if (err->exc) { m9ln = 210; goto L_ret; };
+        if (err->exc) { m9ln = 215; goto L_ret; };
         nc = m9v;
       }
     } else {
       { __typeof__(nc) m9v = M9_POOL_SL (m9_sl_Lex_Comment, Lex_Comment, &(m9_heap), m9_mul_i64 (INT64_C(2), (coms).len, err), err);
-        if (err->exc) { m9ln = 212; goto L_ret; };
+        if (err->exc) { m9ln = 217; goto L_ret; };
         nc = m9v;
       }
     }
     { __typeof__(i) m9t1to;
     i = INT64_C(0);
     m9t1to = m9_sub_i64 (ncom, INT64_C(1), err);
-    if (err->exc) { m9ln = 214; goto L_ret; };
+    if (err->exc) { m9ln = 219; goto L_ret; };
     if (i <= m9t1to) for (;;) {
       { __typeof__((*(Lex_Comment *) m9_at (nc.p, i, nc.len, sizeof (Lex_Comment), err))) m9v = (*(Lex_Comment *) m9_at (coms.p, i, coms.len, sizeof (Lex_Comment), err));
-        if (err->exc) { m9ln = 214; goto L_ret; };
+        if (err->exc) { m9ln = 219; goto L_ret; };
         (*(Lex_Comment *) m9_at (nc.p, i, nc.len, sizeof (Lex_Comment), err)) = m9v;
-        if (err->exc) { m9ln = 214; goto L_ret; };
+        if (err->exc) { m9ln = 219; goto L_ret; };
       }
       if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
@@ -876,18 +915,18 @@ static void Lex_Note (int64_t line, int64_t col, int64_t endLine, m9_sl_UTF8 tex
     coms = nc;
   }
   (*(Lex_Comment *) m9_at (coms.p, ncom, coms.len, sizeof (Lex_Comment), err)).line = line;
-  if (err->exc) { m9ln = 217; goto L_ret; };
+  if (err->exc) { m9ln = 222; goto L_ret; };
   (*(Lex_Comment *) m9_at (coms.p, ncom, coms.len, sizeof (Lex_Comment), err)).col = col;
-  if (err->exc) { m9ln = 218; goto L_ret; };
+  if (err->exc) { m9ln = 223; goto L_ret; };
   (*(Lex_Comment *) m9_at (coms.p, ncom, coms.len, sizeof (Lex_Comment), err)).endLine = endLine;
-  if (err->exc) { m9ln = 219; goto L_ret; };
+  if (err->exc) { m9ln = 224; goto L_ret; };
   { __typeof__((*(Lex_Comment *) m9_at (coms.p, ncom, coms.len, sizeof (Lex_Comment), err)).text) m9v = m9_utf_from_bytes (&(m9_heap), m9_utf_octets (text), err);
-    if (err->exc) { m9ln = 220; goto L_ret; };
+    if (err->exc) { m9ln = 225; goto L_ret; };
     (*(Lex_Comment *) m9_at (coms.p, ncom, coms.len, sizeof (Lex_Comment), err)).text = m9v;
-    if (err->exc) { m9ln = 220; goto L_ret; };
+    if (err->exc) { m9ln = 225; goto L_ret; };
   }
   { __typeof__(ncom) m9v = m9_add_i64 (ncom, INT64_C(1), err);
-    if (err->exc) { m9ln = 221; goto L_ret; };
+    if (err->exc) { m9ln = 226; goto L_ret; };
     ncom = m9v;
   }
 L_ret: ;
@@ -1311,13 +1350,13 @@ static uint32_t Lex_At (m9_sl_UTF8 u, int64_t i, m9_state *err)
   uint32_t m9ret = 0;
   int64_t b = 0; (void) b;
   { __typeof__(b) m9v = (int64_t)(Text_BAt (u, i, err));
-    if (err->exc) { m9ln = 344; goto L_ret; };
+    if (err->exc) { m9ln = 358; goto L_ret; };
     b = m9v;
   }
   if ((b < INT64_C(128))) {
     err->res = m9res;
     m9ret = (*(uint32_t *) m9_at ((*Ascii).v, b, INT64_C(128), sizeof (uint32_t), err));
-    if (err->exc) { m9ln = 345; goto L_ret; };
+    if (err->exc) { m9ln = 359; goto L_ret; };
     goto L_ret;
   }
   err->res = m9res;
@@ -1341,7 +1380,7 @@ static bool Lex_SpellsKw (m9_sl_UTF8 u, m9_sl_UTF8 s, m9_state *err)
   bool m9ret = false;
   int64_t i = 0; (void) i;
   bool m9t1 = (Text_BLen (u, err) != Text_BLen (s, err));
-  if (err->exc) { m9ln = 354; goto L_ret; };
+  if (err->exc) { m9ln = 368; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
     m9ret = false;
@@ -1350,10 +1389,10 @@ static bool Lex_SpellsKw (m9_sl_UTF8 u, m9_sl_UTF8 s, m9_state *err)
   { __typeof__(i) m9t2to;
   i = INT64_C(0);
   m9t2to = m9_sub_i64 (Text_BLen (s, err), INT64_C(1), err);
-  if (err->exc) { m9ln = 355; goto L_ret; };
+  if (err->exc) { m9ln = 369; goto L_ret; };
   if (i <= m9t2to) for (;;) {
     bool m9t3 = (Lex_At (u, i, err) != Text_BChar (s, i, err));
-    if (err->exc) { m9ln = 356; goto L_ret; };
+    if (err->exc) { m9ln = 370; goto L_ret; };
     if (m9t3) {
       err->res = m9res;
       m9ret = false;
@@ -1386,10 +1425,11 @@ static int64_t Lex_Lookup (m9_sl_UTF8 s, m9_state *err)
   i = Lex_KwFirst;
   m9t1to = Lex_KwLast;
   if (i <= m9t1to) for (;;) {
-    { __typeof__(Lex_KwName (i, err)) m9a9 = Lex_KwName (i, err);
-      if (err->exc) { m9ln = 365; goto L_ret; };
-    bool m9t2 = Lex_SpellsKw (s, m9a9, err);
-    if (err->exc) { m9ln = 365; goto L_ret; };
+    M9_YCHK ();
+    { __typeof__(Lex_KwName (i, err)) m9a10 = Lex_KwName (i, err);
+      if (err->exc) { m9ln = 379; goto L_ret; };
+    bool m9t2 = Lex_SpellsKw (s, m9a10, err);
+    if (err->exc) { m9ln = 379; goto L_ret; };
     if (m9t2) {
       err->res = m9res;
       m9ret = i;
@@ -1424,29 +1464,30 @@ static uint32_t Lex_Peek (Lex_Lexer *lx, m9_pool *lx_pool, int64_t ahead, m9_sta
   at = (*lx).pos;
   k = ahead;
   for (;;) {
+    M9_YCHK ();
     bool m9t1 = (at >= Text_BLen ((*lx).src, err));
-    if (err->exc) { m9ln = 415; goto L_ret; };
+    if (err->exc) { m9ln = 429; goto L_ret; };
     if (m9t1) {
       err->res = m9res;
       m9ret = 0u;
       goto L_ret;
     }
     { __typeof__(b) m9v = (int64_t)(Text_BAt ((*lx).src, at, err));
-      if (err->exc) { m9ln = 416; goto L_ret; };
+      if (err->exc) { m9ln = 430; goto L_ret; };
       b = m9v;
     }
     if ((b < INT64_C(128))) {
       { __typeof__(c) m9v = (*(uint32_t *) m9_at ((*Ascii).v, b, INT64_C(128), sizeof (uint32_t), err));
-        if (err->exc) { m9ln = 418; goto L_ret; };
+        if (err->exc) { m9ln = 432; goto L_ret; };
         c = m9v;
       }
       { __typeof__(at) m9v = m9_add_i64 (at, INT64_C(1), err);
-        if (err->exc) { m9ln = 419; goto L_ret; };
+        if (err->exc) { m9ln = 433; goto L_ret; };
         at = m9v;
       }
     } else {
       { __typeof__(c) m9v = Text_NextCp ((*lx).src, &(at), err);
-        if (err->exc) { m9ln = 421; goto L_ret; };
+        if (err->exc) { m9ln = 435; goto L_ret; };
         c = m9v;
       }
     }
@@ -1456,7 +1497,7 @@ static uint32_t Lex_Peek (Lex_Lexer *lx, m9_pool *lx_pool, int64_t ahead, m9_sta
       goto L_ret;
     }
     { __typeof__(k) m9v = m9_sub_i64 (k, INT64_C(1), err);
-      if (err->exc) { m9ln = 424; goto L_ret; };
+      if (err->exc) { m9ln = 438; goto L_ret; };
       k = m9v;
     }
   }
@@ -1478,29 +1519,29 @@ static void Lex_Advance (Lex_Lexer *lx, m9_pool *lx_pool, m9_state *err)
   int32_t m9ln = 0; (void) m9ln;
   uint32_t c = 0; (void) c;
   bool m9t1 = ((Lex_Peek (lx, lx_pool, INT64_C(0), err) == 10u) || (((Lex_Peek (lx, lx_pool, INT64_C(0), err) == 13u) && (Lex_Peek (lx, lx_pool, INT64_C(1), err) != 10u))));
-  if (err->exc) { m9ln = 433; goto L_ret; };
+  if (err->exc) { m9ln = 447; goto L_ret; };
   if (m9t1) {
     { __typeof__((*lx).line) m9v = m9_add_i64 ((*lx).line, INT64_C(1), err);
-      if (err->exc) { m9ln = 434; goto L_ret; };
+      if (err->exc) { m9ln = 448; goto L_ret; };
       (*lx).line = m9v;
     }
     (*lx).col = INT64_C(1);
   } else {
     { __typeof__((*lx).col) m9v = m9_add_i64 ((*lx).col, INT64_C(1), err);
-      if (err->exc) { m9ln = 437; goto L_ret; };
+      if (err->exc) { m9ln = 451; goto L_ret; };
       (*lx).col = m9v;
     }
   }
   bool m9t2 = (((*lx).pos < Text_BLen ((*lx).src, err)) && ((int64_t)(Text_BAt ((*lx).src, (*lx).pos, err)) >= INT64_C(128)));
-  if (err->exc) { m9ln = 441; goto L_ret; };
+  if (err->exc) { m9ln = 455; goto L_ret; };
   if (m9t2) {
     { __typeof__(c) m9v = Text_NextCp ((*lx).src, &((*lx).pos), err);
-      if (err->exc) { m9ln = 442; goto L_ret; };
+      if (err->exc) { m9ln = 456; goto L_ret; };
       c = m9v;
     }
   } else {
     { __typeof__((*lx).pos) m9v = m9_add_i64 ((*lx).pos, INT64_C(1), err);
-      if (err->exc) { m9ln = 444; goto L_ret; };
+      if (err->exc) { m9ln = 458; goto L_ret; };
       (*lx).pos = m9v;
     }
   }
@@ -1561,7 +1602,7 @@ static bool Lex_IsHexAny (uint32_t c, m9_state *err)
   bool m9ret = false;
   err->res = m9res;
   m9ret = ((Lex_IsDigit (c, err) || (((c >= 65u) && (c <= 70u)))) || (((c >= 97u) && (c <= 102u))));
-  if (err->exc) { m9ln = 460; goto L_ret; };
+  if (err->exc) { m9ln = 474; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -1581,7 +1622,7 @@ static bool Lex_IsHexUp (uint32_t c, m9_state *err)
   bool m9ret = false;
   err->res = m9res;
   m9ret = (Lex_IsDigit (c, err) || (((c >= 65u) && (c <= 70u))));
-  if (err->exc) { m9ln = 466; goto L_ret; };
+  if (err->exc) { m9ln = 480; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -1603,69 +1644,72 @@ static void Lex_Skip (Lex_Lexer *lx, m9_pool *lx_pool, bool *bad, int64_t *eline
   uint32_t c = 0; (void) c;
   (*bad) = false;
   for (;;) {
+    M9_YCHK ();
     { __typeof__(c) m9v = Lex_Peek (lx, lx_pool, INT64_C(0), err);
-      if (err->exc) { m9ln = 478; goto L_ret; };
+      if (err->exc) { m9ln = 492; goto L_ret; };
       c = m9v;
     }
     for (;;) {
       if (!(((((c == 32u) || (c == 9u)) || (c == 13u)) || (c == 10u)))) break;
+      M9_YCHK ();
       Lex_Advance (lx, lx_pool, err);
-      if (err->exc) { m9ln = 480; goto L_ret; };
+      if (err->exc) { m9ln = 494; goto L_ret; };
       { __typeof__(c) m9v = Lex_Peek (lx, lx_pool, INT64_C(0), err);
-        if (err->exc) { m9ln = 481; goto L_ret; };
+        if (err->exc) { m9ln = 495; goto L_ret; };
         c = m9v;
       }
     }
     bool m9t1 = ((Lex_Peek (lx, lx_pool, INT64_C(0), err) == 40u) && (Lex_Peek (lx, lx_pool, INT64_C(1), err) == 42u));
-    if (err->exc) { m9ln = 483; goto L_ret; };
+    if (err->exc) { m9ln = 497; goto L_ret; };
     if (m9t1) {
       (*eline) = (*lx).line;
       (*ecol) = (*lx).col;
       cstart = (*lx).pos;
       depth = INT64_C(0);
       for (;;) {
+        M9_YCHK ();
         bool m9t2 = ((Lex_Peek (lx, lx_pool, INT64_C(0), err) == 40u) && (Lex_Peek (lx, lx_pool, INT64_C(1), err) == 42u));
-        if (err->exc) { m9ln = 489; goto L_ret; };
+        if (err->exc) { m9ln = 503; goto L_ret; };
         if (m9t2) {
           { __typeof__(depth) m9v = m9_add_i64 (depth, INT64_C(1), err);
-            if (err->exc) { m9ln = 490; goto L_ret; };
+            if (err->exc) { m9ln = 504; goto L_ret; };
             depth = m9v;
           }
           Lex_Advance (lx, lx_pool, err);
-          if (err->exc) { m9ln = 491; goto L_ret; };
+          if (err->exc) { m9ln = 505; goto L_ret; };
           Lex_Advance (lx, lx_pool, err);
-          if (err->exc) { m9ln = 492; goto L_ret; };
+          if (err->exc) { m9ln = 506; goto L_ret; };
         } else {
           bool m9t3 = ((Lex_Peek (lx, lx_pool, INT64_C(0), err) == 42u) && (Lex_Peek (lx, lx_pool, INT64_C(1), err) == 41u));
-          if (err->exc) { m9ln = 492; goto L_ret; };
+          if (err->exc) { m9ln = 506; goto L_ret; };
           if (m9t3) {
             { __typeof__(depth) m9v = m9_sub_i64 (depth, INT64_C(1), err);
-              if (err->exc) { m9ln = 494; goto L_ret; };
+              if (err->exc) { m9ln = 508; goto L_ret; };
               depth = m9v;
             }
             Lex_Advance (lx, lx_pool, err);
-            if (err->exc) { m9ln = 495; goto L_ret; };
+            if (err->exc) { m9ln = 509; goto L_ret; };
             Lex_Advance (lx, lx_pool, err);
-            if (err->exc) { m9ln = 496; goto L_ret; };
+            if (err->exc) { m9ln = 510; goto L_ret; };
             if ((depth == INT64_C(0))) {
               if (comOn) {
-                { __typeof__(m9_utf_slice ((*lx).src, cstart, m9_sub_i64 ((*lx).pos, cstart, err), err)) m9a10 = m9_utf_slice ((*lx).src, cstart, m9_sub_i64 ((*lx).pos, cstart, err), err);
-                  if (err->exc) { m9ln = 506; goto L_ret; };
-                Lex_Note ((*eline), (*ecol), (*lx).line, m9a10, err);
-                if (err->exc) { m9ln = 506; goto L_ret; };
+                { __typeof__(m9_utf_slice ((*lx).src, cstart, m9_sub_i64 ((*lx).pos, cstart, err), err)) m9a11 = m9_utf_slice ((*lx).src, cstart, m9_sub_i64 ((*lx).pos, cstart, err), err);
+                  if (err->exc) { m9ln = 520; goto L_ret; };
+                Lex_Note ((*eline), (*ecol), (*lx).line, m9a11, err);
+                if (err->exc) { m9ln = 520; goto L_ret; };
                 }
               }
               break;
             }
         } else {
           bool m9t5 = (Lex_Peek (lx, lx_pool, INT64_C(0), err) == 0u);
-          if (err->exc) { m9ln = 509; goto L_ret; };
+          if (err->exc) { m9ln = 523; goto L_ret; };
           if (m9t5) {
             (*bad) = true;
             goto L_ret;
         } else {
           Lex_Advance (lx, lx_pool, err);
-          if (err->exc) { m9ln = 515; goto L_ret; };
+          if (err->exc) { m9ln = 529; goto L_ret; };
         } } }
       }
     } else {
@@ -1711,17 +1755,17 @@ static bool Lex_Punct (Lex_Lexer *lx, m9_pool *lx_pool, Lex_Token *t, m9_pool *t
   bool m9ret = false;
   if ((c == 58u)) {
     Lex_Advance (lx, lx_pool, err);
-    if (err->exc) { m9ln = 538; goto L_ret; };
+    if (err->exc) { m9ln = 552; goto L_ret; };
     bool m9t1 = (Lex_Peek (lx, lx_pool, INT64_C(0), err) == 61u);
-    if (err->exc) { m9ln = 539; goto L_ret; };
+    if (err->exc) { m9ln = 553; goto L_ret; };
     if (m9t1) {
       Lex_Advance (lx, lx_pool, err);
-      if (err->exc) { m9ln = 539; goto L_ret; };
+      if (err->exc) { m9ln = 553; goto L_ret; };
       Lex_Mk (t, t_pool, Lex_KAssign, ((m9_sl_UTF8){ (uint8_t *) m9s106, 2 }), ln, cl, err);
-      if (err->exc) { m9ln = 539; goto L_ret; };
+      if (err->exc) { m9ln = 553; goto L_ret; };
     } else {
       Lex_Mk (t, t_pool, Lex_KColon, ((m9_sl_UTF8){ (uint8_t *) m9s107, 1 }), ln, cl, err);
-      if (err->exc) { m9ln = 540; goto L_ret; };
+      if (err->exc) { m9ln = 554; goto L_ret; };
     }
     err->res = m9res;
     m9ret = true;
@@ -1729,17 +1773,17 @@ static bool Lex_Punct (Lex_Lexer *lx, m9_pool *lx_pool, Lex_Token *t, m9_pool *t
   } else {
     if ((c == 46u)) {
       Lex_Advance (lx, lx_pool, err);
-      if (err->exc) { m9ln = 543; goto L_ret; };
+      if (err->exc) { m9ln = 557; goto L_ret; };
       bool m9t2 = (Lex_Peek (lx, lx_pool, INT64_C(0), err) == 46u);
-      if (err->exc) { m9ln = 544; goto L_ret; };
+      if (err->exc) { m9ln = 558; goto L_ret; };
       if (m9t2) {
         Lex_Advance (lx, lx_pool, err);
-        if (err->exc) { m9ln = 544; goto L_ret; };
+        if (err->exc) { m9ln = 558; goto L_ret; };
         Lex_Mk (t, t_pool, Lex_KDotDot, ((m9_sl_UTF8){ (uint8_t *) m9s108, 2 }), ln, cl, err);
-        if (err->exc) { m9ln = 544; goto L_ret; };
+        if (err->exc) { m9ln = 558; goto L_ret; };
       } else {
         Lex_Mk (t, t_pool, Lex_KDot, ((m9_sl_UTF8){ (uint8_t *) m9s109, 1 }), ln, cl, err);
-        if (err->exc) { m9ln = 545; goto L_ret; };
+        if (err->exc) { m9ln = 559; goto L_ret; };
       }
       err->res = m9res;
       m9ret = true;
@@ -1747,17 +1791,17 @@ static bool Lex_Punct (Lex_Lexer *lx, m9_pool *lx_pool, Lex_Token *t, m9_pool *t
   } else {
     if ((c == 60u)) {
       Lex_Advance (lx, lx_pool, err);
-      if (err->exc) { m9ln = 548; goto L_ret; };
+      if (err->exc) { m9ln = 562; goto L_ret; };
       bool m9t3 = (Lex_Peek (lx, lx_pool, INT64_C(0), err) == 61u);
-      if (err->exc) { m9ln = 549; goto L_ret; };
+      if (err->exc) { m9ln = 563; goto L_ret; };
       if (m9t3) {
         Lex_Advance (lx, lx_pool, err);
-        if (err->exc) { m9ln = 549; goto L_ret; };
+        if (err->exc) { m9ln = 563; goto L_ret; };
         Lex_Mk (t, t_pool, Lex_KLe, ((m9_sl_UTF8){ (uint8_t *) m9s110, 2 }), ln, cl, err);
-        if (err->exc) { m9ln = 549; goto L_ret; };
+        if (err->exc) { m9ln = 563; goto L_ret; };
       } else {
         Lex_Mk (t, t_pool, Lex_KLt, ((m9_sl_UTF8){ (uint8_t *) m9s111, 1 }), ln, cl, err);
-        if (err->exc) { m9ln = 550; goto L_ret; };
+        if (err->exc) { m9ln = 564; goto L_ret; };
       }
       err->res = m9res;
       m9ret = true;
@@ -1765,17 +1809,17 @@ static bool Lex_Punct (Lex_Lexer *lx, m9_pool *lx_pool, Lex_Token *t, m9_pool *t
   } else {
     if ((c == 62u)) {
       Lex_Advance (lx, lx_pool, err);
-      if (err->exc) { m9ln = 553; goto L_ret; };
+      if (err->exc) { m9ln = 567; goto L_ret; };
       bool m9t4 = (Lex_Peek (lx, lx_pool, INT64_C(0), err) == 61u);
-      if (err->exc) { m9ln = 554; goto L_ret; };
+      if (err->exc) { m9ln = 568; goto L_ret; };
       if (m9t4) {
         Lex_Advance (lx, lx_pool, err);
-        if (err->exc) { m9ln = 554; goto L_ret; };
+        if (err->exc) { m9ln = 568; goto L_ret; };
         Lex_Mk (t, t_pool, Lex_KGe, ((m9_sl_UTF8){ (uint8_t *) m9s112, 2 }), ln, cl, err);
-        if (err->exc) { m9ln = 554; goto L_ret; };
+        if (err->exc) { m9ln = 568; goto L_ret; };
       } else {
         Lex_Mk (t, t_pool, Lex_KGt, ((m9_sl_UTF8){ (uint8_t *) m9s113, 1 }), ln, cl, err);
-        if (err->exc) { m9ln = 555; goto L_ret; };
+        if (err->exc) { m9ln = 569; goto L_ret; };
       }
       err->res = m9res;
       m9ret = true;
@@ -1783,17 +1827,17 @@ static bool Lex_Punct (Lex_Lexer *lx, m9_pool *lx_pool, Lex_Token *t, m9_pool *t
   } else {
     if ((c == 43u)) {
       Lex_Advance (lx, lx_pool, err);
-      if (err->exc) { m9ln = 558; goto L_ret; };
+      if (err->exc) { m9ln = 572; goto L_ret; };
       bool m9t5 = (Lex_Peek (lx, lx_pool, INT64_C(0), err) == 37u);
-      if (err->exc) { m9ln = 559; goto L_ret; };
+      if (err->exc) { m9ln = 573; goto L_ret; };
       if (m9t5) {
         Lex_Advance (lx, lx_pool, err);
-        if (err->exc) { m9ln = 559; goto L_ret; };
+        if (err->exc) { m9ln = 573; goto L_ret; };
         Lex_Mk (t, t_pool, Lex_KPlusW, ((m9_sl_UTF8){ (uint8_t *) m9s114, 2 }), ln, cl, err);
-        if (err->exc) { m9ln = 559; goto L_ret; };
+        if (err->exc) { m9ln = 573; goto L_ret; };
       } else {
         Lex_Mk (t, t_pool, Lex_KPlus, ((m9_sl_UTF8){ (uint8_t *) m9s115, 1 }), ln, cl, err);
-        if (err->exc) { m9ln = 560; goto L_ret; };
+        if (err->exc) { m9ln = 574; goto L_ret; };
       }
       err->res = m9res;
       m9ret = true;
@@ -1801,17 +1845,17 @@ static bool Lex_Punct (Lex_Lexer *lx, m9_pool *lx_pool, Lex_Token *t, m9_pool *t
   } else {
     if ((c == 45u)) {
       Lex_Advance (lx, lx_pool, err);
-      if (err->exc) { m9ln = 563; goto L_ret; };
+      if (err->exc) { m9ln = 577; goto L_ret; };
       bool m9t6 = (Lex_Peek (lx, lx_pool, INT64_C(0), err) == 37u);
-      if (err->exc) { m9ln = 564; goto L_ret; };
+      if (err->exc) { m9ln = 578; goto L_ret; };
       if (m9t6) {
         Lex_Advance (lx, lx_pool, err);
-        if (err->exc) { m9ln = 564; goto L_ret; };
+        if (err->exc) { m9ln = 578; goto L_ret; };
         Lex_Mk (t, t_pool, Lex_KMinusW, ((m9_sl_UTF8){ (uint8_t *) m9s116, 2 }), ln, cl, err);
-        if (err->exc) { m9ln = 564; goto L_ret; };
+        if (err->exc) { m9ln = 578; goto L_ret; };
       } else {
         Lex_Mk (t, t_pool, Lex_KMinus, ((m9_sl_UTF8){ (uint8_t *) m9s117, 1 }), ln, cl, err);
-        if (err->exc) { m9ln = 565; goto L_ret; };
+        if (err->exc) { m9ln = 579; goto L_ret; };
       }
       err->res = m9res;
       m9ret = true;
@@ -1819,17 +1863,17 @@ static bool Lex_Punct (Lex_Lexer *lx, m9_pool *lx_pool, Lex_Token *t, m9_pool *t
   } else {
     if ((c == 42u)) {
       Lex_Advance (lx, lx_pool, err);
-      if (err->exc) { m9ln = 568; goto L_ret; };
+      if (err->exc) { m9ln = 582; goto L_ret; };
       bool m9t7 = (Lex_Peek (lx, lx_pool, INT64_C(0), err) == 37u);
-      if (err->exc) { m9ln = 569; goto L_ret; };
+      if (err->exc) { m9ln = 583; goto L_ret; };
       if (m9t7) {
         Lex_Advance (lx, lx_pool, err);
-        if (err->exc) { m9ln = 569; goto L_ret; };
+        if (err->exc) { m9ln = 583; goto L_ret; };
         Lex_Mk (t, t_pool, Lex_KStarW, ((m9_sl_UTF8){ (uint8_t *) m9s118, 2 }), ln, cl, err);
-        if (err->exc) { m9ln = 569; goto L_ret; };
+        if (err->exc) { m9ln = 583; goto L_ret; };
       } else {
         Lex_Mk (t, t_pool, Lex_KStar, ((m9_sl_UTF8){ (uint8_t *) m9s119, 1 }), ln, cl, err);
-        if (err->exc) { m9ln = 570; goto L_ret; };
+        if (err->exc) { m9ln = 584; goto L_ret; };
       }
       err->res = m9res;
       m9ret = true;
@@ -1837,99 +1881,99 @@ static bool Lex_Punct (Lex_Lexer *lx, m9_pool *lx_pool, Lex_Token *t, m9_pool *t
   } else {
     if ((c == 61u)) {
       Lex_Advance (lx, lx_pool, err);
-      if (err->exc) { m9ln = 572; goto L_ret; };
+      if (err->exc) { m9ln = 586; goto L_ret; };
       Lex_Mk (t, t_pool, Lex_KEq, ((m9_sl_UTF8){ (uint8_t *) m9s120, 1 }), ln, cl, err);
-      if (err->exc) { m9ln = 572; goto L_ret; };
+      if (err->exc) { m9ln = 586; goto L_ret; };
       err->res = m9res;
       m9ret = true;
       goto L_ret;
   } else {
     if ((c == 35u)) {
       Lex_Advance (lx, lx_pool, err);
-      if (err->exc) { m9ln = 573; goto L_ret; };
+      if (err->exc) { m9ln = 587; goto L_ret; };
       Lex_Mk (t, t_pool, Lex_KNeq, ((m9_sl_UTF8){ (uint8_t *) m9s121, 1 }), ln, cl, err);
-      if (err->exc) { m9ln = 573; goto L_ret; };
+      if (err->exc) { m9ln = 587; goto L_ret; };
       err->res = m9res;
       m9ret = true;
       goto L_ret;
   } else {
     if ((c == 47u)) {
       Lex_Advance (lx, lx_pool, err);
-      if (err->exc) { m9ln = 574; goto L_ret; };
+      if (err->exc) { m9ln = 588; goto L_ret; };
       Lex_Mk (t, t_pool, Lex_KSlash, ((m9_sl_UTF8){ (uint8_t *) m9s122, 1 }), ln, cl, err);
-      if (err->exc) { m9ln = 574; goto L_ret; };
+      if (err->exc) { m9ln = 588; goto L_ret; };
       err->res = m9res;
       m9ret = true;
       goto L_ret;
   } else {
     if ((c == 40u)) {
       Lex_Advance (lx, lx_pool, err);
-      if (err->exc) { m9ln = 575; goto L_ret; };
+      if (err->exc) { m9ln = 589; goto L_ret; };
       Lex_Mk (t, t_pool, Lex_KLParen, ((m9_sl_UTF8){ (uint8_t *) m9s123, 1 }), ln, cl, err);
-      if (err->exc) { m9ln = 575; goto L_ret; };
+      if (err->exc) { m9ln = 589; goto L_ret; };
       err->res = m9res;
       m9ret = true;
       goto L_ret;
   } else {
     if ((c == 41u)) {
       Lex_Advance (lx, lx_pool, err);
-      if (err->exc) { m9ln = 576; goto L_ret; };
+      if (err->exc) { m9ln = 590; goto L_ret; };
       Lex_Mk (t, t_pool, Lex_KRParen, ((m9_sl_UTF8){ (uint8_t *) m9s124, 1 }), ln, cl, err);
-      if (err->exc) { m9ln = 576; goto L_ret; };
+      if (err->exc) { m9ln = 590; goto L_ret; };
       err->res = m9res;
       m9ret = true;
       goto L_ret;
   } else {
     if ((c == 91u)) {
       Lex_Advance (lx, lx_pool, err);
-      if (err->exc) { m9ln = 577; goto L_ret; };
+      if (err->exc) { m9ln = 591; goto L_ret; };
       Lex_Mk (t, t_pool, Lex_KLBrack, ((m9_sl_UTF8){ (uint8_t *) m9s125, 1 }), ln, cl, err);
-      if (err->exc) { m9ln = 577; goto L_ret; };
+      if (err->exc) { m9ln = 591; goto L_ret; };
       err->res = m9res;
       m9ret = true;
       goto L_ret;
   } else {
     if ((c == 93u)) {
       Lex_Advance (lx, lx_pool, err);
-      if (err->exc) { m9ln = 578; goto L_ret; };
+      if (err->exc) { m9ln = 592; goto L_ret; };
       Lex_Mk (t, t_pool, Lex_KRBrack, ((m9_sl_UTF8){ (uint8_t *) m9s126, 1 }), ln, cl, err);
-      if (err->exc) { m9ln = 578; goto L_ret; };
+      if (err->exc) { m9ln = 592; goto L_ret; };
       err->res = m9res;
       m9ret = true;
       goto L_ret;
   } else {
     if ((c == 44u)) {
       Lex_Advance (lx, lx_pool, err);
-      if (err->exc) { m9ln = 579; goto L_ret; };
+      if (err->exc) { m9ln = 593; goto L_ret; };
       Lex_Mk (t, t_pool, Lex_KComma, ((m9_sl_UTF8){ (uint8_t *) m9s127, 1 }), ln, cl, err);
-      if (err->exc) { m9ln = 579; goto L_ret; };
+      if (err->exc) { m9ln = 593; goto L_ret; };
       err->res = m9res;
       m9ret = true;
       goto L_ret;
   } else {
     if ((c == 59u)) {
       Lex_Advance (lx, lx_pool, err);
-      if (err->exc) { m9ln = 580; goto L_ret; };
+      if (err->exc) { m9ln = 594; goto L_ret; };
       Lex_Mk (t, t_pool, Lex_KSemi, ((m9_sl_UTF8){ (uint8_t *) m9s128, 1 }), ln, cl, err);
-      if (err->exc) { m9ln = 580; goto L_ret; };
+      if (err->exc) { m9ln = 594; goto L_ret; };
       err->res = m9res;
       m9ret = true;
       goto L_ret;
   } else {
     if ((c == 124u)) {
       Lex_Advance (lx, lx_pool, err);
-      if (err->exc) { m9ln = 581; goto L_ret; };
+      if (err->exc) { m9ln = 595; goto L_ret; };
       Lex_Mk (t, t_pool, Lex_KBar, ((m9_sl_UTF8){ (uint8_t *) m9s129, 1 }), ln, cl, err);
-      if (err->exc) { m9ln = 581; goto L_ret; };
+      if (err->exc) { m9ln = 595; goto L_ret; };
       err->res = m9res;
       m9ret = true;
       goto L_ret;
   } else {
     if ((c == 94u)) {
       Lex_Advance (lx, lx_pool, err);
-      if (err->exc) { m9ln = 582; goto L_ret; };
+      if (err->exc) { m9ln = 596; goto L_ret; };
       Lex_Mk (t, t_pool, Lex_KCaret, ((m9_sl_UTF8){ (uint8_t *) m9s130, 1 }), ln, cl, err);
-      if (err->exc) { m9ln = 582; goto L_ret; };
+      if (err->exc) { m9ln = 596; goto L_ret; };
       err->res = m9res;
       m9ret = true;
       goto L_ret;
@@ -1959,10 +2003,10 @@ static int64_t Lex_Significant (m9_sl_UTF8 run, int64_t from, m9_state *err)
   i = from;
   for (;;) {
     bool m9t1 = ((i < m9_sub_i64 (Text_BLen (run, err), INT64_C(1), err)) && (Lex_At (run, i, err) == 48u));
-    if (err->exc) { m9ln = 609; goto L_ret; };
+    if (err->exc) { m9ln = 623; goto L_ret; };
     if (!(m9t1)) break;
     { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-      if (err->exc) { m9ln = 609; goto L_ret; };
+      if (err->exc) { m9ln = 623; goto L_ret; };
       i = m9v;
     }
   }
@@ -1989,36 +2033,36 @@ static bool Lex_IntPast64 (m9_sl_UTF8 run, m9_state *err)
   int64_t n = 0; (void) n;
   int64_t k = 0; (void) k;
   { __typeof__(i) m9v = Lex_Significant (run, INT64_C(0), err);
-    if (err->exc) { m9ln = 618; goto L_ret; };
+    if (err->exc) { m9ln = 632; goto L_ret; };
     i = m9v;
   }
   { __typeof__(n) m9v = m9_sub_i64 (Text_BLen (run, err), i, err);
-    if (err->exc) { m9ln = 619; goto L_ret; };
+    if (err->exc) { m9ln = 633; goto L_ret; };
     n = m9v;
   }
   bool m9t1 = (n != Text_BLen (((m9_sl_UTF8){ (uint8_t *) m9s131, 20 }), err));
-  if (err->exc) { m9ln = 620; goto L_ret; };
+  if (err->exc) { m9ln = 634; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
     m9ret = (n > Text_BLen (((m9_sl_UTF8){ (uint8_t *) m9s132, 20 }), err));
-    if (err->exc) { m9ln = 620; goto L_ret; };
+    if (err->exc) { m9ln = 634; goto L_ret; };
     goto L_ret;
   }
   { __typeof__(k) m9t2to;
   k = INT64_C(0);
   m9t2to = m9_sub_i64 (n, INT64_C(1), err);
-  if (err->exc) { m9ln = 621; goto L_ret; };
+  if (err->exc) { m9ln = 635; goto L_ret; };
   if (k <= m9t2to) for (;;) {
-    { __typeof__(m9_add_i64 (i, k, err)) m9a11 = m9_add_i64 (i, k, err);
-      if (err->exc) { m9ln = 622; goto L_ret; };
-    bool m9t3 = (Lex_At (run, m9a11, err) != Text_BChar (((m9_sl_UTF8){ (uint8_t *) m9s133, 20 }), k, err));
-    if (err->exc) { m9ln = 622; goto L_ret; };
+    { __typeof__(m9_add_i64 (i, k, err)) m9a12 = m9_add_i64 (i, k, err);
+      if (err->exc) { m9ln = 636; goto L_ret; };
+    bool m9t3 = (Lex_At (run, m9a12, err) != Text_BChar (((m9_sl_UTF8){ (uint8_t *) m9s133, 20 }), k, err));
+    if (err->exc) { m9ln = 636; goto L_ret; };
     if (m9t3) {
       err->res = m9res;
-      { __typeof__(m9_add_i64 (i, k, err)) m9a12 = m9_add_i64 (i, k, err);
-        if (err->exc) { m9ln = 622; goto L_ret; };
-      m9ret = (Lex_At (run, m9a12, err) > Text_BChar (((m9_sl_UTF8){ (uint8_t *) m9s134, 20 }), k, err));
-      if (err->exc) { m9ln = 622; goto L_ret; };
+      { __typeof__(m9_add_i64 (i, k, err)) m9a13 = m9_add_i64 (i, k, err);
+        if (err->exc) { m9ln = 636; goto L_ret; };
+      m9ret = (Lex_At (run, m9a13, err) > Text_BChar (((m9_sl_UTF8){ (uint8_t *) m9s134, 20 }), k, err));
+      if (err->exc) { m9ln = 636; goto L_ret; };
       }
       goto L_ret;
     } }
@@ -2055,67 +2099,67 @@ static bool Lex_RealTooBig (m9_sl_UTF8 run, m9_state *err)
   m = INT64_C(0);
   for (;;) {
     bool m9t1 = (((m < Text_BLen (run, err)) && (Lex_At (run, m, err) != 101u)) && (Lex_At (run, m, err) != 69u));
-    if (err->exc) { m9ln = 637; goto L_ret; };
+    if (err->exc) { m9ln = 651; goto L_ret; };
     if (!(m9t1)) break;
     { __typeof__(m) m9v = m9_add_i64 (m, INT64_C(1), err);
-      if (err->exc) { m9ln = 637; goto L_ret; };
+      if (err->exc) { m9ln = 651; goto L_ret; };
       m = m9v;
     }
   }
   nInt = INT64_C(0);
   for (;;) {
     bool m9t2 = ((nInt < m) && (Lex_At (run, nInt, err) != 46u));
-    if (err->exc) { m9ln = 639; goto L_ret; };
+    if (err->exc) { m9ln = 653; goto L_ret; };
     if (!(m9t2)) break;
     { __typeof__(nInt) m9v = m9_add_i64 (nInt, INT64_C(1), err);
-      if (err->exc) { m9ln = 639; goto L_ret; };
+      if (err->exc) { m9ln = 653; goto L_ret; };
       nInt = m9v;
     }
   }
   e = INT64_C(0);
   bool m9t3 = (m < Text_BLen (run, err));
-  if (err->exc) { m9ln = 641; goto L_ret; };
+  if (err->exc) { m9ln = 655; goto L_ret; };
   if (m9t3) {
     { __typeof__(i) m9v = m9_add_i64 (m, INT64_C(1), err);
-      if (err->exc) { m9ln = 642; goto L_ret; };
+      if (err->exc) { m9ln = 656; goto L_ret; };
       i = m9v;
     }
     neg = false;
     bool m9t4 = (Lex_At (run, i, err) == 43u);
-    if (err->exc) { m9ln = 644; goto L_ret; };
+    if (err->exc) { m9ln = 658; goto L_ret; };
     if (m9t4) {
       { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-        if (err->exc) { m9ln = 645; goto L_ret; };
+        if (err->exc) { m9ln = 659; goto L_ret; };
         i = m9v;
       }
     } else {
       bool m9t5 = (Lex_At (run, i, err) == 45u);
-      if (err->exc) { m9ln = 645; goto L_ret; };
+      if (err->exc) { m9ln = 659; goto L_ret; };
       if (m9t5) {
         neg = true;
         { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-          if (err->exc) { m9ln = 648; goto L_ret; };
+          if (err->exc) { m9ln = 662; goto L_ret; };
           i = m9v;
         }
     } }
     for (;;) {
       bool m9t6 = (i < Text_BLen (run, err));
-      if (err->exc) { m9ln = 650; goto L_ret; };
+      if (err->exc) { m9ln = 664; goto L_ret; };
       if (!(m9t6)) break;
       if ((e < INT64_C(100000))) {
         { __typeof__(e) m9v = m9_add_i64 (m9_mul_i64 (e, INT64_C(10), err), (m9_sub_i64 ((int64_t)(Lex_At (run, i, err)), INT64_C(48), err)), err);
-          if (err->exc) { m9ln = 653; goto L_ret; };
+          if (err->exc) { m9ln = 667; goto L_ret; };
           e = m9v;
         }
       }
       { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-        if (err->exc) { m9ln = 654; goto L_ret; };
+        if (err->exc) { m9ln = 668; goto L_ret; };
         i = m9v;
       }
     }
     if (neg) {
       { __typeof__(e) m9v = m9_neg_i64 (e, err);
-        if (err->exc) { m9ln = 656; goto L_ret; };
+        if (err->exc) { m9ln = 670; goto L_ret; };
         e = m9v;
       }
     }
@@ -2124,18 +2168,18 @@ static bool Lex_RealTooBig (m9_sl_UTF8 run, m9_state *err)
   i = INT64_C(0);
   for (;;) {
     bool m9t7 = ((i < m) && (((Lex_At (run, i, err) == 48u) || (Lex_At (run, i, err) == 46u))));
-    if (err->exc) { m9ln = 660; goto L_ret; };
+    if (err->exc) { m9ln = 674; goto L_ret; };
     if (!(m9t7)) break;
     bool m9t8 = (Lex_At (run, i, err) == 48u);
-    if (err->exc) { m9ln = 661; goto L_ret; };
+    if (err->exc) { m9ln = 675; goto L_ret; };
     if (m9t8) {
       { __typeof__(lead) m9v = m9_add_i64 (lead, INT64_C(1), err);
-        if (err->exc) { m9ln = 661; goto L_ret; };
+        if (err->exc) { m9ln = 675; goto L_ret; };
         lead = m9v;
       }
     }
     { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-      if (err->exc) { m9ln = 662; goto L_ret; };
+      if (err->exc) { m9ln = 676; goto L_ret; };
       i = m9v;
     }
   }
@@ -2145,61 +2189,61 @@ static bool Lex_RealTooBig (m9_sl_UTF8 run, m9_state *err)
     goto L_ret;
   }
   { __typeof__(n) m9v = m9_add_i64 (m9_sub_i64 (nInt, lead, err), e, err);
-    if (err->exc) { m9ln = 665; goto L_ret; };
+    if (err->exc) { m9ln = 679; goto L_ret; };
     n = m9v;
   }
   bool m9t9 = (n != Text_BLen (((m9_sl_UTF8){ (uint8_t *) m9s135, 309 }), err));
-  if (err->exc) { m9ln = 666; goto L_ret; };
+  if (err->exc) { m9ln = 680; goto L_ret; };
   if (m9t9) {
     err->res = m9res;
     m9ret = (n > Text_BLen (((m9_sl_UTF8){ (uint8_t *) m9s136, 309 }), err));
-    if (err->exc) { m9ln = 666; goto L_ret; };
+    if (err->exc) { m9ln = 680; goto L_ret; };
     goto L_ret;
   }
   j = INT64_C(0);
   for (;;) {
     if (!((i < m))) break;
     bool m9t10 = (Lex_At (run, i, err) != 46u);
-    if (err->exc) { m9ln = 669; goto L_ret; };
+    if (err->exc) { m9ln = 683; goto L_ret; };
     if (m9t10) {
       bool m9t11 = (j == Text_BLen (((m9_sl_UTF8){ (uint8_t *) m9s137, 309 }), err));
-      if (err->exc) { m9ln = 670; goto L_ret; };
+      if (err->exc) { m9ln = 684; goto L_ret; };
       if (m9t11) {
         err->res = m9res;
         m9ret = true;
         goto L_ret;
       }
       bool m9t12 = (Lex_At (run, i, err) != Text_BChar (((m9_sl_UTF8){ (uint8_t *) m9s138, 309 }), j, err));
-      if (err->exc) { m9ln = 671; goto L_ret; };
+      if (err->exc) { m9ln = 685; goto L_ret; };
       if (m9t12) {
         err->res = m9res;
         m9ret = (Lex_At (run, i, err) > Text_BChar (((m9_sl_UTF8){ (uint8_t *) m9s139, 309 }), j, err));
-        if (err->exc) { m9ln = 671; goto L_ret; };
+        if (err->exc) { m9ln = 685; goto L_ret; };
         goto L_ret;
       }
       { __typeof__(j) m9v = m9_add_i64 (j, INT64_C(1), err);
-        if (err->exc) { m9ln = 672; goto L_ret; };
+        if (err->exc) { m9ln = 686; goto L_ret; };
         j = m9v;
       }
     }
     { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-      if (err->exc) { m9ln = 674; goto L_ret; };
+      if (err->exc) { m9ln = 688; goto L_ret; };
       i = m9v;
     }
   }
   for (;;) {
     bool m9t13 = (j < Text_BLen (((m9_sl_UTF8){ (uint8_t *) m9s140, 309 }), err));
-    if (err->exc) { m9ln = 678; goto L_ret; };
+    if (err->exc) { m9ln = 692; goto L_ret; };
     if (!(m9t13)) break;
     bool m9t14 = (!Text_BIs (((m9_sl_UTF8){ (uint8_t *) m9s141, 309 }), j, 48u, err));
-    if (err->exc) { m9ln = 679; goto L_ret; };
+    if (err->exc) { m9ln = 693; goto L_ret; };
     if (m9t14) {
       err->res = m9res;
       m9ret = false;
       goto L_ret;
     }
     { __typeof__(j) m9v = m9_add_i64 (j, INT64_C(1), err);
-      if (err->exc) { m9ln = 680; goto L_ret; };
+      if (err->exc) { m9ln = 694; goto L_ret; };
       j = m9v;
     }
   }
@@ -2229,132 +2273,134 @@ static void Lex_Number (Lex_Lexer *lx, m9_pool *lx_pool, Lex_Token *t, m9_pool *
   int64_t d = 0; (void) d;
   uint32_t c = 0; (void) c;
   bool m9t1 = ((Lex_Peek (lx, lx_pool, INT64_C(0), err) == 48u) && (Lex_Peek (lx, lx_pool, INT64_C(1), err) == 120u));
-  if (err->exc) { m9ln = 692; goto L_ret; };
+  if (err->exc) { m9ln = 706; goto L_ret; };
   if (m9t1) {
     Lex_Advance (lx, lx_pool, err);
-    if (err->exc) { m9ln = 693; goto L_ret; };
+    if (err->exc) { m9ln = 707; goto L_ret; };
     Lex_Advance (lx, lx_pool, err);
-    if (err->exc) { m9ln = 694; goto L_ret; };
-    { __typeof__(Lex_Peek (lx, lx_pool, INT64_C(0), err)) m9a13 = Lex_Peek (lx, lx_pool, INT64_C(0), err);
-      if (err->exc) { m9ln = 695; goto L_ret; };
-    bool m9t2 = (!Lex_IsHexAny (m9a13, err));
-    if (err->exc) { m9ln = 695; goto L_ret; };
+    if (err->exc) { m9ln = 708; goto L_ret; };
+    { __typeof__(Lex_Peek (lx, lx_pool, INT64_C(0), err)) m9a14 = Lex_Peek (lx, lx_pool, INT64_C(0), err);
+      if (err->exc) { m9ln = 709; goto L_ret; };
+    bool m9t2 = (!Lex_IsHexAny (m9a14, err));
+    if (err->exc) { m9ln = 709; goto L_ret; };
     if (m9t2) {
       Lex_Mk (t, t_pool, Lex_KError, ((m9_sl_UTF8){ (uint8_t *) m9s142, 33 }), ln, cl, err);
-      if (err->exc) { m9ln = 696; goto L_ret; };
+      if (err->exc) { m9ln = 710; goto L_ret; };
       goto L_ret;
     } }
     for (;;) {
-      { __typeof__(Lex_Peek (lx, lx_pool, INT64_C(0), err)) m9a14 = Lex_Peek (lx, lx_pool, INT64_C(0), err);
-        if (err->exc) { m9ln = 699; goto L_ret; };
-      bool m9t3 = Lex_IsHexAny (m9a14, err);
-      if (err->exc) { m9ln = 699; goto L_ret; };
+      { __typeof__(Lex_Peek (lx, lx_pool, INT64_C(0), err)) m9a15 = Lex_Peek (lx, lx_pool, INT64_C(0), err);
+        if (err->exc) { m9ln = 713; goto L_ret; };
+      bool m9t3 = Lex_IsHexAny (m9a15, err);
+      if (err->exc) { m9ln = 713; goto L_ret; };
       if (!(m9t3)) break;
+      M9_YCHK ();
       Lex_Advance (lx, lx_pool, err);
-      if (err->exc) { m9ln = 699; goto L_ret; };
+      if (err->exc) { m9ln = 713; goto L_ret; };
       }
     }
-    { __typeof__(Lex_Peek (lx, lx_pool, INT64_C(0), err)) m9a15 = Lex_Peek (lx, lx_pool, INT64_C(0), err);
-      if (err->exc) { m9ln = 700; goto L_ret; };
-    bool m9t4 = Lex_IsLetter (m9a15, err);
-    if (err->exc) { m9ln = 700; goto L_ret; };
+    { __typeof__(Lex_Peek (lx, lx_pool, INT64_C(0), err)) m9a16 = Lex_Peek (lx, lx_pool, INT64_C(0), err);
+      if (err->exc) { m9ln = 714; goto L_ret; };
+    bool m9t4 = Lex_IsLetter (m9a16, err);
+    if (err->exc) { m9ln = 714; goto L_ret; };
     if (m9t4) {
       Lex_Mk (t, t_pool, Lex_KError, ((m9_sl_UTF8){ (uint8_t *) m9s143, 51 }), ln, cl, err);
-      if (err->exc) { m9ln = 701; goto L_ret; };
+      if (err->exc) { m9ln = 715; goto L_ret; };
       goto L_ret;
     } }
     { __typeof__(run) m9v = m9_utf_slice ((*lx).src, m9_add_i64 (start, INT64_C(2), err), m9_sub_i64 (m9_sub_i64 ((*lx).pos, start, err), INT64_C(2), err), err);
-      if (err->exc) { m9ln = 705; goto L_ret; };
+      if (err->exc) { m9ln = 719; goto L_ret; };
       run = m9v;
     }
     bool m9t6 = (m9_sub_i64 (Text_BLen (run, err), Lex_Significant (run, INT64_C(0), err), err) > INT64_C(16));
-    if (err->exc) { m9ln = 706; goto L_ret; };
+    if (err->exc) { m9ln = 720; goto L_ret; };
     if (m9t6) {
       Lex_Mk (t, t_pool, Lex_KError, ((m9_sl_UTF8){ (uint8_t *) m9s144, 26 }), ln, cl, err);
-      if (err->exc) { m9ln = 707; goto L_ret; };
+      if (err->exc) { m9ln = 721; goto L_ret; };
       goto L_ret;
     }
-    { __typeof__(m9_utf_slice ((*lx).src, start, m9_sub_i64 ((*lx).pos, start, err), err)) m9a16 = m9_utf_slice ((*lx).src, start, m9_sub_i64 ((*lx).pos, start, err), err);
-      if (err->exc) { m9ln = 710; goto L_ret; };
-    Lex_Mk (t, t_pool, Lex_KInt, m9a16, ln, cl, err);
-    if (err->exc) { m9ln = 710; goto L_ret; };
+    { __typeof__(m9_utf_slice ((*lx).src, start, m9_sub_i64 ((*lx).pos, start, err), err)) m9a17 = m9_utf_slice ((*lx).src, start, m9_sub_i64 ((*lx).pos, start, err), err);
+      if (err->exc) { m9ln = 724; goto L_ret; };
+    Lex_Mk (t, t_pool, Lex_KInt, m9a17, ln, cl, err);
+    if (err->exc) { m9ln = 724; goto L_ret; };
     }
     goto L_ret;
   }
   hasHexLetter = false;
   { __typeof__(c) m9v = Lex_Peek (lx, lx_pool, INT64_C(0), err);
-    if (err->exc) { m9ln = 716; goto L_ret; };
+    if (err->exc) { m9ln = 730; goto L_ret; };
     c = m9v;
   }
   for (;;) {
     bool m9t8 = Lex_IsHexUp (c, err);
-    if (err->exc) { m9ln = 717; goto L_ret; };
+    if (err->exc) { m9ln = 731; goto L_ret; };
     if (!(m9t8)) break;
+    M9_YCHK ();
     bool m9t9 = (!Lex_IsDigit (c, err));
-    if (err->exc) { m9ln = 718; goto L_ret; };
+    if (err->exc) { m9ln = 732; goto L_ret; };
     if (m9t9) {
       hasHexLetter = true;
     }
     Lex_Advance (lx, lx_pool, err);
-    if (err->exc) { m9ln = 719; goto L_ret; };
+    if (err->exc) { m9ln = 733; goto L_ret; };
     { __typeof__(c) m9v = Lex_Peek (lx, lx_pool, INT64_C(0), err);
-      if (err->exc) { m9ln = 720; goto L_ret; };
+      if (err->exc) { m9ln = 734; goto L_ret; };
       c = m9v;
     }
   }
   { __typeof__(run) m9v = m9_utf_slice ((*lx).src, start, m9_sub_i64 ((*lx).pos, start, err), err);
-    if (err->exc) { m9ln = 722; goto L_ret; };
+    if (err->exc) { m9ln = 736; goto L_ret; };
     run = m9v;
   }
   if (hasHexLetter) {
-    { __typeof__(m9_sub_i64 (Text_BLen (run, err), INT64_C(1), err)) m9a17 = m9_sub_i64 (Text_BLen (run, err), INT64_C(1), err);
-      if (err->exc) { m9ln = 725; goto L_ret; };
-    bool m9t11 = (Lex_At (run, m9a17, err) != 67u);
-    if (err->exc) { m9ln = 725; goto L_ret; };
+    { __typeof__(m9_sub_i64 (Text_BLen (run, err), INT64_C(1), err)) m9a18 = m9_sub_i64 (Text_BLen (run, err), INT64_C(1), err);
+      if (err->exc) { m9ln = 739; goto L_ret; };
+    bool m9t11 = (Lex_At (run, m9a18, err) != 67u);
+    if (err->exc) { m9ln = 739; goto L_ret; };
     if (m9t11) {
       Lex_Mk (t, t_pool, Lex_KError, ((m9_sl_UTF8){ (uint8_t *) m9s145, 63 }), ln, cl, err);
-      if (err->exc) { m9ln = 726; goto L_ret; };
+      if (err->exc) { m9ln = 740; goto L_ret; };
       goto L_ret;
     } }
-    { __typeof__(Lex_Peek (lx, lx_pool, INT64_C(0), err)) m9a18 = Lex_Peek (lx, lx_pool, INT64_C(0), err);
-      if (err->exc) { m9ln = 731; goto L_ret; };
-    bool m9t12 = Lex_IsLetter (m9a18, err);
-    if (err->exc) { m9ln = 731; goto L_ret; };
+    { __typeof__(Lex_Peek (lx, lx_pool, INT64_C(0), err)) m9a19 = Lex_Peek (lx, lx_pool, INT64_C(0), err);
+      if (err->exc) { m9ln = 745; goto L_ret; };
+    bool m9t12 = Lex_IsLetter (m9a19, err);
+    if (err->exc) { m9ln = 745; goto L_ret; };
     if (m9t12) {
       Lex_Mk (t, t_pool, Lex_KError, ((m9_sl_UTF8){ (uint8_t *) m9s146, 51 }), ln, cl, err);
-      if (err->exc) { m9ln = 732; goto L_ret; };
+      if (err->exc) { m9ln = 746; goto L_ret; };
       goto L_ret;
     } }
     cv = INT64_C(0);
     { __typeof__(i) m9t13to;
     i = INT64_C(0);
     m9t13to = m9_sub_i64 (Text_BLen (run, err), INT64_C(2), err);
-    if (err->exc) { m9ln = 737; goto L_ret; };
+    if (err->exc) { m9ln = 751; goto L_ret; };
     if (i <= m9t13to) for (;;) {
       { __typeof__(c) m9v = Lex_At (run, i, err);
-        if (err->exc) { m9ln = 738; goto L_ret; };
+        if (err->exc) { m9ln = 752; goto L_ret; };
         c = m9v;
       }
       bool m9t14 = Lex_IsDigit (c, err);
-      if (err->exc) { m9ln = 739; goto L_ret; };
+      if (err->exc) { m9ln = 753; goto L_ret; };
       if (m9t14) {
         { __typeof__(d) m9v = m9_sub_i64 ((int64_t)(c), INT64_C(48), err);
-          if (err->exc) { m9ln = 739; goto L_ret; };
+          if (err->exc) { m9ln = 753; goto L_ret; };
           d = m9v;
         }
       } else {
         { __typeof__(d) m9v = m9_sub_i64 ((int64_t)(c), INT64_C(55), err);
-          if (err->exc) { m9ln = 739; goto L_ret; };
+          if (err->exc) { m9ln = 753; goto L_ret; };
           d = m9v;
         }
       }
       { __typeof__(cv) m9v = m9_add_i64 (m9_mul_i64 (cv, INT64_C(16), err), d, err);
-        if (err->exc) { m9ln = 740; goto L_ret; };
+        if (err->exc) { m9ln = 754; goto L_ret; };
         cv = m9v;
       }
       if ((cv > INT64_C(1114111))) {
         Lex_Mk (t, t_pool, Lex_KError, ((m9_sl_UTF8){ (uint8_t *) m9s147, 54 }), ln, cl, err);
-        if (err->exc) { m9ln = 742; goto L_ret; };
+        if (err->exc) { m9ln = 756; goto L_ret; };
         goto L_ret;
       }
       if ((uint64_t) m9t13to - (uint64_t) i < (uint64_t) 1) break;
@@ -2363,104 +2409,106 @@ static void Lex_Number (Lex_Lexer *lx, m9_pool *lx_pool, Lex_Token *t, m9_pool *
     if ((cv >= INT64_C(55296))) {
       if ((cv <= INT64_C(57343))) {
         Lex_Mk (t, t_pool, Lex_KError, ((m9_sl_UTF8){ (uint8_t *) m9s148, 52 }), ln, cl, err);
-        if (err->exc) { m9ln = 750; goto L_ret; };
+        if (err->exc) { m9ln = 764; goto L_ret; };
         goto L_ret;
       }
     }
     Lex_Mk (t, t_pool, Lex_KChar, run, ln, cl, err);
-    if (err->exc) { m9ln = 756; goto L_ret; };
+    if (err->exc) { m9ln = 770; goto L_ret; };
     goto L_ret;
   }
   isReal = false;
   bool m9t15 = ((Lex_Peek (lx, lx_pool, INT64_C(0), err) == 46u) && (Lex_Peek (lx, lx_pool, INT64_C(1), err) != 46u));
-  if (err->exc) { m9ln = 762; goto L_ret; };
+  if (err->exc) { m9ln = 776; goto L_ret; };
   if (m9t15) {
     isReal = true;
     Lex_Advance (lx, lx_pool, err);
-    if (err->exc) { m9ln = 764; goto L_ret; };
-    { __typeof__(Lex_Peek (lx, lx_pool, INT64_C(0), err)) m9a19 = Lex_Peek (lx, lx_pool, INT64_C(0), err);
-      if (err->exc) { m9ln = 765; goto L_ret; };
-    bool m9t16 = (!Lex_IsDigit (m9a19, err));
-    if (err->exc) { m9ln = 765; goto L_ret; };
+    if (err->exc) { m9ln = 778; goto L_ret; };
+    { __typeof__(Lex_Peek (lx, lx_pool, INT64_C(0), err)) m9a20 = Lex_Peek (lx, lx_pool, INT64_C(0), err);
+      if (err->exc) { m9ln = 779; goto L_ret; };
+    bool m9t16 = (!Lex_IsDigit (m9a20, err));
+    if (err->exc) { m9ln = 779; goto L_ret; };
     if (m9t16) {
       Lex_Mk (t, t_pool, Lex_KError, ((m9_sl_UTF8){ (uint8_t *) m9s149, 34 }), ln, cl, err);
-      if (err->exc) { m9ln = 766; goto L_ret; };
+      if (err->exc) { m9ln = 780; goto L_ret; };
       goto L_ret;
     } }
     for (;;) {
-      { __typeof__(Lex_Peek (lx, lx_pool, INT64_C(0), err)) m9a20 = Lex_Peek (lx, lx_pool, INT64_C(0), err);
-        if (err->exc) { m9ln = 769; goto L_ret; };
-      bool m9t17 = Lex_IsDigit (m9a20, err);
-      if (err->exc) { m9ln = 769; goto L_ret; };
+      { __typeof__(Lex_Peek (lx, lx_pool, INT64_C(0), err)) m9a21 = Lex_Peek (lx, lx_pool, INT64_C(0), err);
+        if (err->exc) { m9ln = 783; goto L_ret; };
+      bool m9t17 = Lex_IsDigit (m9a21, err);
+      if (err->exc) { m9ln = 783; goto L_ret; };
       if (!(m9t17)) break;
+      M9_YCHK ();
       Lex_Advance (lx, lx_pool, err);
-      if (err->exc) { m9ln = 769; goto L_ret; };
+      if (err->exc) { m9ln = 783; goto L_ret; };
       }
     }
     bool m9t18 = ((Lex_Peek (lx, lx_pool, INT64_C(0), err) == 101u) || (Lex_Peek (lx, lx_pool, INT64_C(0), err) == 69u));
-    if (err->exc) { m9ln = 770; goto L_ret; };
+    if (err->exc) { m9ln = 784; goto L_ret; };
     if (m9t18) {
       Lex_Advance (lx, lx_pool, err);
-      if (err->exc) { m9ln = 771; goto L_ret; };
+      if (err->exc) { m9ln = 785; goto L_ret; };
       bool m9t19 = ((Lex_Peek (lx, lx_pool, INT64_C(0), err) == 43u) || (Lex_Peek (lx, lx_pool, INT64_C(0), err) == 45u));
-      if (err->exc) { m9ln = 772; goto L_ret; };
+      if (err->exc) { m9ln = 786; goto L_ret; };
       if (m9t19) {
         Lex_Advance (lx, lx_pool, err);
-        if (err->exc) { m9ln = 772; goto L_ret; };
+        if (err->exc) { m9ln = 786; goto L_ret; };
       }
-      { __typeof__(Lex_Peek (lx, lx_pool, INT64_C(0), err)) m9a21 = Lex_Peek (lx, lx_pool, INT64_C(0), err);
-        if (err->exc) { m9ln = 773; goto L_ret; };
-      bool m9t20 = (!Lex_IsDigit (m9a21, err));
-      if (err->exc) { m9ln = 773; goto L_ret; };
+      { __typeof__(Lex_Peek (lx, lx_pool, INT64_C(0), err)) m9a22 = Lex_Peek (lx, lx_pool, INT64_C(0), err);
+        if (err->exc) { m9ln = 787; goto L_ret; };
+      bool m9t20 = (!Lex_IsDigit (m9a22, err));
+      if (err->exc) { m9ln = 787; goto L_ret; };
       if (m9t20) {
         Lex_Mk (t, t_pool, Lex_KError, ((m9_sl_UTF8){ (uint8_t *) m9s150, 26 }), ln, cl, err);
-        if (err->exc) { m9ln = 774; goto L_ret; };
+        if (err->exc) { m9ln = 788; goto L_ret; };
         goto L_ret;
       } }
       for (;;) {
-        { __typeof__(Lex_Peek (lx, lx_pool, INT64_C(0), err)) m9a22 = Lex_Peek (lx, lx_pool, INT64_C(0), err);
-          if (err->exc) { m9ln = 777; goto L_ret; };
-        bool m9t21 = Lex_IsDigit (m9a22, err);
-        if (err->exc) { m9ln = 777; goto L_ret; };
+        { __typeof__(Lex_Peek (lx, lx_pool, INT64_C(0), err)) m9a23 = Lex_Peek (lx, lx_pool, INT64_C(0), err);
+          if (err->exc) { m9ln = 791; goto L_ret; };
+        bool m9t21 = Lex_IsDigit (m9a23, err);
+        if (err->exc) { m9ln = 791; goto L_ret; };
         if (!(m9t21)) break;
+        M9_YCHK ();
         Lex_Advance (lx, lx_pool, err);
-        if (err->exc) { m9ln = 777; goto L_ret; };
+        if (err->exc) { m9ln = 791; goto L_ret; };
         }
       }
     }
   }
-  { __typeof__(Lex_Peek (lx, lx_pool, INT64_C(0), err)) m9a23 = Lex_Peek (lx, lx_pool, INT64_C(0), err);
-    if (err->exc) { m9ln = 780; goto L_ret; };
-  bool m9t22 = Lex_IsLetter (m9a23, err);
-  if (err->exc) { m9ln = 780; goto L_ret; };
+  { __typeof__(Lex_Peek (lx, lx_pool, INT64_C(0), err)) m9a24 = Lex_Peek (lx, lx_pool, INT64_C(0), err);
+    if (err->exc) { m9ln = 794; goto L_ret; };
+  bool m9t22 = Lex_IsLetter (m9a24, err);
+  if (err->exc) { m9ln = 794; goto L_ret; };
   if (m9t22) {
     Lex_Mk (t, t_pool, Lex_KError, ((m9_sl_UTF8){ (uint8_t *) m9s151, 120 }), ln, cl, err);
-    if (err->exc) { m9ln = 781; goto L_ret; };
+    if (err->exc) { m9ln = 795; goto L_ret; };
     goto L_ret;
   } }
   { __typeof__(run) m9v = m9_utf_slice ((*lx).src, start, m9_sub_i64 ((*lx).pos, start, err), err);
-    if (err->exc) { m9ln = 786; goto L_ret; };
+    if (err->exc) { m9ln = 800; goto L_ret; };
     run = m9v;
   }
   if (isReal) {
     bool m9t24 = Lex_RealTooBig (run, err);
-    if (err->exc) { m9ln = 788; goto L_ret; };
+    if (err->exc) { m9ln = 802; goto L_ret; };
     if (m9t24) {
       Lex_Mk (t, t_pool, Lex_KError, ((m9_sl_UTF8){ (uint8_t *) m9s152, 49 }), ln, cl, err);
-      if (err->exc) { m9ln = 789; goto L_ret; };
+      if (err->exc) { m9ln = 803; goto L_ret; };
     } else {
       Lex_Mk (t, t_pool, Lex_KReal, run, ln, cl, err);
-      if (err->exc) { m9ln = 791; goto L_ret; };
+      if (err->exc) { m9ln = 805; goto L_ret; };
     }
   } else {
     bool m9t25 = Lex_IntPast64 (run, err);
-    if (err->exc) { m9ln = 791; goto L_ret; };
+    if (err->exc) { m9ln = 805; goto L_ret; };
     if (m9t25) {
       Lex_Mk (t, t_pool, Lex_KError, ((m9_sl_UTF8){ (uint8_t *) m9s153, 111 }), ln, cl, err);
-      if (err->exc) { m9ln = 794; goto L_ret; };
+      if (err->exc) { m9ln = 808; goto L_ret; };
   } else {
     Lex_Mk (t, t_pool, Lex_KInt, run, ln, cl, err);
-    if (err->exc) { m9ln = 798; goto L_ret; };
+    if (err->exc) { m9ln = 812; goto L_ret; };
   } }
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);

@@ -1,0 +1,6 @@
+module Miss
+var a : I64
+{
+  while a < 3 {
+    a = a + 1
+} Miss.

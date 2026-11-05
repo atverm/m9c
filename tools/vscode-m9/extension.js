@@ -1,5 +1,7 @@
-/* M9 docstrings in the editor: hover and dot-completion, fed by the
- * compiler's own documentation pass.
+/* M9 in the editor: hover and dot-completion, fed by the compiler's
+ * own documentation pass, and the compiler's own diagnostics.  The
+ * same holds for .m9f, M9's C-like notation (the M9 report, Appendix
+ * A): m9c reads a .m9f itself, so this extension converts nothing.
  *
  * THE ONE RULE: NO SECOND SCANNER.  corpus/Gen.m9 holds 18 string
  * literals containing "(*" or "*)", so any JavaScript regex that
@@ -12,6 +14,15 @@
  * and parser, with the checked-in docs/modules/*.md as the fallback
  * when the compiler is not on hand.
  *
+ * Diagnostics come from `m9c --check`, run on the file on disk when
+ * it is opened and when it is saved.  That is what m9lsp does, and
+ * for the same reason: m9c reads files.  An unsaved buffer is not
+ * checked.  A check of a .m9f writes its .m9, as every m9c run does.
+ * The extension reads only m9c's FILE:LINE:COL: lines.
+ *
+ * "M9: Show in the Other Notation" opens the .m9f of a .m9 beside it,
+ * or the .m9 of a .m9f.  m9c converts a copy in a scratch directory.
+ *
  * Settings (m9.*):
  *   compilerPath   the m9c binary; default resolves
  *                  <workspace>/runtime/test/m9c, then
@@ -21,6 +32,7 @@
  *                  ~/m9build or /tmp/m9build)
  *   libraryPaths   $M9LIBRARY; default <workspace>/corpus and
  *                  any directory m9.includePaths names
+ *   checkOnSave    run m9c --check on open and save (default true)
  */
 "use strict";
 const vscode = require ("vscode");
@@ -28,6 +40,9 @@ const cp = require ("child_process");
 const fs = require ("fs");
 const os = require ("os");
 const path = require ("path");
+
+/* M9_LANGS are the languages this extension serves. */
+const M9_LANGS = ["m9", "m9f"];
 
 /* ---- the generated-markdown model ---- */
 
@@ -123,13 +138,11 @@ function libraryPaths () {
    -- the same order the compiler searches, so the hover documents
    the file the build would use */
 function resolveSource (name, hintDir) {
-  const cands = [];
-  if (hintDir) cands.push (path.join (hintDir, name + ".m9"));
-  for (const d of config ().includePaths)
-    cands.push (path.join (d, name + ".m9"));
-  for (const d of libraryPaths ())
-    cands.push (path.join (d, name + ".m9"));
-  return firstExisting (cands);
+  const dirs = [hintDir, ...config ().includePaths, ...libraryPaths ()]
+    .filter (d => d);
+  /* a .m9 wins, as it does in m9c; a .m9f with no .m9 yet is next */
+  return firstExisting (dirs.map (d => path.join (d, name + ".m9")))
+    || firstExisting (dirs.map (d => path.join (d, name + ".m9f")));
 }
 
 /* ---- the doc cache: one m9c --doc run per (source, mtime) ---- */
@@ -166,7 +179,7 @@ function generate (src, hintDir) {
     });
     if (r.status !== 0) return null;
     const md = path.join (tmpDir,
-      path.basename (src).replace (/\.m9$/, ".md"));
+      path.basename (src).replace (/\.m9f?$/, ".md"));
     return parseDoc (fs.readFileSync (md, "utf8"));
   } catch (e) { return null; }
 }
@@ -183,16 +196,24 @@ function fallback (name) {
 
 /* ---- what the current file names ---- */
 
+/* A .m9f writes its keywords in lower case: module, import, from. */
 function ownModule (doc) {
-  const m = doc.getText ().match (/(?:DEFINITION\s+)?MODULE\s+(\w+)/);
-  return m ? m[1] : path.basename (doc.fileName, ".m9");
+  const m = doc.getText ().match (/\b(?:MODULE|module)\s+(\w+)/);
+  return m ? m[1] : path.basename (doc.fileName).replace (/\.m9f?$/, "");
 }
 
+/* importedModules answers every module an IMPORT line names, and the
+   module of each FROM line. */
 function importedModules (doc) {
   const out = new Set ();
   for (const m of doc.getText ()
-       .matchAll (/^\s*(?:IMPORT|FROM)\s+(\w+)/gm))
-    out.add (m[1]);
+       .matchAll (/^\s*(IMPORT|import|FROM|from)\s+([^;\n]*)/gm)) {
+    const names = /^(FROM|from)$/.test (m[1]) ? [m[2]] : m[2].split (",");
+    for (const n of names) {
+      const w = n.trim ().match (/^\w+/);
+      if (w) out.add (w[0]);
+    }
+  }
   return out;
 }
 
@@ -277,15 +298,151 @@ const completion = {
   },
 };
 
-function activate (context) {
-  context.subscriptions.push (
-    vscode.languages.registerHoverProvider ("m9", hover),
-    vscode.languages.registerCompletionItemProvider ("m9", completion,
-                                                     "."));
+/* ---- diagnostics: m9c --check on open and save ---- */
+
+/* A Dock-launched VS Code has a short PATH, and m9c needs gcc on it. */
+function m9env () {
+  const extra = ["/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin"];
+  const p = (process.env.PATH || "").split (path.delimiter);
+  const env = Object.assign ({}, process.env, {
+    PATH: p.concat (extra.filter (d => !p.includes (d))).join (path.delimiter) });
+  const lib = libraryPaths ();
+  if (lib.length > 0) env.M9LIBRARY = lib.join (":");
+  return env;
 }
 
-function deactivate () {}
+/* findings reads what m9c printed when it checked file from the
+   directory cwd.  Each FILE:LINE:COL: line is one finding, 0-based.
+   An indented line goes on with the finding above it: the .m9f
+   line-break hint is one.  A finding in another file is pinned to the
+   top, its place in its message.  A refusal with no such line is one
+   finding at the top, carrying all of m9c's text, so it is never
+   silent. */
+function findings (out, status, file, cwd) {
+  const res = [];
+  for (const line of out.split (/\r?\n/)) {
+    const m = /^(.*?):(\d+):(\d+): ?(.*)$/.exec (line);
+    if (m) {
+      let l = Number (m[2]) - 1, c = Number (m[3]) - 1, msg = m[4];
+      if (path.resolve (cwd, m[1]) !== file) {
+        msg = m[1] + ":" + m[2] + ":" + m[3] + ": " + msg;
+        l = 0;
+        c = 0;
+      }
+      res.push ({ line: Math.max (l, 0), col: Math.max (c, 0), msg });
+    } else if (res.length > 0 && line.startsWith (" ")) {
+      res[res.length - 1].msg += "\n" + line;
+    }
+  }
+  if (res.length === 0 && status !== 0)
+    res.push ({ line: 0, col: 0,
+                msg: out.trim () || "m9c stopped with status " + status });
+  return res;
+}
 
-/* hover/completion exported for the headless test harness
-   (tools/vscode-m9/test.js); the extension host uses activate */
-module.exports = { activate, deactivate, parseDoc, hover, completion };
+/* diagnostic underlines the word a finding starts at. */
+function diagnostic (doc, f) {
+  const l = Math.min (f.line, Math.max (doc.lineCount - 1, 0));
+  const text = doc.lineAt (l).text;
+  const c = Math.min (f.col, text.length);
+  const word = /^[A-Za-z0-9_]+/.exec (text.slice (c));
+  const d = new vscode.Diagnostic (
+    new vscode.Range (l, c, l, c + (word ? word[0].length : 1)),
+    f.msg, vscode.DiagnosticSeverity.Error);
+  d.source = "m9c";
+  return d;
+}
+
+let diags = null;
+const running = new Map ();     /* file -> the m9c checking it */
+
+function check (doc) {
+  if (!diags || doc.uri.scheme !== "file") return;
+  if (!M9_LANGS.includes (doc.languageId)) return;
+  if (!vscode.workspace.getConfiguration ("m9").get ("checkOnSave", true))
+    return;
+  const file = doc.uri.fsPath, cwd = path.dirname (file);
+  const prev = running.get (file);
+  if (prev) prev.kill ();
+  const args = [];
+  for (const d of config ().includePaths) args.push ("-I", d);
+  args.push ("--check", path.basename (file));
+  const child = cp.execFile (compilerPath (), args,
+    { cwd, env: m9env (), timeout: 60000, maxBuffer: 8 << 20 },
+    (err, stdout, stderr) => {
+      if (running.get (file) !== child) return;
+      running.delete (file);
+      if (err && err.killed) return;
+      if (err && err.code === "ENOENT") {
+        vscode.window.showWarningMessage ("m9: cannot run " + compilerPath ()
+          + "; set m9.compilerPath");
+        return;
+      }
+      const status = err ? (typeof err.code === "number" ? err.code : 1) : 0;
+      diags.set (doc.uri, findings (stdout + stderr, status, file, cwd)
+        .map (f => diagnostic (doc, f)));
+    });
+  running.set (file, child);
+}
+
+/* ---- the other notation ---- */
+
+/* showOther converts a copy of the active buffer in a scratch
+   directory, with a cache of its own, so nothing beside the real file
+   changes.  m9c --to-m9f writes the .m9f of a .m9.  m9c --check writes
+   the .m9 of a .m9f before it checks it; what the check says after
+   that does not matter here. */
+function showOther () {
+  const ed = vscode.window.activeTextEditor;
+  if (!ed || !M9_LANGS.includes (ed.document.languageId)) return;
+  const doc = ed.document;
+  const toM9 = doc.languageId === "m9f";
+  const base = path.basename (doc.fileName).replace (/\.m9f?$/, "");
+  const dir = fs.mkdtempSync (path.join (os.tmpdir (), "m9-other-"));
+  fs.writeFileSync (path.join (dir, base + (toM9 ? ".m9f" : ".m9")),
+                    doc.getText ());
+  const args = toM9 ? ["--check", base + ".m9f"] : ["--to-m9f", base + ".m9"];
+  const env = Object.assign (m9env (), { M9CACHE: path.join (dir, "cache") });
+  cp.execFile (compilerPath (), args,
+    { cwd: dir, env, timeout: 60000, maxBuffer: 8 << 20 },
+    async (err, stdout, stderr) => {
+      let text = null;
+      try {
+        text = fs.readFileSync (path.join (dir, base + (toM9 ? ".m9" : ".m9f")),
+                                "utf8");
+      } catch (e) {}
+      fs.rmSync (dir, { recursive: true, force: true });
+      if (text === null) {
+        vscode.window.showErrorMessage ("m9c: "
+          + ((stderr || stdout).trim () || (err ? err.message : "no output")));
+        return;
+      }
+      const other = await vscode.workspace.openTextDocument (
+        { content: text, language: toM9 ? "m9" : "m9f" });
+      vscode.window.showTextDocument (other, vscode.ViewColumn.Beside, true);
+    });
+}
+
+function activate (context) {
+  diags = vscode.languages.createDiagnosticCollection ("m9");
+  context.subscriptions.push (
+    diags,
+    vscode.workspace.onDidOpenTextDocument (check),
+    vscode.workspace.onDidSaveTextDocument (check),
+    vscode.workspace.onDidCloseTextDocument (d => diags.delete (d.uri)),
+    vscode.commands.registerCommand ("m9.showOther", showOther));
+  for (const lang of M9_LANGS)
+    context.subscriptions.push (
+      vscode.languages.registerHoverProvider (lang, hover),
+      vscode.languages.registerCompletionItemProvider (lang, completion, "."));
+  vscode.workspace.textDocuments.forEach (check);
+}
+
+function deactivate () {
+  for (const c of running.values ()) c.kill ();
+}
+
+/* hover, completion and findings are exported for the headless test
+   harness (tools/vscode-m9/test.js); the extension host uses activate */
+module.exports = { activate, deactivate, parseDoc, hover, completion,
+                   findings, importedModules };

@@ -602,6 +602,7 @@ m9_sl_I64 NetCDF_VarShape (NetCDF_File * f, int64_t varid, m9_state *err)
   m9t4to = m9_sub_i64 (rank, INT64_C(1), err);
   if (err->exc) { m9ln = 981; goto L_ret; };
   if (i <= m9t4to) for (;;) {
+    M9_YCHK ();
     { __typeof__((int64_t)((*(int32_t *) m9_at (dims.v, i, INT64_C(8), sizeof (int32_t), err)))) m9a15 = (int64_t)((*(int32_t *) m9_at (dims.v, i, INT64_C(8), sizeof (int32_t), err)));
       if (err->exc) { m9ln = 982; goto L_ret; };
     { __typeof__((*(int64_t *) m9_at (out.p, i, out.len, sizeof (int64_t), err))) m9v = NetCDF_DimLen (f, m9a15, err);
@@ -775,6 +776,7 @@ m9_gd2_double NetCDF_ReadGrid2 (NetCDF_File * f, m9_sl_UTF8 name, m9_state *err)
   m9t2to = m9_sub_i64 ((*(int64_t *) m9_at (shape.p, INT64_C(0), shape.len, sizeof (int64_t), err)), INT64_C(1), err);
   if (err->exc) { m9ln = 1387; goto L_ret; };
   if (i <= m9t2to) for (;;) {
+    M9_YCHK ();
     { __typeof__(j) m9t3to;
     j = INT64_C(0);
     m9t3to = m9_sub_i64 ((*(int64_t *) m9_at (shape.p, INT64_C(1), shape.len, sizeof (int64_t), err)), INT64_C(1), err);
@@ -853,6 +855,7 @@ m9_gd3_double NetCDF_ReadGrid3 (NetCDF_File * f, m9_sl_UTF8 name, m9_state *err)
   m9t2to = m9_sub_i64 ((*(int64_t *) m9_at (shape.p, INT64_C(0), shape.len, sizeof (int64_t), err)), INT64_C(1), err);
   if (err->exc) { m9ln = 1410; goto L_ret; };
   if (i <= m9t2to) for (;;) {
+    M9_YCHK ();
     { __typeof__(j) m9t3to;
     j = INT64_C(0);
     m9t3to = m9_sub_i64 ((*(int64_t *) m9_at (shape.p, INT64_C(1), shape.len, sizeof (int64_t), err)), INT64_C(1), err);
@@ -2189,6 +2192,7 @@ m9_sl_m9_sl_UTF8 NetCDF_GetChars (m9_pool *pool, NetCDF_File * f, int64_t varid,
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) { m9ln = 1275; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     k = width;
     for (;;) {
       bool m9t2 = ((k > INT64_C(0)) && ((((int64_t)((*(uint8_t *) m9_at (raw.p, m9_sub_i64 (m9_add_i64 (m9_mul_i64 (i, width, err), k, err), INT64_C(1), err), raw.len, sizeof (uint8_t), err))) == INT64_C(0)) || ((int64_t)((*(uint8_t *) m9_at (raw.p, m9_sub_i64 (m9_add_i64 (m9_mul_i64 (i, width, err), k, err), INT64_C(1), err), raw.len, sizeof (uint8_t), err))) == INT64_C(32)))));
@@ -2373,6 +2377,7 @@ void NetCDF_GetText (NetCDF_File * f, int64_t varid, int64_t row, int64_t n, int
   m9t10to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) { m9ln = 1344; goto L_ret; };
   if (r <= m9t10to) for (;;) {
+    M9_YCHK ();
     { __typeof__(q) m9v = m9_add_i64 (row, r, err);
       if (err->exc) { m9ln = 1345; goto L_ret; };
       q = m9v;

@@ -44,6 +44,15 @@ PROCEDURE ErrAt (i: I64) : UTF RAISES IndexError ;
             registries at a time and a process is the reset, which
             is the same rule m9c states in its own header.        *)
 
+PROCEDURE NoteCount () : I64 ;
+PROCEDURE NoteAt (i: I64) : UTF RAISES IndexError ;
+  (* NoteCount and NoteAt answer the notes, which refuse nothing.  A
+     note says that a name from another module is DEPRECATED, and what
+     its definition says to write instead (par 3.9).  Each is
+     formatted `line:col note: MSG', once per site.
+
+       i -- 0 .. NoteCount - 1.                                     *)
+
 PROCEDURE LedgerCount () : I64 ;
 PROCEDURE LedgerAt (i: I64) : UTF RAISES IndexError ;
   (* LedgerCount and LedgerAt answer the par 4.1 contortion ledger:
@@ -336,6 +345,10 @@ VAR
   nad : I64 ;
   scText : SLICE OF UTF ;                  (* StaleCall *)
   nsc : I64 ;
+  dpKey, dpText : SLICE OF UTF ;           (* DEPRECATED: `Mod.Name', what to write *)
+  ndp : I64 ;
+  ntText : SLICE OF UTF ;                  (* NoteAt *)
+  nnt : I64 ;
   ssText : SLICE OF UTF ;                  (* StrSite *)
   nss : I64 ;
   curProcNm : UTF ;                        (* the procedure CheckProcBody is in, '' in the module body *)
@@ -556,6 +569,9 @@ BEGIN
   nforActive := 0 ;
   mods := NEW (pool, ModuleInfo, 8) ;
   errs := NEW (pool, UTF, 16) ;
+  dpKey := NEW (pool, UTF, 8) ;
+  dpText := NEW (pool, UTF, 8) ;
+  ntText := NEW (pool, UTF, 8) ;
   ledger := NEW (pool, UTF, 8) ;
   scope := NEW (pool, Binding, 32) ;
   avHolder := -1 ;
@@ -646,6 +662,87 @@ BEGIN
   IF i < 0 OR i >= nerrs THEN RAISE IndexError (i, nerrs) END ;
   RETURN errs[i]
 END ErrAt ;
+
+PROCEDURE NoteCount () : I64 =
+BEGIN
+  RETURN nnt
+END NoteCount ;
+
+PROCEDURE NoteAt (i: I64) : UTF RAISES IndexError =
+BEGIN
+  IF i < 0 OR i >= nnt THEN RAISE IndexError (i, nnt) END ;
+  RETURN ntText[i]
+END NoteAt ;
+
+(* ---- DEPRECATED (par 3.9) ----
+
+   A definition marks a procedure or a CONST it means to retire with
+   [DEPRECATED 'what to write instead'].  The name still works for one
+   release.  Each use from another module gets a note, and the note
+   refuses nothing. *)
+
+PROCEDURE DepFind (RO key: UTF) : I64 =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO ndp - 1 DO
+    IF Text.Eq (dpKey[i], key) THEN RETURN i END
+  END ;
+  RETURN -1
+END DepFind ;
+
+(* DepAdd registers modName.name when at is [DEPRECATED 'text']. *)
+PROCEDURE DepAdd (RO modName: UTF ; RO name: UTF ; at: Ast.Kid) =
+VAR
+  key : UTF ;
+  k : I64 ;
+BEGIN
+  IF at IS SOME a THEN
+    IF Text.Eq (a.au, 'DEPRECATED') AND Text.BLen (a.bu) > 0 THEN
+      key := modName + '.' + name ;
+      IF DepFind (key) < 0 THEN
+        k := ndp ;
+        PushErr (dpKey, k, Text.Keep (pool, key)) ;
+        PushErr (dpText, ndp, Text.Keep (pool, a.bu))
+      END
+    END
+  END
+END DepAdd ;
+
+(* DepNote notes the use n of modName.name, once per site, when the
+   name is deprecated and belongs to another module. *)
+PROCEDURE DepNote (n: PTR Ast.Node ; RO modName: UTF ; RO name: UTF) =
+VAR
+  i, j : I64 ;
+  key, e : UTF ;
+BEGIN
+  IF Text.Eq (modName, curMod) THEN RETURN END ;
+  key := modName + '.' + name ;
+  i := DepFind (key) ;
+  IF i < 0 THEN RETURN END ;
+  e := ItoA (n.line) + ':' + ItoA (n.col) + ' note: ' + key +
+       ' is deprecated; write ' + dpText[i] ;
+  FOR j := 0 TO nnt - 1 DO
+    IF Text.Eq (ntText[j], e) THEN RETURN END
+  END ;
+  PushErr (ntText, nnt, Text.Keep (pool, e))
+END DepNote ;
+
+(* DepWalk finds every Mod.Name in the tree under k: a designator whose
+   first name is a module and whose first selector is a field. *)
+PROCEDURE DepWalk (k: Ast.Kid) =
+VAR i : I64 ;
+BEGIN
+  IF k IS SOME n THEN
+    IF n.kind = Ast.NDesignator AND n.nkids > 0 THEN
+      IF n.kids[0] IS SOME s THEN
+        IF s.kind = Ast.NSelField AND FindMod (n.au) >= 0 THEN
+          DepNote (n, n.au, s.au)
+        END
+      END
+    END ;
+    FOR i := 0 TO n.nkids - 1 DO DepWalk (n.kids[i]) END
+  END
+END DepWalk ;
 
 PROCEDURE LedgerCount () : I64 =
 BEGIN
@@ -953,7 +1050,8 @@ BEGIN
   END ;
   (* bare, or qualified with the current module *)
   IF Text.Eq (nm, 'Overflow') OR Text.Eq (nm, 'IndexError')
-     OR Text.Eq (nm, 'OutOfMemory') OR Text.Eq (nm, 'ValueRange') THEN
+     OR Text.Eq (nm, 'OutOfMemory') OR Text.Eq (nm, 'ValueRange')
+     OR Text.Eq (nm, 'Poisoned') THEN
     RETURN TRUE
   END ;
   FOR i := 0 TO nmods - 1 DO
@@ -1176,7 +1274,7 @@ BEGIN
   IF IsOpaqueIn (m, nm) THEN RETURN FALSE END ;
   RETURN HasExcIn (m, nm) OR Text.Eq (nm, 'Overflow') OR
     Text.Eq (nm, 'IndexError') OR Text.Eq (nm, 'OutOfMemory') OR
-    Text.Eq (nm, 'ValueRange')
+    Text.Eq (nm, 'ValueRange') OR Text.Eq (nm, 'Poisoned')
 END ExcNotType ;
 
 PROCEDURE CheckFieldTypes (fs: Ast.Kid ; RO ctx: UTF) ;
@@ -1440,10 +1538,14 @@ BEGIN
       DynStr.Append (d, r[i])
     END
   END ;
+  (* [DEPRECATED] is the definition's word to callers; the
+     implementation's heading need not repeat it. *)
   IF p.kids[3] IS SOME at THEN
-    DynStr.Append (d, ' [') ;
-    DynStr.Append (d, at.au) ;
-    DynStr.AppendChar (d, ']')
+    IF NOT Text.Eq (at.au, 'DEPRECATED') THEN
+      DynStr.Append (d, ' [') ;
+      DynStr.Append (d, at.au) ;
+      DynStr.AppendChar (d, ']')
+    END
   END ;
   RETURN DynStr.View (d)
 END SigOf ;
@@ -1772,6 +1874,7 @@ BEGIN
           p.foreign := d.bu ;
           IF d.kids[3] IS SOME at THEN p.attrib := at.au
           ELSE p.attrib := '' END ;
+          IF u.kind = Ast.NDefinition THEN DepAdd (mods[m].name, d.au, d.kids[3]) END ;
           p.raises := RaisesSpelled (pool, d) ;
           p.sig := Text.Keep (pool, SigOf (d)) ;
           p.node := SOME (d) ;
@@ -1826,7 +1929,10 @@ BEGIN
            does. *)
         FOR j := 0 TO d.nkids - 1 DO
           IF d.kids[j] IS SOME cd2 THEN
-            AddConst (m, cd2.au, Text.Keep (pool, LitType (cd2.kids[0])), cd2.kids[0])
+            AddConst (m, cd2.au, Text.Keep (pool, LitType (cd2.kids[0])), cd2.kids[0]) ;
+            IF u.kind = Ast.NDefinition AND cd2.nkids > 1 THEN
+              DepAdd (mods[m].name, cd2.au, cd2.kids[1])
+            END
           END
         END
       ELSIF d.kind = Ast.NTypeSection THEN
@@ -7839,7 +7945,8 @@ PROCEDURE HasExcAny (RO nm: UTF) : BOOL =
 VAR mi : I64 ;
 BEGIN
   IF Text.Eq (nm, 'Overflow') OR Text.Eq (nm, 'IndexError') OR
-     Text.Eq (nm, 'OutOfMemory') OR Text.Eq (nm, 'ValueRange') THEN
+     Text.Eq (nm, 'OutOfMemory') OR Text.Eq (nm, 'ValueRange') OR
+     Text.Eq (nm, 'Poisoned') THEN
     RETURN TRUE
   END ;
   FOR mi := 0 TO nmods - 1 DO
@@ -19210,8 +19317,16 @@ BEGIN
         IF NOT curUnsafe THEN
           ErrN (at, ctx, '[FRESH] states what an UNSAFE body cannot show; in a safe module the body is the evidence -- drop the attribute (par 7)')
         END
+      ELSIF Text.Eq (at.au, 'RESET') THEN
+        (* stage 5 of docs/task-plan.md: the one call into a poisoned
+           monitor, which it rebuilds from zero *)
+        IF Text.BLen (BoundMonitorOf (d)) = 0 THEN
+          ErrN (at, ctx, '[RESET] rebuilds the monitor its procedure is bound to, from zero; ' + d.au + ' is bound to none (par 6)')
+        END
+      ELSIF Text.Eq (at.au, 'DEPRECATED') THEN
+        (* CheckDeprecated reports it: it belongs on the definition *)
       ELSE
-        ErrN (at, ctx, S3 ('a procedure takes the attribute [PURE] or, in an UNSAFE implementation, [FRESH] (par 3.2, par 7), not [', at.au, ']'))
+        ErrN (at, ctx, S3 ("a procedure takes the attribute [PURE], [RESET] (bound to a monitor), [DEPRECATED 'text'] (in a definition) or, in an UNSAFE implementation, [FRESH] (par 3.2, par 3.9, par 6, par 7), not [", at.au, ']'))
       END
     END ;
     boundMon := Text.Keep (pool, BoundMonitorOf (d)) ;
@@ -19316,13 +19431,15 @@ BEGIN
   nraised := n
 END RaisedDrop ;
 
-(* IsUnchecked is TRUE for the three that are always possible.  A
+(* IsUnchecked is TRUE for the four that are always possible.  A
    declaration of them would put them on every signature and so
-   distinguish nothing. *)
+   distinguish nothing.  Poisoned joined them on 2026-11-02 (Alex): a
+   call into a monitor that a bug left half updated, stage 5 of
+   docs/task-plan.md.  It can only follow a bug, so it is one. *)
 PROCEDURE IsUnchecked (RO nm: UTF) : BOOL =
 BEGIN
   RETURN Text.Eq (nm, 'Overflow') OR Text.Eq (nm, 'IndexError') OR
-         Text.Eq (nm, 'OutOfMemory')
+         Text.Eq (nm, 'OutOfMemory') OR Text.Eq (nm, 'Poisoned')
 END IsUnchecked ;
 
 PROCEDURE ScalarAlias (RO name: UTF) : UTF =
@@ -20606,6 +20723,46 @@ BEGIN
   END
 END CheckFieldsOnce ;
 
+(* DepAttrib checks one attribute at: only [DEPRECATED] carries a text,
+   it must carry one, and it stands in a definition.  onConst says the
+   attribute is a CONST's, which takes no other. *)
+PROCEDURE DepAttrib (u: PTR Ast.Node ; at: Ast.Kid ; onConst: BOOL) =
+BEGIN
+  IF at IS SOME a THEN
+    IF Text.Eq (a.au, 'DEPRECATED') THEN
+      IF Text.BLen (a.bu) = 0 THEN
+        ErrN (a, u.au, "[DEPRECATED] says what to write instead: [DEPRECATED 'Mod.New (x)'] (par 3.9)")
+      ELSIF u.kind # Ast.NDefinition THEN
+        ErrN (a, u.au, '[DEPRECATED] belongs on the definition, which its callers read (par 3.9)')
+      END
+    ELSIF onConst THEN
+      ErrN (a, u.au, S3 ("a CONST takes only the attribute [DEPRECATED 'text'] (par 3.9), not [", a.au, ']'))
+    ELSIF Text.BLen (a.bu) > 0 THEN
+      ErrN (a, u.au, S3 ('only [DEPRECATED] carries a text; [', a.au, '] takes none (par 3.9)'))
+    END
+  END
+END DepAttrib ;
+
+(* CheckDeprecated checks every attribute on the unit's procedure
+   headings and CONSTs by DepAttrib. *)
+PROCEDURE CheckDeprecated (u: PTR Ast.Node) =
+VAR i, j : I64 ;
+BEGIN
+  FOR i := 0 TO u.nkids - 1 DO
+    IF u.kids[i] IS SOME d THEN
+      IF d.kind = Ast.NProcDecl THEN
+        DepAttrib (u, d.kids[3], FALSE)
+      ELSIF d.kind = Ast.NConstSection THEN
+        FOR j := 0 TO d.nkids - 1 DO
+          IF d.kids[j] IS SOME cd THEN
+            IF cd.nkids > 1 THEN DepAttrib (u, cd.kids[1], TRUE) END
+          END
+        END
+      END
+    END
+  END
+END CheckDeprecated ;
+
 PROCEDURE CheckFile (VAR KEPT root: PTR Ast.Node) =
 VAR i, j, k, fm : I64 ;
 BEGIN
@@ -20656,6 +20813,8 @@ BEGIN
       BindersOnce (SOME (u), u.au) ;
       CheckExcFields (u) ;
       RecordAttribWalk (SOME (u), u.au) ;
+      CheckDeprecated (u) ;
+      IF ndp > 0 THEN DepWalk (SOME (u)) END ;
       (* Register module CONSTs, so a designator naming one has a
          type. *)
       ConstClear () ;

@@ -120,6 +120,7 @@ Chars_Index Chars_IndexStr (m9_sl_UTF8 s, m9_state *err)
   k = INT64_C(0);
   for (;;) {
     if (!((at < ix.octets))) break;
+    M9_YCHK ();
     bool m9t1 = (m9_mod_i64 (k, Chars_Block, err) == INT64_C(0));
     if (err->exc) { m9ln = 129; goto L_ret; };
     if (m9t1) {

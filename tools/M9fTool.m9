@@ -1,0 +1,142 @@
+#!/usr/bin/env -S m9c --run
+MODULE M9fTool ;
+
+(* M9fTool converts files between M9 and .m9f with the M9f module.
+
+       tools/M9fTool.m9 to FILE.m9 [OUT]     write FILE.m9f, or OUT (- is stdout)
+       tools/M9fTool.m9 from FILE.m9f [OUT]  write FILE.m9, or OUT
+       tools/M9fTool.m9 round FILE.m9 ...    M9 to .m9f to M9 must give each FILE back
+
+   Round prints one line for each file that differs and exits 1 when
+   any does.  The gate runtime/test/m9f.sh runs it over the tree.
+   (M9LIBRARY must reach corpus/: the script imports M9f.) *)
+
+IMPORT Io ;
+IMPORT M9f ;
+IMPORT Fmt ;
+IMPORT Text ;
+
+(* Stem answers path without the extension ext, or path itself. *)
+PROCEDURE Stem (RO path, ext: UTF) : UTF =
+BEGIN
+  IF Text.EndsWith (path, ext) THEN
+    RETURN SLICE (path, 0, Text.BLen (path) - Text.BLen (ext))
+  END ;
+  RETURN path
+END Stem ;
+
+PROCEDURE Usage () =
+BEGIN
+  Io.ErrLine ('usage: M9fTool.m9 to FILE.m9 [OUT]     M9 to .m9f (OUT - is stdout)') ;
+  Io.ErrLine ('       M9fTool.m9 from FILE.m9f [OUT]  .m9f to M9') ;
+  Io.ErrLine ('       M9fTool.m9 round FILE.m9 ...    M9 to .m9f to M9 must give FILE back')
+END Usage ;
+
+PROCEDURE Put (RO path, text: UTF) RAISES ValueRange, Io.IOError =
+BEGIN
+  IF Text.Eq (path, '-') THEN Io.Write (text) ELSE Io.WriteFile (path, text) END
+END Put ;
+
+(* FirstDiff answers the first line where a and b differ, or 0. *)
+PROCEDURE FirstDiff (RO a, b: UTF) : I64 RAISES IndexError =
+VAR
+  la, lb : SLICE OF UTF ;
+  i : I64 ;
+BEGIN
+  IF Text.Eq (a, b) THEN RETURN 0 END ;
+  la := Text.Split (a, 0AC) ;
+  lb := Text.Split (b, 0AC) ;
+  i := 0 ;
+  WHILE i < LEN (la) AND i < LEN (lb) AND Text.Eq (la[i], lb[i]) DO i := i + 1 END ;
+  RETURN i + 1
+END FirstDiff ;
+
+(* Round answers whether path survives M9 to .m9f to M9, and reports
+   it when not.  A file it cannot read is reported, and the run goes
+   on. *)
+PROCEDURE Round (RO path: UTF) : BOOL RAISES IndexError =
+VAR
+  pool : POOL ;
+  src : UTF ;
+  there, back : PTR M9f.Result IN pool ;
+  errs : SLICE OF UTF ;
+  d, i : I64 ;
+BEGIN
+  src := Text.Keep (pool, Io.ReadFile (path)) ;
+  there := M9f.ToM9f (pool, src) ;
+  back := M9f.ToM9 (pool, there.text) ;
+  d := FirstDiff (src, back.text) ;
+  IF d = 0 AND back.nerr = 0 THEN RETURN TRUE END ;
+  IF d > 0 THEN
+    Io.WriteLine (path + ': round trip differs at line ' + Fmt.I64Str (d))
+  END ;
+  errs := Text.Split (back.errs, 0AC) ;
+  FOR i := 0 TO LEN (errs) - 1 DO
+    IF Text.BLen (errs[i]) > 0 THEN Io.WriteLine (path + ':' + errs[i]) END
+  END ;
+  RETURN FALSE
+EXCEPT
+| ValueRange :
+    Io.WriteLine (path + ': not UTF-8') ;
+    RETURN FALSE
+| Io.IOError :
+    Io.WriteLine (path + ': cannot read') ;
+    RETURN FALSE
+END Round ;
+
+VAR
+  pool : POOL ;
+  mode, inp, outp, src, bp : UTF ;
+  r : PTR M9f.Result IN pool ;
+  i, nbad : I64 ;
+
+BEGIN
+  IF Io.ArgCount () < 3 THEN
+    Usage () ;
+    Io.Halt (2)
+  END ;
+  mode := Io.Arg (pool, 1) ;
+  inp := Io.Arg (pool, 2) ;
+  outp := '' ;
+  IF Text.Eq (mode, 'round') THEN
+    nbad := 0 ;
+    FOR i := 2 TO Io.ArgCount () - 1 DO
+      inp := Io.Arg (pool, i) ;
+      IF NOT Round (inp) THEN nbad := nbad + 1 END
+    END ;
+    IF nbad > 0 THEN Io.Halt (1) END
+  ELSIF Io.ArgCount () > 4 THEN
+    Usage () ;
+    Io.Halt (2)
+  ELSE
+    IF Io.ArgCount () = 4 THEN outp := Io.Arg (pool, 3) END ;
+    src := Text.Keep (pool, Io.ReadFile (inp)) ;
+    IF Text.Eq (mode, 'to') THEN
+      IF Text.BLen (outp) = 0 THEN outp := Stem (inp, '.m9') + '.m9f' END ;
+      r := M9f.ToM9f (pool, src) ;
+      Put (outp, r.text)
+    ELSIF Text.Eq (mode, 'from') THEN
+      IF Text.BLen (outp) = 0 THEN outp := Stem (inp, '.m9f') + '.m9' END ;
+      r := M9f.ToM9 (pool, src) ;
+      IF r.nerr > 0 THEN
+        Io.Err (r.errs) ;
+        Io.Halt (1)
+      END ;
+      Put (outp, r.text)
+    ELSE
+      Usage () ;
+      Io.Halt (2)
+    END
+  END
+EXCEPT
+| IndexError :
+    Io.ErrLine ('M9fTool: internal IndexError, or a nest deeper than 1024 blocks') ;
+    Io.Halt (1)
+| ValueRange :
+    Io.ErrLine ('M9fTool: ' + inp + ' is not UTF-8') ;
+    Io.Halt (1)
+| Io.IOError (p) :
+    bp := p ;
+    Io.ErrLine ('M9fTool: cannot read or write ' + bp) ;
+    Io.Halt (1)
+END M9fTool.

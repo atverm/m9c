@@ -343,7 +343,12 @@ CONST
     'record-inline',
     'record-extension',
     'pool-into-var-outlives',
-    'thread-utf-shared-pool'
+    'thread-utf-shared-pool',
+    'reset-unbound',
+    'deprecated-not-in-definition',
+    'deprecated-without-text',
+    'attribute-text-not-deprecated',
+    'const-attribute-not-deprecated'
   ] ;
   Cause = [
     'ADR takes the address of a value, which is the one thing the memory rules cannot check',
@@ -615,7 +620,7 @@ CONST
     'a CASE over an enumeration or a case record that leaves a member out (this probe holds that twenty members named are accepted, which a sixteen-label limit refused)',
     'ADR of a variable whose type holds a reference -- a record with a UTF, a slice or a pointer -- in a procedure that does not state where its answer lives: C can write a reference no assignment shows',
     '[FRESH] on a procedure of a safe module: the statement is for an UNSAFE body whose C the checker cannot read, and beside a body it reads it could only disagree',
-    'a procedure attribute that is neither [PURE] nor [FRESH]: it was ignored, and what the author meant by it was never checked',
+    'a procedure attribute that is neither [PURE], [RESET], [DEPRECATED] nor [FRESH]: it was ignored, and what the author meant by it was never checked',
     'WAIT or SIGNAL on a monitor the procedure is not bound to: WAIT releases the lock its procedure holds, and on another monitor there is none to release',
     'two monitor types taken in opposite orders: a procedure bound to one may enter the other, and a procedure bound to the other may enter the first, so two threads can each hold one lock and wait for the other',
     'one record handed to several threads in a loop, and the target allocates in its POOL field: the field is shared, not the worker own, and the pool takes no lock',
@@ -654,7 +659,12 @@ CONST
     "the generator builds a record from its TYPE declaration, by name; a RECORD written as a variable's, field's or element's type had none and was `type kind unsupported yet' until 2026-10-30",
     "type extension is specified with IS tests and type guards (par 2.2, par 8) and not built: the generator knew no field of a base until 2026-10-30, when the checker began to refuse it",
     "the callee keeps what it allocates in its POOL parameter in its VAR parameter (directly or through a further call), so the variable points into that pool; a pool local to the caller dies at the caller's END while the variable lives on -- oneflux's PeriodPool, a use after free accepted until 2026-10-30",
-    "UTF (pool, s) carves its pool as NEW (pool, T) does; the threads share the one record, so they carve its POOL field at once, and the pool takes no lock (par 6). A MONITOR's POOL field, carved in a procedure bound to it, is legal: the lock is held"
+    "UTF (pool, s) carves its pool as NEW (pool, T) does; the threads share the one record, so they carve its POOL field at once, and the pool takes no lock (par 6). A MONITOR's POOL field, carved in a procedure bound to it, is legal: the lock is held",
+    '[RESET] marks the one procedure that may enter a poisoned monitor and rebuilds it from zero (par 6, stage 5 of docs/task-plan.md); a procedure bound to no monitor has nothing to rebuild',
+    '[DEPRECATED] retires a name for one release, and each use from another module gets a note (par 3.9); a caller reads the definition, so a mark in the implementation or in a program module would reach nobody',
+    "the note a use of a deprecated name gets says what to write instead, and that text is the attribute's (par 3.9); without one the caller learns only that the name is going",
+    'only [DEPRECATED] carries a text (par 3.9); every other attribute is a bare name, and a text on it would be read by nothing',
+    "a CONST takes one attribute, [DEPRECATED 'text'], written before its = (par 3.9); [PURE] and the others say something about a procedure or a record"
   ] ;
   Fix = [
     'put the procedure in an UNSAFE module, or pass a SLICE/VAR instead of an address (par 7)',
@@ -926,7 +936,7 @@ CONST
     'name every member, or give the CASE an ELSE',
     'state [FRESH] on the procedure (its answer is built in the caller arena), or hand C a slice it fills instead of a variable',
     'drop the attribute: the checker reads the body',
-    'spell it [PURE] or [FRESH], or drop it',
+    'spell it [PURE], [RESET], [DEPRECATED] or [FRESH], or drop it',
     'WAIT and SIGNAL on the procedure first parameter, the monitor it is bound to; to wait on another monitor, call a procedure bound to it',
     'take the locks in one order everywhere: take what is needed out of the first monitor, leave it, then enter the second',
     'hand each thread its own record (an element of a slice of jobs), or give each worker a POOL of its own',
@@ -965,7 +975,12 @@ CONST
     'declare the record as a TYPE, TYPE Inner = RECORD b : I64 END, and write Inner where the RECORD was',
     "write the base's fields into the record itself, or hold the base as a field: RECORD base : Base ; a1 : I64 END",
     "hand the call a pool that lives as long as the variable -- the caller's own POOL parameter or a module pool -- or keep the result in a local of the same procedure",
-    "give each worker its own record (THREAD (W, js[i])), or put the POOL in a MONITOR and build the UTF in a procedure bound to it"
+    "give each worker its own record (THREAD (W, js[i])), or put the POOL in a MONITOR and build the UTF in a procedure bound to it",
+    'bind the procedure to the monitor it rebuilds (its first parameter, VAR m: TheMonitor), or drop the attribute',
+    "move [DEPRECATED 'text'] to the procedure's heading or the CONST in the module's DEFINITION; the implementation's heading need not repeat it",
+    "say what to write instead: [DEPRECATED 'Mod.New (x)']",
+    'drop the text, or write the note as a comment beside the heading',
+    "drop the attribute, or write [DEPRECATED 'what to write instead']"
   ] ;
 
 VAR

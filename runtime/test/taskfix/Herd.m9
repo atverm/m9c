@@ -1,0 +1,82 @@
+MODULE Herd ;
+
+(* Herd runs 2,000 TASKs through ten steps of a barrier (docs/task-plan.md,
+   stage 2).  The module body opens each step with one SIGNAL, which
+   wakes every task at once, and waits until all have finished it.
+   So the run deals woken tasks out across the carriers, steals,
+   and queues on two monitors from every carrier.  Each task adds its
+   step's number to a total; the total is exact or the run is wrong.
+   tsan.sh runs it under ThreadSanitizer, small enough for CI. *)
+
+IMPORT Io ;
+
+CONST
+  Tasks = 2000 ;
+  Steps = 10 ;
+
+TYPE
+  Go = MONITOR RECORD
+    step : I64 ;
+  END ;
+
+  Done = MONITOR RECORD
+    n, total : I64 ;
+  END ;
+
+  Job = RECORD
+    go : Go ;
+    done : Done ;
+  END [SHARABLE] ;
+
+PROCEDURE AwaitStep (VAR g: Go ; seen: I64) : I64 =
+BEGIN
+  WHILE g.step = seen DO WAIT (g) END ;
+  RETURN g.step
+END AwaitStep ;
+
+PROCEDURE Open (VAR g: Go ; step: I64) =
+BEGIN
+  g.step := step ;
+  SIGNAL (g)
+END Open ;
+
+PROCEDURE Finish (VAR d: Done ; step: I64) =
+BEGIN
+  d.n := d.n + 1 ;
+  d.total := d.total + step ;
+  SIGNAL (d)
+END Finish ;
+
+PROCEDURE AwaitDone (VAR d: Done ; want: I64) : I64 =
+BEGIN
+  WHILE d.n < want DO WAIT (d) END ;
+  RETURN d.total
+END AwaitDone ;
+
+PROCEDURE Worker (VAR j: Job) =
+VAR seen, s : I64 ;
+BEGIN
+  seen := 0 ;
+  FOR s := 1 TO Steps DO
+    seen := AwaitStep (j.go, seen) ;
+    Finish (j.done, seen)
+  END
+END Worker ;
+
+VAR
+  pool : POOL ;
+  j : PTR Job ;
+  i, s, total : I64 ;
+
+BEGIN
+  j := NEW (pool, Job) ;
+  FOR i := 1 TO Tasks DO TASK (Worker, j) END ;
+  total := 0 ;
+  FOR s := 1 TO Steps DO
+    Open (j.go, s) ;
+    total := AwaitDone (j.done, s * Tasks)
+  END ;
+  Io.Write ('total ') ;
+  Io.WriteI64 (total) ;
+  Io.WriteLine ('')
+END Herd.

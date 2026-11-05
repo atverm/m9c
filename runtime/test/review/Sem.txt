@@ -1,11 +1,11 @@
-REVIEW Sem -- 670 procedures with a body, 467 of them functions; 93 headings in a DEFINITION
+REVIEW Sem -- 678 procedures with a body, 470 of them functions; 95 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path             467
-  assignments                                  2750
-  arguments                                   11657
-  RETURN values                                1683
-  operands of a comparison or an operator      3537
+  functions answering on every path             470
+  assignments                                  2758
+  arguments                                   11745
+  RETURN values                                1687
+  operands of a comparison or an operator      3562
   CASE labels                                   188
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -23,8 +23,9 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   DISPOSE                                         0
   SHARED (x)                                      0
   THREAD                                          0
+  TASK                                            0
   [SHARABLE] records                              0
-  module variables                              213   showName, shown, shownRaises, mods, nmods, impB, +207 more
+  module variables                              218   showName, shown, shownRaises, mods, nmods, impB, +212 more
 
 TRUSTED -- outside what the checker can see
   UNSAFE units                                    0
@@ -37,9 +38,10 @@ TRUSTED -- outside what the checker can see
 
 COUNTED -- how much there was to check
   CASE statements                                18
-  RAISE statements                                3
+  RAISE statements                                4
   handlers                                        3
   NEW in the frame                               22
-  NEW in a named pool                           162
+  NEW in a named pool                           165
   calls of a STR form with a UTF twin             0
   STR subscripts, writes and LEN                  0
+  uses of a deprecated name                       0

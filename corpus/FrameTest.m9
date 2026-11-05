@@ -40,6 +40,24 @@ VAR
   gold : STR ;
   pool : POOL ;
 
+(* KindName names a column's kind by its Frame.Data variant. *)
+PROCEDURE KindName (f: PTR Frame.Fr ; RO name: STR) : STR
+  RAISES Frame.Unknown =
+VAR c : Frame.Col ;
+BEGIN
+  c := Frame.GetCol (f, name) ;
+  CASE c.data OF
+  | Frame.Data.F64s (v64, m64) : RETURN 'F64'
+  | Frame.Data.F32s (v32, m32) : RETURN 'F32'
+  | Frame.Data.I64s (vi64, mi64) : RETURN 'I64'
+  | Frame.Data.I32s (vi32, mi32) : RETURN 'I32'
+  | Frame.Data.I16s (vi16, mi16) : RETURN 'I16'
+  | Frame.Data.Bytes (vb, mb) : RETURN 'BYTE'
+  | Frame.Data.Bools (vbo) : RETURN 'BOOL'
+  | Frame.Data.Strs (si) : RETURN 'STR'
+  END
+END KindName ;
+
 PROCEDURE F64s (RO name: STR) : SLICE OF F64 =
 BEGIN
   RETURN Check.GoldF64s (t, gold, name)
@@ -214,7 +232,7 @@ BEGIN
   Check.EqStr (t, 'and its long name', c.long, 'a measured thing') ;
   Check.EqF64 (t, 'and its missing value', Frame.MissF64 (g, 'x'),
                Check.GoldF64 (t, gold, 'in.miss')) ;
-  Check.EqI64 (t, 'and its kind', Frame.KindOf (g, 'w'), Frame.KindOf (f, 'w')) ;
+  Check.EqStr (t, 'and its kind', KindName (g, 'w'), KindName (f, 'w')) ;
 
   g := Frame.Filter (pool, f, Bools ('in.mask')) ;
   Check.EqI64s (t, 'Filter: the rows where the mask is TRUE',
@@ -682,15 +700,15 @@ VAR
 BEGIN
   opt := Csv.Defaults () ;
   tb := Csv.OpenBytes (pool, OCTETS ('s,n,x,y' + Nl + 'a,1,1.5,2.25' + Nl + 'b,2,2.5,4.5' + Nl), opt) ;
-  Csv.SetText (tb, 0) ;
-  Csv.SetInt (tb, 1) ;
-  Csv.SetReal (tb, 2) ;
-  Csv.SetReal64 (tb, 3) ;
+  Csv.SetKind (tb, 0, Csv.Kind.Text) ;
+  Csv.SetKind (tb, 1, Csv.Kind.Int) ;
+  Csv.SetKind (tb, 2, Csv.Kind.Real) ;
+  Csv.SetKind (tb, 3, Csv.Kind.Real64) ;
   Csv.Parse (pool, tb) ;
   f := Frame.FromCsv (pool, tb) ;
   Check.EqI64 (t, 'FromCsv keeps every declared column', Frame.Cols (f), 4) ;
-  Check.EqI64 (t, 'a Real64 column is F64', Frame.KindOf (f, 'y'), Frame.KindF64) ;
-  Check.EqI64 (t, 'a Real column is F32', Frame.KindOf (f, 'x'), Frame.KindF32) ;
+  Check.EqStr (t, 'a Real64 column is F64', KindName (f, 'y'), 'F64') ;
+  Check.EqStr (t, 'a Real column is F32', KindName (f, 'x'), 'F32') ;
   v := Frame.ColF64 (f, 'y') ;
   Check.EqI64 (t, 'the F64 column has every row', LEN (v), 2) ;
   Check.EqF64 (t, 'the F64 column reads back exactly', v[1], 4.5)

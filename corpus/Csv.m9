@@ -130,8 +130,10 @@ PROCEDURE Find (t: PTR Table ; RO name: STR) : I64 ;
 
 PROCEDURE SetKind (VAR t: PTR Table ; c: I64 ; k: Kind)
   RAISES IndexError ;
-PROCEDURE SetReal (VAR t: PTR Table ; c: I64) RAISES IndexError ;
-PROCEDURE SetReal64 (VAR t: PTR Table ; c: I64) RAISES IndexError ;
+PROCEDURE SetReal (VAR t: PTR Table ; c: I64) RAISES IndexError
+  [DEPRECATED 'Csv.SetKind (t, c, Csv.Kind.Real)'] ;
+PROCEDURE SetReal64 (VAR t: PTR Table ; c: I64) RAISES IndexError
+  [DEPRECATED 'Csv.SetKind (t, c, Csv.Kind.Real64)'] ;
   (* MEASUREMENTS ARE F32 by default, and the module header says why.
      SetReal64 is the exception that header names: "a caller needing
      F64 measurements should say so and this grows a kind".  The
@@ -139,19 +141,24 @@ PROCEDURE SetReal64 (VAR t: PTR Table ; c: I64) RAISES IndexError ;
      measurement array is `<f8>`.  A narrowing here and a widening
      again to write would be two roundings where the file has one
      number. *)
-PROCEDURE SetInt (VAR t: PTR Table ; c: I64) RAISES IndexError ;
-PROCEDURE SetText (VAR t: PTR Table ; c: I64) RAISES IndexError ;
-PROCEDURE SetSkip (VAR t: PTR Table ; c: I64) RAISES IndexError ;
+PROCEDURE SetInt (VAR t: PTR Table ; c: I64) RAISES IndexError
+  [DEPRECATED 'Csv.SetKind (t, c, Csv.Kind.Int)'] ;
+PROCEDURE SetText (VAR t: PTR Table ; c: I64) RAISES IndexError
+  [DEPRECATED 'Csv.SetKind (t, c, Csv.Kind.Text)'] ;
+PROCEDURE SetSkip (VAR t: PTR Table ; c: I64) RAISES IndexError
+  [DEPRECATED 'Csv.SetKind (t, c, Csv.Kind.Skip)'] ;
 PROCEDURE SetStamp (VAR t: PTR Table ; c: I64 ; format: I64)
-  RAISES IndexError ;
+  RAISES IndexError
+  [DEPRECATED 'Csv.SetKind (t, c, Csv.Kind.Stamp (format))'] ;
   (* These setters say the same thing as SetKind without naming the
      variant.  They date from when a caller in another module could
      not write `Csv.Kind.Real` (the checker accepted it, the
      generator refused it).  That gap CLOSED 2026-09-15
      (`corpus/KindUse.m9` is the gendiff fixture that writes every
-     form).  `SetKind (t, c, Csv.Kind.Real)` works from anywhere and
-     is the preferred spelling.  The setters stay for their callers
-     and for C, which has no constructor syntax.                     *)
+     form).  `SetKind (t, c, Csv.Kind.Real)` works from anywhere.  The
+     setters are DEPRECATED since 0.27.0 (report par 3.9) and go in the
+     release after it; runtime/test/csv_driver.c then builds the kind
+     in C. *)
 
 PROCEDURE KindAt (t: PTR Table ; c: I64) : Kind
   RAISES IndexError ;

@@ -117,8 +117,8 @@ PROCEDURE SetBarColor (series: I64 ; RO KEPT hex: STR) ;
      verbatim, so it is the caller's business that it is a colour;
      an empty string restores the palette entry.                   *)
 
-PROCEDURE Viridis () : Cmap ;
-PROCEDURE Coolwarm () : Cmap ;
+PROCEDURE Viridis () : Cmap [DEPRECATED 'Plot.Cmap.Viridis'] ;
+PROCEDURE Coolwarm () : Cmap [DEPRECATED 'Plot.Cmap.Coolwarm'] ;
 PROCEDURE CmapHex (cmap: Cmap ; t: F64) : STR RAISES ValueRange ;
   (* CmapHex answers the colour at t in 0 .. 1 of a colour map, as
      '#rrggbb'.  That is what RenderHeat fills a cell with, for a
@@ -128,9 +128,8 @@ PROCEDURE CmapHex (cmap: Cmap ; t: F64) : STR RAISES ValueRange ;
      when a payload-less variant constructor from ANOTHER module
      type-checked and the generator refused it (met by RenderHeat's
      first caller outside this file).  Since 2026-09-15
-     `Plot.Cmap.Viridis` works from anywhere; these two remain as the
-     shorter spelling their callers use, and answer exactly that
-     constructor. *)
+     `Plot.Cmap.Viridis` works from anywhere.  These two are DEPRECATED
+     since 0.27.0 (report par 3.9) and go in the release after it. *)
 
 PROCEDURE SetLineColor (series: I64 ; RO KEPT hex: STR) ;
   (* SetLineColor is the line twin of SetBarColor: it overrides one

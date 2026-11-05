@@ -464,6 +464,19 @@ rather than read a page: the one class of mistake a fluent generator
 makes most is a real name it did not look up, and a table copied
 into a prompt drifts in a day.
 .TP
+.B \-\-to\-m9f
+Write
+.IB NAME .m9f
+from
+.IR FILE .m9,
+in the .m9f notation, and nothing else. It records the
+.I .m9
+as m9c's own, so the two files are in step. This is the way to keep a
+.I .m9
+that was edited by hand when
+.B m9c
+refuses to overwrite it (see THE .m9f NOTATION).
+.TP
 .B \-\-pic
 Compile position-independent. Not the default: on x86-64 it costs an
 indirection on every global, and the overwhelming majority of these
@@ -617,6 +630,79 @@ A module that cannot be found is fatal before generation. Every
 missing module is named first, then
 .B m9c
 stops: without a module's source, everything downstream is guesswork.
+.
+.SH THE .m9f NOTATION
+A module may be written in .m9f, the same language with a C-like
+face: braces for blocks, lower-case keywords,
+.BR == ,
+.BR != ,
+.BR && ,
+.B ||
+and
+.BR % ,
+.B //
+comments, and a line break for most semicolons. The converter is the
+library module M9f.
+.PP
+.B m9c
+acts as its preprocessor. For
+.IR FILE .m9f,
+and for each import it looks up,
+.B m9c
+writes
+.IR NAME .m9
+from
+.IR NAME .m9f
+beside it, and compiles the
+.IR .m9 .
+It writes it when there is no
+.IR NAME .m9,
+or when the
+.I .m9f
+is as new as it or newer. Otherwise the
+.I .m9
+wins as it is. The
+.I .m9
+is the text to commit and review. Lines do not move in the
+conversion. A diagnostic in a
+.I .m9
+that is in step with its
+.I .m9f
+names the
+.IR .m9f ,
+at the line and the column there. A
+.I .m9
+that wins over its
+.I .m9f
+is named as itself.
+.PP
+A parse error in such a file speaks .m9f: what was expected is spelled
+as .m9f spells it, and what was found is quoted from the
+.IR .m9f .
+Where a line break was read as the end of a statement, a note says
+so: end the line with
+.B \e
+to continue it.
+.PP
+.B m9c
+never overwrites a
+.I .m9
+it did not write. It keeps a record of every text it writes under
+the cache's m9f directory. A
+.I .m9
+that is not in the record was edited by hand:
+.B m9c
+names both files and stops.
+.B \-\-to\-m9f
+writes the
+.I .m9f
+again from such a
+.IR .m9 ;
+removing the
+.I .m9
+keeps the
+.I .m9f
+instead.
 .
 .SH THE GENERATED C
 Without

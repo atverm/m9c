@@ -503,6 +503,7 @@ void NbCells_PutGrid (m9_sl_UTF8 name, m9_gd2_double g, m9_state *err)
   m9t4to = m9_sub_i64 (nc, INT64_C(1), err);
   if (err->exc) { m9ln = 307; goto L_hdl_m9t1; };
   if (j <= m9t4to) for (;;) {
+    M9_YCHK ();
     { __typeof__(col) m9v = M9_POOL_SL (m9_sl_F64, double, &(scratch), nr, err);
       if (err->exc) { m9ln = 312; goto L_hdl_m9t1; };
       col = m9v;
@@ -589,6 +590,7 @@ m9_gd2_double NbCells_GetGrid (m9_pool *pool, m9_sl_UTF8 name, m9_state *err)
   m9t4to = m9_sub_i64 (nc, INT64_C(1), err);
   if (err->exc) { m9ln = 336; goto L_hdl_m9t1; };
   if (j <= m9t4to) for (;;) {
+    M9_YCHK ();
     { __typeof__(NbCells_ColName (&(scratch), j, err)) m9a3 = NbCells_ColName (&(scratch), j, err);
       if (err->exc) { m9ln = 337; goto L_hdl_m9t1; };
     { __typeof__(col) m9v = Frame_ColF64 (f, m9a3, err);
@@ -750,6 +752,7 @@ static int64_t NbCells_KindAt (m9_sl_UTF8 name, m9_state *err)
   m9t1to = m9_sub_i64 (INT64_C(4), INT64_C(1), err);
   if (err->exc) { m9ln = 144; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(m9_sl_UTF8 *) m9_at ((*Kinds).v, i, INT64_C(4), sizeof (m9_sl_UTF8), err))) m9a5 = (*(m9_sl_UTF8 *) m9_at ((*Kinds).v, i, INT64_C(4), sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 145; goto L_ret; };
     { __typeof__(NbCells_File (&(scratch), name, m9a5, false, err)) m9a6 = NbCells_File (&(scratch), name, m9a5, false, err);
@@ -806,6 +809,7 @@ static void NbCells_Store (m9_pool *scratch, Frame_Fr * f, m9_sl_UTF8 name, int6
   m9t1to = m9_sub_i64 (INT64_C(4), INT64_C(1), err);
   if (err->exc) { m9ln = 171; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     if ((i != k)) {
       { __typeof__((*(m9_sl_UTF8 *) m9_at ((*Kinds).v, i, INT64_C(4), sizeof (m9_sl_UTF8), err))) m9a10 = (*(m9_sl_UTF8 *) m9_at ((*Kinds).v, i, INT64_C(4), sizeof (m9_sl_UTF8), err));
         if (err->exc) { m9ln = 173; goto L_ret; };

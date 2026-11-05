@@ -85,21 +85,39 @@
 #ifndef _WIN32
 #include <pthread.h>
 #include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <poll.h>
 #endif
 
 int tcp_connect (const char *host, int port);   /* tcpshim.c */
 int tcp_close (int fd);                         /* tcpshim.c */
 
-/* Eight was the old limit, and it was exactly the number of workers
-   a reader is likely to start.  A handle table is bytes, so this is
-   the number nobody has to think about. */
-#define TLS_MAX 64
+/* A TASK WAITS FOR ITS TLS SOCKET IN THE POLLER (stage 3 of
+   docs/task-plan.md).  A handle made in a task has a non-blocking
+   socket.  OpenSSL then answers WANT_READ or WANT_WRITE where a
+   thread's call would block, and the task parks until the socket is
+   ready, then calls again.  A handle made by a THREAD keeps its
+   blocking socket and the code it had.  The two come from m9rt.c. */
+#ifndef _WIN32
+int m9_in_task (void);
+int m9_task_wait_fd (int fd, int write, int64_t ms);
+#endif
+
+/* Sixty-four was the limit until tasks.  One task per connection
+   holds thousands at once.  The table is zero pages until a slot is
+   used, so 16,384 costs nothing a program does not touch. */
+#define TLS_MAX 16384
 
 static struct {
   SSL *ssl;
   int fd;
   int used;
+  int nb;      /* the socket is non-blocking: made in a task */
 } slots[TLS_MAX];
+static int next_free;   /* where claim starts looking */
 
 static SSL_CTX *shared_ctx;
 
@@ -179,13 +197,18 @@ static void ctx_init (void)
    handshakes. */
 static int claim (void)
 {
-  int h;
+  int i, h = -1;
   LOCK ();
-  for (h = 0; h < TLS_MAX; h++)
-    if (!slots[h].used) { slots[h].used = 1; slots[h].ssl = NULL;
-                          slots[h].fd = -1; break; }
+  for (i = 0; i < TLS_MAX; i++) {
+    int k = (next_free + i) % TLS_MAX;
+    if (!slots[k].used) { h = k; break; }
+  }
+  if (h >= 0) {
+    slots[h].used = 1; slots[h].ssl = NULL; slots[h].fd = -1; slots[h].nb = 0;
+    next_free = (h + 1) % TLS_MAX;
+  }
   UNLOCK ();
-  return h == TLS_MAX ? -1 : h;
+  return h;
 }
 
 static void release (int h)
@@ -194,12 +217,85 @@ static void release (int h)
   slots[h].ssl = NULL;
   slots[h].fd = -1;
   slots[h].used = 0;
+  if (h < next_free) next_free = h;
   UNLOCK ();
+}
+
+/* wait_ssl waits until fd can do what OpenSSL asked for (e is
+   SSL_get_error's answer), for at most ms milliseconds (ms < 0: no
+   limit).  It answers 1 when the call should be made again.  A task
+   parks in the poller.  A thread that has a task's handle waits in
+   poll. */
+static int wait_ssl (int fd, int e, int64_t ms)
+{
+#ifdef _WIN32
+  (void) fd; (void) e; (void) ms;
+  return 0;
+#else
+  struct pollfd p;
+  int w = e == SSL_ERROR_WANT_WRITE, r;
+  if (e != SSL_ERROR_WANT_READ && e != SSL_ERROR_WANT_WRITE) return 0;
+  r = m9_task_wait_fd (fd, w, ms);
+  if (r >= 0) return r;
+  p.fd = fd;
+  p.events = w ? POLLOUT : POLLIN;
+  p.revents = 0;
+  do r = poll (&p, 1, ms < 0 ? -1 : (int) ms); while (r < 0 && errno == EINTR);
+  return r > 0;
+#endif
+}
+
+/* rcv_ms answers the socket's SO_RCVTIMEO in ms, or -1 for none, so a
+   task's read ends where a thread's would. */
+static int64_t rcv_ms (int fd)
+{
+#ifdef _WIN32
+  (void) fd;
+  return -1;
+#else
+  struct timeval tv;
+  socklen_t l = sizeof tv;
+  if (getsockopt (fd, SOL_SOCKET, SO_RCVTIMEO, &tv, &l) != 0) return -1;
+  if (tv.tv_sec == 0 && tv.tv_usec == 0) return -1;
+  return (int64_t) tv.tv_sec * 1000 + tv.tv_usec / 1000;
+#endif
+}
+
+/* go_nonblocking makes a task's socket non-blocking and answers 1.
+   A thread's stays as it is, and the answer is 0. */
+static int go_nonblocking (int fd)
+{
+#ifdef _WIN32
+  (void) fd;
+  return 0;
+#else
+  int f;
+  if (!m9_in_task ()) return 0;
+  f = fcntl (fd, F_GETFL);
+  if (f < 0 || fcntl (fd, F_SETFL, f | O_NONBLOCK) != 0) return 0;
+  return 1;
+#endif
+}
+
+/* handshake runs SSL_connect to the end.  OpenSSL's error queue is
+   per thread, and a task shares its carrier's with other tasks.  A
+   stale entry makes SSL_get_error answer SSL_ERROR_SSL, so the queue
+   is cleared before every call.  It answers 1 when the handshake
+   succeeded. */
+static int handshake (SSL *ssl, int fd, int nb)
+{
+  int r;
+  for (;;) {
+    ERR_clear_error ();
+    r = SSL_connect (ssl);
+    if (r == 1) return 1;
+    if (!nb || !wait_ssl (fd, SSL_get_error (ssl, r), -1)) return 0;
+  }
 }
 
 int tls_connect (const char *host, int port)
 {
-  int h, fd;
+  int h, fd, nb;
   SSL *ssl;
 
   ctx_init ();
@@ -216,10 +312,11 @@ int tls_connect (const char *host, int port)
   ssl = SSL_new (shared_ctx);
   if (ssl == NULL) { tcp_close (fd); release (h); return -1; }
 
+  nb = go_nonblocking (fd);
   SSL_set_fd (ssl, fd);
   SSL_set_tlsext_host_name (ssl, host);
   SSL_set1_host (ssl, host);
-  if (SSL_connect (ssl) != 1)
+  if (!handshake (ssl, fd, nb))
   {
     SSL_free (ssl);
     tcp_close (fd);
@@ -229,6 +326,7 @@ int tls_connect (const char *host, int port)
 
   slots[h].ssl = ssl;
   slots[h].fd = fd;
+  slots[h].nb = nb;
   return h;
 }
 
@@ -239,7 +337,7 @@ int tls_connect (const char *host, int port)
    open.                                                             */
 int tls_wrap (int fd, const char *host)
 {
-  int h;
+  int h, nb;
   SSL *ssl;
 
   ctx_init ();
@@ -248,40 +346,62 @@ int tls_wrap (int fd, const char *host)
   if (h < 0) return -1;
   ssl = SSL_new (shared_ctx);
   if (ssl == NULL) { release (h); return -1; }
+  nb = go_nonblocking (fd);
   SSL_set_fd (ssl, fd);
   SSL_set_tlsext_host_name (ssl, host);
   SSL_set1_host (ssl, host);
-  if (SSL_connect (ssl) != 1)
+  if (!handshake (ssl, fd, nb))
   {
     SSL_free (ssl);
+#ifndef _WIN32
+    /* the fd goes back to the caller as it came */
+    if (nb) fcntl (fd, F_SETFL, fcntl (fd, F_GETFL) & ~O_NONBLOCK);
+#endif
     release (h);
     return -1;
   }
   slots[h].ssl = ssl;
   slots[h].fd = fd;
+  slots[h].nb = nb;
   return h;
 }
 
+/* tls_read and tls_write call again after a wait only on a task's
+   handle.  On a thread's, WANT_READ means SO_RCVTIMEO ran out, and
+   the answer is -1 as before. */
 int64_t tls_read (int h, void *buf, size_t n)
 {
-  int got;
+  int got, e;
+  SSL *ssl;
   if (h < 0 || h >= TLS_MAX || !slots[h].used || slots[h].ssl == NULL)
     return -1;
-  got = SSL_read (slots[h].ssl, buf, (int) n);
-  if (got > 0) return got;
-  /* a clean shutdown is end of data, not an error */
-  if (SSL_get_error (slots[h].ssl, got) == SSL_ERROR_ZERO_RETURN)
-    return 0;
-  return got == 0 ? 0 : -1;
+  ssl = slots[h].ssl;
+  for (;;) {
+    ERR_clear_error ();
+    got = SSL_read (ssl, buf, (int) n);
+    if (got > 0) return got;
+    e = SSL_get_error (ssl, got);
+    /* a clean shutdown is end of data, not an error */
+    if (e == SSL_ERROR_ZERO_RETURN) return 0;
+    if (!slots[h].nb || !wait_ssl (slots[h].fd, e, rcv_ms (slots[h].fd)))
+      return got == 0 ? 0 : -1;
+  }
 }
 
 int64_t tls_write (int h, const void *buf, size_t n)
 {
   int put;
+  SSL *ssl;
   if (h < 0 || h >= TLS_MAX || !slots[h].used || slots[h].ssl == NULL)
     return -1;
-  put = SSL_write (slots[h].ssl, buf, (int) n);
-  return put > 0 ? put : -1;
+  ssl = slots[h].ssl;
+  for (;;) {
+    ERR_clear_error ();
+    put = SSL_write (ssl, buf, (int) n);
+    if (put > 0) return put;
+    if (!slots[h].nb || !wait_ssl (slots[h].fd, SSL_get_error (ssl, put), -1))
+      return -1;
+  }
 }
 
 int tls_close (int h)

@@ -39,8 +39,12 @@ IMPORT Sem ;
 IMPORT Doc ;
 IMPORT Review ;
 IMPORT Lex ;
+IMPORT M9f ;
 IMPORT DynStr ;
 IMPORT System ;
+
+TYPE
+  Conversion = PTR M9f.Result ;   (* a .m9f's conversion, with its map *)
 
 VAR
   pool : POOL ;
@@ -108,6 +112,7 @@ VAR
                              same lie --doc refuses to tell *)
   doDoc     : BOOL ;      (* --doc : write NAME.md and nothing else *)
   doJson    : BOOL ;      (* --json : with --doc, NAME.json as well *)
+  doToM9f   : BOOL ;      (* --to-m9f : write NAME.m9f from NAME.m9 *)
   debug     : BOOL ;      (* -g : debug info, and keep the C it names *)
   doMake    : BOOL ;      (* --make : rebuild stale dependencies first *)
   doRun     : BOOL ;      (* --run FILE.m9 ARG... : build into the
@@ -132,6 +137,13 @@ VAR
   lineShift : I64 ;       (* lines the wrapper puts before the
                              expression; taken off every diagnostic *)
   shiftPath : UTF ;       (* the file whose parse errors it applies to *)
+
+  (* These hold each .m9 that is in step with a .m9f (Prepare): its
+     path, the .m9f's, and the conversion's map.  A diagnostic in such
+     a .m9 names the .m9f, at the .m9f's column (Shown, ShownCol). *)
+  stepPaths, stepFs, stepSrcs : SLICE OF UTF ;
+  stepMaps  : SLICE OF Conversion ;
+  nstep     : I64 ;
 
   (* These hold --run's cache.  Every module's source is hashed as it
      is parsed, so the key of an object is what it was compiled FROM:
@@ -228,7 +240,7 @@ CONST
      compiler is the one artifact that cannot read its own package
      version, and a generated file would drag the build system into
      the bootstrap. *)
-  Version = '0.26.2' ;
+  Version = '0.27.0' ;
   (* StdInclude is where its runtime lives, which --help quotes so
      that the example a user copies out of it actually compiles. *)
   StdInclude = '/usr/include/m9' ;
@@ -653,6 +665,336 @@ EXCEPT
     RETURN ''
 END Aliased ;
 
+(* ---- .m9f: m9c as its preprocessor ----
+
+   A module may be written in the .m9f notation (corpus/M9f.m9).  m9c
+   then writes NAME.m9 from NAME.m9f beside it and compiles the .m9.
+   The .m9 stays the text that is committed and reviewed (Alex,
+   2026-11-01).  m9c writes it when there is no NAME.m9, or when the
+   .m9f is as new as it or newer.  Lines do not move, so a
+   diagnostic's line in the .m9 is its line in the .m9f.
+
+   m9c never overwrites a .m9 it did not write (Alex, 2026-11-03).
+   Each text it writes leaves an empty file under the cache's m9f
+   directory, named by the text's Hash.  A NAME.m9 whose hash has no
+   such file was edited by hand, so m9c refuses and names both files.
+   The record holds no path, so it survives a moved directory.
+   --to-m9f records the .m9 it converts, so the two start in step. *)
+
+(* M9fDir answers where the record of written texts is, or empty
+   without a cache. *)
+PROCEDURE M9fDir () : UTF RAISES ValueRange =
+BEGIN
+  IF Text.BLen (CacheRoot ()) = 0 THEN RETURN '' END ;
+  RETURN Join (CacheRoot (), 'm9f')
+END M9fDir ;
+
+(* Wrote records that the .m9 text is m9c's own.  A record that cannot
+   be written costs only a refusal later. *)
+PROCEDURE Wrote (RO text: UTF) =
+VAR dir : UTF ;
+BEGIN
+  dir := M9fDir () ;
+  IF Text.BLen (dir) = 0 THEN RETURN END ;
+  MkDirs (dir) ;
+  Io.WriteFile (Join (dir, Hash (text)), '')
+EXCEPT
+| Io.IOError (p) :
+    RETURN
+| ValueRange :
+    RETURN
+END Wrote ;
+
+(* Ours answers whether m9c wrote the .m9 text. *)
+PROCEDURE Ours (RO text: UTF) : BOOL =
+VAR dir : UTF ;
+BEGIN
+  dir := M9fDir () ;
+  IF Text.BLen (dir) = 0 THEN RETURN FALSE END ;
+  RETURN Io.Exists (Join (dir, Hash (text)))
+EXCEPT
+| ValueRange :
+    RETURN FALSE
+END Ours ;
+
+(* InStep records that the .m9 at path is in step with the .m9f f,
+   whose text is src, by the conversion r. *)
+PROCEDURE InStep (RO path: UTF ; RO f: UTF ; RO KEPT src: UTF ;
+                  KEPT r: Conversion) =
+VAR
+  np, nf, ns : SLICE OF UTF ;
+  nm : SLICE OF Conversion ;
+  i : I64 ;
+BEGIN
+  IF nstep = LEN (stepPaths) THEN
+    np := NEW (pool, UTF, 2 * nstep + 8) ;
+    nf := NEW (pool, UTF, 2 * nstep + 8) ;
+    ns := NEW (pool, UTF, 2 * nstep + 8) ;
+    nm := NEW (pool, Conversion, 2 * nstep + 8) ;
+    FOR i := 0 TO nstep - 1 DO
+      np[i] := stepPaths[i] ;
+      nf[i] := stepFs[i] ;
+      ns[i] := stepSrcs[i] ;
+      nm[i] := stepMaps[i]
+    END ;
+    stepPaths := np ;
+    stepFs := nf ;
+    stepSrcs := ns ;
+    stepMaps := nm
+  END ;
+  stepPaths[nstep] := Text.Keep (pool, path) ;
+  stepFs[nstep] := Text.Keep (pool, f) ;
+  stepSrcs[nstep] := src ;
+  stepMaps[nstep] := r ;
+  nstep := nstep + 1
+END InStep ;
+
+(* StepAt answers the entry of the .m9 at path, or -1 when it is not
+   in step with a .m9f. *)
+PROCEDURE StepAt (RO path: UTF) : I64 =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO nstep - 1 DO
+    IF Text.Eq (stepPaths[i], path) THEN RETURN i END
+  END ;
+  RETURN -1
+END StepAt ;
+
+(* Shown answers the file a diagnostic in path names: the .m9f when
+   path is in step with one, path itself otherwise. *)
+PROCEDURE Shown (RO path: UTF) : UTF =
+VAR k : I64 ;
+BEGIN
+  k := StepAt (path) ;
+  IF k < 0 THEN RETURN path END ;
+  RETURN stepFs[k]
+END Shown ;
+
+(* ShownCol answers the column a diagnostic at line, col of path names:
+   the .m9f's column when path is in step with one.  Lines do not
+   move. *)
+PROCEDURE ShownCol (RO path: UTF ; line, col: I64) : I64 =
+VAR k, lf, cf : I64 ;
+BEGIN
+  k := StepAt (path) ;
+  IF k < 0 THEN RETURN col END ;
+  M9f.Where (stepMaps[k], line, col, lf, cf) ;
+  RETURN cf
+EXCEPT
+| IndexError :
+    RETURN col
+END ShownCol ;
+
+(* Broke answers whether a parse error at line, col of path follows a
+   line break that the conversion from its .m9f read as a ;. *)
+PROCEDURE Broke (RO path: UTF ; line, col: I64) : BOOL =
+VAR k : I64 ;
+BEGIN
+  k := StepAt (path) ;
+  IF k < 0 THEN RETURN FALSE END ;
+  RETURN M9f.AfterBreak (stepMaps[k], line, col)
+EXCEPT
+| IndexError :
+    RETURN FALSE
+END Broke ;
+
+(* FindIn answers where needle starts in hay, or -1. *)
+PROCEDURE FindIn (RO hay, needle: UTF) : I64 =
+VAR i, j : I64 ;
+BEGIN
+  FOR i := 0 TO Text.BLen (hay) - Text.BLen (needle) DO
+    j := 0 ;
+    WHILE j < Text.BLen (needle) AND B (hay, i + j) = B (needle, j) DO j := j + 1 END ;
+    IF j = Text.BLen (needle) THEN RETURN i END
+  END ;
+  RETURN -1
+END FindIn ;
+
+(* Respell answers a parse error at line, col of path in the words of
+   its .m9f, when path is in step with one.  A parse error reads
+   `WHAT expected, found KIND 'TEXT'`.  WHAT names M9 tokens, and each
+   takes its .m9f spelling (M9f.Spelling); a ; is a line break or ;.
+   What was found is quoted from the .m9f itself.  The messages Parse
+   writes stay the Pascal oracle's, word for word (parsediff). *)
+PROCEDURE Respell (RO path: UTF ; line, col: I64 ; RO msg: UTF) : UTF =
+VAR
+  k, at, i, j : I64 ;
+  pre, tok : UTF ;
+  d : PTR DynStr.DString IN pool ;
+BEGIN
+  k := StepAt (path) ;
+  IF k < 0 THEN RETURN msg END ;
+  at := FindIn (msg, ' expected, found ') ;
+  IF at < 0 THEN RETURN msg END ;
+  pre := SLICE (msg, 0, at) ;
+  d := DynStr.New (pool) ;
+  IF Text.Eq (pre, '; or end of statement list') THEN
+    (* the end of a statement, or of the block *)
+    pre := '' ;
+    DynStr.Append (d, 'a line break, ; or }')
+  END ;
+  i := 0 ;
+  WHILE i < Text.BLen (pre) DO
+    IF B (pre, i) >= ORD ('A') AND B (pre, i) <= ORD ('Z') THEN
+      j := i ;
+      WHILE j < Text.BLen (pre) AND B (pre, j) >= ORD ('A') AND B (pre, j) <= ORD ('Z') DO
+        j := j + 1
+      END ;
+      DynStr.Append (d, M9f.Spelling (SLICE (pre, i, j - i))) ;
+      i := j
+    ELSIF i + 1 < Text.BLen (pre) AND B (pre, i) = ORD (':') AND B (pre, i + 1) = ORD ('=') THEN
+      DynStr.Append (d, '=') ;
+      i := i + 2
+    ELSIF i = 0 AND B (pre, 0) = ORD (';') THEN
+      DynStr.Append (d, 'a line break or ;') ;
+      i := 1
+    ELSE
+      DynStr.Append (d, SLICE (pre, i, 1)) ;
+      i := i + 1
+    END
+  END ;
+  DynStr.Append (d, ' expected, found ') ;
+  IF Text.StartsWith (SLICE (msg, at + 17, Text.BLen (msg) - at - 17), 'Semi')
+     AND Broke (path, line, col) THEN
+    (* the ; that the conversion put in for the line break *)
+    DynStr.Append (d, 'the end of the line')
+  ELSE
+    tok := M9f.TokenAt (stepSrcs[k], line, ShownCol (path, line, col)) ;
+    IF Text.BLen (tok) = 0 THEN
+      DynStr.Append (d, 'the end of the file')
+    ELSE
+      DynStr.AppendChar (d, "'") ;
+      DynStr.Append (d, tok) ;
+      DynStr.AppendChar (d, "'")
+    END
+  END ;
+  RETURN DynStr.ViewIn (pool, d)
+END Respell ;
+
+(* Remap answers a checker message about path, `LINE:COL ctx: msg`,
+   with the column the .m9f has when path is in step with one. *)
+PROCEDURE Remap (RO path: UTF ; RO m: UTF) : UTF =
+VAR
+  i, j, line, col : I64 ;
+  d : PTR DynStr.DString IN pool ;
+BEGIN
+  IF StepAt (path) < 0 THEN RETURN m END ;
+  i := 0 ;
+  line := 0 ;
+  WHILE i < Text.BLen (m) AND B (m, i) >= ORD ('0') AND B (m, i) <= ORD ('9') DO
+    line := line * 10 + (B (m, i) - 48) ;
+    i := i + 1
+  END ;
+  IF i = 0 OR i >= Text.BLen (m) OR B (m, i) # ORD (':') THEN RETURN m END ;
+  j := i + 1 ;
+  col := 0 ;
+  WHILE j < Text.BLen (m) AND B (m, j) >= ORD ('0') AND B (m, j) <= ORD ('9') DO
+    col := col * 10 + (B (m, j) - 48) ;
+    j := j + 1
+  END ;
+  IF j = i + 1 THEN RETURN m END ;
+  d := DynStr.New (pool) ;
+  DynStr.AppendI64 (d, line) ;
+  DynStr.AppendChar (d, ':') ;
+  DynStr.AppendI64 (d, ShownCol (path, line, col)) ;
+  DynStr.Append (d, SLICE (m, j, Text.BLen (m) - j)) ;
+  RETURN DynStr.ViewIn (pool, d)
+END Remap ;
+
+(* Prepare brings the NAME.m9 at path up to date with a NAME.m9f
+   beside it.  It does nothing when there is no .m9f.  A .m9f that
+   does not convert stops m9c, and so does a .m9 edited by hand.  It
+   converts even when the .m9 is newer: the .m9 is then in step when it
+   equals the conversion, and wins as it is when it does not. *)
+PROCEDURE Prepare (RO path: UTF) =
+VAR
+  f, src, old : UTF ;
+  ok, have, newer : BOOL ;
+  r : PTR M9f.Result IN pool ;
+  lines : SLICE OF UTF ;
+  i : I64 ;
+BEGIN
+  f := Cat (path, 'f') ;
+  IF NOT Io.Exists (f) THEN RETURN END ;
+  have := Io.Exists (path) ;
+  newer := NOT have OR Io.ModTime (f) >= Io.ModTime (path) ;
+  src := TryRead (f, ok) ;
+  IF NOT ok THEN
+    IF NOT newer THEN RETURN END ;
+    Complain ('cannot read', f) ;
+    Io.Halt (1)
+  END ;
+  r := M9f.ToM9 (pool, src) ;
+  IF r.nerr > 0 THEN
+    IF NOT newer THEN RETURN END ;
+    lines := Text.Split (r.errs, 0AC) ;
+    FOR i := 0 TO LEN (lines) - 1 DO
+      IF Text.BLen (lines[i]) > 0 THEN Diag (f, ':', lines[i]) END
+    END ;
+    failed := TRUE ;
+    Io.Halt (1)
+  END ;
+  IF have THEN
+    old := TryRead (path, ok) ;
+    IF ok AND Text.Eq (old, r.text) THEN
+      InStep (path, f, src, r) ;
+      RETURN
+    END ;
+    IF NOT newer THEN RETURN END ;
+    IF NOT ok OR NOT Ours (old) THEN
+      Diag ('m9c: ', path, Cat (' was edited since m9c wrote it from ', f)) ;
+      Io.ErrLine ('  m9c does not overwrite it.  To keep the .m9, write the .m9f') ;
+      Diag ('  again from it: m9c --to-m9f ', path, '') ;
+      Diag ('  To keep the .m9f, remove ', path, '') ;
+      failed := TRUE ;
+      Io.Halt (1)
+    END
+  END ;
+  Io.WriteFile (path, r.text) ;
+  Wrote (r.text) ;
+  InStep (path, f, src, r)
+EXCEPT
+| IndexError :
+    Diag ('m9c: ', f, ' nests deeper than 1024 blocks') ;
+    failed := TRUE ;
+    Io.Halt (1)
+| ValueRange :
+    Complain ('cannot read', f) ;
+    Io.Halt (1)
+| Io.IOError (p) :
+    Complain ('cannot write', path) ;
+    Io.Halt (1)
+END Prepare ;
+
+(* ToM9fFile writes NAME.m9f from the NAME.m9 at path, for --to-m9f,
+   and records the .m9 as in step with it. *)
+PROCEDURE ToM9fFile (RO path: UTF) =
+VAR
+  src : UTF ;
+  ok : BOOL ;
+  r : PTR M9f.Result IN pool ;
+BEGIN
+  src := TryRead (path, ok) ;
+  IF NOT ok THEN
+    Complain ('cannot read', path) ;
+    Io.Halt (1)
+  END ;
+  r := M9f.ToM9f (pool, src) ;
+  Io.WriteFile (Cat (path, 'f'), r.text) ;
+  Wrote (src)
+EXCEPT
+| IndexError :
+    Diag ('m9c: ', path, ' nests deeper than 1024 blocks') ;
+    failed := TRUE ;
+    Io.Halt (1)
+| ValueRange :
+    Complain ('cannot write', Cat (path, 'f')) ;
+    Io.Halt (1)
+| Io.IOError (p) :
+    Complain ('cannot write', Cat (path, 'f')) ;
+    Io.Halt (1)
+END ToM9fFile ;
+
 PROCEDURE FindModule (RO name: UTF ; VAR path: UTF ; VAR ok: BOOL ;
                       VAR trusted: BOOL) : UTF =
 VAR
@@ -663,6 +1005,7 @@ BEGIN
   want := name ;
   FOR i := 0 TO ndirs - 1 DO
     cand := Join (dirs[i], Suffix (want, '.m9')) ;
+    Prepare (cand) ;
     src := TryRead (cand, ok) ;
     IF ok THEN
       path := cand ;
@@ -2087,6 +2430,8 @@ BEGIN
   Io.WriteLine ('  --json           with --doc, also NAME.json: the') ;
   Io.WriteLine ('                   same declarations as data, for') ;
   Io.WriteLine ('                   tools that look a name up') ;
+  Io.WriteLine ('  --to-m9f         write NAME.m9f, the .m9f notation of') ;
+  Io.WriteLine ('                   FILE.m9, and nothing else') ;
   Io.WriteLine ('  --pic            compile position-independent; only') ;
   Io.WriteLine ('                   needed for a --so member built with') ;
   Io.WriteLine ('                   its own flags after --') ;
@@ -2331,6 +2676,8 @@ BEGIN
          whose two documents could not be compared. *)
       doJson := TRUE ;
       doDoc := TRUE
+    ELSIF Text.Eq (a, '--to-m9f') THEN
+      doToM9f := TRUE
     ELSIF Text.Eq (a, '--make') THEN
       doMake := TRUE
     ELSIF Text.Eq (a, '--show') THEN
@@ -2461,7 +2808,7 @@ BEGIN
           Text.Eq (a, '--verbose') OR Text.Eq (a, '--pic') OR
           Text.Eq (a, '--doc') OR Text.Eq (a, '-g') OR
           Text.Eq (a, '--json') OR Text.Eq (a, '--check') OR
-          Text.Eq (a, '--review') OR
+          Text.Eq (a, '--review') OR Text.Eq (a, '--to-m9f') OR
           Text.Eq (a, '--make') OR
           Text.Eq (a, '--show') OR Text.Eq (a, '--type-of') OR
           Text.Eq (a, '--no-unsafe') OR Text.Eq (a, '--utf-str') OR
@@ -3357,7 +3704,7 @@ END JsonText ;
 PROCEDURE ReviewText (root: PTR Ast.Node ; RO name: UTF) : UTF =
 VAR
   st : SLICE OF Review.Stat ;
-  tw, sc, ss, ad : SLICE OF UTF ;
+  tw, sc, ss, ad, dp : SLICE OF UTF ;
   d : PTR DynStr.DString IN pool ;
   i, j, n : I64 ;
 BEGIN
@@ -3387,7 +3734,9 @@ BEGIN
   FOR i := 0 TO LEN (ss) - 1 DO ss[i] := Sem.StrSite (i) END ;
   ad := NEW (pool, UTF, Sem.AdrSites ()) ;
   FOR i := 0 TO LEN (ad) - 1 DO ad[i] := Sem.AdrSite (i) END ;
-  RETURN Review.Page (root, name, TRUE, st, tw, sc, ss, ad)
+  dp := NEW (pool, UTF, Sem.NoteCount ()) ;
+  FOR i := 0 TO LEN (dp) - 1 DO dp[i] := Sem.NoteAt (i) END ;
+  RETURN Review.Page (root, name, TRUE, st, tw, sc, ss, ad, dp)
 END ReviewText ;
 
 PROCEDURE ParseText (RO src: UTF ; RO path: UTF) : Ast.Kid
@@ -3396,6 +3745,7 @@ VAR
   p : Parse.Parser ;
   root : PTR Ast.Node IN pool ;
   i : I64 ;
+  hinted : BOOL ;         (* the .m9f line-break hint is said once *)
 BEGIN
   Parse.Init (p, src) ;
   root := Parse.File (pool, p) ;
@@ -3411,17 +3761,24 @@ BEGIN
        parser's half of the same defect and cost the same bisects:
        one `<>` in a file gave `981 parse errors` and no line. *)
     i := 0 ;
+    hinted := FALSE ;
     WHILE i < p.nkept AND i < 8 DO
       IF lineShift > 0 AND Text.Eq (path, shiftPath) AND p.errs[i].line > lineShift THEN
         Diag2 (Cat (path, ':'), p.errs[i].line - lineShift, p.errs[i].col,
                ': parse: ', p.errs[i].msg)
       ELSE
-        Diag2 (Cat (path, ':'), p.errs[i].line, p.errs[i].col,
-               ': parse: ', p.errs[i].msg)
+        Diag2 (Cat (Shown (path), ':'), p.errs[i].line,
+               ShownCol (path, p.errs[i].line, p.errs[i].col),
+               ': parse: ', Respell (path, p.errs[i].line, p.errs[i].col, p.errs[i].msg)) ;
+        IF NOT hinted AND Broke (path, p.errs[i].line, p.errs[i].col) THEN
+          hinted := TRUE ;
+          Io.ErrLine ('  (.m9f: a line break here was read as the end of a statement;') ;
+          Io.ErrLine ('   end the line with \ to continue it)')
+        END
       END ;
       i := i + 1
     END ;
-    DiagN ('m9c: ', p.nerr, ' parse errors in ', path) ;
+    DiagN ('m9c: ', p.nerr, ' parse errors in ', Shown (path)) ;
     failed := TRUE ;
     RETURN NONE
   END ;
@@ -3524,12 +3881,12 @@ BEGIN
   FOR i := 0 TO root.nkids - 1 DO
     IF root.kids[i] IS SOME u THEN
       IF Text.BLen (u.bu) > 0 THEN
-        Diag2 (Cat (path, ':'), u.line, u.col,
+        Diag2 (Cat (Shown (path), ':'), u.line, ShownCol (path, u.line, u.col),
                ': no-unsafe: foreign unit ', u.au) ;
         nunsafe := nunsafe + 1 ;
         failed := TRUE
       ELSIF u.f1 THEN
-        Diag2 (Cat (path, ':'), u.line, u.col,
+        Diag2 (Cat (Shown (path), ':'), u.line, ShownCol (path, u.line, u.col),
                ': no-unsafe: UNSAFE unit ', u.au) ;
         nunsafe := nunsafe + 1 ;
         failed := TRUE
@@ -3765,7 +4122,12 @@ PROCEDURE Report () : BOOL RAISES IndexError =
 VAR i : I64 ;
 BEGIN
   FOR i := 0 TO Sem.ErrCount () - 1 DO
-    Io.ErrLine (Located (main, Unshift (Sem.ErrAt (i))))
+    Io.ErrLine (Located (Shown (main), Remap (main, Unshift (Sem.ErrAt (i)))))
+  END ;
+  (* A note (a deprecated name, par 3.9) is printed the same way, and
+     refuses nothing. *)
+  FOR i := 0 TO Sem.NoteCount () - 1 DO
+    Io.ErrLine (Located (Shown (main), Remap (main, Unshift (Sem.NoteAt (i)))))
   END ;
   (* The region judgement's shadow findings, under M9_REGIONS=1
      (docs/region-plan.md), are listed, never a refusal. *)
@@ -4030,8 +4392,17 @@ BEGIN
       failed := TRUE ;
       Io.Halt (1)
     END ;
+    (* FILE.m9f names the FILE.m9 that m9c writes from it and
+       compiles (Prepare). *)
+    IF Text.EndsWith (main, '.m9f') THEN
+      main := SLICE (main, 0, Text.BLen (main) - 1)
+    END ;
     name := BaseName (main) ;
     modName := name ;
+    IF doToM9f THEN
+      ToM9fFile (main) ;
+      Io.Halt (0)
+    END ;
 
     (* The order is -I first (leftmost wins), then $M9LIBRARY, then the
        main
@@ -4062,6 +4433,7 @@ BEGIN
        as given.  So `m9c Json.m9` and even `m9c Json` work with a
        library set, and the argument can be a module rather than a
        path -- which is what a module compiler ought to accept. *)
+    IF Text.EndsWith (main, '.m9') THEN Prepare (main) END ;
     mainSrc := TryRead (main, found) ;
     (* A file that is there, and not text, was said once by TryRead,
        and there is nothing to search for: the path search read it
@@ -4199,7 +4571,7 @@ BEGIN
       Sem.SetRegions (Text.BLen (rgEnv) = 1 AND B (rgEnv, 0) = ORD ('1')) ;
       Sem.CheckFile (root) ;
       IF Report () THEN
-        DiagN ('m9c: ', Sem.ErrCount (), ' errors in ', main) ;
+        DiagN ('m9c: ', Sem.ErrCount (), ' errors in ', Shown (main)) ;
         failed := TRUE ;
         Io.Halt (1)
       END ;
@@ -4255,11 +4627,11 @@ BEGIN
            and then cost one inside the tutorial. *)
         i := 0 ;
         WHILE i < Gen.Errs () AND i < 8 DO
-          DiagN (Cat (ErrFile (Gen.ErrModAt (i), main), ':'), Gen.ErrLineAt (i), ': gen: ',
+          DiagN (Cat (Shown (ErrFile (Gen.ErrModAt (i), main)), ':'), Gen.ErrLineAt (i), ': gen: ',
                  Gen.ErrMsgAt (i)) ;
           i := i + 1
         END ;
-        DiagN ('m9c: ', Gen.Errs (), ' generator errors in ', main) ;
+        DiagN ('m9c: ', Gen.Errs (), ' generator errors in ', Shown (main)) ;
         failed := TRUE
       ELSIF doCheck THEN
         (* This is the stop with empty hands: every diagnostic the

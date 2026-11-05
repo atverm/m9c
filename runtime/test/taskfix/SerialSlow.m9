@@ -1,0 +1,101 @@
+MODULE SerialSlow ;
+
+(* A TASK IN A [SERIAL] CALL DOES NOT STOP THE OTHER TASKS (stage 3 of
+   docs/task-plan.md).
+
+   Slow is a [SERIAL] foreign call that sleeps 300 ms in the kernel,
+   so it holds its gate and its carrier.  Five tasks call it, and the
+   gate lets one in at a time.  A thousand quick tasks run beside
+   them.  Each quick task notes whether the first Slow was still
+   asleep when it finished.  All of them must have finished by then:
+   the tasks queued behind the blocked carrier are handed on, and the
+   ones waiting for the gate park.  It prints
+
+     slow 5 most 1 quick 1000 during 1000
+
+   The work of a quick task is outside the monitor: a bound
+   procedure would hold its lock for the whole body. *)
+
+IMPORT Io ;
+IMPORT Fmt ;
+
+FROM cslow IMPORT Slow, Done, Most ;
+
+CONST
+  NSlow = 5 ;
+  NQuick = 1000 ;
+
+TYPE
+  Tally = MONITOR RECORD
+    slow, quick, during : I64 ;
+  END ;
+
+  Job = RECORD
+    t : Tally ;
+  END [SHARABLE] ;
+
+PROCEDURE SlowDone (VAR t: Tally) =
+BEGIN
+  t.slow := t.slow + 1 ;
+  SIGNAL (t)
+END SlowDone ;
+
+PROCEDURE QuickDone (VAR t: Tally ; early: BOOL) =
+BEGIN
+  t.quick := t.quick + 1 ;
+  IF early THEN t.during := t.during + 1 END ;
+  SIGNAL (t)
+END QuickDone ;
+
+PROCEDURE AwaitAll (VAR t: Tally) =
+BEGIN
+  WHILE t.slow < NSlow OR t.quick < NQuick DO
+    WAIT (t)
+  END
+END AwaitAll ;
+
+PROCEDURE Report (VAR t: Tally ; most: I64) =
+BEGIN
+  Io.WriteLine ('slow ' + Fmt.I64Str (t.slow) + ' most ' + Fmt.I64Str (most)
+                + ' quick ' + Fmt.I64Str (t.quick) + ' during ' + Fmt.I64Str (t.during))
+END Report ;
+
+PROCEDURE SlowJob (VAR j: Job) =
+BEGIN
+  Slow (C.SSizeT (300)) ;
+  SlowDone (j.t)
+END SlowJob ;
+
+PROCEDURE QuickJob (VAR j: Job) =
+VAR i, s : I64 ;
+BEGIN
+  s := 0 ;
+  FOR i := 1 TO 1000 DO s := s + i END ;
+  QuickDone (j.t, s = 500500 AND I64 (Done ()) = 0)
+END QuickJob ;
+
+VAR
+  pool : POOL ;
+  j : PTR Job ;
+  i, most : I64 ;
+
+BEGIN
+  j := NEW (pool, Job) ;
+  FOR i := 1 TO NSlow DO TASK (SlowJob, j) END ;
+  FOR i := 1 TO NQuick DO TASK (QuickJob, j) END ;
+  AwaitAll (j.t) ;
+  most := I64 (Most ()) ;
+  Report (j.t, most)
+END SerialSlow.
+
+
+UNSAFE DEFINITION MODULE FOR "C" cslow ;
+
+(* slowgate.c: a call that sleeps in the kernel, gated by [SERIAL];
+   and two counters read without the gate. *)
+
+PROCEDURE Slow = "m9_slow_call" (ms: C.SSizeT)  [SERIAL] ;
+PROCEDURE Done = "m9_slow_done" () : C.SSizeT  [REENTRANT] ;
+PROCEDURE Most = "m9_slow_most" () : C.SSizeT  [REENTRANT] ;
+
+END cslow.

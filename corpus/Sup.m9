@@ -1,0 +1,326 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
+DEFINITION MODULE Sup ;
+
+(* Sup is supervision for tasks, as OTP's supervisors are in Erlang
+   (stage 5 of docs/task-plan.md).  A supervisor watches its children.
+   A child that fails is started again, by a policy.  A supervisor
+   whose children fail too often gives up, and raises GaveUp to the
+   code that runs it: it fails upward.
+
+   M9 has no closures and a TASK's target is a procedure of the module
+   that starts it, as with Tsk.  So Sup holds the board and the policy,
+   and the program starts its children and writes their loop:
+
+     PROCEDURE Child (VAR j: Job) =
+     VAR s : Sup.Seat ;
+     BEGIN
+       s := Sup.Join (j.board) ;
+       WHILE Sup.Run (j.board, s) DO
+         BEGIN
+           ... fresh state, then the work ... ;
+           Sup.Done (j.board, s)
+         EXCEPT
+         | Refused : Sup.Failed (j.board, s, 'Refused')
+         | IndexError : Sup.Crashed (j.board, s, 'IndexError')
+         | Overflow : Sup.Crashed (j.board, s, 'Overflow')
+         | Poisoned : Sup.Crashed (j.board, s, 'Poisoned')
+         END
+       END
+     END Child ;
+
+     FOR k := 1 TO 4 DO TASK (Child, j) END ;
+     Sup.Watch (j.board, 4)        (* returns when all four are Done *)
+
+   Run waits for the child's next start and answers FALSE once the
+   supervisor has stopped.  A start is a turn of the child's loop, and
+   the child builds its state afresh in it: a restart is from scratch.
+
+   TWO KINDS OF FAILURE (Alex, 2026-11-02).  A child that ends by a
+   checked exception reports Failed, and the policy decides: it is
+   started again, unless that makes more than maxRestarts restarts in
+   windowMs, and then the supervisor stops every child and Watch
+   raises GaveUp.  A child that ends by a bug (IndexError, Overflow,
+   OutOfMemory, Poisoned: the exceptions outside RAISES) reports
+   Crashed.  It is started again, DIRTY: a bug is not the policy's to
+   forgive.  The dirtyMax-th dirty crash of one child stops the
+   program by name, as an unhandled exception does.  A Poisoned
+   monitor (report par 6) is one such bug: a child that meets one
+   crashes dirty, and its restart must not use that monitor again.
+
+   ONE FOR ONE OR ALL FOR ONE.  One for one starts the failed child
+   again.  All for one starts every child again: for children that
+   share state, which the failure may have left half done.  A running
+   sibling learns it at its next Asked, which a long-running child
+   calls at its safe points and then returns to Run.  A child blocked
+   elsewhere learns it only when it comes back.
+
+   A zeroed Board is ready, with the defaults: one for one, 3
+   restarts in 5,000 ms, 3 dirty crashes.  Policy sets them, before
+   the first child joins. *)
+
+IMPORT Faults ;
+IMPORT Time ;
+
+CONST
+  MaxChildren = 64 ;
+  OneForOne = 0 ;
+  AllForOne = 1 ;
+  (* a child's state on the board *)
+  Waiting = 0 ;
+  Running = 1 ;
+  Finished = 2 ;
+  Failing = 3 ;
+  Crashing = 4 ;
+
+TYPE
+  Board = MONITOR RECORD
+    set : BOOL ;                (* Policy was called *)
+    policy, maxRestarts, dirtyMax : I64 ;
+    window : F64 ;              (* seconds *)
+    start : Time.Instant ;
+    started : BOOL ;
+    n : I64 ;                   (* children joined *)
+    order : ARRAY 64 OF I64 ;   (* the start each child is to run *)
+    state : ARRAY 64 OF I64 ;
+    dirty : ARRAY 64 OF I64 ;   (* dirty crashes, by child *)
+    times : ARRAY 64 OF F64 ;   (* the clean restarts' times, a ring *)
+    restarts, dirtyRestarts : I64 ;
+    stop : BOOL ;
+  END ;
+
+  (* Seat is a child's place on the board, a local of the child. *)
+  Seat = RECORD
+    id : I64 ;                  (* 0 .. MaxChildren - 1 *)
+    run : I64 ;                 (* the start it runs now *)
+  END ;
+
+EXCEPTION
+  GaveUp ;
+    (* GaveUp reports that the children failed more often than the
+       policy allows.  Every child has been told to stop. *)
+
+PROCEDURE Policy (VAR b: Board ; policy, maxRestarts, windowMs, dirtyMax: I64)
+  RAISES Faults.BadArg ;
+  (* Policy sets the board's policy: OneForOne or AllForOne, at most
+     maxRestarts clean restarts in windowMs, and dirtyMax dirty crashes
+     of one child.  It raises Faults.BadArg for a value out of range,
+     or once a child has joined. *)
+
+PROCEDURE Join (VAR b: Board) : Seat RAISES Faults.BadArg ;
+  (* Join gives the calling child its seat.  A child calls it once,
+     first.  It raises Faults.BadArg past MaxChildren. *)
+
+PROCEDURE Run (VAR b: Board ; VAR s: Seat) : BOOL ;
+  (* Run waits for the child's next start and answers TRUE then; it
+     answers FALSE once the supervisor has stopped.  A child's first
+     start needs no wait. *)
+
+PROCEDURE Done (VAR b: Board ; RO s: Seat) ;
+  (* Done reports the start finished.  The child goes back to Run. *)
+
+PROCEDURE Failed (VAR b: Board ; RO s: Seat ; RO why: STR) ;
+  (* Failed reports the start failed by a checked exception, why. *)
+
+PROCEDURE Crashed (VAR b: Board ; RO s: Seat ; RO why: STR) ;
+  (* Crashed reports the start crashed by a bug, why.  The child's
+     dirtyMax-th crash stops the program, by name. *)
+
+PROCEDURE Asked (VAR b: Board ; RO s: Seat) : BOOL ;
+  (* Asked answers whether the supervisor wants the child to start
+     again (all for one) or to stop: the child returns to Run. *)
+
+PROCEDURE Watch (VAR b: Board ; children: I64) RAISES GaveUp ;
+  (* Watch supervises until the children have joined and every one is
+     Done, and then stops them all: their Run answers FALSE.  It
+     raises GaveUp, after stopping them, when the policy allows no
+     more restarts.  One task watches a board. *)
+
+PROCEDURE Restarts (VAR b: Board ; VAR clean, dirty: I64) ;
+  (* Restarts gives the restarts made so far, clean and dirty. *)
+
+END Sup.
+
+
+IMPLEMENTATION MODULE Sup ;
+
+IMPORT Faults ;
+IMPORT Time ;
+IMPORT Io ;
+IMPORT Fmt ;
+
+(* A bound procedure may not call another bound to the same board
+   (MonReach), so the defaults are a procedure of values. *)
+PROCEDURE Or (set: BOOL ; v, dflt: I64) : I64 =
+BEGIN
+  IF set THEN RETURN v END ;
+  RETURN dflt
+END Or ;
+
+PROCEDURE Policy (VAR b: Board ; policy, maxRestarts, windowMs, dirtyMax: I64)
+  RAISES Faults.BadArg =
+BEGIN
+  IF b.n > 0 THEN RAISE Faults.BadArg ('Sup.Policy after a child joined') END ;
+  IF policy # OneForOne AND policy # AllForOne THEN
+    RAISE Faults.BadArg ('Sup.Policy: the policy is OneForOne or AllForOne')
+  END ;
+  IF maxRestarts < 0 OR windowMs < 1 OR dirtyMax < 1 THEN
+    RAISE Faults.BadArg ('Sup.Policy: maxRestarts >= 0, windowMs >= 1, dirtyMax >= 1')
+  END ;
+  b.set := TRUE ;
+  b.policy := policy ;
+  b.maxRestarts := maxRestarts ;
+  b.window := F64 (windowMs) / 1000.0 ;
+  b.dirtyMax := dirtyMax
+EXCEPT
+| ValueRange : RAISE Faults.BadArg ('Sup.Policy: windowMs out of range')
+END Policy ;
+
+PROCEDURE Join (VAR b: Board) : Seat RAISES Faults.BadArg =
+VAR s : Seat ;
+BEGIN
+  IF b.n >= MaxChildren THEN RAISE Faults.BadArg ('Sup.Join: more than MaxChildren children') END ;
+  IF NOT b.started THEN
+    b.start := Time.Now () ;
+    b.started := TRUE
+  END ;
+  s.id := b.n ;
+  s.run := 0 ;
+  b.order[s.id] := 1 ;
+  b.state[s.id] := Waiting ;
+  b.n := b.n + 1 ;
+  SIGNAL (b) ;
+  RETURN s
+EXCEPT
+| IndexError : RAISE Faults.BadArg ('Sup.Join: no seat')
+END Join ;
+
+PROCEDURE Run (VAR b: Board ; VAR s: Seat) : BOOL =
+BEGIN
+  WHILE NOT b.stop AND b.order[s.id] <= s.run DO WAIT (b) END ;
+  IF b.stop THEN RETURN FALSE END ;
+  s.run := b.order[s.id] ;
+  b.state[s.id] := Running ;
+  RETURN TRUE
+EXCEPT
+| IndexError : RETURN FALSE
+END Run ;
+
+PROCEDURE Done (VAR b: Board ; RO s: Seat) =
+BEGIN
+  IF b.order[s.id] = s.run THEN b.state[s.id] := Finished END ;
+  SIGNAL (b)
+EXCEPT
+| IndexError :
+END Done ;
+
+PROCEDURE Failed (VAR b: Board ; RO s: Seat ; RO why: STR) =
+BEGIN
+  IF b.order[s.id] = s.run THEN b.state[s.id] := Failing END ;
+  SIGNAL (b)
+EXCEPT
+| IndexError :
+END Failed ;
+
+PROCEDURE Crashed (VAR b: Board ; RO s: Seat ; RO why: STR) =
+VAR most : I64 ;
+BEGIN
+  b.dirty[s.id] := b.dirty[s.id] + 1 ;
+  most := Or (b.set, b.dirtyMax, 3) ;
+  IF b.dirty[s.id] >= most THEN
+    (* Alex, 2026-11-02: restart as dirty, and when it crashes again
+       x times, stop the program *)
+    Io.ErrLine ('m9: Sup: child ' + Fmt.I64Str (s.id) + ' crashed ' + Fmt.I64Str (b.dirty[s.id])
+                + ' times by a bug, the last by ' + why + '; the program stops') ;
+    Io.Halt (1)
+  END ;
+  IF b.order[s.id] = s.run THEN b.state[s.id] := Crashing END ;
+  SIGNAL (b)
+EXCEPT
+| IndexError :
+END Crashed ;
+
+PROCEDURE Asked (VAR b: Board ; RO s: Seat) : BOOL =
+BEGIN
+  RETURN b.stop OR b.order[s.id] > s.run
+EXCEPT
+| IndexError : RETURN TRUE
+END Asked ;
+
+(* Within answers whether the newest of a ring's last most times is
+   within window of the time now, t: then one more restart is one too
+   many. *)
+PROCEDURE TooMany (RO times: ARRAY 64 OF F64 ; nt, most: I64 ; window, t: F64) : BOOL
+  RAISES IndexError =
+BEGIN
+  IF most = 0 THEN RETURN TRUE END ;
+  IF nt < most THEN RETURN FALSE END ;
+  RETURN t - times[(nt - most) MOD 64] <= window
+END TooMany ;
+
+PROCEDURE Watch (VAR b: Board ; children: I64) RAISES GaveUp =
+VAR
+  k, j, finished, most : I64 ;
+  window, t : F64 ;
+  clean, giveUp : BOOL ;
+BEGIN
+  most := Or (b.set, b.maxRestarts, 3) ;
+  window := 5.0 ;
+  IF b.set THEN window := b.window END ;
+  giveUp := FALSE ;
+  LOOP
+    finished := 0 ;
+    FOR k := 0 TO b.n - 1 DO
+      IF b.state[k] = Finished THEN
+        finished := finished + 1
+      ELSIF b.state[k] = Failing OR b.state[k] = Crashing THEN
+        clean := b.state[k] = Failing ;
+        IF clean THEN
+          t := Time.Elapsed (b.start, Time.Now ()) ;
+          IF TooMany (b.times, b.restarts, most, window, t) THEN
+            giveUp := TRUE
+          ELSE
+            b.times[b.restarts MOD 64] := t ;
+            b.restarts := b.restarts + 1
+          END
+        ELSE
+          b.dirtyRestarts := b.dirtyRestarts + 1
+        END ;
+        IF NOT giveUp THEN
+          IF Or (b.set, b.policy, OneForOne) = AllForOne THEN
+            FOR j := 0 TO b.n - 1 DO
+              b.order[j] := b.order[j] + 1 ;
+              b.state[j] := Waiting
+            END
+          ELSE
+            b.order[k] := b.order[k] + 1 ;
+            b.state[k] := Waiting
+          END
+        END
+      END
+    END ;
+    IF giveUp THEN
+      b.stop := TRUE ;
+      SIGNAL (b) ;
+      RAISE GaveUp
+    END ;
+    IF b.n >= children AND finished = b.n THEN
+      b.stop := TRUE ;
+      SIGNAL (b) ;
+      RETURN
+    END ;
+    SIGNAL (b) ;
+    WAIT (b)
+  END
+EXCEPT
+| IndexError :
+    b.stop := TRUE ;
+    SIGNAL (b)
+END Watch ;
+
+PROCEDURE Restarts (VAR b: Board ; VAR clean, dirty: I64) =
+BEGIN
+  clean := b.restarts ;
+  dirty := b.dirtyRestarts
+END Restarts ;
+
+END Sup.

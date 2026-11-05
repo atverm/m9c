@@ -18,7 +18,8 @@
 #
 # A mutant is
 #   refused   the checker said no -- nothing to run;
-#   clean     it ran, or stopped on an M9 exception (a check doing its
+#   clean     it ran, or stopped on an M9 exception, also one that left a
+#             thread or task and stopped the program by name (a check doing its
 #             job: an IndexError is the language working);
 #   FINDING   a sanitizer report or a death by signal: the checker
 #             accepted a program that is not memory-safe -- a hole;
@@ -89,6 +90,14 @@ if [ "$1" = --one ]; then
     echo "FINDING sanitizer: $what" > "$d/verdict"
   elif [ "$st" = 124 ]; then
     echo "timeout: $what" > "$d/verdict"
+  elif [ "$st" = 134 ] && grep -q -e '^m9: unhandled .* in a thread' -e '^m9: every task waits' \
+         -e '^m9: task stack overflow in ' "$d/run.out"; then
+    # A stop by name: the runtime aborts on purpose, after naming the
+    # exception that left a thread or task, a deadlock of tasks, or a
+    # task's stack overflow.  That is the language working, as an
+    # exit is (SupTest with a handler deleted, 2026-11-02).
+    echo "clean" > "$d/verdict"
+    [ -n "$key" ] && { cp "$d/verdict" "$SFCACHE/$key.$$" && mv "$SFCACHE/$key.$$" "$SFCACHE/$key"; }
   elif [ "$st" -gt 128 ]; then
     echo "FINDING signal $((st - 128)): $what" > "$d/verdict"
   elif grep -q -e ': gen: ' -e ' error: ' -e 'm9c: cc failed' "$d/run.out"; then

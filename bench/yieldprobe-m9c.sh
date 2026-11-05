@@ -1,26 +1,30 @@
 #!/bin/sh
-# yieldprobe-m9c.sh builds m9c itself in yieldprobe.sh's three variants
-# (y0 no check, y1 a global flag, y2 a _Thread_local flag), from the
-# checked-in C of runtime/gen, with build.sh's flags (-O2, no LTO).
+# yieldprobe-m9c.sh builds m9c itself in yieldprobe.sh's six variants
+# (y0 to y5, bench/yk.h says which is which), from the checked-in C of
+# runtime/gen, with build.sh's flags (-O2, no LTO).
 #
 #   sh bench/yieldprobe-m9c.sh REPO OUTDIR
 set -eu
 REPO=$1; OUT=$2
+M9C=${M9C:-$REPO/out/m9c}
 D=$OUT/yp-m9c
 rm -rf "$D"; mkdir -p "$D"
 cd "$D"
 COMPILER="DynStr Io Lex Ast Parse Print Text System Sem Gen Doc DynUtf Review M9c"
+GEN=""
+for m in $COMPILER; do GEN="$GEN $REPO/runtime/gen/$m.c"; done
+# shellcheck disable=SC2086
+M9RUNTIME=$REPO/runtime M9LIBRARY=$REPO/corpus "$M9C" --run "$REPO/bench/YieldMark.m9" --leaves=leaves.txt $GEN
 for m in $COMPILER; do
-  sed 's/\(for ([^{]*{\)/\1 M9_YCHK;/' "$REPO/runtime/gen/$m.c" > "$m.c.y"
-  { echo '#include "yk.h"'; cat "$m.c.y"; } > "$m.c"
-  rm "$m.c.y"
+  M9RUNTIME=$REPO/runtime M9LIBRARY=$REPO/corpus "$M9C" --run "$REPO/bench/YieldMark.m9" --with=leaves.txt \
+    "$REPO/runtime/gen/$m.c" "$m.c" > /dev/null
   cp "$REPO/runtime/gen/$m.h" .
 done
-echo "loops instrumented: $(cat ./*.c | grep -c 'M9_YCHK;')"
-cp "$OUT/yp-fannkuch/yk.h" "$OUT/yp-fannkuch/ykslow.c" .
+echo "loops marked: $(cat ./*.c | grep -c 'M9_YCHK(')"
+cp "$REPO/bench/yk.h" "$OUT/yp-fannkuch/ykslow.c" .
 WARN="-std=c11"
 case $(uname -s) in Darwin) WARN="$WARN -Wno-parentheses-equality -Wno-self-assign" ;; esac
-for v in 0 1 2; do
+for v in 0 1 2 3 4 5 6 7 8 9; do
   SRC=""
   for m in $COMPILER; do SRC="$SRC $m.c"; done
   # shellcheck disable=SC2086

@@ -24775,6 +24775,7 @@ m9_sl_BYTE Png_Raster (m9_pool *pool, m9_sl_UTF8 svg, double dpi, int64_t *width
     bool m9t2 = Png_NextTag (svg, &(i), &(tg), err->res, err);
     if (err->exc) { m9ln = 3426; goto L_ret; };
     if (!(m9t2)) break;
+    M9_YCHK ();
     i = tg.endAt;
     if (tg.closing) {
       bool m9t3 = Png_Same (tg.name, ((m9_sl_UTF8){ (uint8_t *) m9s7, 1 }), err);
@@ -25265,6 +25266,7 @@ m9_sl_BYTE Png_Raster (m9_pool *pool, m9_sl_UTF8 svg, double dpi, int64_t *width
         m9t31to = m9_sub_i64 (tg.nattr, INT64_C(1), err);
         if (err->exc) { m9ln = 3592; goto L_ret; };
         if (k <= m9t31to) for (;;) {
+          M9_YCHK ();
           { __typeof__((*(m9_sl_UTF8 *) m9_at (tg.an.v, k, INT64_C(48), sizeof (m9_sl_UTF8), err))) m9a34 = (*(m9_sl_UTF8 *) m9_at (tg.an.v, k, INT64_C(48), sizeof (m9_sl_UTF8), err));
             if (err->exc) { m9ln = 3593; goto L_ret; };
           bool m9t34 = (!(({ bool m9t33 = ({ bool m9t32 = Png_Same (m9a34, ((m9_sl_UTF8){ (uint8_t *) m9s69, 5 }), err); if (!m9t32) { { __typeof__((*(m9_sl_UTF8 *) m9_at (tg.an.v, k, INT64_C(48), sizeof (m9_sl_UTF8), err))) m9a35 = (*(m9_sl_UTF8 *) m9_at (tg.an.v, k, INT64_C(48), sizeof (m9_sl_UTF8), err));   if (err->exc) { m9ln = 3593; goto L_ret; }; m9t32 = (Png_Same (m9a35, ((m9_sl_UTF8){ (uint8_t *) m9s70, 9 }), err)); } } m9t32; }); if (!m9t33) { { __typeof__((*(m9_sl_UTF8 *) m9_at (tg.an.v, k, INT64_C(48), sizeof (m9_sl_UTF8), err))) m9a36 = (*(m9_sl_UTF8 *) m9_at (tg.an.v, k, INT64_C(48), sizeof (m9_sl_UTF8), err));   if (err->exc) { m9ln = 3593; goto L_ret; }; m9t33 = (Png_Same (m9a36, ((m9_sl_UTF8){ (uint8_t *) m9s71, 9 }), err)); } } m9t33; })));
@@ -25446,6 +25448,7 @@ m9_sl_BYTE Png_Decode (m9_pool *pool, m9_sl_BYTE file, int64_t *width, int64_t *
     bool m9t3 = (m9_add_i64 (at, INT64_C(12), err) <= (file).len);
     if (err->exc) { m9ln = 2022; goto L_ret; };
     if (!(m9t3)) break;
+    M9_YCHK ();
     { __typeof__(n) m9v = Png_Get4 (file, at, err);
       if (err->exc) { m9ln = 2023; goto L_ret; };
       n = m9v;
@@ -25544,6 +25547,7 @@ m9_sl_BYTE Png_Decode (m9_pool *pool, m9_sl_BYTE file, int64_t *width, int64_t *
     bool m9t15 = (m9_add_i64 (at, INT64_C(12), err) <= (file).len);
     if (err->exc) { m9ln = 2051; goto L_ret; };
     if (!(m9t15)) break;
+    M9_YCHK ();
     { __typeof__(n) m9v = Png_Get4 (file, at, err);
       if (err->exc) { m9ln = 2052; goto L_ret; };
       n = m9v;
@@ -25601,6 +25605,7 @@ m9_sl_BYTE Png_Decode (m9_pool *pool, m9_sl_BYTE file, int64_t *width, int64_t *
   m9t20to = m9_sub_i64 ((*height), INT64_C(1), err);
   if (err->exc) { m9ln = 2067; goto L_ret; };
   if (y <= m9t20to) for (;;) {
+    M9_YCHK ();
     { __typeof__(kind) m9v = (int64_t)((*(uint8_t *) m9_at (rows.p, m9_mul_i64 (y, (m9_add_i64 (row, INT64_C(1), err)), err), rows.len, sizeof (uint8_t), err)));
       if (err->exc) { m9ln = 2068; goto L_ret; };
       kind = m9v;
@@ -25685,6 +25690,7 @@ m9_sl_BYTE Png_Decode (m9_pool *pool, m9_sl_BYTE file, int64_t *width, int64_t *
   m9t23to = m9_sub_i64 ((*height), INT64_C(1), err);
   if (err->exc) { m9ln = 2087; goto L_ret; };
   if (y <= m9t23to) for (;;) {
+    M9_YCHK ();
     { __typeof__(x) m9t24to;
     x = INT64_C(0);
     m9t24to = m9_sub_i64 ((*width), INT64_C(1), err);
@@ -25892,6 +25898,7 @@ static m9_sl_BYTE Png_Filtered (m9_pool *pool, m9_sl_BYTE rgb, int64_t width, in
   m9t1to = m9_sub_i64 (height, INT64_C(1), err);
   if (err->exc) { m9ln = 1889; goto L_ret; };
   if (y <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__(src) m9v = m9_mul_i64 (y, row, err);
       if (err->exc) { m9ln = 1890; goto L_ret; };
       src = m9v;
@@ -26602,6 +26609,7 @@ static void Png_Flush (Png_Canvas *c, m9_pool *c_pool, m9_state *err)
   m9t2to = m9_sub_i64 ((*c).ncont, INT64_C(1), err);
   if (err->exc) { m9ln = 2271; goto L_ret; };
   if (i <= m9t2to) for (;;) {
+    M9_YCHK ();
     { __typeof__(last) m9v = m9_sub_i64 ((*(int64_t *) m9_at ((*c).cend.p, i, (*c).cend.len, sizeof (int64_t), err)), INT64_C(1), err);
       if (err->exc) { m9ln = 2272; goto L_ret; };
       last = m9v;
@@ -26759,6 +26767,7 @@ static void Png_Flush (Png_Canvas *c, m9_pool *c_pool, m9_state *err)
   }
   for (;;) {
     if (!(((y < (*c).h) && (((next < q) || (nact > INT64_C(0))))))) break;
+    M9_YCHK ();
     for (;;) {
       bool m9t11 = ((next < q) && ((*(int64_t *) m9_at ((*c).cmin.p, (*(int64_t *) m9_at ((*c).order.p, next, (*c).order.len, sizeof (int64_t), err)), (*c).cmin.len, sizeof (int64_t), err)) <= y));
       if (err->exc) { m9ln = 2320; goto L_ret; };
@@ -26824,6 +26833,7 @@ static void Png_Flush (Png_Canvas *c, m9_pool *c_pool, m9_state *err)
       m9t14to = m9_sub_i64 (Png_Sub, INT64_C(1), err);
       if (err->exc) { m9ln = 2338; goto L_ret; };
       if (s <= m9t14to) for (;;) {
+        M9_YCHK ();
         ys = ((double)(y) + ((((double)(s) + 0.5)) / (double)(Png_Sub)));
         ncross = INT64_C(0);
         { __typeof__(m) m9t15to;
@@ -26928,6 +26938,7 @@ static void Png_Flush (Png_Canvas *c, m9_pool *c_pool, m9_state *err)
         m9t18to = m9_sub_i64 (ncross, INT64_C(1), err);
         if (err->exc) { m9ln = 2368; goto L_ret; };
         if (e <= m9t18to) for (;;) {
+          M9_YCHK ();
           if ((wind != INT64_C(0))) {
             { __typeof__((*(double *) m9_at ((*c).cx.p, from, (*c).cx.len, sizeof (double), err))) m9a51 = (*(double *) m9_at ((*c).cx.p, from, (*c).cx.len, sizeof (double), err));
               if (err->exc) { m9ln = 2369; goto L_ret; };
@@ -27053,6 +27064,7 @@ static void Png_Paint (Png_Canvas *c, m9_pool *c_pool, int64_t r, int64_t g, int
   y = (*c).by0;
   m9t1to = (*c).by1;
   if (y <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__(x) m9t2to;
     x = (*c).bx0;
     m9t2to = (*c).bx1;
@@ -27204,6 +27216,7 @@ static void Png_RectFill (Png_Canvas *c, m9_pool *c_pool, double x0, double y0_,
   m9t1to = m9_i64_f64 ((double)(y1_), err);
   if (err->exc) { m9ln = 2449; goto L_ret; };
   if (y <= m9t1to) for (;;) {
+    M9_YCHK ();
     if ((y < (*c).h)) {
       oy = y1_;
       bool m9t2 = ((double)(m9_add_i64 (y, INT64_C(1), err)) < oy);
@@ -27454,6 +27467,7 @@ static void Png_Outline (Png_Canvas *c, m9_pool *c_pool, m9_sl_F64 xs, m9_sl_F64
   pass = INT64_C(0);
   m9t4to = INT64_C(1);
   if (pass <= m9t4to) for (;;) {
+    M9_YCHK ();
     side = (1.0 - (2.0 * (double)(pass)));
     { __typeof__(k) m9t5to;
     k = INT64_C(0);
@@ -27688,6 +27702,7 @@ static void Png_StrokeLine (Png_Canvas *c, m9_pool *c_pool, double wid, m9_sl_F6
   m9t1to = m9_sub_i64 (m, INT64_C(1), err);
   if (err->exc) { m9ln = 2605; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__(x1) m9v = (*(double *) m9_at ((*c).lx.p, i, (*c).lx.len, sizeof (double), err));
       if (err->exc) { m9ln = 2606; goto L_ret; };
       x1 = m9v;
@@ -27734,6 +27749,7 @@ static void Png_StrokeLine (Png_Canvas *c, m9_pool *c_pool, double wid, m9_sl_F6
       t0 = 0.0;
       for (;;) {
         if (!((t0 < len))) break;
+        M9_YCHK ();
         step = left;
         if (((t0 + step) > len)) {
           step = (len - t0);
@@ -28239,6 +28255,7 @@ static int64_t Png_TextWidth (m9_sl_UTF8 s, m9_state *err)
   w = INT64_C(0);
   { __typeof__(s) m9t1s = s;
   for (int64_t m9t1i = 0; m9t1i < m9t1s.len; ) { ch = m9_utf_next (m9t1s, &m9t1i);
+    M9_YCHK ();
     { __typeof__(w) m9v = m9_add_i64 (w, (*(int64_t *) m9_at ((*FontData).v, Png_GlyphOrAsk ((int64_t)(ch), err), INT64_C(23664), sizeof (int64_t), err)), err);
       if (err->exc) { m9ln = 2779; goto L_ret; };
       w = m9v;
@@ -28294,6 +28311,7 @@ static void Png_DrawText (Png_Canvas *c, m9_pool *c_pool, m9_sl_UTF8 s, double x
   }
   { __typeof__(s) m9t1s = s;
   for (int64_t m9t1i = 0; m9t1i < m9t1s.len; ) { ch = m9_utf_next (m9t1s, &m9t1i);
+    M9_YCHK ();
     { __typeof__(g) m9v = Png_GlyphOrAsk ((int64_t)(ch), err);
       if (err->exc) { m9ln = 2801; goto L_ret; };
       g = m9v;
@@ -28486,6 +28504,7 @@ static bool Png_NextTag (m9_sl_UTF8 s, int64_t *i, Png_Tag *tg, m9_pool *tg_pool
     n = m9v;
   }
   for (;;) {
+    M9_YCHK ();
     for (;;) {
       bool m9t1 = (((*i) < n) && (!Text_BIs (s, (*i), 60u, err)));
       if (err->exc) { m9ln = 2870; goto L_ret; };
@@ -28572,6 +28591,7 @@ static bool Png_NextTag (m9_sl_UTF8 s, int64_t *i, Png_Tag *tg, m9_pool *tg_pool
     (*tg).name = m9v;
   }
   for (;;) {
+    M9_YCHK ();
     for (;;) {
       bool m9t19 = ({ bool m9t18 = ((*i) < n); if (m9t18) { { __typeof__(Text_BChar (s, (*i), err)) m9a83 = Text_BChar (s, (*i), err);   if (err->exc) { m9ln = 2897; goto L_ret; }; m9t18 = (Png_IsBlank (m9a83, err)); } } m9t18; });
       if (err->exc) { m9ln = 2897; goto L_ret; };
@@ -28740,6 +28760,7 @@ static bool Png_Has (Png_Tag *tg, m9_sl_UTF8 name, m9_state *err)
   m9t1to = m9_sub_i64 ((*tg).nattr, INT64_C(1), err);
   if (err->exc) { m9ln = 2940; goto L_ret; };
   if (k <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(m9_sl_UTF8 *) m9_at ((*tg).an.v, k, INT64_C(48), sizeof (m9_sl_UTF8), err))) m9a87 = (*(m9_sl_UTF8 *) m9_at ((*tg).an.v, k, INT64_C(48), sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 2941; goto L_ret; };
     bool m9t2 = Png_Same (m9a87, name, err);
@@ -28777,6 +28798,7 @@ static m9_sl_UTF8 Png_Attr (Png_Tag *tg, m9_sl_UTF8 name, m9_state *err)
   m9t1to = m9_sub_i64 ((*tg).nattr, INT64_C(1), err);
   if (err->exc) { m9ln = 2949; goto L_ret; };
   if (k <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(m9_sl_UTF8 *) m9_at ((*tg).an.v, k, INT64_C(48), sizeof (m9_sl_UTF8), err))) m9a88 = (*(m9_sl_UTF8 *) m9_at ((*tg).an.v, k, INT64_C(48), sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 2950; goto L_ret; };
     bool m9t2 = Png_Same (m9a88, name, err);
@@ -29156,6 +29178,7 @@ static bool Png_Colour (m9_sl_UTF8 s, int64_t *r, int64_t *g, int64_t *b, m9_sta
   m9t8to = m9_sub_i64 (INT64_C(30), INT64_C(1), err);
   if (err->exc) { m9ln = 3080; goto L_ret; };
   if (k <= m9t8to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(m9_sl_UTF8 *) m9_at ((*ColourNames).v, k, INT64_C(30), sizeof (m9_sl_UTF8), err))) m9a93 = (*(m9_sl_UTF8 *) m9_at ((*ColourNames).v, k, INT64_C(30), sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 3081; goto L_ret; };
     bool m9t9 = Png_Same (s, m9a93, err);
@@ -29303,6 +29326,7 @@ static m9_sl_UTF8 Png_Content (m9_pool *pool, m9_sl_UTF8 s, int64_t from, int64_
     bool m9t1 = ((i < n) && (!Text_BIs (s, i, 60u, err)));
     if (err->exc) { m9ln = 3133; goto L_ret; };
     if (!(m9t1)) break;
+    M9_YCHK ();
     bool m9t2 = Text_BIs (s, i, 38u, err);
     if (err->exc) { m9ln = 3134; goto L_ret; };
     if (m9t2) {
@@ -29486,6 +29510,7 @@ static void Png_ReadStyle (m9_pool *pool, Png_Tag *tg, double sc, bool fillByDef
   m9t1to = m9_sub_i64 ((*tg).nattr, INT64_C(1), err);
   if (err->exc) { m9ln = 3190; goto L_ret; };
   if (k <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(m9_sl_UTF8 *) m9_at ((*tg).an.v, k, INT64_C(48), sizeof (m9_sl_UTF8), err))) m9a100 = (*(m9_sl_UTF8 *) m9_at ((*tg).an.v, k, INT64_C(48), sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 3191; goto L_ret; };
     bool m9t2 = Png_Same (m9a100, ((m9_sl_UTF8){ (uint8_t *) m9s125, 5 }), err);
@@ -29725,6 +29750,7 @@ static void Png_DrawPath (Png_Canvas *c, m9_pool *c_pool, m9_sl_UTF8 d, Png_Styl
   haveCmd = false;
   (*c).nl = INT64_C(0);
   for (;;) {
+    M9_YCHK ();
     for (;;) {
       bool m9t2 = ({ bool m9t1 = (i < n); if (m9t1) { { __typeof__(Text_BChar (d, i, err)) m9a106 = Text_BChar (d, i, err);   if (err->exc) { m9ln = 3264; goto L_ret; }; m9t1 = (((Png_IsBlank (m9a106, err) || Text_BIs (d, i, 44u, err)))); } } m9t1; });
       if (err->exc) { m9ln = 3264; goto L_ret; };
@@ -29981,6 +30007,7 @@ static void Png_DrawPoints (Png_Canvas *c, m9_pool *c_pool, m9_sl_UTF8 pts, Png_
     bool m9t1 = Png_Num (pts, &(i), &(a), err);
     if (err->exc) { m9ln = 3344; goto L_ret; };
     if (!(m9t1)) break;
+    M9_YCHK ();
     bool m9t2 = (!Png_Num (pts, &(i), &(b), err));
     if (err->exc) { m9ln = 3345; goto L_ret; };
     if (m9t2) {
@@ -30098,6 +30125,7 @@ static void Png_Transform (m9_sl_UTF8 s, Png_Canvas *c, m9_pool *c_pool, m9_stat
   }
   i = INT64_C(0);
   for (;;) {
+    M9_YCHK ();
     for (;;) {
       bool m9t2 = ({ bool m9t1 = (i < n); if (m9t1) { { __typeof__(Text_BChar (s, i, err)) m9a119 = Text_BChar (s, i, err);   if (err->exc) { m9ln = 3373; goto L_ret; }; m9t1 = (((Png_IsBlank (m9a119, err) || Text_BIs (s, i, 44u, err)))); } } m9t1; });
       if (err->exc) { m9ln = 3373; goto L_ret; };

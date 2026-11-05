@@ -241,6 +241,7 @@ Grib_Index Grib_BuildIndex (m9_sl_BYTE data, m9_state *err)
     bool m9t1 = (m9_add_i64 (p, INT64_C(16), err) <= (data).len);
     if (err->exc) { m9ln = 455; goto L_ret; };
     if (!(m9t1)) break;
+    M9_YCHK ();
     bool m9t2 = Grib_MsgAt (data, p, &(len), err);
     if (err->exc) { m9ln = 456; goto L_ret; };
     if (m9t2) {
@@ -283,6 +284,7 @@ Grib_Index Grib_BuildIndex (m9_sl_BYTE data, m9_state *err)
     bool m9t6 = (m9_add_i64 (p, INT64_C(16), err) <= (data).len);
     if (err->exc) { m9ln = 471; goto L_ret; };
     if (!(m9t6)) break;
+    M9_YCHK ();
     bool m9t7 = Grib_MsgAt (data, p, &(len), err);
     if (err->exc) { m9ln = 472; goto L_ret; };
     if (m9t7) {
@@ -739,6 +741,7 @@ m9_gd2_double Grib_ReadGrid2 (Grib_Message * m, m9_state *err)
   m9t2to = m9_sub_i64 (nj, INT64_C(1), err);
   if (err->exc) { m9ln = 654; goto L_ret; };
   if (j <= m9t2to) for (;;) {
+    M9_YCHK ();
     { __typeof__(i) m9t3to;
     i = INT64_C(0);
     m9t3to = m9_sub_i64 (ni, INT64_C(1), err);

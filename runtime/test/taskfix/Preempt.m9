@@ -1,0 +1,101 @@
+MODULE Preempt ;
+
+(* A TASK IN A LONG LOOP YIELDS (stage 4 of docs/task-plan.md, rule
+   y8).
+
+   Spin runs a loop nest for about a second, with no call and no wait:
+   only the yield check at the head of its outer loop can let another
+   task in.  The module body starts Spin, waits until Spin has begun,
+   and only then starts Quick.  With one carrier, the body runs again
+   only if Spin yields, and Quick only if it yields again.  Quick
+   notes whether Spin had finished, and must find it had not.  It
+   prints
+
+     quick ran while spin ran: TRUE
+
+   then Spin's answer, which the yields must not change.  The inner
+   loop is a recurrence modulo a prime, so the C compiler cannot fold
+   it to a formula. *)
+
+IMPORT Io ;
+IMPORT Fmt ;
+
+TYPE
+  Tally = MONITOR RECORD
+    started, spinDone, quickDone : BOOL ;
+    early : BOOL ;               (* Quick ran before Spin finished *)
+    sum : I64 ;
+  END ;
+
+  Job = RECORD
+    t : Tally ;
+  END [SHARABLE] ;
+
+PROCEDURE SpinStarts (VAR t: Tally) =
+BEGIN
+  t.started := TRUE ;
+  SIGNAL (t)
+END SpinStarts ;
+
+PROCEDURE SpinEnds (VAR t: Tally ; s: I64) =
+BEGIN
+  t.spinDone := TRUE ;
+  t.sum := s ;
+  SIGNAL (t)
+END SpinEnds ;
+
+PROCEDURE QuickEnds (VAR t: Tally) =
+BEGIN
+  t.early := NOT t.spinDone ;
+  t.quickDone := TRUE ;
+  SIGNAL (t)
+END QuickEnds ;
+
+PROCEDURE AwaitStart (VAR t: Tally) =
+BEGIN
+  WHILE NOT t.started DO WAIT (t) END
+END AwaitStart ;
+
+PROCEDURE AwaitBoth (VAR t: Tally) =
+BEGIN
+  WHILE NOT t.spinDone OR NOT t.quickDone DO WAIT (t) END
+END AwaitBoth ;
+
+PROCEDURE Report (VAR t: Tally) =
+BEGIN
+  IF t.early THEN
+    Io.WriteLine ('quick ran while spin ran: TRUE')
+  ELSE
+    Io.WriteLine ('quick ran while spin ran: FALSE')
+  END ;
+  Io.WriteLine ('spin ' + Fmt.I64Str (t.sum))
+END Report ;
+
+PROCEDURE Spin (VAR j: Job) =
+VAR i, k, s : I64 ;
+BEGIN
+  SpinStarts (j.t) ;
+  s := 1 ;
+  FOR i := 1 TO 400 DO
+    FOR k := 1 TO 1000000 DO s := (s * 31 + k) MOD 1000000007 END
+  END ;
+  SpinEnds (j.t, s)
+END Spin ;
+
+PROCEDURE Quick (VAR j: Job) =
+BEGIN
+  QuickEnds (j.t)
+END Quick ;
+
+VAR
+  pool : POOL ;
+  j : PTR Job ;
+
+BEGIN
+  j := NEW (pool, Job) ;
+  TASK (Spin, j) ;
+  AwaitStart (j.t) ;
+  TASK (Quick, j) ;
+  AwaitBoth (j.t) ;
+  Report (j.t)
+END Preempt.

@@ -101,6 +101,11 @@ typedef struct m9_state {
 extern const m9_exc m9_exc_Overflow;
 extern const m9_exc m9_exc_IndexError;
 extern const m9_exc m9_exc_OutOfMemory;
+/* Poisoned is raised by a call into a monitor that a bug left: an
+   IndexError, Overflow, OutOfMemory or Poisoned that escaped one of
+   its bound procedures, with its state perhaps half updated (stage 5
+   of docs/task-plan.md).  It is unchecked, as those are. */
+extern const m9_exc m9_exc_Poisoned;
 extern const m9_exc m9_exc_ValueRange;
 
 static inline void m9_raise (m9_state *err, const m9_exc *e)
@@ -759,14 +764,37 @@ void m9_mon_drop (void *m);
    All are zero when fresh, as the rest of the monitor is.  A program
    without TASK finds both queues empty, and its fast paths are a
    trylock where a lock was and a fence after each unlock.  WAIT is
-   out of line: it must ask whether the thread carries tasks. */
-#define M9_MON_TASKS void *tq; void *tqt; void *wq; int tspin;
+   out of line: it must ask whether the thread carries tasks.  Since
+   stage 2 a THREAD waits on a condition of its own, in wq beside the
+   tasks (m9rt.c says why), and cv is no longer waited on. */
+#define M9_MON_TASKS void *tq; void *tqt; void *wq; void *pend; int tspin; int tsync;
+
+/* THE ENTER/LEAVE HANDSHAKE UNDER THREADSANITIZER.  A leaver unlocks,
+   then reads tq; a task joins tq, then tries the lock; a seq_cst fence
+   on each side makes one of them see the other.  ThreadSanitizer does
+   not model a standalone fence (gcc says so: "atomic_thread_fence is
+   not supported with -fsanitize=thread"), so it could not see this
+   synchronisation and might report what it guards.  Under TSan the
+   fence is a read-modify-write of the monitor's tsync instead: two
+   seq_cst RMWs of one location order the two sides as the fences do,
+   and TSan follows them.  Other builds keep the fence. */
+#if defined (__SANITIZE_THREAD__)
+#define M9_MON_FENCE(m) ((void) __atomic_fetch_add (&(m)->tsync, 0, __ATOMIC_SEQ_CST))
+#elif defined (__has_feature)
+#if __has_feature (thread_sanitizer)
+#define M9_MON_FENCE(m) ((void) __atomic_fetch_add (&(m)->tsync, 0, __ATOMIC_SEQ_CST))
+#endif
+#endif
+#ifndef M9_MON_FENCE
+#define M9_MON_FENCE(m) __atomic_thread_fence (__ATOMIC_SEQ_CST)
+#endif
 #endif
 
 #ifdef _WIN32
 typedef struct {
   void *mu;                     /* SRWLOCK, exclusive mode      */
   void *cv;                     /* CONDITION_VARIABLE            */
+  int poisoned;                 /* a bug left a bound procedure (m9_mon_taint) */
 } m9_mon;
 
 void m9_mon_enter (m9_mon *m);
@@ -799,6 +827,7 @@ typedef struct {
   pthread_mutex_t mu;
   pthread_cond_t  cv;
   int             made;         /* 0 as carved; 1 once mu and cv are */
+  int             poisoned;     /* a bug left a bound procedure (m9_mon_taint) */
   M9_MON_TASKS
 } m9_mon;
 
@@ -807,6 +836,7 @@ void m9_mon_enter_slow (m9_mon *m);
 void m9_mon_leave_slow (m9_mon *m);
 void m9_mon_wait (m9_mon *m);
 void m9_mon_signal_tasks (m9_mon *m);
+void m9_mon_wake_threads (void *p);
 
 static inline void m9_mon_enter (m9_mon *m)
 {
@@ -818,6 +848,7 @@ static inline void m9_mon_enter (m9_mon *m)
 typedef struct {
   pthread_mutex_t mu;
   pthread_cond_t  cv;
+  int             poisoned;     /* a bug left a bound procedure (m9_mon_taint) */
   M9_MON_TASKS
 } m9_mon;
 
@@ -825,6 +856,7 @@ void m9_mon_enter_slow (m9_mon *m);
 void m9_mon_leave_slow (m9_mon *m);
 void m9_mon_wait (m9_mon *m);
 void m9_mon_signal_tasks (m9_mon *m);
+void m9_mon_wake_threads (void *p);
 
 static inline void m9_mon_enter (m9_mon *m)
 { m9_mon_hold (m); if (pthread_mutex_trylock (&m->mu) != 0) m9_mon_enter_slow (m); }
@@ -836,10 +868,13 @@ static inline void m9_mon_enter (m9_mon *m)
    trylock finds the lock free, or this load finds the task. */
 static inline void m9_mon_leave (m9_mon *m)
 {
+  void *p = m->pend;            /* THREADs a SIGNAL woke: woken after the unlock */
   m9_mon_drop (m);
+  if (p != NULL) m->pend = NULL;
   pthread_mutex_unlock (&m->mu);
-  __atomic_thread_fence (__ATOMIC_SEQ_CST);
+  M9_MON_FENCE (m);
   if (__atomic_load_n (&m->tq, __ATOMIC_RELAXED) != NULL) m9_mon_leave_slow (m);
+  if (p != NULL) m9_mon_wake_threads (p);
 }
 
 /* SIGNAL is a BROADCAST, not a signal.  With one condition variable
@@ -848,8 +883,24 @@ static inline void m9_mon_leave (m9_mon *m)
    Every WAIT is written as a loop around its predicate, so a spurious
    wake costs a re-test and nothing else. */
 static inline void m9_mon_signal (m9_mon *m)
-{ pthread_cond_broadcast (&m->cv); if (m->wq != NULL) m9_mon_signal_tasks (m); }
+{ if (m->wq != NULL) m9_mon_signal_tasks (m); }
 #endif
+
+/* A POISONED MONITOR (stage 5 of docs/task-plan.md).  A bound
+   procedure's exit calls m9_mon_taint when an exception is leaving
+   it: an IndexError, Overflow, OutOfMemory or Poisoned marks the
+   monitor, a checked exception raised on purpose does not.  Its
+   entry asks m9_mon_poisoned, after the lock is held, and raises
+   Poisoned instead of running the body. */
+void m9_mon_taint (m9_mon *m, m9_state *err);
+static inline int m9_mon_poisoned (m9_mon *m)
+{ return __atomic_load_n (&m->poisoned, __ATOMIC_RELAXED); }
+/* A [RESET] procedure enters a poisoned monitor too.  m9_mon_reset
+   zeroes the record after its lock (a generated monitor's first
+   member) before the body runs; a normal return cures it. */
+void m9_mon_reset (void *rec, size_t size);
+static inline void m9_mon_cure (m9_mon *m)
+{ __atomic_store_n (&m->poisoned, 0, __ATOMIC_RELAXED); }
 
 /* THE [SERIAL] GATE OF A FOR "C" UNIT is one per unit in the WHOLE
    program.  m9_gate_named answers the same monitor for the same unit
@@ -890,6 +941,25 @@ int m9_thread_start2 (void *(*fn) (void *, struct m9_pool *), void *arg,
 int m9_task_start2 (void *(*fn) (void *, struct m9_pool *), void *arg,
                     struct m9_pool *pool, const char *name, m9_state *err);
 void m9_task_yield (void);
+/* m9_task_wait_fd parks the running task until fd is readable (write
+   0) or writable (write 1), for at most ms milliseconds (ms < 0: no
+   limit).  It answers 1 when ready, 0 at the limit, and -1 when the
+   caller is no task or the descriptor cannot be polled: the caller
+   then waits as a thread does.  The shims use it (stage 3). */
+int m9_task_wait_fd (int fd, int write, int64_t ms);
+int m9_in_task (void);
+
+/* M9_YCHK is the yield check the generator puts at the head of a loop
+   that rule y8 picks (corpus/Gen.m9, YCheck; stage 4 of
+   docs/task-plan.md).  It reads one global flag.  The monitor thread
+   sets it when a carrier has run one task for 10 ms with other tasks
+   waiting; the slow call then yields that carrier's task, and does
+   nothing on any other carrier or in a THREAD.  The flag is a plain
+   global on purpose: a thread-local costs a call on macOS (the
+   probe's y2). */
+extern int m9_preempt;
+void m9_preempt_slow (void);
+#define M9_YCHK() do { if (__builtin_expect (__atomic_load_n (&m9_preempt, __ATOMIC_RELAXED), 0)) m9_preempt_slow (); } while (0)
 void m9_thread_died (const char *name);
 void m9_thread_died_at (const m9_state *err);
 void m9_unhandled (const m9_state *err, const char *where);

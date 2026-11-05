@@ -29,7 +29,15 @@ IMPORT HttpServer ;
 CONST
   BigLen = 1048576 ;
 
+TYPE
+  (* Counter is state every connection shares, behind its monitor
+     (stage 5 of docs/task-plan.md). *)
+  Counter = MONITOR RECORD
+    n : I64 ;
+  END ;
+
 VAR
+  counter : Counter ;
   pool : POOL ;
   r : PTR HttpServer.Router IN pool ;
   cfg : HttpServer.Config ;
@@ -95,6 +103,49 @@ BEGIN
   a[Text.BLen (q.path)] := 1 ;
   RETURN HttpServer.Reply (200, 'text/plain', 'unreachable')
 END OutOfRange ;
+
+(* Bump counts one request.  With crash it fails half way, the count
+   already moved: the IndexError leaves the monitor poisoned. *)
+PROCEDURE Bump (VAR c: Counter ; crash: BOOL ; at: I64) : I64 =
+VAR a : ARRAY 4 OF I64 ;
+BEGIN
+  c.n := c.n + 1 ;
+  IF crash THEN a[at] := 1 END ;
+  RETURN c.n
+END Bump ;
+
+(* Rebuild is the one call into a poisoned Counter: it starts from
+   zero, as a fresh one does. *)
+PROCEDURE Rebuild (VAR c: Counter) [RESET] =
+BEGIN
+  c.n := 0
+END Rebuild ;
+
+(* Count answers the count.  A Counter a crash poisoned is rebuilt here
+   and asked again: the server recovers without a restart. *)
+PROCEDURE Count (RO q: HttpServer.Request) : HttpServer.Response
+  RAISES ValueRange =
+VAR n : I64 ;
+BEGIN
+  BEGIN
+    n := Bump (counter, FALSE, 0)
+  EXCEPT
+  | Poisoned :
+      Rebuild (counter) ;
+      n := Bump (counter, FALSE, 0)
+  END ;
+  RETURN HttpServer.Reply (200, 'text/plain', 'count ' + Fmt.I64Str (n))
+END Count ;
+
+(* CountCrash crashes inside the Counter: a 500, and a poisoned
+   Counter for the next request. *)
+PROCEDURE CountCrash (RO q: HttpServer.Request) : HttpServer.Response
+  RAISES ValueRange =
+VAR n : I64 ;
+BEGIN
+  n := Bump (counter, TRUE, Text.BLen (q.path)) ;
+  RETURN HttpServer.Reply (200, 'text/plain', 'unreachable ' + Fmt.I64Str (n))
+END CountCrash ;
 
 PROCEDURE Slow (RO q: HttpServer.Request) : HttpServer.Response =
 BEGIN
@@ -275,6 +326,8 @@ BEGIN
   HttpServer.AddHandler (r, 'GET', '/raise', Raises, 'text/plain', 'raises ValueRange') ;
   HttpServer.AddHandler (r, 'GET', '/index', OutOfRange, 'text/plain', 'raises IndexError') ;
   HttpServer.AddHandler (r, 'GET', '/slow', Slow, 'text/plain', 'sleeps 300 ms') ;
+  HttpServer.AddHandler (r, 'GET', '/count', Count, 'text/plain', 'a shared count, rebuilt when poisoned') ;
+  HttpServer.AddHandler (r, 'GET', '/countcrash', CountCrash, 'text/plain', 'crashes inside the count') ;
   HttpServer.AddHandler (r, 'GET', '/probe', Probe, 'text/plain', 'echoes X-Probe') ;
   HttpServer.AddHandler (r, 'GET', '/badheader', BadHeader, 'text/plain', 'a header with CR LF') ;
   HttpServer.AddHandler (r, 'POST', '/made', GoodHeader, 'text/plain', '201 with Location') ;
@@ -334,6 +387,7 @@ BEGIN
     cfg.workers := Int (System.Value ('--workers', ''), 4) ;
     cfg.queue := Int (System.Value ('--queue', ''), 64) ;
     cfg.maxConn := Int (System.Value ('--max', ''), 0) ;
+    cfg.backlog := Int (System.Value ('--backlog', ''), cfg.backlog) ;
     cfg.perConn := Int (System.Value ('--perconn', ''), 1000) ;
     cfg.bodyMax := Int (System.Value ('--bodymax', ''), 1048576) ;
     cfg.idleMs := Int (System.Value ('--idle', ''), 2000) ;
@@ -341,6 +395,11 @@ BEGIN
     IF Text.BLen (System.Value ('--bind', '')) > 0 THEN cfg.bind := System.Value ('--bind', '') END ;
     cfg.trusted := System.Value ('--trusted', '') ;
     cfg.accessLog := System.Flag ('--log') ;
+    (* --tasks serves each connection in a task.  Then workers in
+       service and queue waiting are maxOpen, so a full server still
+       answers the third connection 503. *)
+    cfg.tasks := System.Flag ('--tasks') ;
+    cfg.maxOpen := Int (System.Value ('--maxopen', ''), cfg.workers + cfg.queue) ;
     Io.WriteLine ('listening on ' + Fmt.I64Str (cfg.port)) ;
     Io.Flush () ;
     why := HttpServer.Run (cfg, r, st) ;

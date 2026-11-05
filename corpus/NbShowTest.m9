@@ -139,7 +139,7 @@ BEGIN
 
   tm := NEW (pool, I64, 3) ;
   tm[0] := 0 ; tm[1] := 3600 ; tm[2] := 7200 ;
-  ts := Frame.NewTs (pool, Small (), tm, 3600, Frame.ConvStart (), 'test') ;
+  ts := Frame.NewTs (pool, Small (), tm, 3600, Frame.Conv.AtStart, 'test') ;
   lines := Text.Split (NbShow.SeriesText (ts), NL) ;
   Check.EqStr (t, 'a series: its time column first, in UTC', lines[0],
                '                     time     x     n  site     ok') ;

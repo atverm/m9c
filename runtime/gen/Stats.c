@@ -1334,6 +1334,7 @@ m9_sl_F64 Stats_Interp (m9_sl_F64 xs, m9_sl_F64 xp, m9_sl_F64 fp, m9_state *err)
   m9t6to = m9_sub_i64 ((xs).len, INT64_C(1), err);
   if (err->exc) { m9ln = 1325; goto L_ret; };
   if (i <= m9t6to) for (;;) {
+    M9_YCHK ();
     bool m9t7 = ((*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)) == (*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)));
     if (err->exc) { m9ln = 1326; goto L_ret; };
     if (m9t7) {
@@ -1542,11 +1543,13 @@ m9_gd2_double Stats_CovMatrix (m9_gd2_double g, m9_state *err)
   m9t2to = m9_sub_i64 (k, INT64_C(1), err);
   if (err->exc) { m9ln = 1483; goto L_ret; };
   if (a <= m9t2to) for (;;) {
+    M9_YCHK ();
     { __typeof__(b) m9t3to;
     b = a;
     m9t3to = m9_sub_i64 (k, INT64_C(1), err);
     if (err->exc) { m9ln = 1484; goto L_ret; };
     if (b <= m9t3to) for (;;) {
+      M9_YCHK ();
       Stats_ColSums (g, a, b, &(n), &(sxx), &(syy), &(sxy), err);
       if (err->exc) { m9ln = 1485; goto L_ret; };
       if ((n < INT64_C(2))) {
@@ -1610,11 +1613,13 @@ m9_gd2_double Stats_CorrMatrix (m9_gd2_double g, m9_state *err)
   m9t2to = m9_sub_i64 (k, INT64_C(1), err);
   if (err->exc) { m9ln = 1503; goto L_ret; };
   if (a <= m9t2to) for (;;) {
+    M9_YCHK ();
     { __typeof__(b) m9t3to;
     b = a;
     m9t3to = m9_sub_i64 (k, INT64_C(1), err);
     if (err->exc) { m9ln = 1504; goto L_ret; };
     if (b <= m9t3to) for (;;) {
+      M9_YCHK ();
       Stats_ColSums (g, a, b, &(n), &(sxx), &(syy), &(sxy), err);
       if (err->exc) { m9ln = 1505; goto L_ret; };
       if ((n < INT64_C(2))) {
@@ -2209,6 +2214,7 @@ void Stats_Shuffle (Stats_Stream *st, m9_sl_I64 *a, m9_state *err)
   }
   for (;;) {
     if (!((i >= INT64_C(1)))) break;
+    M9_YCHK ();
     { __typeof__(m9_add_i64 (i, INT64_C(1), err)) m9a22 = m9_add_i64 (i, INT64_C(1), err);
       if (err->exc) { m9ln = 1856; goto L_ret; };
     { __typeof__(j) m9v = Stats_Below (st, m9a22, err);
@@ -2328,6 +2334,7 @@ m9_sl_I64 Stats_Choice (Stats_Stream *st, int64_t n, int64_t k, m9_state *err)
   m9t3to = m9_sub_i64 (k, INT64_C(1), err);
   if (err->exc) { m9ln = 1892; goto L_ret; };
   if (i <= m9t3to) for (;;) {
+    M9_YCHK ();
     { __typeof__(m9_sub_i64 (n, i, err)) m9a23 = m9_sub_i64 (n, i, err);
       if (err->exc) { m9ln = 1893; goto L_ret; };
     { __typeof__(j) m9v = m9_add_i64 (i, Stats_Below (st, m9a23, err), err);
@@ -2495,6 +2502,7 @@ static void Stats_Sort (m9_sl_F64 *a, m9_state *err)
   }
   for (;;) {
     if (!((i >= INT64_C(0)))) break;
+    M9_YCHK ();
     j = i;
     for (;;) {
       bool m9t1 = (m9_add_i64 (m9_mul_i64 (INT64_C(2), j, err), INT64_C(1), err) < n);
@@ -2542,6 +2550,7 @@ static void Stats_Sort (m9_sl_F64 *a, m9_state *err)
   }
   for (;;) {
     if (!((i > INT64_C(0)))) break;
+    M9_YCHK ();
     { __typeof__(t) m9v = (*(double *) m9_at ((*a).p, INT64_C(0), (*a).len, sizeof (double), err));
       if (err->exc) { m9ln = 509; goto L_ret; };
       t = m9v;
@@ -3539,6 +3548,7 @@ static m9_sl_F64 Stats_Extreme (m9_sl_F64 xs, int64_t window, bool wantMax, m9_s
   m9t1to = m9_sub_i64 ((xs).len, INT64_C(1), err);
   if (err->exc) { m9ln = 1228; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     bool m9t2 = ((*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)) == (*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)));
     if (err->exc) { m9ln = 1229; goto L_ret; };
     if (m9t2) {
@@ -4186,6 +4196,7 @@ static double Stats_Root (int64_t kind, double dof, double target, double lo, do
   i = INT64_C(1);
   m9t1to = INT64_C(200);
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     Stats_Eval (kind, x, dof, target, &(f), &(slope), err);
     if (err->exc) { m9ln = 1776; goto L_ret; };
     if ((f == 0.0)) {

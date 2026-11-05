@@ -419,7 +419,7 @@ BEGIN
       Mat.Set (m, i, j, Math.Sin (F64 (i) / 3.0) * Math.Cos (F64 (j) / 5.0))
     END
   END ;
-  figs[3] := Plot.RenderHeat ('Heat', m, Plot.Coolwarm (), TRUE) ;
+  figs[3] := Plot.RenderHeat ('Heat', m, Plot.Cmap.Coolwarm, TRUE) ;
   RETURN figs
 END FourFigures ;
 

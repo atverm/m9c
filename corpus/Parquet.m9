@@ -174,6 +174,17 @@ IMPORT Zip ;
 (* ---- thrift compact protocol type codes ---- *)
 
 CONST
+  (* A column's kind, as KindQ reads it off the column's Frame.Data.
+     These were Frame's own kind codes until 0.27.0 deprecated them. *)
+  KF64 = 0 ;
+  KF32 = 1 ;
+  KI64 = 2 ;
+  KI32 = 3 ;
+  KI16 = 4 ;
+  KByte = 5 ;
+  KStr = 6 ;
+  KBool = 7 ;
+
   CtStop = 0 ;
   CtTrue = 1 ;
   CtFalse = 2 ;
@@ -387,20 +398,20 @@ PROCEDURE ColPhys (k: I64) : I64 =
      a CASE over Frame.Data would do now and would make this total.
      Ledgered. *)
 BEGIN
-  IF k = Frame.KindF64 THEN RETURN PtDouble END ;
-  IF k = Frame.KindF32 THEN RETURN PtFloat END ;
-  IF k = Frame.KindI64 THEN RETURN PtInt64 END ;
-  IF k = Frame.KindStr THEN RETURN PtByteArray END ;
-  IF k = Frame.KindBool THEN RETURN PtBoolean END ;
+  IF k = KF64 THEN RETURN PtDouble END ;
+  IF k = KF32 THEN RETURN PtFloat END ;
+  IF k = KI64 THEN RETURN PtInt64 END ;
+  IF k = KStr THEN RETURN PtByteArray END ;
+  IF k = KBool THEN RETURN PtBoolean END ;
   RETURN PtInt32
 END ColPhys ;
 
 PROCEDURE ColConv (k: I64) : I64 =
   (* ColConv answers the converted_type, or -1 for none. *)
 BEGIN
-  IF k = Frame.KindI16 THEN RETURN CvInt16 END ;
-  IF k = Frame.KindByte THEN RETURN CvUint8 END ;
-  IF k = Frame.KindStr THEN RETURN CvUtf8 END ;
+  IF k = KI16 THEN RETURN CvInt16 END ;
+  IF k = KByte THEN RETURN CvUint8 END ;
+  IF k = KStr THEN RETURN CvUtf8 END ;
   RETURN -1
 END ColConv ;
 
@@ -435,29 +446,29 @@ VAR
   mb : BYTE ;
   r : I64 ;
 BEGIN
-  IF k = Frame.KindBool OR k = Frame.KindStr THEN RETURN NEW (pool, BOOL, 0) END ;
+  IF k = KBool OR k = KStr THEN RETURN NEW (pool, BOOL, 0) END ;
   m := NEW (pool, BOOL, Frame.Rows (f)) ;
-  IF k = Frame.KindF64 THEN
+  IF k = KF64 THEN
     v64 := Frame.ColF64 (f, name) ;
     m64 := Frame.MissF64 (f, name) ;
     FOR r := 0 TO LEN (v64) - 1 DO
       m[r] := NOT (v64[r] = v64[r]) OR v64[r] = m64
     END
-  ELSIF k = Frame.KindF32 THEN
+  ELSIF k = KF32 THEN
     v32 := Frame.ColF32 (f, name) ;
     m32 := Frame.MissF32 (f, name) ;
     FOR r := 0 TO LEN (v32) - 1 DO
       m[r] := NOT (v32[r] = v32[r]) OR v32[r] = m32
     END
-  ELSIF k = Frame.KindI64 THEN
+  ELSIF k = KI64 THEN
     vi64 := Frame.ColI64 (f, name) ;
     mi64 := Frame.MissI64 (f, name) ;
     FOR r := 0 TO LEN (vi64) - 1 DO m[r] := vi64[r] = mi64 END
-  ELSIF k = Frame.KindI32 THEN
+  ELSIF k = KI32 THEN
     vi32 := Frame.ColI32 (f, name) ;
     mi32 := Frame.MissI32 (f, name) ;
     FOR r := 0 TO LEN (vi32) - 1 DO m[r] := vi32[r] = mi32 END
-  ELSIF k = Frame.KindI16 THEN
+  ELSIF k = KI16 THEN
     vi16 := Frame.ColI16 (f, name) ;
     mi16 := Frame.MissI16 (f, name) ;
     FOR r := 0 TO LEN (vi16) - 1 DO m[r] := vi16[r] = mi16 END
@@ -490,7 +501,7 @@ VAR
   vs : SLICE OF STR ;
   b : I64 ;
 BEGIN
-  IF k = Frame.KindF64 THEN
+  IF k = KF64 THEN
     v64 := Frame.ColF64 (f, name) ;
     Room (u, 8 * LEN (v64)) ;
     FOR r := 0 TO LEN (v64) - 1 DO
@@ -499,7 +510,7 @@ BEGIN
         u.n := u.n + 8
       END
     END
-  ELSIF k = Frame.KindF32 THEN
+  ELSIF k = KF32 THEN
     v32 := Frame.ColF32 (f, name) ;
     Room (u, 4 * LEN (v32)) ;
     FOR r := 0 TO LEN (v32) - 1 DO
@@ -508,7 +519,7 @@ BEGIN
         u.n := u.n + 4
       END
     END
-  ELSIF k = Frame.KindI64 THEN
+  ELSIF k = KI64 THEN
     vi64 := Frame.ColI64 (f, name) ;
     FOR r := 0 TO LEN (vi64) - 1 DO
       (* Write two's complement LE: negatives via the 2^63 split, no
@@ -524,7 +535,7 @@ BEGIN
         PLE (pool, u, x DIV 4294967296 + 2147483648, 4)
       END
     END
-  ELSIF k = Frame.KindI32 THEN
+  ELSIF k = KI32 THEN
     vi32 := Frame.ColI32 (f, name) ;
     FOR r := 0 TO LEN (vi32) - 1 DO
       IF Kept (skip, r) THEN
@@ -533,7 +544,7 @@ BEGIN
         PLE (pool, u, x, 4)
       END
     END
-  ELSIF k = Frame.KindI16 THEN
+  ELSIF k = KI16 THEN
     vi16 := Frame.ColI16 (f, name) ;
     FOR r := 0 TO LEN (vi16) - 1 DO
       IF Kept (skip, r) THEN
@@ -542,12 +553,12 @@ BEGIN
         PLE (pool, u, x, 4)
       END
     END
-  ELSIF k = Frame.KindByte THEN
+  ELSIF k = KByte THEN
     vb := Frame.ColBytes (f, name) ;
     FOR r := 0 TO LEN (vb) - 1 DO
       IF Kept (skip, r) THEN PLE (pool, u, I64 (vb[r]), 4) END
     END
-  ELSIF k = Frame.KindBool THEN
+  ELSIF k = KBool THEN
     vbo := Frame.ColBools (f, name) ;
     (* PLAIN booleans are BIT-PACKED, LSB first, zero-padded *)
     x := 0 ;
@@ -861,7 +872,7 @@ VAR
   vi16 : SLICE OF I16 ;
   r, x : I64 ;
 BEGIN
-  IF k = Frame.KindI32 THEN
+  IF k = KI32 THEN
     vi32 := Frame.ColI32 (f, name) ;
     FOR r := 0 TO LEN (vi32) - 1 DO
       x := I64 (vi32[r]) ;
@@ -899,8 +910,8 @@ VAR
 BEGIN
   (* nsCols is not held to the frame: WriteX never did, and a caller
      naming a column it did not add got a file, not a refusal *)
-  CheckNames (f, 'usCols', o.usCols, Frame.KindI64, Frame.KindI64) ;
-  CheckNames (f, 'i8Cols', o.i8Cols, Frame.KindI32, Frame.KindI16) ;
+  CheckNames (f, 'usCols', o.usCols, KI64, KI64) ;
+  CheckNames (f, 'i8Cols', o.i8Cols, KI32, KI16) ;
   FOR i := 0 TO LEN (o.usCols) - 1 DO
     IF InList (o.usCols[i], o.nsCols) THEN
       RAISE Faults.BadArg ('a column in both nsCols and usCols: ' + o.usCols[i])
@@ -926,7 +937,7 @@ BEGIN
     (* BOOL and STR are never null: Frame keeps no missing value for
        a BOOL (it refuses a null one by name), and an empty string is
        a value, not a missing one *)
-    opt[c] := o.nulls AND kinds[c] # Frame.KindBool AND kinds[c] # Frame.KindStr ;
+    opt[c] := o.nulls AND kinds[c] # KBool AND kinds[c] # KStr ;
     IF opt[c] THEN
       skip := Missing (pool, f, names[c], kinds[c])
     ELSE
@@ -1059,7 +1070,7 @@ VAR
 BEGIN
   f := Frame.New (pool, 1) ;
   t := NEW (pool, I64, 1) ;
-  RETURN Frame.NewTs (pool, f, t, 1, Frame.ConvStart (), '')
+  RETURN Frame.NewTs (pool, f, t, 1, Frame.Conv.AtStart, '')
 EXCEPT
 | Faults.SizeError : RAISE Overflow    (* unreachable *)
 | Frame.Disorder : RAISE Overflow
@@ -1093,25 +1104,25 @@ PROCEDURE AddCopy (VAR pool: POOL ; VAR dst: PTR Frame.Fr ;
 VAR k : I64 ;
 BEGIN
   k := KindQ (src, name) ;
-  IF k = Frame.KindF64 THEN
+  IF k = KF64 THEN
     Frame.AddF64 (pool, dst, name, Frame.ColF64 (src, name),
                   Frame.MissF64 (src, name))
-  ELSIF k = Frame.KindF32 THEN
+  ELSIF k = KF32 THEN
     Frame.AddF32 (pool, dst, name, Frame.ColF32 (src, name),
                   Frame.MissF32 (src, name))
-  ELSIF k = Frame.KindI64 THEN
+  ELSIF k = KI64 THEN
     Frame.AddI64 (pool, dst, name, Frame.ColI64 (src, name),
                   Frame.MissI64 (src, name))
-  ELSIF k = Frame.KindI32 THEN
+  ELSIF k = KI32 THEN
     Frame.AddI32 (pool, dst, name, Frame.ColI32 (src, name),
                   Frame.MissI32 (src, name))
-  ELSIF k = Frame.KindI16 THEN
+  ELSIF k = KI16 THEN
     Frame.AddI16 (pool, dst, name, Frame.ColI16 (src, name),
                   Frame.MissI16 (src, name))
-  ELSIF k = Frame.KindByte THEN
+  ELSIF k = KByte THEN
     Frame.AddBytes (pool, dst, name, Frame.ColBytes (src, name),
                     Frame.MissByte (src, name))
-  ELSIF k = Frame.KindBool THEN
+  ELSIF k = KBool THEN
     Frame.AddBools (pool, dst, name, Frame.ColBools (src, name))
   ELSE
     Frame.AddStrs (pool, dst, name, Frame.ColStrs (src, name))
@@ -1123,8 +1134,19 @@ END AddCopy ;
 
 PROCEDURE KindQ (f: PTR Frame.Fr ; RO name: STR) : I64
   RAISES Faults.BadArg =
+VAR c : Frame.Col ;
 BEGIN
-  RETURN Frame.KindOf (f, name)
+  c := Frame.GetCol (f, name) ;
+  CASE c.data OF
+  | Frame.Data.F64s (v64, m64) : RETURN KF64
+  | Frame.Data.F32s (v32, m32) : RETURN KF32
+  | Frame.Data.I64s (vi64, mi64) : RETURN KI64
+  | Frame.Data.I32s (vi32, mi32) : RETURN KI32
+  | Frame.Data.I16s (vi16, mi16) : RETURN KI16
+  | Frame.Data.Bytes (vb, mb) : RETURN KByte
+  | Frame.Data.Bools (vbo) : RETURN KBool
+  | Frame.Data.Strs (si) : RETURN KStr
+  END
 EXCEPT
 | Frame.Unknown : RAISE Faults.BadArg ('internal: column vanished')
 END KindQ ;
@@ -2309,7 +2331,7 @@ BEGIN
     END
   END ;
   IF LEN (tsec) = 0 THEN RAISE Faults.BadArg ('no time column') END ;
-  conv := Frame.ConvStart () ;
+  conv := Frame.Conv.AtStart ;
   res := 0 ;
   descr := '' ;
   FOR i := 0 TO m.nkv - 1 DO
@@ -2317,9 +2339,9 @@ BEGIN
       res := TextI64 (m.kvVals[i])
     ELSIF EqS (m.kvKeys[i], 'frame_time_convention') THEN
       IF EqS (m.kvVals[i], 'end') THEN
-        conv := Frame.ConvEnd ()
+        conv := Frame.Conv.AtEnd
       ELSIF EqS (m.kvVals[i], 'mid') THEN
-        conv := Frame.ConvMid ()
+        conv := Frame.Conv.AtMid
       END
     ELSIF EqS (m.kvKeys[i], 'description') THEN
       descr := m.kvVals[i]

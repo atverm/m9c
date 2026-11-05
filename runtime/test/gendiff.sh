@@ -73,6 +73,8 @@ run JsonUtf DynStr Text
 run Chars Bits Faults Text
 run DynUtf
 run Tsk Faults System
+run Chan
+run Sup Faults Time Io Fmt
 run Http DynStr Io Text
 run Sparql DynStr Io Http Json Text
 run Rdf DynStr Fmt Json Text Xml
@@ -90,6 +92,7 @@ run ZarrStore DynStr Json Http Io Text
 run Zarr DynStr Json Io Math Text
 run Plot DynStr Mat Math Faults Fmt Text Time
 run Lex DynStr Text
+run M9f DynStr Lex Text
 run Ast Text
 run Print Ast DynStr Text
 run Parse Ast Lex Text
@@ -196,7 +199,7 @@ grep -q 'UINT64_C(18446744073709551615)' "$TG"/gen_want.txt \
 run Sem Ast DynStr Print Text
 run Doc Ast DynStr Text Print Lex
 run Review Ast DynStr Text
-run M9c Io Ast Parse Gen Sem DynStr Doc Review Lex System Text
+run M9c Io Ast Parse Gen Sem DynStr Doc Review Lex M9f System Text
 run Gen Ast DynStr Text
 run Diag DynStr Io Lex Text
 # LibmGate is a gendiff-only fixture (not in gentest.pas / runtime/gen):

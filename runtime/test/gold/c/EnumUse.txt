@@ -149,6 +149,7 @@ static void EnumUse_AllHues (m9_state *err)
   c.tag = (((Palette_Hue){ .tag = Palette_Hue_Warm })).tag;
   m9t1to = (((Palette_Hue){ .tag = Palette_Hue_Neutral })).tag;
   for (; c.tag <= m9t1to; c.tag++) {
+    M9_YCHK ();
     Io_WriteLineUtf ((Palette_Hue_names[(c).tag]), err);
     if (err->exc) { m9ln = 40; goto L_ret; };
   } }
@@ -181,6 +182,7 @@ static void EnumUse_Tables (m9_state *err)
   b.tag = (((EnumUse_Band){ .tag = EnumUse_Band_Lo })).tag;
   m9t1to = (((EnumUse_Band){ .tag = EnumUse_Band_Hi })).tag;
   for (; b.tag <= m9t1to; b.tag++) {
+    M9_YCHK ();
     Io_WriteI64 ((bw.v[(b).tag]), err);
     if (err->exc) { m9ln = 63; goto L_ret; };
   } }
@@ -190,6 +192,7 @@ static void EnumUse_Tables (m9_state *err)
   h2.tag = (((Palette_Hue){ .tag = Palette_Hue_Warm })).tag;
   m9t2to = (((Palette_Hue){ .tag = Palette_Hue_Neutral })).tag;
   for (; h2.tag <= m9t2to; h2.tag++) {
+    M9_YCHK ();
     Io_WriteI64 ((hw.v[(h2).tag]), err);
     if (err->exc) { m9ln = 67; goto L_ret; };
   } }

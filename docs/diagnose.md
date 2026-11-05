@@ -32,6 +32,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `an ARRAY m.Colour OF is indexed by a m.Colour value, not an integer literal` | an ARRAY indexed by an enumeration is indexed BY THE TYPE -- its subscript is a member of that enumeration, and its length is the member count -- so an integer subscript (or a value of some other type) is refused; the compiler proves a[Colour.Red] is in range precisely because a Colour is always one of the members | write the member: a[Colour.Red], not a[0]; that is what makes the array bounds-checked at compile time, with no runtime check and no ordinal to keep in step with the type | `array-enum-index-int` |
 | `cannot assign to P -- P is a PROCEDURE, not a variable` | the target of := names a procedure; a procedure is a declaration, not storage -- until 2026-10-22 a bare one was refused as an unknown name and a qualified one reached the C compiler (par 3 rule 7) | call it (P ()), or hold a procedure value in a variable of procedure type: VAR a : OPT Act ; a := SOME (P) | `assign-to-procedure` |
 | `unknown name: x` | a bare name on the left of := is declared nowhere -- not a local, parameter, module variable, or a CONST (writing a CONST is its own refusal); until 2026-10-08 only the generator said so, as `gen: unknown name' | declare it (VAR in the procedure or at module level), or spell the name as declared -- names are case sensitive | `assign-to-undeclared` |
+| `only [DEPRECATED] carries a text; [PURE] takes none` | only [DEPRECATED] carries a text (par 3.9); every other attribute is a bare name, and a text on it would be read by nothing | drop the text, or write the note as a comment beside the heading | `attribute-text-not-deprecated` |
 | `x is declared twice in the binders of Two (par 2.2)` | a name given twice in one binder list -- a CASE arm over a variant, or a handler -- where each binder is a variable of the arm; the second would hide the first, and the C compiler refused the redefinition | give each binder its own name; a value the arm does not need still takes a name, one used nowhere | `binder-declared-twice` |
 | `BYTE is a raw octet: no arithmetic` | BYTE is a raw octet, not a number: no +, -, comparison as magnitude | convert with U8 (b) or I64 (b) first, and back with BYTE (x), each of which RAISES ValueRange | `byte-arithmetic` |
 | `ByteSize needs a slice, not I64` | ByteSize answers the bytes a slice's elements occupy, so its argument must be a slice | for a scalar or record use SizeOf (x); for the data behind a slice, ByteSize (s) = LEN (s) * SizeOf (element) | `bytesize-not-slice` |
@@ -52,6 +53,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `condition must be BOOL, not I64` | IF/WHILE/ELSIF take a BOOL; an integer is not implicitly a truth value | write the comparison out: IF n # 0 THEN | `cond-not-bool` |
 | `use of s after it was consumed by SHARED` | SHARED (s) consumed s on one arm, so after the join s may be gone (moved in ANY arm = moved after) | share on every path, or share before the branch; see par 4.2 | `conditional-move` |
 | `argument 1 of Bump: the CONST Pi cannot be passed to a VAR or OWN parameter` | a CONST is passed to a VAR or OWN parameter, which exists to be written through; there is nothing to write | pass a variable holding the value, or make the parameter by-value or RO if the callee only reads | `const-as-var-argument` |
+| `a CONST takes only the attribute [DEPRECATED 'text']` | a CONST takes one attribute, [DEPRECATED 'text'], written before its = (par 3.9); [PURE] and the others say something about a procedure or a record | drop the attribute, or write [DEPRECATED 'what to write instead'] | `const-attribute-not-deprecated` |
 | `CONST Big: the expression overflows I64 or divides by zero (par 2.2.4)` | an integer CONST expression is folded with the run-time arithmetic, and this one overflows I64 or divides by zero (or a CONST is a form no generator writes: a name, a call, a comparison) | compute the value in a procedure, or split the expression so each part fits I64 | `const-expression-overflow` |
 | `argument 1 of Up: the CONST Names can be lent only to an RO parameter` | a string CONST, or an element of a constant table, is passed to a by-value slice parameter that is not RO; a constant is read-only data | declare the parameter RO, or copy the constant into a variable first (par 2.4) | `const-string-to-writable` |
 | `the CONST table Primes can only be indexed, measured with LEN, gone over by FOR IN, or lent to an RO parameter` | a constant table is named bare where its value would be aliased -- assigned to a slice, cut with SLICE, RETURNed -- and whatever held the alias could write the constant | index it (X[i]), measure it (LEN (X)), or lend it whole to an RO parameter; those three are everything a table does (par 2.2.4) | `const-table-aliased` |
@@ -64,6 +66,8 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `declared in the definition but not implemented` | the DEFINITION declares a procedure the IMPLEMENTATION never defines | implement it, or remove it from the definition; the signature is the contract (par 3) | `def-not-implemented` |
 | `cannot assign a real literal to I64` | a real constant declared in a module's DEFINITION is assigned to an integer in its IMPLEMENTATION; the refusal is the ordinary one, and the probe holds what must stay legal before it -- the constant used as the integer, real or string it is.  Until 2026-10-02 an implementation was given no type for a constant of its own definition, so this compiled and 1.5 became 1 (museum/implicit-through-definition-const.m9) | write the conversion the assignment means: n := I64 (Math.Round (K)), or declare the variable F64.  NOT SOURCE COMPATIBLE for a program that leaned on the gap; none was found in 430 files here and in four applications | `definition-const-in-implementation` |
 | `cannot assign UTF to I64` | the same gap for a string constant of the definition: assigned to an I64 in the implementation, it passed the checker until 2026-10-02 and failed in the C compiler | assign it to a STR; a number written in a string is read with a parser, not by assignment | `definition-const-string-in-implementation` |
+| `[DEPRECATED] belongs on the definition, which its callers read` | [DEPRECATED] retires a name for one release, and each use from another module gets a note (par 3.9); a caller reads the definition, so a mark in the implementation or in a program module would reach nobody | move [DEPRECATED 'text'] to the procedure's heading or the CONST in the module's DEFINITION; the implementation's heading need not repeat it | `deprecated-not-in-definition` |
+| `[DEPRECATED] says what to write instead: [DEPRECATED 'Mod.New (x)']` | the note a use of a deprecated name gets says what to write instead, and that text is the attribute's (par 3.9); without one the caller learns only that the name is going | say what to write instead: [DEPRECATED 'Mod.New (x)'] | `deprecated-without-text` |
 | `a borrow is not yours to free` | the value came in as a value/VAR/RO parameter -- a borrow -- and a borrow is not yours to free | only OWN parameters and locals holding owned PTRs may be DISPOSEd; move ownership with OWN | `dispose-a-borrow` |
 | `cannot DISPOSE r: nothing here gives it an owned pointer -- only NEW (OWN, T), an owned name moved in or a call that does not answer what it was lent does (par 4.2)` | the name was given the answer of a call whose callee answers a pointer it was lent -- a parameter that is not OWN, or part of one -- so the answer is a borrow of the caller's own object; until 2026-10-21 a call's answer counted as owned and this freed it twice, or freed pool storage (par 4.2) | DISPOSE the name the object was made under, once; or take the parameter OWN so the callee hands ownership back | `dispose-borrowed-answer` |
 | `cannot DISPOSE c: nothing here gives it an owned pointer -- only NEW (OWN, T), an owned name moved in or a call that does not answer what it was lent does (par 4.2)` | the answer of a call whose callee answers what a further callee answers of its argument -- RETURN Id (a) -- is that argument, a borrow; disposing it frees what the caller's owner still names | DISPOSE the owner the borrow came from, once, and only read through the answer | `dispose-borrowed-via-call` |
@@ -222,7 +226,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `argument 1 of At: cannot pass PROCEDURE (F64) : F64 RAISES ValueRange, m.Odd where PROCEDURE (F64) : F64 RAISES ValueRange is expected` | the procedure may raise an exception the procedure type does not declare; a caller of the value handles what the TYPE says, so this one could arrive unhandled.  The probe holds what must stay LEGAL before it: since 2026-10-02 a procedure that raises LESS than the type allows fits it, a quiet one included | handle the extra exception inside the procedure, or declare it in the type's RAISES (par 2.2.3) | `proc-value-raises-more` |
 | `cannot assign OPT PROCEDURE (I64 ; I64) : I64 to OPT PROCEDURE (I64 ; I64) : BOOL (no implicit conversions, par 2.1)` | a procedure fits a procedure type only when its head renders the same text -- modes, types and result, to the letter -- and it raises no more than the type allows | assign a procedure with exactly the declared parameters and result, or change the type (par 2.2.3) | `proc-value-signature-differs` |
 | `a variable of procedure type must be OPT (par 2.2.3)` | a procedure value has no zero: a zeroed variable of procedure type would be a call into nothing | declare it OPT Less and take the value through IS SOME; a PARAMETER of procedure type needs no OPT (par 2.2.3) | `proc-var-must-be-opt` |
-| `a procedure takes the attribute [PURE] or, in an UNSAFE implementation, [FRESH] (par 3.2, par 7), not [PUER]` | a procedure attribute that is neither [PURE] nor [FRESH]: it was ignored, and what the author meant by it was never checked | spell it [PURE] or [FRESH], or drop it | `procedure-attribute-unknown` |
+| `a procedure takes the attribute [PURE], [RESET] (bound to a monitor), [DEPRECATED 'text'] (in a definition) or, in an UNSAFE implementation, [FRESH] (par 3.2, par 3.9, par 6, par 7), not [PUER]` | a procedure attribute that is neither [PURE], [RESET], [DEPRECATED] nor [FRESH]: it was ignored, and what the author meant by it was never checked | spell it [PURE], [RESET], [DEPRECATED] or [FRESH], or drop it | `procedure-attribute-unknown` |
 | `cannot allocate from the pool pool in a PURE procedure (par 3.2)` | NEW from a pool the CALLER owns consumes the caller's storage and answers a slice into the caller's arena -- an effect (par 3.2) | use a local VAR scratch: POOL, or drop [PURE] | `pure-allocates` |
 | `PURE procedure calls Note, which is not PURE (par 3.2)` | a PURE procedure may call only PURE procedures -- which is what makes 'no I/O' true without the checker knowing what I/O is, since a foreign procedure is [SERIAL] or [REENTRANT] and never [PURE] | declare the callee [PURE] too if it really is, or drop [PURE] from the caller | `pure-calls-impure` |
 | `cannot write through the VAR parameter acc in a PURE procedure (par 3.2)` | a PURE procedure has no observable effect (par 3.2), and writing through a caller's VAR binding is precisely what the caller observes | answer a value instead of writing through a parameter, or drop [PURE] | `pure-writes-var` |
@@ -238,6 +242,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `type extension, RECORD (E0) ..., is not in the language yet: give the fields one by one (par 2.2)` | type extension is specified with IS tests and type guards (par 2.2, par 8) and not built: the generator knew no field of a base until 2026-10-30, when the checker began to refuse it | write the base's fields into the record itself, or hold the base as a field: RECORD base : Base ; a1 : I64 END | `record-extension` |
 | `a RECORD is a TYPE of its own: declare it, TYPE T = RECORD ... END, and use its name (par 2.2)` | the generator builds a record from its TYPE declaration, by name; a RECORD written as a variable's, field's or element's type had none and was `type kind unsupported yet' until 2026-10-30 | declare the record as a TYPE, TYPE Inner = RECORD b : I64 END, and write Inner where the RECORD was | `record-inline` |
 | `undeclared retention: borrowed o (carried by spec) reaches module state` | a borrowed parameter reaches module state through a record that carries it -- here a field of a field of a local record, stored whole in a module variable; storing the borrow into the local alone, at any depth through records held by value, is legal | declare KEPT o, or store a copy that outlives the call: Text.Keep (pool, s) into a module pool | `region-inline-field` |
+| `[RESET] rebuilds the monitor its procedure is bound to, from zero; Clear is bound to none` | [RESET] marks the one procedure that may enter a poisoned monitor and rebuilds it from zero (par 6, stage 5 of docs/task-plan.md); a procedure bound to no monitor has nothing to rebuild | bind the procedure to the monitor it rebuilds (its first parameter, VAR m: TheMonitor), or drop the attribute | `reset-unbound` |
 | `function result discarded: G returns I64` | a function's result was not used; M9 does not let a value fall on the floor | assign it, or make the procedure proper if the result is not wanted | `result-discarded` |
 | `retention: borrowed x stored into r` *(ledger, not an error)* | NOT an error: the P3 ledger noting that a borrowed parameter was stored beyond the frame | nothing to fix; it is measured against the kill-gate (docs/p3-ledger.md) | `retention-ledgered` |
 | `undeclared retention: borrowed items reaches module state -- declare KEPT items (par 4.1)` | a VIEW of a retaining local -- SLICE (out, 0, n) over a slice holding the borrowed elements -- is stored in module state; until 2026-10-18 the view escaped unrooted, because the root finder looked for a call named SLICE and the parser makes a node of its own (par 4.1) | declare the parameter KEPT, or copy the elements before keeping the slice | `retention-module-view` |
@@ -674,6 +679,28 @@ VAR n : I64 ;
 BEGIN
   n := 1 ;
   x := n
+END m.
+```
+
+### attribute-text-not-deprecated
+
+`only [DEPRECATED] carries a text; [PURE] takes none`
+
+```
+MODULE m ;
+(* An attribute may carry a text since 2026-11-05, for [DEPRECATED]
+   (par 3.9).  Every other attribute is a bare name, and a text on
+   one would be read by nothing.  The legal form comes first: Id is
+   [PURE] with no text. *)
+PROCEDURE Id (n: I64) : I64 [PURE] =
+BEGIN
+  RETURN n
+END Id ;
+PROCEDURE Same (n: I64) : I64 [PURE 'it writes nothing'] =
+BEGIN
+  RETURN n
+END Same ;
+BEGIN
 END m.
 ```
 
@@ -1129,6 +1156,29 @@ END F ;
 END m.
 ```
 
+### const-attribute-not-deprecated
+
+`a CONST takes only the attribute [DEPRECATED 'text']`
+
+```
+DEFINITION MODULE m ;
+(* A CONST takes an attribute since 2026-11-05, written before its =,
+   and the one it takes is [DEPRECATED 'text'] (par 3.9).  The legal
+   form comes first: KindA names its replacement.  [PURE] says
+   something about a procedure's effects, and a CONST has none. *)
+TYPE
+  Kind = CASE RECORD
+  | A
+  | B
+  END ;
+CONST
+  KindA [DEPRECATED 'm.Kind.A'] = 0 ;
+  KindB [PURE] = 1 ;
+END m.
+IMPLEMENTATION MODULE m ;
+END m.
+```
+
 ### const-expression-overflow
 
 `CONST Big: the expression overflows I64 or divides by zero (par 2.2.4)`
@@ -1436,6 +1486,50 @@ BEGIN
   n := Name ;
   RETURN n
 END F ;
+END m.
+```
+
+### deprecated-not-in-definition
+
+`[DEPRECATED] belongs on the definition, which its callers read`
+
+```
+DEFINITION MODULE m ;
+(* [DEPRECATED 'text'] retires a name for one release: each use from
+   another module gets a note saying what to write instead (par 3.9,
+   2026-11-05).  The callers read the definition, so the attribute
+   stands there.  The legal form comes first: Twice is marked in the
+   definition.  The implementation marks Half, which no caller
+   reads. *)
+PROCEDURE Twice (n: I64) : I64 [DEPRECATED 'm.Double (n)'] ;
+PROCEDURE Double (n: I64) : I64 ;
+PROCEDURE Half (n: I64) : I64 ;
+END m.
+IMPLEMENTATION MODULE m ;
+PROCEDURE Twice (n: I64) : I64 = BEGIN RETURN n + n END Twice ;
+PROCEDURE Double (n: I64) : I64 = BEGIN RETURN n + n END Double ;
+PROCEDURE Half (n: I64) : I64 [DEPRECATED 'n DIV 2'] = BEGIN RETURN n DIV 2 END Half ;
+END m.
+```
+
+### deprecated-without-text
+
+`[DEPRECATED] says what to write instead: [DEPRECATED 'Mod.New (x)']`
+
+```
+DEFINITION MODULE m ;
+(* A deprecation note tells the caller what to write instead, and the
+   attribute is where that text comes from (par 3.9, 2026-11-05).  The
+   legal form comes first: Twice names its replacement.  Thrice names
+   nothing, and its callers would learn only that it is going. *)
+PROCEDURE Twice (n: I64) : I64 [DEPRECATED 'm.Double (n)'] ;
+PROCEDURE Double (n: I64) : I64 ;
+PROCEDURE Thrice (n: I64) : I64 [DEPRECATED] ;
+END m.
+IMPLEMENTATION MODULE m ;
+PROCEDURE Twice (n: I64) : I64 = BEGIN RETURN n + n END Twice ;
+PROCEDURE Double (n: I64) : I64 = BEGIN RETURN n + n END Double ;
+PROCEDURE Thrice (n: I64) : I64 = BEGIN RETURN n + n + n END Thrice ;
 END m.
 ```
 
@@ -5527,7 +5621,7 @@ END m.
 
 ### procedure-attribute-unknown
 
-`a procedure takes the attribute [PURE] or, in an UNSAFE implementation, [FRESH] (par 3.2, par 7), not [PUER]`
+`a procedure takes the attribute [PURE], [RESET] (bound to a monitor), [DEPRECATED 'text'] (in a definition) or, in an UNSAFE implementation, [FRESH] (par 3.2, par 3.9, par 6, par 7), not [PUER]`
 
 ```
 MODULE m ;
@@ -5954,6 +6048,36 @@ VAR o : Opts ;
 BEGIN
   o.cmap := 'viridis' ;
   Keeps (o)
+END m.
+```
+
+### reset-unbound
+
+`[RESET] rebuilds the monitor its procedure is bound to, from zero; Clear is bound to none`
+
+```
+MODULE m ;
+(* [RESET] marks the one procedure that may enter a poisoned monitor;
+   the generated code zeroes the monitor's fields before its body
+   runs (par 6, 2026-11-02).  The legal form comes first: Rebuild is
+   bound to the monitor it rebuilds.  Clear takes a plain record, and
+   there is no monitor to rebuild. *)
+TYPE
+  Bank = MONITOR RECORD
+    balance : I64 ;
+  END ;
+  Plain = RECORD
+    balance : I64 ;
+  END ;
+PROCEDURE Rebuild (VAR b: Bank) [RESET] =
+BEGIN
+  b.balance := 100
+END Rebuild ;
+PROCEDURE Clear (VAR p: Plain) [RESET] =
+BEGIN
+  p.balance := 0
+END Clear ;
+BEGIN
 END m.
 ```
 

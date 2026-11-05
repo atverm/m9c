@@ -219,6 +219,7 @@ double Numeric_Root (Numeric_Fn f, m9_sl_F64 p, double a, double b, double xtol,
   i = INT64_C(1);
   m9t1to = Numeric_RootIter;
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     if ((((fpre != 0.0) && (fcur != 0.0)) && (((fpre < 0.0)) != ((fcur < 0.0))))) {
       xblk = xpre;
       fblk = fpre;
@@ -385,6 +386,7 @@ double Numeric_Minimum (Numeric_Fn f, m9_sl_F64 p, double a, double b, double xa
     bool m9t2 = (Math_Fabs ((xf - xm), err) > (tol2 - (0.5 * ((hi - lo)))));
     if (err->exc) { m9ln = 339; goto L_ret; };
     if (!(m9t2)) break;
+    M9_YCHK ();
     golden = true;
     bool m9t3 = (Math_Fabs (e, err) > tol1);
     if (err->exc) { m9ln = 341; goto L_ret; };
@@ -539,6 +541,7 @@ double Numeric_Integral (Numeric_Fn f, m9_sl_F64 p, double a, double b, double e
   if (err->exc) { m9ln = 497; goto L_ret; };
   n = INT64_C(1);
   for (;;) {
+    M9_YCHK ();
     area = 0.0;
     errsum = 0.0;
     { __typeof__(k) m9t1to;
@@ -848,6 +851,7 @@ int64_t Numeric_OdeSolve (Numeric_Rhs f, m9_sl_F64 p, double t0, double t1, m9_s
   steps = INT64_C(0);
   for (;;) {
     if (!(((direction * ((t - t1))) < 0.0))) break;
+    M9_YCHK ();
     if ((steps >= Numeric_MaxSteps)) {
       err->i[0] = steps;
       m9_raise (err, &Numeric_NoConverge);
@@ -865,6 +869,7 @@ int64_t Numeric_OdeSolve (Numeric_Rhs f, m9_sl_F64 p, double t0, double t1, m9_s
     accepted = false;
     for (;;) {
       if (!((!accepted))) break;
+      M9_YCHK ();
       if ((habs < minStep)) {
         err->i[0] = steps;
         m9_raise (err, &Numeric_NoConverge);
@@ -898,6 +903,7 @@ int64_t Numeric_OdeSolve (Numeric_Rhs f, m9_sl_F64 p, double t0, double t1, m9_s
       s = INT64_C(1);
       m9t2to = INT64_C(5);
       if (s <= m9t2to) for (;;) {
+        M9_YCHK ();
         { __typeof__(i) m9t3to;
         i = INT64_C(0);
         m9t3to = m9_sub_i64 (n, INT64_C(1), err);
@@ -1118,6 +1124,7 @@ Numeric_Fitted Numeric_LeastSq (Numeric_Residuals f, m9_sl_F64 p, m9_sl_F64 *x, 
     bool m9t1 = Numeric_LmNext (&(s), err->res, err);
     if (err->exc) { m9ln = 1382; goto L_ret; };
     if (!(m9t1)) break;
+    M9_YCHK ();
     f (s.xeval, p, &(s.feval), err);
     if (err->exc) { m9ln = 1383; goto L_ret; };
   }
@@ -1179,11 +1186,13 @@ Numeric_Fitted Numeric_CurveFit (Numeric_Fn f, m9_sl_F64 t, m9_sl_F64 y, m9_sl_F
     bool m9t2 = Numeric_LmNext (&(s), err->res, err);
     if (err->exc) { m9ln = 1446; goto L_ret; };
     if (!(m9t2)) break;
+    M9_YCHK ();
     { __typeof__(i) m9t3to;
     i = INT64_C(0);
     m9t3to = m9_sub_i64 (m, INT64_C(1), err);
     if (err->exc) { m9ln = 1447; goto L_ret; };
     if (i <= m9t3to) for (;;) {
+      M9_YCHK ();
       { __typeof__((*(double *) m9_at (t.p, i, t.len, sizeof (double), err))) m9a10 = (*(double *) m9_at (t.p, i, t.len, sizeof (double), err));
         if (err->exc) { m9ln = 1448; goto L_ret; };
       { __typeof__(v) m9v = f (m9a10, s.xeval, err);
@@ -1310,6 +1319,7 @@ void Numeric_Fft (m9_sl_F64 *re, m9_sl_F64 *im, bool inverse, m9_state *err)
   m9t2to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) { m9ln = 1493; goto L_ret; };
   if (i <= m9t2to) for (;;) {
+    M9_YCHK ();
     { __typeof__(bit) m9v = m9_div_i64 (n, INT64_C(2), err);
       if (err->exc) { m9ln = 1494; goto L_ret; };
       bit = m9v;
@@ -1398,6 +1408,7 @@ void Numeric_Fft (m9_sl_F64 *re, m9_sl_F64 *im, bool inverse, m9_state *err)
   len = INT64_C(2);
   for (;;) {
     if (!((len <= n))) break;
+    M9_YCHK ();
     { __typeof__(half) m9v = m9_div_i64 (len, INT64_C(2), err);
       if (err->exc) { m9ln = 1519; goto L_ret; };
       half = m9v;
@@ -1646,11 +1657,13 @@ void Numeric_CcgFilter (m9_sl_F64 xp, m9_sl_F64 yp, m9_sl_F64 xq, double interva
   m9t10to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) { m9ln = 1801; goto L_ret; };
   if (i <= m9t10to) for (;;) {
+    M9_YCHK ();
     { __typeof__(k) m9t11to;
     k = INT64_C(0);
     m9t11to = m9_sub_i64 (m, INT64_C(1), err);
     if (err->exc) { m9ln = 1802; goto L_ret; };
     if (k <= m9t11to) for (;;) {
+      M9_YCHK ();
       { __typeof__((*(double *) m9_at (work.p, i, work.len, sizeof (double), err))) m9a12 = (*(double *) m9_at (work.p, i, work.len, sizeof (double), err));
         if (err->exc) { m9ln = 1803; goto L_ret; };
       { __typeof__((*(double *) m9_at (design.p, m9_add_i64 (m9_mul_i64 (i, m, err), k, err), design.len, sizeof (double), err))) m9v = Numeric_CcgBasis (k, m9a12, numpoly, err);
@@ -1693,6 +1706,7 @@ void Numeric_CcgFilter (m9_sl_F64 xp, m9_sl_F64 yp, m9_sl_F64 xq, double interva
   m9t13to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) { m9ln = 1813; goto L_ret; };
   if (i <= m9t13to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(double *) m9_at (work.p, i, work.len, sizeof (double), err))) m9a13 = (*(double *) m9_at (work.p, i, work.len, sizeof (double), err));
       if (err->exc) { m9ln = 1814; goto L_ret; };
     { __typeof__(ys) m9v = Numeric_CcgFunc (params, m9a13, numpoly, numharm, err);
@@ -1897,6 +1911,7 @@ void Numeric_CcgFilter (m9_sl_F64 xp, m9_sl_F64 yp, m9_sl_F64 xq, double interva
   m9t25to = m9_sub_i64 (ni, INT64_C(1), err);
   if (err->exc) { m9ln = 1886; goto L_ret; };
   if (i <= m9t25to) for (;;) {
+    M9_YCHK ();
     { __typeof__(({ __auto_type m9t26 = xx; int64_t m9t26a = INT64_C(0), m9t26n = nx; int64_t m9t26o = m9_chk_slice (m9t26a, m9t26n, m9t26.len, err); (__typeof__(m9t26)){ m9t26.p + m9t26o, err->exc ? 0 : m9t26n }; })) m9a15 = ({ __auto_type m9t26 = xx; int64_t m9t26a = INT64_C(0), m9t26n = nx; int64_t m9t26o = m9_chk_slice (m9t26a, m9t26n, m9t26.len, err); (__typeof__(m9t26)){ m9t26.p + m9t26o, err->exc ? 0 : m9t26n }; });
       if (err->exc) { m9ln = 1887; goto L_ret; };
     { __typeof__(({ __auto_type m9t27 = yy; int64_t m9t27a = INT64_C(0), m9t27n = nx; int64_t m9t27o = m9_chk_slice (m9t27a, m9t27n, m9t27.len, err); (__typeof__(m9t27)){ m9t27.p + m9t27o, err->exc ? 0 : m9t27n }; })) m9a16 = ({ __auto_type m9t27 = yy; int64_t m9t27a = INT64_C(0), m9t27n = nx; int64_t m9t27o = m9_chk_slice (m9t27a, m9t27n, m9t27.len, err); (__typeof__(m9t27)){ m9t27.p + m9t27o, err->exc ? 0 : m9t27n }; });
@@ -1974,6 +1989,7 @@ void Numeric_CcgFilter (m9_sl_F64 xp, m9_sl_F64 yp, m9_sl_F64 xq, double interva
   m9t29to = m9_sub_i64 (ni, INT64_C(1), err);
   if (err->exc) { m9ln = 1905; goto L_ret; };
   if (i <= m9t29to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(double *) m9_at (xi.p, i, xi.len, sizeof (double), err))) m9a18 = (*(double *) m9_at (xi.p, i, xi.len, sizeof (double), err));
       if (err->exc) { m9ln = 1906; goto L_ret; };
     { __typeof__(ys) m9v = Numeric_CcgFunc (params, m9a18, numpoly, numharm, err);
@@ -2007,6 +2023,7 @@ void Numeric_CcgFilter (m9_sl_F64 xp, m9_sl_F64 yp, m9_sl_F64 xq, double interva
   m9t30to = m9_sub_i64 ((xq).len, INT64_C(1), err);
   if (err->exc) { m9ln = 1912; goto L_ret; };
   if (i <= m9t30to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(double *) m9_at (xq.p, i, xq.len, sizeof (double), err))) m9a20 = (*(double *) m9_at (xq.p, i, xq.len, sizeof (double), err));
       if (err->exc) { m9ln = 1913; goto L_ret; };
     { __typeof__((*(double *) m9_at ((*smooth).p, i, (*smooth).len, sizeof (double), err))) m9v = Numeric_CcgInterp (xabs, ysm, m9a20, err);
@@ -2083,6 +2100,7 @@ static double Numeric_Qk15 (Numeric_Fn f, m9_sl_F64 p, double a, double b, doubl
   j = INT64_C(0);
   m9t1to = INT64_C(6);
   if (j <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__(absc) m9v = (hlgth * (*(double *) m9_at ((*Xgk).v, j, INT64_C(8), sizeof (double), err)));
       if (err->exc) { m9ln = 449; goto L_ret; };
       absc = m9v;
@@ -2659,6 +2677,7 @@ static void Numeric_Qrfac (int64_t m, int64_t n, m9_sl_F64 *a, m9_sl_I64 *ipvt, 
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) { m9ln = 901; goto L_ret; };
   if (j <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__(m9_mul_i64 (j, m, err)) m9a28 = m9_mul_i64 (j, m, err);
       if (err->exc) { m9ln = 902; goto L_ret; };
     { __typeof__((*(double *) m9_at ((*acnorm).p, j, (*acnorm).len, sizeof (double), err))) m9v = Numeric_Enorm ((*a), m9a28, m, rdwarf, rgiant, err);
@@ -2695,6 +2714,7 @@ static void Numeric_Qrfac (int64_t m, int64_t n, m9_sl_F64 *a, m9_sl_I64 *ipvt, 
   m9t2to = m9_sub_i64 (minmn, INT64_C(1), err);
   if (err->exc) { m9ln = 908; goto L_ret; };
   if (j <= m9t2to) for (;;) {
+    M9_YCHK ();
     kmax = j;
     { __typeof__(k) m9t3to;
     k = j;
@@ -2797,6 +2817,7 @@ static void Numeric_Qrfac (int64_t m, int64_t n, m9_sl_F64 *a, m9_sl_I64 *ipvt, 
         m9t9to = m9_sub_i64 (n, INT64_C(1), err);
         if (err->exc) { m9ln = 934; goto L_ret; };
         if (k <= m9t9to) for (;;) {
+          M9_YCHK ();
           sum = 0.0;
           { __typeof__(i) m9t10to;
           i = j;
@@ -2917,6 +2938,7 @@ static void Numeric_Qrsolv (int64_t n, int64_t ldr, m9_sl_F64 *r, m9_sl_I64 ipvt
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) { m9ln = 964; goto L_ret; };
   if (j <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__(i) m9t2to;
     i = j;
     m9t2to = m9_sub_i64 (n, INT64_C(1), err);
@@ -2948,6 +2970,7 @@ static void Numeric_Qrsolv (int64_t n, int64_t ldr, m9_sl_F64 *r, m9_sl_I64 ipvt
   m9t3to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) { m9ln = 969; goto L_ret; };
   if (j <= m9t3to) for (;;) {
+    M9_YCHK ();
     { __typeof__(l) m9v = m9_sub_i64 ((*(int64_t *) m9_at (ipvt.p, j, ipvt.len, sizeof (int64_t), err)), INT64_C(1), err);
       if (err->exc) { m9ln = 970; goto L_ret; };
       l = m9v;
@@ -3091,6 +3114,7 @@ static void Numeric_Qrsolv (int64_t n, int64_t ldr, m9_sl_F64 *r, m9_sl_I64 ipvt
     k = INT64_C(1);
     m9t13to = nsing;
     if (k <= m9t13to) for (;;) {
+      M9_YCHK ();
       { __typeof__(j) m9v = m9_sub_i64 (nsing, k, err);
         if (err->exc) { m9ln = 1013; goto L_ret; };
         j = m9v;
@@ -3205,6 +3229,7 @@ static void Numeric_Lmpar (int64_t n, int64_t ldr, m9_sl_F64 *r, m9_sl_I64 ipvt,
     k = INT64_C(1);
     m9t3to = nsing;
     if (k <= m9t3to) for (;;) {
+      M9_YCHK ();
       { __typeof__(j) m9v = m9_sub_i64 (nsing, k, err);
         if (err->exc) { m9ln = 1046; goto L_ret; };
         j = m9v;
@@ -3306,6 +3331,7 @@ static void Numeric_Lmpar (int64_t n, int64_t ldr, m9_sl_F64 *r, m9_sl_I64 ipvt,
     m9t8to = m9_sub_i64 (n, INT64_C(1), err);
     if (err->exc) { m9ln = 1073; goto L_ret; };
     if (j <= m9t8to) for (;;) {
+      M9_YCHK ();
       sum = 0.0;
       { __typeof__(jm1) m9v = m9_sub_i64 (j, INT64_C(1), err);
         if (err->exc) { m9ln = 1075; goto L_ret; };
@@ -3343,6 +3369,7 @@ static void Numeric_Lmpar (int64_t n, int64_t ldr, m9_sl_F64 *r, m9_sl_I64 ipvt,
   m9t10to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) { m9ln = 1084; goto L_ret; };
   if (j <= m9t10to) for (;;) {
+    M9_YCHK ();
     sum = 0.0;
     { __typeof__(i) m9t11to;
     i = INT64_C(0);
@@ -3390,6 +3417,7 @@ static void Numeric_Lmpar (int64_t n, int64_t ldr, m9_sl_F64 *r, m9_sl_I64 ipvt,
     (*par) = (gnorm / dxnorm);
   }
   for (;;) {
+    M9_YCHK ();
     { __typeof__(iter) m9v = m9_add_i64 (iter, INT64_C(1), err);
       if (err->exc) { m9ln = 1097; goto L_ret; };
       iter = m9v;
@@ -3667,6 +3695,7 @@ static bool Numeric_LmNext (Numeric_Lm *s, m9_pool *s_pool, m9_state *err)
   m = (*s).m;
   n = (*s).n;
   for (;;) {
+    M9_YCHK ();
     { __typeof__((*s).stage) m9t1 = (*s).stage;
     switch (m9t1) {
     case INT64_C(0):
@@ -4345,6 +4374,7 @@ static bool Numeric_LmCov (Numeric_Lm *s, m9_sl_F64 *cov, m9_state *err)
   m9t3to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) { m9ln = 1404; goto L_ret; };
   if (j <= m9t3to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(double *) m9_at (inv.p, m9_add_i64 (m9_mul_i64 (j, n, err), j, err), inv.len, sizeof (double), err))) m9v = (1.0 / (*(double *) m9_at ((*s).fjac.p, m9_add_i64 (j, m9_mul_i64 (j, m, err), err), (*s).fjac.len, sizeof (double), err)));
       if (err->exc) { m9ln = 1405; goto L_ret; };
       (*(double *) m9_at (inv.p, m9_add_i64 (m9_mul_i64 (j, n, err), j, err), inv.len, sizeof (double), err)) = m9v;
@@ -4388,6 +4418,7 @@ static bool Numeric_LmCov (Numeric_Lm *s, m9_sl_F64 *cov, m9_state *err)
   m9t6to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) { m9ln = 1415; goto L_ret; };
   if (i <= m9t6to) for (;;) {
+    M9_YCHK ();
     { __typeof__(row) m9v = m9_sub_i64 ((*(int64_t *) m9_at ((*s).ipvt.p, i, (*s).ipvt.len, sizeof (int64_t), err)), INT64_C(1), err);
       if (err->exc) { m9ln = 1416; goto L_ret; };
       row = m9v;
@@ -4413,6 +4444,7 @@ static bool Numeric_LmCov (Numeric_Lm *s, m9_sl_F64 *cov, m9_state *err)
   m9t8to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) { m9ln = 1419; goto L_ret; };
   if (i <= m9t8to) for (;;) {
+    M9_YCHK ();
     { __typeof__(j) m9t9to;
     j = INT64_C(0);
     m9t9to = m9_sub_i64 (n, INT64_C(1), err);
@@ -4614,6 +4646,7 @@ static bool Numeric_CcgSolve (m9_sl_F64 a, m9_sl_F64 b, int64_t n, int64_t m, m9
   m9t1to = m9_sub_i64 (m, INT64_C(1), err);
   if (err->exc) { m9ln = 1608; goto L_ret; };
   if (k <= m9t1to) for (;;) {
+    M9_YCHK ();
     s = 0.0;
     { __typeof__(i) m9t2to;
     i = k;
@@ -4736,6 +4769,7 @@ static bool Numeric_CcgSolve (m9_sl_F64 a, m9_sl_F64 b, int64_t n, int64_t m, m9
   m9t10to = INT64_C(0);
   if (err->exc) { m9ln = 1644; goto L_ret; };
   if (k >= m9t10to) for (;;) {
+    M9_YCHK ();
     { __typeof__(s) m9v = (*(double *) m9_at (b.p, k, b.len, sizeof (double), err));
       if (err->exc) { m9ln = 1645; goto L_ret; };
       s = m9v;

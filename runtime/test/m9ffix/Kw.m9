@@ -1,0 +1,22 @@
+(* Kw is the m9f gate's hand-written .m9f.  It must convert to Kw.m9 *)
+(* byte for byte, and that M9 must check. *)
+MODULE Kw ;
+IMPORT Io ;
+VAR task : I64 ;
+PROCEDURE Work (n: PTR I64) =
+BEGIN
+  Io.WriteLine ('work')
+END Work ;
+VAR p : PTR I64 ;
+BEGIN
+  task := 1 ;
+  p := NEW (I64) ;
+  TASK (Work, p) ;
+  IF task # 2 AND task MOD 2 = 1 THEN
+    Io.WriteLine ('odd')
+  ELSIF NOT(task = 0) THEN
+    Io.WriteLine ('even')
+  ELSE
+    Io.WriteLine ('zero')
+  END
+END Kw.

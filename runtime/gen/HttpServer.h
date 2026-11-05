@@ -19,8 +19,8 @@ typedef struct HttpServer_Stats HttpServer_Stats;
 typedef struct HttpServer_Route HttpServer_Route;
 typedef struct HttpServer_Router HttpServer_Router;
 typedef struct HttpServer_Q HttpServer_Q;
-typedef struct HttpServer_Srv HttpServer_Srv;
 typedef struct HttpServer_Worker HttpServer_Worker;
+typedef struct HttpServer_Srv HttpServer_Srv;
 typedef struct HttpServer_Conn HttpServer_Conn;
 
 extern const m9_exc HttpServer_BindError;
@@ -46,6 +46,14 @@ typedef HttpServer_Response (*HttpServer_Handler) (HttpServer_Request *, m9_stat
 #ifndef M9SL_m9_arr_1024_int64_t
 #define M9SL_m9_arr_1024_int64_t
 typedef struct { int64_t v[1024]; } m9_arr_1024_int64_t;
+#endif
+#ifndef M9SL_m9_arr_64_int64_t
+#define M9SL_m9_arr_64_int64_t
+typedef struct { int64_t v[64]; } m9_arr_64_int64_t;
+#endif
+#ifndef M9SL_m9_sl_HttpServer_Workerp
+#define M9SL_m9_sl_HttpServer_Workerp
+typedef struct { HttpServer_Worker * *p; int64_t len; } m9_sl_HttpServer_Workerp;
 #endif
 #ifndef M9SL_m9_sl_m9_sl_UTF8
 #define M9SL_m9_sl_m9_sl_UTF8
@@ -118,6 +126,8 @@ struct HttpServer_Config {
   bool accessLog;
   bool signals;
   int64_t keepBytes;
+  bool tasks;
+  int64_t maxOpen;
 };
 
 typedef struct HttpServer_Stats HttpServer_Stats;

@@ -171,6 +171,10 @@ VAR
   extVars : Map ;          (* Mod.v -> its type, qualified in Mod: the
                               imported module variables (decision 28) *)
   foreignProcs, arrSeen, thrSeen, gateSeen, scope : Map ;
+  (* the yield rule's facts (YRecord): every procedure body loaded, by
+     Mod.Proc; the foreign units and their procedures; and each
+     procedure found a leaf, L, or not, N *)
+  yProcs, yUnits, yFProcs, yMemo : Map ;
   gps : SLICE OF GP ;
   ngps : I64 ;
   gpIx : Map ;             (* gps by name: entry i is gps[i] *)
@@ -826,6 +830,10 @@ BEGIN
   MInit (extMods) ;
   MInit (extExcs) ;
   MInit (foreignProcs) ;
+  MInit (yProcs) ;
+  MInit (yUnits) ;
+  MInit (yFProcs) ;
+  MInit (yMemo) ;
   MInit (bpool) ;
   MInit (arrSeen) ;
   MInit (thrSeen) ;
@@ -2887,6 +2895,144 @@ BEGIN
   END
 END NanWalk ;
 
+(* ---- YIELD CHECKS (stage 4 of docs/task-plan.md, rule y8) --------
+
+   A task in a long loop holds its carrier until it parks.  So a loop
+   gets a check at its head, M9_YCHK, where the monitor thread can ask
+   the task to yield: a load of one global flag and a branch, the
+   slow call only when the flag is set.  Not every loop gets one.
+   Rule y8, measured on five programs and chosen by Alex on
+   2026-11-02, checks
+
+     the outermost loop of a nest: a loop that holds a loop, and is
+       in no other loop of its procedure;
+     any loop that calls a procedure that is not a leaf.
+
+   A LEAF procedure has no loop and calls only leaf procedures, so a
+   call of one cannot delay a yield more than the loop's own code
+   does.  A leaf loop, no loop inside and no call of a non-leaf
+   procedure, is never checked.  Its cost is latency: it runs to its
+   end before the next check.  The rule costs at most 2.5% on four of
+   the probe's programs and 1.6-6.3% on the compiler (docs/task-plan.md,
+   "Stage 4, as built so far").
+
+   A call through a procedure value, or of a procedure whose body is
+   not loaded, counts as a call of a non-leaf procedure.  A foreign
+   call, a builtin, a conversion and a record constructor count as
+   leaf calls: none of them runs an M9 loop. *)
+
+PROCEDURE YRecord (KEPT u: PTR Ast.Node) =
+VAR i : I64 ;
+BEGIN
+  IF u.kind = Ast.NDefinition AND Text.BLen (u.bu) > 0 THEN
+    IF MFind (yUnits, u.au) < 0 THEN MAdd (yUnits, u.au, NONE, '') END ;
+    FOR i := 0 TO u.nkids - 1 DO
+      IF u.kids[i] IS SOME d THEN
+        IF d.kind = Ast.NProcDecl AND MFind (yFProcs, d.au) < 0 THEN
+          MAdd (yFProcs, d.au, NONE, '')
+        END
+      END
+    END ;
+    RETURN
+  END ;
+  IF u.kind # Ast.NImplementation AND u.kind # Ast.NProgram THEN RETURN END ;
+  FOR i := 0 TO u.nkids - 1 DO
+    IF u.kids[i] IS SOME d THEN
+      IF d.kind = Ast.NProcDecl THEN
+        IF d.kids[4] IS SOME bd THEN
+          IF MFind (yProcs, S3 (u.au, '.', d.au)) < 0 THEN
+            MAdd (yProcs, Text.Keep (gpool, S3 (u.au, '.', d.au)), SOME (bd), u.au)
+          END
+        END
+      END
+    END
+  END
+END YRecord ;
+
+PROCEDURE YHasLoop (k: Ast.Kid) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF k IS SOME n THEN
+    IF n.kind = Ast.NWhile OR n.kind = Ast.NFor OR n.kind = Ast.NLoop OR
+       n.kind = Ast.NForIn THEN
+      RETURN TRUE
+    END ;
+    FOR i := 0 TO n.nkids - 1 DO
+      IF YHasLoop (n.kids[i]) THEN RETURN TRUE END
+    END
+  END ;
+  RETURN FALSE
+END YHasLoop ;
+
+PROCEDURE YLeaf (RO key: UTF) : BOOL ;
+
+(* YCallsOut answers whether k calls a procedure that is not a leaf.
+   mod names the module whose code k is, for its bare names. *)
+PROCEDURE YCallsOut (k: Ast.Kid ; RO mod: UTF) : BOOL =
+VAR
+  i : I64 ;
+  key : UTF ;
+BEGIN
+  IF k IS SOME n THEN
+    IF (n.kind = Ast.NCallStmt OR n.kind = Ast.NCallExpr) AND n.nkids > 0 THEN
+      IF n.kids[0] IS SOME d THEN
+        IF d.kind # Ast.NDesignator THEN RETURN TRUE END ;
+        IF d.nkids = 0 THEN
+          key := S3 (mod, '.', d.au) ;
+          IF MFind (yProcs, key) >= 0 THEN
+            IF NOT YLeaf (key) THEN RETURN TRUE END
+          ELSIF NOT IsBuiltinCall (d.au) AND MFind (yFProcs, d.au) < 0 AND
+                MFind (tyBody, d.au) < 0 AND MFind (tyOpq, d.au) < 0 THEN
+            RETURN TRUE                  (* a procedure value *)
+          END
+        ELSIF d.nkids > 1 THEN
+          RETURN TRUE                    (* a.b.c (...): a field's procedure *)
+        ELSIF d.kids[0] IS SOME sf THEN
+          IF sf.kind # Ast.NSelField THEN RETURN TRUE END ;
+          key := S3 (d.au, '.', sf.au) ;
+          IF MFind (yProcs, key) >= 0 THEN
+            IF NOT YLeaf (key) THEN RETURN TRUE END
+          ELSIF NOT Text.Eq (d.au, 'C') AND MFind (yUnits, d.au) < 0 AND
+                MFind (extTypes, key) < 0 THEN
+            RETURN TRUE                  (* a field's procedure, or no body *)
+          END
+        END
+      END
+    END ;
+    FOR i := 0 TO n.nkids - 1 DO
+      IF YCallsOut (n.kids[i], mod) THEN RETURN TRUE END
+    END
+  END ;
+  RETURN FALSE
+END YCallsOut ;
+
+(* YLeaf answers whether the procedure Mod.Proc is a leaf.  A
+   procedure being decided is not one, so a cycle of calls is none. *)
+PROCEDURE YLeaf (RO key: UTF) : BOOL =
+VAR
+  j, m : I64 ;
+  leaf : BOOL ;
+BEGIN
+  m := MFind (yMemo, key) ;
+  IF m >= 0 THEN RETURN Text.Eq (yMemo.es[m].t, 'L') END ;
+  j := MFind (yProcs, key) ;
+  IF j < 0 THEN RETURN FALSE END ;
+  MAdd (yMemo, Text.Keep (gpool, key), NONE, '?') ;
+  m := MFind (yMemo, key) ;
+  leaf := NOT YHasLoop (yProcs.es[j].v) AND NOT YCallsOut (yProcs.es[j].v, yProcs.es[j].t) ;
+  IF leaf THEN yMemo.es[m].t := 'L' ELSE yMemo.es[m].t := 'N' END ;
+  RETURN leaf
+END YLeaf ;
+
+(* YCheck emits the check at the head of a loop whose body is body,
+   when rule y8 asks for one.  loopDepth counts this loop. *)
+PROCEDURE YCheck (body: Ast.Kid ; ind: I64) =
+BEGIN
+  IF (loopDepth = 1 AND YHasLoop (body)) OR YCallsOut (body, modName) THEN
+    Line (KPbuf, ind, 'M9_YCHK ();')
+  END
+END YCheck ;
+
 PROCEDURE LoadUnit (VAR KEPT u: PTR Ast.Node) =
 VAR
   i, j, k, pi : I64 ;
@@ -2899,6 +3045,7 @@ VAR
   hasBody : BOOL ;
 BEGIN
   Setup () ;
+  YRecord (u) ;
   FOR i := 0 TO u.nkids - 1 DO
     IF u.kids[i] IS SOME w THEN NanWalk (w) END
   END ;
@@ -3027,6 +3174,7 @@ PROCEDURE RegisterExtern (KEPT u: PTR Ast.Node ; addInclude: BOOL) =
 VAR i, j, k, lo, hi : I64 ;
 BEGIN
   Setup () ;
+  YRecord (u) ;
   IF u.kind # Ast.NDefinition THEN RETURN END ;
   (* an error on one of these nodes is in u's source (ErrAt) *)
   lo := u.id ;
@@ -3355,7 +3503,8 @@ BEGIN
     RETURN 'm9_exc_IndexError'
   END ;
   IF Text.Eq (nm, 'Overflow') OR
-     Text.Eq (nm, 'OutOfMemory') OR Text.Eq (nm, 'ValueRange') THEN
+     Text.Eq (nm, 'OutOfMemory') OR Text.Eq (nm, 'ValueRange') OR
+     Text.Eq (nm, 'Poisoned') THEN
     RETURN S2 ('m9_exc_', nm)
   END ;
   i := MFind (extExcs, nm) ;
@@ -7017,6 +7166,7 @@ BEGIN
               sv := inSwitch ; inSwitch := 0 ;
               sf := finDepth ; finDepth := 0 ;
               savedXit := xitLbl ; xitLbl := '' ; loopDepth := loopDepth + 1 ;
+              YCheck (st.kids[1], ind + 1) ;
               EmitSeq (st.kids[1], ind + 1) ;
               LoopExit (ind + 1) ;
               loopDepth := loopDepth - 1 ; xitLbl := savedXit ;
@@ -7052,6 +7202,7 @@ BEGIN
         sv := inSwitch ; inSwitch := 0 ;
         sf := finDepth ; finDepth := 0 ;
         savedXit := xitLbl ; xitLbl := '' ; loopDepth := loopDepth + 1 ;
+        YCheck (st.kids[1], ind + 1) ;
         EmitSeq (st.kids[1], ind + 1) ;
         LoopExit (ind + 1) ;
         FOR kh := 1 TO h0 DO Line (KPbuf, ind + 1, '}') END ;
@@ -7074,6 +7225,7 @@ BEGIN
           sv := inSwitch ; inSwitch := 0 ;
           sf := finDepth ; finDepth := 0 ;
           savedXit := xitLbl ; xitLbl := '' ; loopDepth := loopDepth + 1 ;
+          YCheck (st.kids[3], ind + 1) ;
           EmitSeq (st.kids[3], ind + 1) ;
           LoopExit (ind + 1) ;
           loopDepth := loopDepth - 1 ; xitLbl := savedXit ;
@@ -7134,6 +7286,7 @@ BEGIN
         sv := inSwitch ; inSwitch := 0 ;
         sf := finDepth ; finDepth := 0 ;
         savedXit := xitLbl ; xitLbl := '' ; loopDepth := loopDepth + 1 ;
+        YCheck (st.kids[3], ind + 1) ;
         EmitSeq (st.kids[3], ind + 1) ;
         LoopExit (ind + 1) ;
         IF B (stp, 0) = ORD ('-') THEN
@@ -7195,6 +7348,7 @@ BEGIN
         sv := inSwitch ; inSwitch := 0 ;
         sf := finDepth ; finDepth := 0 ;
         savedXit := xitLbl ; xitLbl := '' ; loopDepth := loopDepth + 1 ;
+        YCheck (st.kids[1], ind + 1) ;
         EmitSeq (st.kids[1], ind + 1) ;
         LoopExit (ind + 1) ;
         loopDepth := loopDepth - 1 ; xitLbl := savedXit ;
@@ -7211,6 +7365,7 @@ BEGIN
         sv := inSwitch ; inSwitch := 0 ;
         sf := finDepth ; finDepth := 0 ;
         savedXit := xitLbl ; xitLbl := '' ; loopDepth := loopDepth + 1 ;
+        YCheck (st.kids[0], ind + 1) ;
         EmitSeq (st.kids[0], ind + 1) ;
         LoopExit (ind + 1) ;
         loopDepth := loopDepth - 1 ; xitLbl := savedXit ;
@@ -7985,6 +8140,7 @@ VAR
   ci2, cj2 : I64 ;             (* the procedure's own CONSTs *)
   sig, retC, mode, cty, init, nm, dst : UTF ;
   monPar : UTF ;   (* the monitor this proc is bound to *)
+  isReset : BOOL ; (* [RESET]: it rebuilds its monitor from zero *)
   nb : SLICE OF UTF ;
   rk : Ast.Kid ;
   hasBody : BOOL ;
@@ -8009,6 +8165,8 @@ BEGIN
     END ;
     sig := S6 (retC, ' ', CP (modName), '_', gps[gi].name, ' (') ;
     monPar := '' ;
+    isReset := FALSE ;
+    IF d.kids[3] IS SOME rat THEN isReset := Text.Eq (rat.au, 'RESET') END ;
     pl := d.kids[0] ;
     IF pl IS SOME pln THEN
       FOR g := 0 TO pln.nkids - 1 DO
@@ -8222,6 +8380,18 @@ BEGIN
       ModuleScope () ;
       PushAggs () ;
 
+      (* A call into a poisoned monitor raises Poisoned at once, past
+         the body and its handlers: the state a bug left half updated
+         is not read (stage 5 of docs/task-plan.md).  The locals are
+         set by now, so L_ret frees what it frees on any exit. *)
+      IF Text.BLen (monPar) > 0 AND isReset THEN
+        (* A [RESET] body starts from fresh storage: every field after
+           the lock zero, as NEW gives it. *)
+        Line (KPbuf, 1, S5 ('m9_mon_reset (&(*', monPar, '), sizeof (*', monPar, '));'))
+      ELSIF Text.BLen (monPar) > 0 THEN
+        Line (KPbuf, 1, S3 ('if (m9_mon_poisoned (&(*', monPar,
+          ').m9mon)) { m9_raise (err, &m9_exc_Poisoned); goto L_ret; }'))
+      END ;
       (* the body's block goes through the statement emitter so a
          proc-level EXCEPT/FINALLY gets the full treatment *)
       EmitStmt (bd.kids[bd.nkids - 1], 1)
@@ -8275,6 +8445,15 @@ BEGIN
       AdoptEmit (S3 ('(*', adoptC[i], ')'), adoptT[i], adoptD[i], 1, 0)
     END ;
     IF Text.BLen (monPar) > 0 THEN
+      (* A bug that leaves a bound procedure poisons its monitor
+         (stage 5 of docs/task-plan.md); m9_mon_taint asks which
+         exception it is. *)
+      IF isReset THEN
+        Line (KPbuf, 1, S5 ('if (err->exc) m9_mon_taint (&(*', monPar, ').m9mon, err); else m9_mon_cure (&(*',
+                            monPar, ').m9mon);'))
+      ELSE
+        Line (KPbuf, 1, S3 ('if (err->exc) m9_mon_taint (&(*', monPar, ').m9mon, err);'))
+      END ;
       Line (KPbuf, 1, S3 ('m9_mon_leave (&(*', monPar, ').m9mon);'))
     END ;
     FOR i := 0 TO nlp - 1 DO

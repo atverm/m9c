@@ -230,6 +230,7 @@ bool Delim_Next (Delim_Reader * *r, m9_pool *r_pool, m9_state *err)
   int64_t s = 0; (void) s;
   bool found = false; (void) found;
   for (;;) {
+    M9_YCHK ();
     found = false;
     s = ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->len;
     i = ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos;

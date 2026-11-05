@@ -1,0 +1,17 @@
+(* EXPECT: a CONST takes only the attribute [DEPRECATED 'text'] *)
+DEFINITION MODULE m ;
+(* A CONST takes an attribute since 2026-11-05, written before its =,
+   and the one it takes is [DEPRECATED 'text'] (par 3.9).  The legal
+   form comes first: KindA names its replacement.  [PURE] says
+   something about a procedure's effects, and a CONST has none. *)
+TYPE
+  Kind = CASE RECORD
+  | A
+  | B
+  END ;
+CONST
+  KindA [DEPRECATED 'm.Kind.A'] = 0 ;
+  KindB [PURE] = 1 ;
+END m.
+IMPLEMENTATION MODULE m ;
+END m.

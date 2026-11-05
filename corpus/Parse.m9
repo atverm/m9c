@@ -788,6 +788,11 @@ BEGIN
     n := Nn (pool, p, Ast.NAttrib) ;
     Bump (p) ;
     Ast.SetA (pool, n, TakeIdent (p, 'attribute name')) ;
+    (* [DEPRECATED 'text'] carries a string: what to write instead *)
+    IF p.cur.kind = TkStr THEN
+      Ast.SetB (pool, n, p.cur.text) ;
+      Bump (p)
+    END ;
     Expect (p, TkRBrack) ;
     RETURN SOME (n)
   END ;
@@ -1015,6 +1020,7 @@ PROCEDURE QualPattern (VAR pool: POOL ; VAR KEPT p: Parser ;
 VAR
   n, ids, id : PTR Ast.Node ;
   i : I64 ;
+  pre : UTF ;
 BEGIN
   IF e.kind # Ast.NCallExpr OR e.nkids < 2 THEN RETURN NONE END ;
   IF e.kids[0] IS SOME d THEN
@@ -1039,6 +1045,14 @@ BEGIN
       n.line := e.line ;
       n.col := e.col ;
       IF d.kids[d.nkids - 1] IS SOME last THEN Ast.SetA (pool, n, last.au) END ;
+      (* bu keeps what qualified the variant, `Frame.Data', so that the
+         printer writes the label as it was written.  Nothing else
+         reads it: a variant is matched by its own name. *)
+      pre := d.au ;
+      FOR i := 0 TO d.nkids - 2 DO
+        IF d.kids[i] IS SOME q THEN pre := pre + '.' + q.au END
+      END ;
+      Ast.SetB (pool, n, pre) ;
       ids := Nn (pool, p, Ast.NIdentList) ;
       ids.line := al.line ;
       ids.col := al.col ;
@@ -1530,7 +1544,9 @@ END PAggregate ;
 
 PROCEDURE PDeclaration (VAR pool: POOL ; VAR KEPT p: Parser)
   : PTR Ast.Node =
-VAR n, d : PTR Ast.Node ;
+VAR
+  n, d : PTR Ast.Node ;
+  at : Ast.Kid ;
 BEGIN
   IF p.cur.kind = TkCONST THEN
     n := Nn (pool, p, Ast.NConstSection) ;
@@ -1538,12 +1554,16 @@ BEGIN
     WHILE p.cur.kind = TkIdent DO
       d := Nn (pool, p, Ast.NConstDecl) ;
       Ast.SetA (pool, d, TakeIdent (p, 'constant name')) ;
+      (* An attribute goes before the =: after the value, `0 [' would
+         read as an index. *)
+      at := PAttribOpt (pool, p) ;
       Expect (p, TkEq) ;
       IF p.cur.kind = TkLBrack THEN
         Ast.Add (pool, d, SOME (PAggregate (pool, p)))
       ELSE
         Ast.Add (pool, d, SOME (PExpr (pool, p)))
       END ;
+      IF at IS SOME THEN Ast.Add (pool, d, at) END ;
       Expect (p, TkSemi) ;
       Ast.Add (pool, n, SOME (d))
     END ;

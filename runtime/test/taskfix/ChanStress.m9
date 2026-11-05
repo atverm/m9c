@@ -1,0 +1,165 @@
+MODULE ChanStress ;
+
+(* ChanStress holds Chan.Ints to exact counts under load (stage 4 of
+   docs/task-plan.md).
+
+   Fan in: 1,000 sender TASKs send 100 values each, and two THREADs
+   send 10,000 each, all into one channel of room 16.  The module body
+   receives until the last sender closes the channel.  Every value
+   must arrive once, and each sender's in its order.
+
+   Fan out: the body sends 100,000 values into a channel of room 16,
+   and 100 receiver TASKs take them until it closes.  Each value must
+   be taken once: the receivers' sum and count are exact.
+
+   It prints
+
+     in 120000 ordered out 100000 sum 5000050000 *)
+
+IMPORT Io ;
+IMPORT Fmt ;
+IMPORT Chan ;
+
+CONST
+  TaskSenders = 1000 ;
+  PerTask = 100 ;
+  ThreadSenders = 2 ;
+  PerThread = 10000 ;
+  Receivers = 100 ;
+  OutValues = 100000 ;
+
+TYPE
+  Gate = MONITOR RECORD
+    n : I64 ;
+  END ;
+
+  Tally = MONITOR RECORD
+    count, sum : I64 ;
+  END ;
+
+  Job = RECORD
+    c : Chan.Ints ;
+    ids : Gate ;
+    done : Gate ;
+    tally : Tally ;
+  END [SHARABLE] ;
+
+PROCEDURE NextId (VAR g: Gate) : I64 =
+BEGIN
+  g.n := g.n + 1 ;
+  RETURN g.n - 1
+END NextId ;
+
+PROCEDURE Finish (VAR g: Gate ; all: I64) : BOOL =
+  (* Finish counts one finished sender and answers whether it was the
+     last. *)
+BEGIN
+  g.n := g.n + 1 ;
+  SIGNAL (g) ;
+  RETURN g.n = all
+END Finish ;
+
+PROCEDURE Await (VAR g: Gate ; n: I64) =
+BEGIN
+  WHILE g.n < n DO WAIT (g) END
+END Await ;
+
+PROCEDURE Add (VAR t: Tally ; count, sum: I64) =
+BEGIN
+  t.count := t.count + count ;
+  t.sum := t.sum + sum
+END Add ;
+
+PROCEDURE Totals (VAR t: Tally ; VAR count, sum: I64) =
+BEGIN
+  count := t.count ;
+  sum := t.sum
+END Totals ;
+
+(* A sender sends its number times a million plus its count, so the
+   receiver can tell whose a value is and in what order it came. *)
+PROCEDURE Send (VAR j: Job ; per: I64) =
+VAR id, i : I64 ;
+BEGIN
+  id := NextId (j.ids) ;
+  BEGIN
+    FOR i := 1 TO per DO Chan.Send (j.c, id * 1000000 + i) END
+  EXCEPT
+  | Chan.Closed :
+  END ;
+  IF Finish (j.done, TaskSenders + ThreadSenders) THEN Chan.Close (j.c) END
+END Send ;
+
+PROCEDURE TaskSender (VAR j: Job) =
+BEGIN
+  Send (j, PerTask)
+END TaskSender ;
+
+PROCEDURE ThreadSender (VAR j: Job) =
+BEGIN
+  Send (j, PerThread)
+END ThreadSender ;
+
+PROCEDURE Receiver (VAR j: Job) =
+VAR v, count, sum : I64 ;
+BEGIN
+  count := 0 ;
+  sum := 0 ;
+  v := 0 ;
+  WHILE Chan.Receive (j.c, v) DO
+    count := count + 1 ;
+    sum := sum + v
+  END ;
+  Add (j.tally, count, sum) ;
+  IF Finish (j.done, Receivers) THEN END
+END Receiver ;
+
+VAR
+  pool : POOL ;
+  j : PTR Job ;
+  last : SLICE OF I64 ;
+  v, k, got, count, sum, i : I64 ;
+  ordered : BOOL ;
+
+BEGIN
+  (* fan in *)
+  j := NEW (pool, Job) ;
+  Chan.SetCap (j.c, 16) ;
+  last := NEW (pool, I64, TaskSenders + ThreadSenders) ;
+  FOR i := 1 TO ThreadSenders DO THREAD (ThreadSender, j) END ;
+  FOR i := 1 TO TaskSenders DO TASK (TaskSender, j) END ;
+  got := 0 ;
+  ordered := TRUE ;
+  v := 0 ;
+  WHILE Chan.Receive (j.c, v) DO
+    got := got + 1 ;
+    k := v DIV 1000000 ;
+    IF k < 0 OR k >= LEN (last) OR v MOD 1000000 # last[k] + 1 THEN
+      ordered := FALSE
+    ELSE
+      last[k] := v MOD 1000000
+    END
+  END ;
+  (* fan out *)
+  j := NEW (pool, Job) ;
+  Chan.SetCap (j.c, 16) ;
+  FOR i := 1 TO Receivers DO TASK (Receiver, j) END ;
+  FOR i := 1 TO OutValues DO Chan.Send (j.c, i) END ;
+  Chan.Close (j.c) ;
+  Await (j.done, Receivers) ;
+  count := 0 ;
+  sum := 0 ;
+  Totals (j.tally, count, sum) ;
+  IF ordered THEN
+    Io.WriteLine ('in ' + Fmt.I64Str (got) + ' ordered out ' + Fmt.I64Str (count)
+                  + ' sum ' + Fmt.I64Str (sum))
+  ELSE
+    Io.WriteLine ('in ' + Fmt.I64Str (got) + ' NOT ordered out ' + Fmt.I64Str (count)
+                  + ' sum ' + Fmt.I64Str (sum))
+  END
+EXCEPT
+| ValueRange : Io.ErrLine ('ChanStress: a value out of range') ; Io.Halt (1)
+| IndexError : Io.ErrLine ('ChanStress: an index out of range') ; Io.Halt (1)
+| Chan.Closed : Io.ErrLine ('ChanStress: a send after close') ; Io.Halt (1)
+| OutOfMemory : Io.ErrLine ('ChanStress: out of memory') ; Io.Halt (1)
+END ChanStress.

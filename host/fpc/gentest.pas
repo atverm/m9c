@@ -89,6 +89,8 @@ begin
   GenModule ('Chars', ['Bits', 'Faults', 'Text']);
   GenModule ('DynUtf', []);
   GenModule ('Tsk', ['Faults', 'System']);
+  GenModule ('Chan', []);
+  GenModule ('Sup', ['Faults', 'Time', 'Io', 'Fmt']);
   GenModule ('Http', ['DynStr', 'Io', 'Text']);
   GenModule ('HttpServer', ['DynStr', 'Http', 'Io', 'Logger', 'Zip', 'Text']);
   GenModule ('OpenApi', ['HttpServer', 'DynStr', 'Text']);
@@ -106,6 +108,7 @@ begin
   GenModule ('Zarr', ['DynStr', 'Json', 'Io', 'Math', 'Text']);
   GenModule ('Plot', ['DynStr', 'Mat', 'Math', 'Faults', 'Fmt', 'Text', 'Time']);
   GenModule ('Lex', ['DynStr', 'Text']);
+  GenModule ('M9f', ['DynStr', 'Lex', 'Text']);
   GenModule ('Ast', ['Text']);
   GenModule ('Print', ['Ast', 'DynStr', 'Text']);
   GenModule ('Parse', ['Ast', 'Lex', 'Text']);
@@ -145,7 +148,7 @@ begin
   GenModule ('Sem', ['Ast', 'DynStr', 'Print', 'Text']);
   GenModule ('Doc', ['Ast', 'DynStr', 'Text', 'Print', 'Lex']);
   GenModule ('Review', ['Ast', 'DynStr', 'Text']);
-  GenModule ('M9c', ['Io', 'Ast', 'Parse', 'Gen', 'Sem', 'DynStr', 'Doc', 'Review', 'Lex', 'System', 'Text']);
+  GenModule ('M9c', ['Io', 'Ast', 'Parse', 'Gen', 'Sem', 'DynStr', 'Doc', 'Review', 'Lex', 'M9f', 'System', 'Text']);
   GenModule ('Gen', ['Ast', 'DynStr', 'Text']);
   GenModule ('Diag', ['DynStr', 'Io', 'Lex', 'Text']);
 end.

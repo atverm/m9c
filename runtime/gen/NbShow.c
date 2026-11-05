@@ -142,6 +142,7 @@ static m9_sl_UTF8 NbShow_PadLeft (m9_sl_UTF8 s, int64_t w, m9_state *err);
 static m9_sl_UTF8 NbShow_PadRight (m9_sl_UTF8 s, int64_t w, m9_state *err);
 static bool NbShow_RowShown (int64_t r, int64_t n, m9_state *err);
 static bool NbShow_RowGap (int64_t r, int64_t n, m9_state *err);
+static int64_t NbShow_ColKind (Frame_Fr * f, m9_sl_UTF8 name, m9_state *err);
 static m9_sl_UTF8 NbShow_KindName (int64_t k, m9_state *err);
 static m9_sl_m9_sl_UTF8 NbShow_Cells (m9_pool *pool, Frame_Fr * f, m9_sl_UTF8 name, m9_sl_I64 rows, m9_state *err);
 static m9_sl_I64 NbShow_RowsShown (m9_pool *pool, int64_t n, m9_state *err);
@@ -158,9 +159,9 @@ void NbShow_Int (int64_t v, m9_state *err)
   static const char m9pn[] = "NbShow.Int"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   { __typeof__(Fmt_I64Str (v, err)) m9a1 = Fmt_I64Str (v, err);
-    if (err->exc) { m9ln = 578; goto L_ret; };
+    if (err->exc) { m9ln = 606; goto L_ret; };
   Io_WriteLineUtf (m9a1, err);
-  if (err->exc) { m9ln = 578; goto L_ret; };
+  if (err->exc) { m9ln = 606; goto L_ret; };
   }
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -178,9 +179,9 @@ void NbShow_Real (double v, m9_state *err)
   static const char m9pn[] = "NbShow.Real"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   { __typeof__(Fmt_Short (v, err)) m9a2 = Fmt_Short (v, err);
-    if (err->exc) { m9ln = 583; goto L_ret; };
+    if (err->exc) { m9ln = 611; goto L_ret; };
   Io_WriteLineUtf (m9a2, err);
-  if (err->exc) { m9ln = 583; goto L_ret; };
+  if (err->exc) { m9ln = 611; goto L_ret; };
   }
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -198,9 +199,9 @@ void NbShow_Bool (bool v, m9_state *err)
   static const char m9pn[] = "NbShow.Bool"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   { __typeof__(NbShow_BoolWord (v, err)) m9a3 = NbShow_BoolWord (v, err);
-    if (err->exc) { m9ln = 588; goto L_ret; };
+    if (err->exc) { m9ln = 616; goto L_ret; };
   Io_WriteLineUtf (m9a3, err);
-  if (err->exc) { m9ln = 588; goto L_ret; };
+  if (err->exc) { m9ln = 616; goto L_ret; };
   }
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -218,11 +219,11 @@ void NbShow_Char (uint32_t c, m9_state *err)
   static const char m9pn[] = "NbShow.Char"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ NULL, 0 }), m9_utf_of_char (err->res, c, err), err)) m9a4 = m9_utf_cat (err->res, ((m9_sl_UTF8){ NULL, 0 }), m9_utf_of_char (err->res, c, err), err);
-    if (err->exc) { m9ln = 593; goto L_ret; };
+    if (err->exc) { m9ln = 621; goto L_ret; };
   { __typeof__(NbShow_StrText (m9a4, err)) m9a5 = NbShow_StrText (m9a4, err);
-    if (err->exc) { m9ln = 593; goto L_ret; };
+    if (err->exc) { m9ln = 621; goto L_ret; };
   Io_WriteLineUtf (m9a5, err);
-  if (err->exc) { m9ln = 593; goto L_ret; };
+  if (err->exc) { m9ln = 621; goto L_ret; };
   }
   }
 L_ret: ;
@@ -241,9 +242,9 @@ void NbShow_Str (m9_sl_UTF8 s, m9_state *err)
   static const char m9pn[] = "NbShow.Str"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   { __typeof__(NbShow_StrText (s, err)) m9a6 = NbShow_StrText (s, err);
-    if (err->exc) { m9ln = 598; goto L_ret; };
+    if (err->exc) { m9ln = 626; goto L_ret; };
   Io_WriteLineUtf (m9a6, err);
-  if (err->exc) { m9ln = 598; goto L_ret; };
+  if (err->exc) { m9ln = 626; goto L_ret; };
   }
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -261,9 +262,9 @@ void NbShow_Ints (m9_sl_I64 v, m9_state *err)
   static const char m9pn[] = "NbShow.Ints"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   { __typeof__(NbShow_IntsText (v, err)) m9a7 = NbShow_IntsText (v, err);
-    if (err->exc) { m9ln = 603; goto L_ret; };
+    if (err->exc) { m9ln = 631; goto L_ret; };
   Io_WriteLineUtf (m9a7, err);
-  if (err->exc) { m9ln = 603; goto L_ret; };
+  if (err->exc) { m9ln = 631; goto L_ret; };
   }
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -281,9 +282,9 @@ void NbShow_Reals (m9_sl_F64 v, m9_state *err)
   static const char m9pn[] = "NbShow.Reals"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   { __typeof__(NbShow_RealsText (v, err)) m9a8 = NbShow_RealsText (v, err);
-    if (err->exc) { m9ln = 608; goto L_ret; };
+    if (err->exc) { m9ln = 636; goto L_ret; };
   Io_WriteLineUtf (m9a8, err);
-  if (err->exc) { m9ln = 608; goto L_ret; };
+  if (err->exc) { m9ln = 636; goto L_ret; };
   }
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -301,9 +302,9 @@ void NbShow_Bools (m9_sl_BOOL v, m9_state *err)
   static const char m9pn[] = "NbShow.Bools"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   { __typeof__(NbShow_BoolsText (v, err)) m9a9 = NbShow_BoolsText (v, err);
-    if (err->exc) { m9ln = 613; goto L_ret; };
+    if (err->exc) { m9ln = 641; goto L_ret; };
   Io_WriteLineUtf (m9a9, err);
-  if (err->exc) { m9ln = 613; goto L_ret; };
+  if (err->exc) { m9ln = 641; goto L_ret; };
   }
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -321,9 +322,9 @@ void NbShow_Strs (m9_sl_m9_sl_UTF8 v, m9_state *err)
   static const char m9pn[] = "NbShow.Strs"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   { __typeof__(NbShow_StrsText (v, err)) m9a10 = NbShow_StrsText (v, err);
-    if (err->exc) { m9ln = 618; goto L_ret; };
+    if (err->exc) { m9ln = 646; goto L_ret; };
   Io_WriteLineUtf (m9a10, err);
-  if (err->exc) { m9ln = 618; goto L_ret; };
+  if (err->exc) { m9ln = 646; goto L_ret; };
   }
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -341,11 +342,11 @@ void NbShow_Grid (m9_gd2_double g, m9_state *err)
   static const char m9pn[] = "NbShow.Grid"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   { __typeof__(NbShow_GridText (g, err)) m9a11 = NbShow_GridText (g, err);
-    if (err->exc) { m9ln = 623; goto L_ret; };
+    if (err->exc) { m9ln = 651; goto L_ret; };
   { __typeof__(NbShow_GridHtml (g, err)) m9a12 = NbShow_GridHtml (g, err);
-    if (err->exc) { m9ln = 623; goto L_ret; };
+    if (err->exc) { m9ln = 651; goto L_ret; };
   NbShow_Rich (m9a11, m9a12, err);
-  if (err->exc) { m9ln = 623; goto L_ret; };
+  if (err->exc) { m9ln = 651; goto L_ret; };
   }
   }
 L_ret: ;
@@ -364,11 +365,11 @@ void NbShow_Table (Frame_Fr * f, m9_state *err)
   static const char m9pn[] = "NbShow.Table"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   { __typeof__(NbShow_TableText (f, err)) m9a13 = NbShow_TableText (f, err);
-    if (err->exc) { m9ln = 628; goto L_ret; };
+    if (err->exc) { m9ln = 656; goto L_ret; };
   { __typeof__(NbShow_TableHtml (f, err)) m9a14 = NbShow_TableHtml (f, err);
-    if (err->exc) { m9ln = 628; goto L_ret; };
+    if (err->exc) { m9ln = 656; goto L_ret; };
   NbShow_Rich (m9a13, m9a14, err);
-  if (err->exc) { m9ln = 628; goto L_ret; };
+  if (err->exc) { m9ln = 656; goto L_ret; };
   }
   }
 L_ret: ;
@@ -387,11 +388,11 @@ void NbShow_Series (Frame_Ts * ts, m9_state *err)
   static const char m9pn[] = "NbShow.Series"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   { __typeof__(NbShow_SeriesText (ts, err)) m9a15 = NbShow_SeriesText (ts, err);
-    if (err->exc) { m9ln = 633; goto L_ret; };
+    if (err->exc) { m9ln = 661; goto L_ret; };
   { __typeof__(NbShow_SeriesHtml (ts, err)) m9a16 = NbShow_SeriesHtml (ts, err);
-    if (err->exc) { m9ln = 633; goto L_ret; };
+    if (err->exc) { m9ln = 661; goto L_ret; };
   NbShow_Rich (m9a15, m9a16, err);
-  if (err->exc) { m9ln = 633; goto L_ret; };
+  if (err->exc) { m9ln = 661; goto L_ret; };
   }
   }
 L_ret: ;
@@ -410,12 +411,12 @@ void NbShow_Raised (m9_sl_UTF8 what, m9_state *err)
   static const char m9pn[] = "NbShow.Raised"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s0, 22 }), what, err)) m9a17 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s0, 22 }), what, err);
-    if (err->exc) { m9ln = 572; goto L_ret; };
+    if (err->exc) { m9ln = 600; goto L_ret; };
   Io_ErrLineUtf (m9a17, err);
-  if (err->exc) { m9ln = 572; goto L_ret; };
+  if (err->exc) { m9ln = 600; goto L_ret; };
   }
   Io_Halt (INT64_C(1), err);
-  if (err->exc) { m9ln = 573; goto L_ret; };
+  if (err->exc) { m9ln = 601; goto L_ret; };
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
@@ -438,29 +439,29 @@ m9_sl_UTF8 NbShow_StrText (m9_sl_UTF8 s, m9_state *err)
   body = s;
   more = ((m9_sl_UTF8){ NULL, 0 });
   bool m9t1 = (Text_BLen (s, err) > NbShow_MaxChars);
-  if (err->exc) { m9ln = 103; goto L_ret; };
+  if (err->exc) { m9ln = 114; goto L_ret; };
   if (m9t1) {
     { __typeof__(body) m9v = m9_utf_slice (s, INT64_C(0), NbShow_MaxChars, err);
-      if (err->exc) { m9ln = 104; goto L_ret; };
+      if (err->exc) { m9ln = 115; goto L_ret; };
       body = m9v;
     }
     { __typeof__(Text_BLen (s, err)) m9a18 = Text_BLen (s, err);
-      if (err->exc) { m9ln = 105; goto L_ret; };
+      if (err->exc) { m9ln = 116; goto L_ret; };
     { __typeof__(more) m9v = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s1, 6 }), Fmt_I64Str (m9a18, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s2, 12 }), err);
-      if (err->exc) { m9ln = 105; goto L_ret; };
+      if (err->exc) { m9ln = 116; goto L_ret; };
       more = m9v;
     }
     }
   }
   q = ((m9_sl_UTF8){ (uint8_t *) m9s3, 1 });
   bool m9t3 = (Text_FindCharUtf (body, 39u, err) >= INT64_C(0));
-  if (err->exc) { m9ln = 108; goto L_ret; };
+  if (err->exc) { m9ln = 119; goto L_ret; };
   if (m9t3) {
     q = ((m9_sl_UTF8){ (uint8_t *) m9s4, 1 });
   }
   err->res = m9res;
   m9ret = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, q, body, err), q, err), more, err);
-  if (err->exc) { m9ln = 109; goto L_ret; };
+  if (err->exc) { m9ln = 120; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -484,28 +485,29 @@ m9_sl_UTF8 NbShow_IntsText (m9_sl_I64 v, m9_state *err)
   int64_t i = 0; (void) i;
   int64_t n = 0; (void) n;
   { __typeof__(d) m9v = DynStr_New (&(scratch), err);
-    if (err->exc) { m9ln = 147; goto L_ret; };
+    if (err->exc) { m9ln = 158; goto L_ret; };
     d = m9v;
   }
   n = (v).len;
   DynStr_AppendChar (&(d), &(scratch), 91u, err);
-  if (err->exc) { m9ln = 149; goto L_ret; };
+  if (err->exc) { m9ln = 160; goto L_ret; };
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
-  if (err->exc) { m9ln = 150; goto L_ret; };
+  if (err->exc) { m9ln = 161; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     bool m9t2 = NbShow_Shown (i, n, err);
-    if (err->exc) { m9ln = 151; goto L_ret; };
+    if (err->exc) { m9ln = 162; goto L_ret; };
     if (m9t2) {
       NbShow_OpenItem (&(d), &(scratch), i, n, err);
-      if (err->exc) { m9ln = 152; goto L_ret; };
+      if (err->exc) { m9ln = 163; goto L_ret; };
       { __typeof__((*(int64_t *) m9_at (v.p, i, v.len, sizeof (int64_t), err))) m9a19 = (*(int64_t *) m9_at (v.p, i, v.len, sizeof (int64_t), err));
-        if (err->exc) { m9ln = 153; goto L_ret; };
+        if (err->exc) { m9ln = 164; goto L_ret; };
       { __typeof__(Fmt_I64Str (m9a19, err)) m9a20 = Fmt_I64Str (m9a19, err);
-        if (err->exc) { m9ln = 153; goto L_ret; };
+        if (err->exc) { m9ln = 164; goto L_ret; };
       DynStr_Append (&(d), &(scratch), m9a20, err);
-      if (err->exc) { m9ln = 153; goto L_ret; };
+      if (err->exc) { m9ln = 164; goto L_ret; };
       }
       }
     }
@@ -513,10 +515,10 @@ m9_sl_UTF8 NbShow_IntsText (m9_sl_I64 v, m9_state *err)
     i += 1;
   } }
   NbShow_CloseList (&(d), &(scratch), n, err);
-  if (err->exc) { m9ln = 156; goto L_ret; };
+  if (err->exc) { m9ln = 167; goto L_ret; };
   err->res = m9res;
   m9ret = DynStr_View (d, err);
-  if (err->exc) { m9ln = 157; goto L_ret; };
+  if (err->exc) { m9ln = 168; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -542,28 +544,29 @@ m9_sl_UTF8 NbShow_RealsText (m9_sl_F64 v, m9_state *err)
   int64_t i = 0; (void) i;
   int64_t n = 0; (void) n;
   { __typeof__(d) m9v = DynStr_New (&(scratch), err);
-    if (err->exc) { m9ln = 166; goto L_ret; };
+    if (err->exc) { m9ln = 177; goto L_ret; };
     d = m9v;
   }
   n = (v).len;
   DynStr_AppendChar (&(d), &(scratch), 91u, err);
-  if (err->exc) { m9ln = 168; goto L_ret; };
+  if (err->exc) { m9ln = 179; goto L_ret; };
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
-  if (err->exc) { m9ln = 169; goto L_ret; };
+  if (err->exc) { m9ln = 180; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     bool m9t2 = NbShow_Shown (i, n, err);
-    if (err->exc) { m9ln = 170; goto L_ret; };
+    if (err->exc) { m9ln = 181; goto L_ret; };
     if (m9t2) {
       NbShow_OpenItem (&(d), &(scratch), i, n, err);
-      if (err->exc) { m9ln = 171; goto L_ret; };
+      if (err->exc) { m9ln = 182; goto L_ret; };
       { __typeof__((*(double *) m9_at (v.p, i, v.len, sizeof (double), err))) m9a21 = (*(double *) m9_at (v.p, i, v.len, sizeof (double), err));
-        if (err->exc) { m9ln = 172; goto L_ret; };
+        if (err->exc) { m9ln = 183; goto L_ret; };
       { __typeof__(Fmt_Short (m9a21, err)) m9a22 = Fmt_Short (m9a21, err);
-        if (err->exc) { m9ln = 172; goto L_ret; };
+        if (err->exc) { m9ln = 183; goto L_ret; };
       DynStr_Append (&(d), &(scratch), m9a22, err);
-      if (err->exc) { m9ln = 172; goto L_ret; };
+      if (err->exc) { m9ln = 183; goto L_ret; };
       }
       }
     }
@@ -571,10 +574,10 @@ m9_sl_UTF8 NbShow_RealsText (m9_sl_F64 v, m9_state *err)
     i += 1;
   } }
   NbShow_CloseList (&(d), &(scratch), n, err);
-  if (err->exc) { m9ln = 175; goto L_ret; };
+  if (err->exc) { m9ln = 186; goto L_ret; };
   err->res = m9res;
   m9ret = DynStr_View (d, err);
-  if (err->exc) { m9ln = 176; goto L_ret; };
+  if (err->exc) { m9ln = 187; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -600,28 +603,29 @@ m9_sl_UTF8 NbShow_BoolsText (m9_sl_BOOL v, m9_state *err)
   int64_t i = 0; (void) i;
   int64_t n = 0; (void) n;
   { __typeof__(d) m9v = DynStr_New (&(scratch), err);
-    if (err->exc) { m9ln = 185; goto L_ret; };
+    if (err->exc) { m9ln = 196; goto L_ret; };
     d = m9v;
   }
   n = (v).len;
   DynStr_AppendChar (&(d), &(scratch), 91u, err);
-  if (err->exc) { m9ln = 187; goto L_ret; };
+  if (err->exc) { m9ln = 198; goto L_ret; };
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
-  if (err->exc) { m9ln = 188; goto L_ret; };
+  if (err->exc) { m9ln = 199; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     bool m9t2 = NbShow_Shown (i, n, err);
-    if (err->exc) { m9ln = 189; goto L_ret; };
+    if (err->exc) { m9ln = 200; goto L_ret; };
     if (m9t2) {
       NbShow_OpenItem (&(d), &(scratch), i, n, err);
-      if (err->exc) { m9ln = 190; goto L_ret; };
+      if (err->exc) { m9ln = 201; goto L_ret; };
       { __typeof__((*(bool *) m9_at (v.p, i, v.len, sizeof (bool), err))) m9a23 = (*(bool *) m9_at (v.p, i, v.len, sizeof (bool), err));
-        if (err->exc) { m9ln = 191; goto L_ret; };
+        if (err->exc) { m9ln = 202; goto L_ret; };
       { __typeof__(NbShow_BoolWord (m9a23, err)) m9a24 = NbShow_BoolWord (m9a23, err);
-        if (err->exc) { m9ln = 191; goto L_ret; };
+        if (err->exc) { m9ln = 202; goto L_ret; };
       DynStr_Append (&(d), &(scratch), m9a24, err);
-      if (err->exc) { m9ln = 191; goto L_ret; };
+      if (err->exc) { m9ln = 202; goto L_ret; };
       }
       }
     }
@@ -629,10 +633,10 @@ m9_sl_UTF8 NbShow_BoolsText (m9_sl_BOOL v, m9_state *err)
     i += 1;
   } }
   NbShow_CloseList (&(d), &(scratch), n, err);
-  if (err->exc) { m9ln = 194; goto L_ret; };
+  if (err->exc) { m9ln = 205; goto L_ret; };
   err->res = m9res;
   m9ret = DynStr_View (d, err);
-  if (err->exc) { m9ln = 195; goto L_ret; };
+  if (err->exc) { m9ln = 206; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -658,28 +662,29 @@ m9_sl_UTF8 NbShow_StrsText (m9_sl_m9_sl_UTF8 v, m9_state *err)
   int64_t i = 0; (void) i;
   int64_t n = 0; (void) n;
   { __typeof__(d) m9v = DynStr_New (&(scratch), err);
-    if (err->exc) { m9ln = 204; goto L_ret; };
+    if (err->exc) { m9ln = 215; goto L_ret; };
     d = m9v;
   }
   n = (v).len;
   DynStr_AppendChar (&(d), &(scratch), 91u, err);
-  if (err->exc) { m9ln = 206; goto L_ret; };
+  if (err->exc) { m9ln = 217; goto L_ret; };
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
-  if (err->exc) { m9ln = 207; goto L_ret; };
+  if (err->exc) { m9ln = 218; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     bool m9t2 = NbShow_Shown (i, n, err);
-    if (err->exc) { m9ln = 208; goto L_ret; };
+    if (err->exc) { m9ln = 219; goto L_ret; };
     if (m9t2) {
       NbShow_OpenItem (&(d), &(scratch), i, n, err);
-      if (err->exc) { m9ln = 209; goto L_ret; };
+      if (err->exc) { m9ln = 220; goto L_ret; };
       { __typeof__((*(m9_sl_UTF8 *) m9_at (v.p, i, v.len, sizeof (m9_sl_UTF8), err))) m9a25 = (*(m9_sl_UTF8 *) m9_at (v.p, i, v.len, sizeof (m9_sl_UTF8), err));
-        if (err->exc) { m9ln = 210; goto L_ret; };
+        if (err->exc) { m9ln = 221; goto L_ret; };
       { __typeof__(NbShow_StrText (m9a25, err)) m9a26 = NbShow_StrText (m9a25, err);
-        if (err->exc) { m9ln = 210; goto L_ret; };
+        if (err->exc) { m9ln = 221; goto L_ret; };
       DynStr_Append (&(d), &(scratch), m9a26, err);
-      if (err->exc) { m9ln = 210; goto L_ret; };
+      if (err->exc) { m9ln = 221; goto L_ret; };
       }
       }
     }
@@ -687,10 +692,10 @@ m9_sl_UTF8 NbShow_StrsText (m9_sl_m9_sl_UTF8 v, m9_state *err)
     i += 1;
   } }
   NbShow_CloseList (&(d), &(scratch), n, err);
-  if (err->exc) { m9ln = 213; goto L_ret; };
+  if (err->exc) { m9ln = 224; goto L_ret; };
   err->res = m9res;
   m9ret = DynStr_View (d, err);
-  if (err->exc) { m9ln = 214; goto L_ret; };
+  if (err->exc) { m9ln = 225; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -718,72 +723,74 @@ m9_sl_UTF8 NbShow_GridText (m9_gd2_double g, m9_state *err)
   int64_t nr = 0; (void) nr;
   int64_t nc = 0; (void) nc;
   { __typeof__(d) m9v = DynStr_New (&(scratch), err);
-    if (err->exc) { m9ln = 247; goto L_ret; };
+    if (err->exc) { m9ln = 258; goto L_ret; };
     d = m9v;
   }
   nr = (g).n[INT64_C(0)];
   nc = (g).n[INT64_C(1)];
   DynStr_AppendChar (&(d), &(scratch), 91u, err);
-  if (err->exc) { m9ln = 250; goto L_ret; };
+  if (err->exc) { m9ln = 261; goto L_ret; };
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (nr, INT64_C(1), err);
-  if (err->exc) { m9ln = 251; goto L_ret; };
+  if (err->exc) { m9ln = 262; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     bool m9t2 = NbShow_Shown (i, nr, err);
-    if (err->exc) { m9ln = 252; goto L_ret; };
+    if (err->exc) { m9ln = 263; goto L_ret; };
     if (m9t2) {
       if ((i > INT64_C(0))) {
         { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s5, 1 }), m9_utf_of_char (err->res, 10u, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s6, 1 }), err)) m9a27 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s5, 1 }), m9_utf_of_char (err->res, 10u, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s6, 1 }), err);
-          if (err->exc) { m9ln = 253; goto L_ret; };
+          if (err->exc) { m9ln = 264; goto L_ret; };
         DynStr_Append (&(d), &(scratch), m9a27, err);
-        if (err->exc) { m9ln = 253; goto L_ret; };
+        if (err->exc) { m9ln = 264; goto L_ret; };
         }
       }
       bool m9t3 = NbShow_Gap (i, nr, err);
-      if (err->exc) { m9ln = 254; goto L_ret; };
+      if (err->exc) { m9ln = 265; goto L_ret; };
       if (m9t3) {
         { __typeof__(m9_sub_i64 (nr, m9_mul_i64 (INT64_C(2), NbShow_Head, err), err)) m9a28 = m9_sub_i64 (nr, m9_mul_i64 (INT64_C(2), NbShow_Head, err), err);
-          if (err->exc) { m9ln = 255; goto L_ret; };
+          if (err->exc) { m9ln = 266; goto L_ret; };
         { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s7, 4 }), Fmt_I64Str (m9a28, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s8, 15 }), err), m9_utf_of_char (err->res, 10u, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s9, 1 }), err)) m9a29 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s7, 4 }), Fmt_I64Str (m9a28, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s8, 15 }), err), m9_utf_of_char (err->res, 10u, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s9, 1 }), err);
-          if (err->exc) { m9ln = 255; goto L_ret; };
+          if (err->exc) { m9ln = 266; goto L_ret; };
         DynStr_Append (&(d), &(scratch), m9a29, err);
-        if (err->exc) { m9ln = 255; goto L_ret; };
+        if (err->exc) { m9ln = 266; goto L_ret; };
         }
         }
       }
       DynStr_AppendChar (&(d), &(scratch), 91u, err);
-      if (err->exc) { m9ln = 257; goto L_ret; };
+      if (err->exc) { m9ln = 268; goto L_ret; };
       { __typeof__(j) m9t4to;
       j = INT64_C(0);
       m9t4to = m9_sub_i64 (nc, INT64_C(1), err);
-      if (err->exc) { m9ln = 258; goto L_ret; };
+      if (err->exc) { m9ln = 269; goto L_ret; };
       if (j <= m9t4to) for (;;) {
+        M9_YCHK ();
         bool m9t5 = NbShow_Shown (j, nc, err);
-        if (err->exc) { m9ln = 259; goto L_ret; };
+        if (err->exc) { m9ln = 270; goto L_ret; };
         if (m9t5) {
           if ((j > INT64_C(0))) {
             DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s10, 2 }), err);
-            if (err->exc) { m9ln = 260; goto L_ret; };
+            if (err->exc) { m9ln = 271; goto L_ret; };
           }
           bool m9t6 = NbShow_Gap (j, nc, err);
-          if (err->exc) { m9ln = 261; goto L_ret; };
+          if (err->exc) { m9ln = 272; goto L_ret; };
           if (m9t6) {
             { __typeof__(m9_sub_i64 (nc, m9_mul_i64 (INT64_C(2), NbShow_Head, err), err)) m9a30 = m9_sub_i64 (nc, m9_mul_i64 (INT64_C(2), NbShow_Head, err), err);
-              if (err->exc) { m9ln = 262; goto L_ret; };
+              if (err->exc) { m9ln = 273; goto L_ret; };
             { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s11, 4 }), Fmt_I64Str (m9a30, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s12, 11 }), err)) m9a31 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s11, 4 }), Fmt_I64Str (m9a30, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s12, 11 }), err);
-              if (err->exc) { m9ln = 262; goto L_ret; };
+              if (err->exc) { m9ln = 273; goto L_ret; };
             DynStr_Append (&(d), &(scratch), m9a31, err);
-            if (err->exc) { m9ln = 262; goto L_ret; };
+            if (err->exc) { m9ln = 273; goto L_ret; };
             }
             }
           }
           { __typeof__((*(double *) m9_gat2 (g.p, sizeof (double), g.n[0], g.n[1], g.s[0], g.s[1], i, j, err))) m9a32 = (*(double *) m9_gat2 (g.p, sizeof (double), g.n[0], g.n[1], g.s[0], g.s[1], i, j, err));
-            if (err->exc) { m9ln = 264; goto L_ret; };
+            if (err->exc) { m9ln = 275; goto L_ret; };
           { __typeof__(Fmt_Short (m9a32, err)) m9a33 = Fmt_Short (m9a32, err);
-            if (err->exc) { m9ln = 264; goto L_ret; };
+            if (err->exc) { m9ln = 275; goto L_ret; };
           DynStr_Append (&(d), &(scratch), m9a33, err);
-          if (err->exc) { m9ln = 264; goto L_ret; };
+          if (err->exc) { m9ln = 275; goto L_ret; };
           }
           }
         }
@@ -791,21 +798,21 @@ m9_sl_UTF8 NbShow_GridText (m9_gd2_double g, m9_state *err)
         j += 1;
       } }
       DynStr_AppendChar (&(d), &(scratch), 93u, err);
-      if (err->exc) { m9ln = 267; goto L_ret; };
+      if (err->exc) { m9ln = 278; goto L_ret; };
     }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   DynStr_AppendChar (&(d), &(scratch), 93u, err);
-  if (err->exc) { m9ln = 270; goto L_ret; };
+  if (err->exc) { m9ln = 281; goto L_ret; };
   { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s13, 3 }), Fmt_I64Str (nr, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s14, 3 }), err), Fmt_I64Str (nc, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s15, 1 }), err)) m9a34 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s13, 3 }), Fmt_I64Str (nr, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s14, 3 }), err), Fmt_I64Str (nc, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s15, 1 }), err);
-    if (err->exc) { m9ln = 271; goto L_ret; };
+    if (err->exc) { m9ln = 282; goto L_ret; };
   DynStr_Append (&(d), &(scratch), m9a34, err);
-  if (err->exc) { m9ln = 271; goto L_ret; };
+  if (err->exc) { m9ln = 282; goto L_ret; };
   }
   err->res = m9res;
   m9ret = DynStr_View (d, err);
-  if (err->exc) { m9ln = 272; goto L_ret; };
+  if (err->exc) { m9ln = 283; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -833,77 +840,80 @@ m9_sl_UTF8 NbShow_GridHtml (m9_gd2_double g, m9_state *err)
   int64_t nr = 0; (void) nr;
   int64_t nc = 0; (void) nc;
   { __typeof__(d) m9v = DynStr_New (&(scratch), err);
-    if (err->exc) { m9ln = 281; goto L_ret; };
+    if (err->exc) { m9ln = 292; goto L_ret; };
     d = m9v;
   }
   nr = (g).n[INT64_C(0)];
   nc = (g).n[INT64_C(1)];
   DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s16, 42 }), err);
-  if (err->exc) { m9ln = 284; goto L_ret; };
+  if (err->exc) { m9ln = 295; goto L_ret; };
   { __typeof__(j) m9t1to;
   j = INT64_C(0);
   m9t1to = m9_sub_i64 (nc, INT64_C(1), err);
-  if (err->exc) { m9ln = 285; goto L_ret; };
+  if (err->exc) { m9ln = 296; goto L_ret; };
   if (j <= m9t1to) for (;;) {
+    M9_YCHK ();
     bool m9t2 = NbShow_Shown (j, nc, err);
-    if (err->exc) { m9ln = 286; goto L_ret; };
+    if (err->exc) { m9ln = 297; goto L_ret; };
     if (m9t2) {
       bool m9t3 = NbShow_Gap (j, nc, err);
-      if (err->exc) { m9ln = 287; goto L_ret; };
+      if (err->exc) { m9ln = 298; goto L_ret; };
       if (m9t3) {
         DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s17, 12 }), err);
-        if (err->exc) { m9ln = 287; goto L_ret; };
+        if (err->exc) { m9ln = 298; goto L_ret; };
       }
       { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s18, 4 }), Fmt_I64Str (j, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s19, 5 }), err)) m9a35 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s18, 4 }), Fmt_I64Str (j, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s19, 5 }), err);
-        if (err->exc) { m9ln = 288; goto L_ret; };
+        if (err->exc) { m9ln = 299; goto L_ret; };
       DynStr_Append (&(d), &(scratch), m9a35, err);
-      if (err->exc) { m9ln = 288; goto L_ret; };
+      if (err->exc) { m9ln = 299; goto L_ret; };
       }
     }
     if ((uint64_t) m9t1to - (uint64_t) j < (uint64_t) 1) break;
     j += 1;
   } }
   DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s20, 20 }), err);
-  if (err->exc) { m9ln = 291; goto L_ret; };
+  if (err->exc) { m9ln = 302; goto L_ret; };
   { __typeof__(i) m9t4to;
   i = INT64_C(0);
   m9t4to = m9_sub_i64 (nr, INT64_C(1), err);
-  if (err->exc) { m9ln = 292; goto L_ret; };
+  if (err->exc) { m9ln = 303; goto L_ret; };
   if (i <= m9t4to) for (;;) {
+    M9_YCHK ();
     bool m9t5 = NbShow_Shown (i, nr, err);
-    if (err->exc) { m9ln = 293; goto L_ret; };
+    if (err->exc) { m9ln = 304; goto L_ret; };
     if (m9t5) {
       bool m9t6 = NbShow_Gap (i, nr, err);
-      if (err->exc) { m9ln = 294; goto L_ret; };
+      if (err->exc) { m9ln = 305; goto L_ret; };
       if (m9t6) {
         DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s21, 21 }), err);
-        if (err->exc) { m9ln = 294; goto L_ret; };
+        if (err->exc) { m9ln = 305; goto L_ret; };
       }
       { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s22, 8 }), Fmt_I64Str (i, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s23, 5 }), err)) m9a36 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s22, 8 }), Fmt_I64Str (i, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s23, 5 }), err);
-        if (err->exc) { m9ln = 295; goto L_ret; };
+        if (err->exc) { m9ln = 306; goto L_ret; };
       DynStr_Append (&(d), &(scratch), m9a36, err);
-      if (err->exc) { m9ln = 295; goto L_ret; };
+      if (err->exc) { m9ln = 306; goto L_ret; };
       }
       { __typeof__(j) m9t7to;
       j = INT64_C(0);
       m9t7to = m9_sub_i64 (nc, INT64_C(1), err);
-      if (err->exc) { m9ln = 296; goto L_ret; };
+      if (err->exc) { m9ln = 307; goto L_ret; };
       if (j <= m9t7to) for (;;) {
+        M9_YCHK ();
         bool m9t8 = NbShow_Shown (j, nc, err);
-        if (err->exc) { m9ln = 297; goto L_ret; };
+        if (err->exc) { m9ln = 308; goto L_ret; };
         if (m9t8) {
           bool m9t9 = NbShow_Gap (j, nc, err);
-          if (err->exc) { m9ln = 298; goto L_ret; };
+          if (err->exc) { m9ln = 309; goto L_ret; };
           if (m9t9) {
             DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s24, 12 }), err);
-            if (err->exc) { m9ln = 298; goto L_ret; };
+            if (err->exc) { m9ln = 309; goto L_ret; };
           }
           { __typeof__((*(double *) m9_gat2 (g.p, sizeof (double), g.n[0], g.n[1], g.s[0], g.s[1], i, j, err))) m9a37 = (*(double *) m9_gat2 (g.p, sizeof (double), g.n[0], g.n[1], g.s[0], g.s[1], i, j, err));
-            if (err->exc) { m9ln = 299; goto L_ret; };
+            if (err->exc) { m9ln = 310; goto L_ret; };
           { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s25, 4 }), Fmt_Short (m9a37, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s26, 5 }), err)) m9a38 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s25, 4 }), Fmt_Short (m9a37, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s26, 5 }), err);
-            if (err->exc) { m9ln = 299; goto L_ret; };
+            if (err->exc) { m9ln = 310; goto L_ret; };
           DynStr_Append (&(d), &(scratch), m9a38, err);
-          if (err->exc) { m9ln = 299; goto L_ret; };
+          if (err->exc) { m9ln = 310; goto L_ret; };
           }
           }
         }
@@ -911,19 +921,19 @@ m9_sl_UTF8 NbShow_GridHtml (m9_gd2_double g, m9_state *err)
         j += 1;
       } }
       DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s27, 5 }), err);
-      if (err->exc) { m9ln = 302; goto L_ret; };
+      if (err->exc) { m9ln = 313; goto L_ret; };
     }
     if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s28, 19 }), Fmt_I64Str (nr, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s29, 3 }), err), Fmt_I64Str (nc, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s30, 4 }), err)) m9a39 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s28, 19 }), Fmt_I64Str (nr, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s29, 3 }), err), Fmt_I64Str (nc, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s30, 4 }), err);
-    if (err->exc) { m9ln = 305; goto L_ret; };
+    if (err->exc) { m9ln = 316; goto L_ret; };
   DynStr_Append (&(d), &(scratch), m9a39, err);
-  if (err->exc) { m9ln = 305; goto L_ret; };
+  if (err->exc) { m9ln = 316; goto L_ret; };
   }
   err->res = m9res;
   m9ret = DynStr_View (d, err);
-  if (err->exc) { m9ln = 307; goto L_ret; };
+  if (err->exc) { m9ln = 318; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -947,7 +957,7 @@ m9_sl_UTF8 NbShow_TableText (Frame_Fr * f, m9_state *err)
   m9_sl_I64 none = {0}; (void) none;
   err->res = m9res;
   m9ret = NbShow_Render (f, none, false, err);
-  if (err->exc) { m9ln = 541; goto L_ret; };
+  if (err->exc) { m9ln = 569; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -969,7 +979,7 @@ m9_sl_UTF8 NbShow_TableHtml (Frame_Fr * f, m9_state *err)
   m9_sl_I64 none = {0}; (void) none;
   err->res = m9res;
   m9ret = NbShow_Render (f, none, true, err);
-  if (err->exc) { m9ln = 547; goto L_ret; };
+  if (err->exc) { m9ln = 575; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -990,11 +1000,11 @@ m9_sl_UTF8 NbShow_SeriesText (Frame_Ts * ts, m9_state *err)
   m9_sl_UTF8 m9ret = {0};
   err->res = m9res;
   { __typeof__(Frame_TsFrame (ts, err)) m9a40 = Frame_TsFrame (ts, err);
-    if (err->exc) { m9ln = 552; goto L_ret; };
+    if (err->exc) { m9ln = 580; goto L_ret; };
   { __typeof__(Frame_TsTime (ts, err)) m9a41 = Frame_TsTime (ts, err);
-    if (err->exc) { m9ln = 552; goto L_ret; };
+    if (err->exc) { m9ln = 580; goto L_ret; };
   m9ret = NbShow_Render (m9a40, m9a41, false, err);
-  if (err->exc) { m9ln = 552; goto L_ret; };
+  if (err->exc) { m9ln = 580; goto L_ret; };
   }
   }
   goto L_ret;
@@ -1017,11 +1027,11 @@ m9_sl_UTF8 NbShow_SeriesHtml (Frame_Ts * ts, m9_state *err)
   m9_sl_UTF8 m9ret = {0};
   err->res = m9res;
   { __typeof__(Frame_TsFrame (ts, err)) m9a42 = Frame_TsFrame (ts, err);
-    if (err->exc) { m9ln = 557; goto L_ret; };
+    if (err->exc) { m9ln = 585; goto L_ret; };
   { __typeof__(Frame_TsTime (ts, err)) m9a43 = Frame_TsTime (ts, err);
-    if (err->exc) { m9ln = 557; goto L_ret; };
+    if (err->exc) { m9ln = 585; goto L_ret; };
   m9ret = NbShow_Render (m9a42, m9a43, true, err);
-  if (err->exc) { m9ln = 557; goto L_ret; };
+  if (err->exc) { m9ln = 585; goto L_ret; };
   }
   }
   goto L_ret;
@@ -1069,7 +1079,7 @@ static bool NbShow_Shown (int64_t i, int64_t n, m9_state *err)
   bool m9ret = false;
   err->res = m9res;
   m9ret = (((n <= NbShow_MaxList) || (i < NbShow_Head)) || (i >= m9_sub_i64 (n, NbShow_Head, err)));
-  if (err->exc) { m9ln = 115; goto L_ret; };
+  if (err->exc) { m9ln = 126; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -1089,7 +1099,7 @@ static bool NbShow_Gap (int64_t i, int64_t n, m9_state *err)
   bool m9ret = false;
   err->res = m9res;
   m9ret = ((n > NbShow_MaxList) && (i == m9_sub_i64 (n, NbShow_Head, err)));
-  if (err->exc) { m9ln = 120; goto L_ret; };
+  if (err->exc) { m9ln = 131; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -1108,17 +1118,17 @@ static void NbShow_OpenItem (DynStr_DString * *d, m9_pool *d_pool, int64_t i, in
   int32_t m9ln = 0; (void) m9ln;
   if ((i > INT64_C(0))) {
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s33, 2 }), err);
-    if (err->exc) { m9ln = 127; goto L_ret; };
+    if (err->exc) { m9ln = 138; goto L_ret; };
   }
   bool m9t1 = NbShow_Gap (i, n, err);
-  if (err->exc) { m9ln = 128; goto L_ret; };
+  if (err->exc) { m9ln = 139; goto L_ret; };
   if (m9t1) {
     { __typeof__(m9_sub_i64 (n, m9_mul_i64 (INT64_C(2), NbShow_Head, err), err)) m9a44 = m9_sub_i64 (n, m9_mul_i64 (INT64_C(2), NbShow_Head, err), err);
-      if (err->exc) { m9ln = 129; goto L_ret; };
+      if (err->exc) { m9ln = 140; goto L_ret; };
     { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s34, 4 }), Fmt_I64Str (m9a44, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s35, 11 }), err)) m9a45 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s34, 4 }), Fmt_I64Str (m9a44, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s35, 11 }), err);
-      if (err->exc) { m9ln = 129; goto L_ret; };
+      if (err->exc) { m9ln = 140; goto L_ret; };
     DynStr_Append (d, d_pool, m9a45, err);
-    if (err->exc) { m9ln = 129; goto L_ret; };
+    if (err->exc) { m9ln = 140; goto L_ret; };
     }
     }
   }
@@ -1139,12 +1149,12 @@ static void NbShow_CloseList (DynStr_DString * *d, m9_pool *d_pool, int64_t n, m
   static const char m9pn[] = "NbShow.CloseList"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   DynStr_AppendChar (d, d_pool, 93u, err);
-  if (err->exc) { m9ln = 135; goto L_ret; };
+  if (err->exc) { m9ln = 146; goto L_ret; };
   if ((n > NbShow_MaxList)) {
     { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s36, 3 }), Fmt_I64Str (n, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s37, 8 }), err)) m9a46 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s36, 3 }), Fmt_I64Str (n, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s37, 8 }), err);
-      if (err->exc) { m9ln = 137; goto L_ret; };
+      if (err->exc) { m9ln = 148; goto L_ret; };
     DynStr_Append (d, d_pool, m9a46, err);
-    if (err->exc) { m9ln = 137; goto L_ret; };
+    if (err->exc) { m9ln = 148; goto L_ret; };
     }
   }
 L_ret: ;
@@ -1166,13 +1176,13 @@ static m9_sl_UTF8 NbShow_Esc (m9_sl_UTF8 s, m9_state *err)
   m9_sl_UTF8 m9ret = {0};
   err->res = m9res;
   { __typeof__(Text_ReplaceUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s38, 1 }), ((m9_sl_UTF8){ (uint8_t *) m9s39, 5 }), err)) m9a47 = Text_ReplaceUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s38, 1 }), ((m9_sl_UTF8){ (uint8_t *) m9s39, 5 }), err);
-    if (err->exc) { m9ln = 219; goto L_ret; };
+    if (err->exc) { m9ln = 230; goto L_ret; };
   { __typeof__(Text_ReplaceUtf (m9a47, ((m9_sl_UTF8){ (uint8_t *) m9s40, 1 }), ((m9_sl_UTF8){ (uint8_t *) m9s41, 4 }), err)) m9a48 = Text_ReplaceUtf (m9a47, ((m9_sl_UTF8){ (uint8_t *) m9s40, 1 }), ((m9_sl_UTF8){ (uint8_t *) m9s41, 4 }), err);
-    if (err->exc) { m9ln = 219; goto L_ret; };
+    if (err->exc) { m9ln = 230; goto L_ret; };
   { __typeof__(Text_ReplaceUtf (m9a48, ((m9_sl_UTF8){ (uint8_t *) m9s42, 1 }), ((m9_sl_UTF8){ (uint8_t *) m9s43, 4 }), err)) m9a49 = Text_ReplaceUtf (m9a48, ((m9_sl_UTF8){ (uint8_t *) m9s42, 1 }), ((m9_sl_UTF8){ (uint8_t *) m9s43, 4 }), err);
-    if (err->exc) { m9ln = 219; goto L_ret; };
+    if (err->exc) { m9ln = 230; goto L_ret; };
   m9ret = Text_ReplaceUtf (m9a49, ((m9_sl_UTF8){ (uint8_t *) m9s44, 1 }), ((m9_sl_UTF8){ (uint8_t *) m9s45, 6 }), err);
-  if (err->exc) { m9ln = 219; goto L_ret; };
+  if (err->exc) { m9ln = 230; goto L_ret; };
   }
   }
   }
@@ -1198,16 +1208,16 @@ static m9_sl_UTF8 NbShow_PadLeft (m9_sl_UTF8 s, int64_t w, m9_state *err)
   p = ((m9_sl_UTF8){ NULL, 0 });
   for (;;) {
     bool m9t1 = (m9_add_i64 (Text_BLen (p, err), Text_BLen (s, err), err) < w);
-    if (err->exc) { m9ln = 227; goto L_ret; };
+    if (err->exc) { m9ln = 238; goto L_ret; };
     if (!(m9t1)) break;
     { __typeof__(p) m9v = m9_utf_cat (err->res, p, ((m9_sl_UTF8){ (uint8_t *) m9s46, 1 }), err);
-      if (err->exc) { m9ln = 227; goto L_ret; };
+      if (err->exc) { m9ln = 238; goto L_ret; };
       p = m9v;
     }
   }
   err->res = m9res;
   m9ret = m9_utf_cat (err->res, p, s, err);
-  if (err->exc) { m9ln = 228; goto L_ret; };
+  if (err->exc) { m9ln = 239; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -1230,16 +1240,16 @@ static m9_sl_UTF8 NbShow_PadRight (m9_sl_UTF8 s, int64_t w, m9_state *err)
   p = ((m9_sl_UTF8){ NULL, 0 });
   for (;;) {
     bool m9t1 = (m9_add_i64 (Text_BLen (p, err), Text_BLen (s, err), err) < w);
-    if (err->exc) { m9ln = 235; goto L_ret; };
+    if (err->exc) { m9ln = 246; goto L_ret; };
     if (!(m9t1)) break;
     { __typeof__(p) m9v = m9_utf_cat (err->res, p, ((m9_sl_UTF8){ (uint8_t *) m9s47, 1 }), err);
-      if (err->exc) { m9ln = 235; goto L_ret; };
+      if (err->exc) { m9ln = 246; goto L_ret; };
       p = m9v;
     }
   }
   err->res = m9res;
   m9ret = m9_utf_cat (err->res, s, p, err);
-  if (err->exc) { m9ln = 236; goto L_ret; };
+  if (err->exc) { m9ln = 247; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -1260,7 +1270,7 @@ static bool NbShow_RowShown (int64_t r, int64_t n, m9_state *err)
   bool m9ret = false;
   err->res = m9res;
   m9ret = (((n <= NbShow_MaxRows) || (r < NbShow_Edge)) || (r >= m9_sub_i64 (n, NbShow_Edge, err)));
-  if (err->exc) { m9ln = 314; goto L_ret; };
+  if (err->exc) { m9ln = 325; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -1280,8 +1290,87 @@ static bool NbShow_RowGap (int64_t r, int64_t n, m9_state *err)
   bool m9ret = false;
   err->res = m9res;
   m9ret = ((n > NbShow_MaxRows) && (r == m9_sub_i64 (n, NbShow_Edge, err)));
-  if (err->exc) { m9ln = 319; goto L_ret; };
+  if (err->exc) { m9ln = 330; goto L_ret; };
   goto L_ret;
+L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static int64_t NbShow_ColKind (Frame_Fr * f, m9_sl_UTF8 name, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  static const char m9pn[] = "NbShow.ColKind"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
+  int64_t m9ret = 0;
+  Frame_Col c = {0}; (void) c;
+  { __typeof__(c) m9v = Frame_GetCol (f, name, err);
+    if (err->exc) { m9ln = 337; goto L_ret; };
+    c = m9v;
+  }
+  { __typeof__(c.data) m9t1 = c.data;
+  switch (m9t1.tag) {
+  case Frame_Data_F64s: {
+    m9_sl_F64 v64 = m9t1.u.F64s.v64; (void) v64;
+    double m64 = m9t1.u.F64s.m64; (void) m64;
+    err->res = m9res;
+    m9ret = NbShow_KF64;
+    goto L_ret;
+  } break;
+  case Frame_Data_F32s: {
+    m9_sl_F32 v32 = m9t1.u.F32s.v32; (void) v32;
+    float m32 = m9t1.u.F32s.m32; (void) m32;
+    err->res = m9res;
+    m9ret = NbShow_KF32;
+    goto L_ret;
+  } break;
+  case Frame_Data_I64s: {
+    m9_sl_I64 vi64 = m9t1.u.I64s.vi64; (void) vi64;
+    int64_t mi64 = m9t1.u.I64s.mi64; (void) mi64;
+    err->res = m9res;
+    m9ret = NbShow_KI64;
+    goto L_ret;
+  } break;
+  case Frame_Data_I32s: {
+    m9_sl_I32 vi32 = m9t1.u.I32s.vi32; (void) vi32;
+    int32_t mi32 = m9t1.u.I32s.mi32; (void) mi32;
+    err->res = m9res;
+    m9ret = NbShow_KI32;
+    goto L_ret;
+  } break;
+  case Frame_Data_I16s: {
+    m9_sl_I16 vi16 = m9t1.u.I16s.vi16; (void) vi16;
+    int16_t mi16 = m9t1.u.I16s.mi16; (void) mi16;
+    err->res = m9res;
+    m9ret = NbShow_KI16;
+    goto L_ret;
+  } break;
+  case Frame_Data_Bytes: {
+    m9_sl_BYTE vb = m9t1.u.Bytes.vb; (void) vb;
+    uint8_t mb = m9t1.u.Bytes.mb; (void) mb;
+    err->res = m9res;
+    m9ret = NbShow_KByte;
+    goto L_ret;
+  } break;
+  case Frame_Data_Bools: {
+    m9_sl_BOOL vbo = m9t1.u.Bools.vbo; (void) vbo;
+    err->res = m9res;
+    m9ret = NbShow_KBool;
+    goto L_ret;
+  } break;
+  case Frame_Data_Strs: {
+    int64_t si = m9t1.u.Strs.si; (void) si;
+    err->res = m9res;
+    m9ret = NbShow_KStr;
+    goto L_ret;
+  } break;
+  default: m9_trap_tag ();
+  } }
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
@@ -1298,37 +1387,37 @@ static m9_sl_UTF8 NbShow_KindName (int64_t k, m9_state *err)
   static const char m9pn[] = "NbShow.KindName"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
-  if ((k == Frame_KindF64)) {
+  if ((k == NbShow_KF64)) {
     err->res = m9res;
     m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s48, 3 });
     goto L_ret;
   }
-  if ((k == Frame_KindF32)) {
+  if ((k == NbShow_KF32)) {
     err->res = m9res;
     m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s49, 3 });
     goto L_ret;
   }
-  if ((k == Frame_KindI64)) {
+  if ((k == NbShow_KI64)) {
     err->res = m9res;
     m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s50, 3 });
     goto L_ret;
   }
-  if ((k == Frame_KindI32)) {
+  if ((k == NbShow_KI32)) {
     err->res = m9res;
     m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s51, 3 });
     goto L_ret;
   }
-  if ((k == Frame_KindI16)) {
+  if ((k == NbShow_KI16)) {
     err->res = m9res;
     m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s52, 3 });
     goto L_ret;
   }
-  if ((k == Frame_KindByte)) {
+  if ((k == NbShow_KByte)) {
     err->res = m9res;
     m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s53, 4 });
     goto L_ret;
   }
-  if ((k == Frame_KindStr)) {
+  if ((k == NbShow_KStr)) {
     err->res = m9res;
     m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s54, 3 });
     goto L_ret;
@@ -1366,51 +1455,53 @@ static m9_sl_m9_sl_UTF8 NbShow_Cells (m9_pool *pool, Frame_Fr * f, m9_sl_UTF8 na
   m9_sl_m9_sl_UTF8 rstr = {0}; (void) rstr;
   m9_sl_BOOL rbool = {0}; (void) rbool;
   { __typeof__(out) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), (rows).len, err);
-    if (err->exc) { m9ln = 352; goto L_ret; };
+    if (err->exc) { m9ln = 380; goto L_ret; };
     out = m9v;
   }
-  { __typeof__(k) m9v = Frame_KindOf (f, name, err);
-    if (err->exc) { m9ln = 353; goto L_ret; };
+  { __typeof__(k) m9v = NbShow_ColKind (f, name, err);
+    if (err->exc) { m9ln = 381; goto L_ret; };
     k = m9v;
   }
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((rows).len, INT64_C(1), err);
-  if (err->exc) { m9ln = 354; goto L_ret; };
+  if (err->exc) { m9ln = 382; goto L_ret; };
   if (i <= m9t1to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(m9_sl_UTF8 *) m9_at (out.p, i, out.len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (pool, ((m9_sl_UTF8){ (uint8_t *) m9s56, 4 }), err);
-      if (err->exc) { m9ln = 354; goto L_ret; };
+      if (err->exc) { m9ln = 382; goto L_ret; };
       (*(m9_sl_UTF8 *) m9_at (out.p, i, out.len, sizeof (m9_sl_UTF8), err)) = m9v;
-      if (err->exc) { m9ln = 354; goto L_ret; };
+      if (err->exc) { m9ln = 382; goto L_ret; };
     }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
-  if ((k == Frame_KindF64)) {
+  if ((k == NbShow_KF64)) {
     { __typeof__(rf) m9v = Frame_ColF64 (f, name, err);
-      if (err->exc) { m9ln = 356; goto L_ret; };
+      if (err->exc) { m9ln = 384; goto L_ret; };
       rf = m9v;
     }
     { __typeof__(i) m9t2to;
     i = INT64_C(0);
     m9t2to = m9_sub_i64 ((rows).len, INT64_C(1), err);
-    if (err->exc) { m9ln = 357; goto L_ret; };
+    if (err->exc) { m9ln = 385; goto L_ret; };
     if (i <= m9t2to) for (;;) {
+      M9_YCHK ();
       { __typeof__(r) m9v = (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err));
-        if (err->exc) { m9ln = 358; goto L_ret; };
+        if (err->exc) { m9ln = 386; goto L_ret; };
         r = m9v;
       }
       bool m9t3 = ((*(double *) m9_at (rf.p, r, rf.len, sizeof (double), err)) == (*(double *) m9_at (rf.p, r, rf.len, sizeof (double), err)));
-      if (err->exc) { m9ln = 359; goto L_ret; };
+      if (err->exc) { m9ln = 387; goto L_ret; };
       if (m9t3) {
         { __typeof__((*(double *) m9_at (rf.p, r, rf.len, sizeof (double), err))) m9a50 = (*(double *) m9_at (rf.p, r, rf.len, sizeof (double), err));
-          if (err->exc) { m9ln = 359; goto L_ret; };
+          if (err->exc) { m9ln = 387; goto L_ret; };
         { __typeof__(Fmt_Short (m9a50, err)) m9a51 = Fmt_Short (m9a50, err);
-          if (err->exc) { m9ln = 359; goto L_ret; };
+          if (err->exc) { m9ln = 387; goto L_ret; };
         { __typeof__((*(m9_sl_UTF8 *) m9_at (out.p, i, out.len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (pool, m9a51, err);
-          if (err->exc) { m9ln = 359; goto L_ret; };
+          if (err->exc) { m9ln = 387; goto L_ret; };
           (*(m9_sl_UTF8 *) m9_at (out.p, i, out.len, sizeof (m9_sl_UTF8), err)) = m9v;
-          if (err->exc) { m9ln = 359; goto L_ret; };
+          if (err->exc) { m9ln = 387; goto L_ret; };
         }
         }
         }
@@ -1419,31 +1510,32 @@ static m9_sl_m9_sl_UTF8 NbShow_Cells (m9_pool *pool, Frame_Fr * f, m9_sl_UTF8 na
       i += 1;
     } }
   } else {
-    if ((k == Frame_KindF32)) {
+    if ((k == NbShow_KF32)) {
       { __typeof__(rs) m9v = Frame_ColF32 (f, name, err);
-        if (err->exc) { m9ln = 362; goto L_ret; };
+        if (err->exc) { m9ln = 390; goto L_ret; };
         rs = m9v;
       }
       { __typeof__(i) m9t4to;
       i = INT64_C(0);
       m9t4to = m9_sub_i64 ((rows).len, INT64_C(1), err);
-      if (err->exc) { m9ln = 363; goto L_ret; };
+      if (err->exc) { m9ln = 391; goto L_ret; };
       if (i <= m9t4to) for (;;) {
+        M9_YCHK ();
         { __typeof__(r) m9v = (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err));
-          if (err->exc) { m9ln = 364; goto L_ret; };
+          if (err->exc) { m9ln = 392; goto L_ret; };
           r = m9v;
         }
         bool m9t5 = ((*(float *) m9_at (rs.p, r, rs.len, sizeof (float), err)) == (*(float *) m9_at (rs.p, r, rs.len, sizeof (float), err)));
-        if (err->exc) { m9ln = 365; goto L_ret; };
+        if (err->exc) { m9ln = 393; goto L_ret; };
         if (m9t5) {
           { __typeof__((double)((*(float *) m9_at (rs.p, r, rs.len, sizeof (float), err)))) m9a52 = (double)((*(float *) m9_at (rs.p, r, rs.len, sizeof (float), err)));
-            if (err->exc) { m9ln = 365; goto L_ret; };
+            if (err->exc) { m9ln = 393; goto L_ret; };
           { __typeof__(Fmt_Short (m9a52, err)) m9a53 = Fmt_Short (m9a52, err);
-            if (err->exc) { m9ln = 365; goto L_ret; };
+            if (err->exc) { m9ln = 393; goto L_ret; };
           { __typeof__((*(m9_sl_UTF8 *) m9_at (out.p, i, out.len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (pool, m9a53, err);
-            if (err->exc) { m9ln = 365; goto L_ret; };
+            if (err->exc) { m9ln = 393; goto L_ret; };
             (*(m9_sl_UTF8 *) m9_at (out.p, i, out.len, sizeof (m9_sl_UTF8), err)) = m9v;
-            if (err->exc) { m9ln = 365; goto L_ret; };
+            if (err->exc) { m9ln = 393; goto L_ret; };
           }
           }
           }
@@ -1452,31 +1544,32 @@ static m9_sl_m9_sl_UTF8 NbShow_Cells (m9_pool *pool, Frame_Fr * f, m9_sl_UTF8 na
         i += 1;
       } }
   } else {
-    if ((k == Frame_KindI64)) {
+    if ((k == NbShow_KI64)) {
       { __typeof__(ri) m9v = Frame_ColI64 (f, name, err);
-        if (err->exc) { m9ln = 368; goto L_ret; };
+        if (err->exc) { m9ln = 396; goto L_ret; };
         ri = m9v;
       }
       { __typeof__(i) m9t6to;
       i = INT64_C(0);
       m9t6to = m9_sub_i64 ((rows).len, INT64_C(1), err);
-      if (err->exc) { m9ln = 369; goto L_ret; };
+      if (err->exc) { m9ln = 397; goto L_ret; };
       if (i <= m9t6to) for (;;) {
+        M9_YCHK ();
         { __typeof__(r) m9v = (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err));
-          if (err->exc) { m9ln = 370; goto L_ret; };
+          if (err->exc) { m9ln = 398; goto L_ret; };
           r = m9v;
         }
         bool m9t7 = ((*(int64_t *) m9_at (ri.p, r, ri.len, sizeof (int64_t), err)) != Frame_MissI64 (f, name, err));
-        if (err->exc) { m9ln = 371; goto L_ret; };
+        if (err->exc) { m9ln = 399; goto L_ret; };
         if (m9t7) {
           { __typeof__((*(int64_t *) m9_at (ri.p, r, ri.len, sizeof (int64_t), err))) m9a54 = (*(int64_t *) m9_at (ri.p, r, ri.len, sizeof (int64_t), err));
-            if (err->exc) { m9ln = 371; goto L_ret; };
+            if (err->exc) { m9ln = 399; goto L_ret; };
           { __typeof__(Fmt_I64Str (m9a54, err)) m9a55 = Fmt_I64Str (m9a54, err);
-            if (err->exc) { m9ln = 371; goto L_ret; };
+            if (err->exc) { m9ln = 399; goto L_ret; };
           { __typeof__((*(m9_sl_UTF8 *) m9_at (out.p, i, out.len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (pool, m9a55, err);
-            if (err->exc) { m9ln = 371; goto L_ret; };
+            if (err->exc) { m9ln = 399; goto L_ret; };
             (*(m9_sl_UTF8 *) m9_at (out.p, i, out.len, sizeof (m9_sl_UTF8), err)) = m9v;
-            if (err->exc) { m9ln = 371; goto L_ret; };
+            if (err->exc) { m9ln = 399; goto L_ret; };
           }
           }
           }
@@ -1485,31 +1578,32 @@ static m9_sl_m9_sl_UTF8 NbShow_Cells (m9_pool *pool, Frame_Fr * f, m9_sl_UTF8 na
         i += 1;
       } }
   } else {
-    if ((k == Frame_KindI32)) {
+    if ((k == NbShow_KI32)) {
       { __typeof__(ri32) m9v = Frame_ColI32 (f, name, err);
-        if (err->exc) { m9ln = 374; goto L_ret; };
+        if (err->exc) { m9ln = 402; goto L_ret; };
         ri32 = m9v;
       }
       { __typeof__(i) m9t8to;
       i = INT64_C(0);
       m9t8to = m9_sub_i64 ((rows).len, INT64_C(1), err);
-      if (err->exc) { m9ln = 375; goto L_ret; };
+      if (err->exc) { m9ln = 403; goto L_ret; };
       if (i <= m9t8to) for (;;) {
+        M9_YCHK ();
         { __typeof__(r) m9v = (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err));
-          if (err->exc) { m9ln = 376; goto L_ret; };
+          if (err->exc) { m9ln = 404; goto L_ret; };
           r = m9v;
         }
         bool m9t9 = ((*(int32_t *) m9_at (ri32.p, r, ri32.len, sizeof (int32_t), err)) != Frame_MissI32 (f, name, err));
-        if (err->exc) { m9ln = 377; goto L_ret; };
+        if (err->exc) { m9ln = 405; goto L_ret; };
         if (m9t9) {
           { __typeof__((int64_t)((*(int32_t *) m9_at (ri32.p, r, ri32.len, sizeof (int32_t), err)))) m9a56 = (int64_t)((*(int32_t *) m9_at (ri32.p, r, ri32.len, sizeof (int32_t), err)));
-            if (err->exc) { m9ln = 378; goto L_ret; };
+            if (err->exc) { m9ln = 406; goto L_ret; };
           { __typeof__(Fmt_I64Str (m9a56, err)) m9a57 = Fmt_I64Str (m9a56, err);
-            if (err->exc) { m9ln = 378; goto L_ret; };
+            if (err->exc) { m9ln = 406; goto L_ret; };
           { __typeof__((*(m9_sl_UTF8 *) m9_at (out.p, i, out.len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (pool, m9a57, err);
-            if (err->exc) { m9ln = 378; goto L_ret; };
+            if (err->exc) { m9ln = 406; goto L_ret; };
             (*(m9_sl_UTF8 *) m9_at (out.p, i, out.len, sizeof (m9_sl_UTF8), err)) = m9v;
-            if (err->exc) { m9ln = 378; goto L_ret; };
+            if (err->exc) { m9ln = 406; goto L_ret; };
           }
           }
           }
@@ -1518,31 +1612,32 @@ static m9_sl_m9_sl_UTF8 NbShow_Cells (m9_pool *pool, Frame_Fr * f, m9_sl_UTF8 na
         i += 1;
       } }
   } else {
-    if ((k == Frame_KindI16)) {
+    if ((k == NbShow_KI16)) {
       { __typeof__(ri16) m9v = Frame_ColI16 (f, name, err);
-        if (err->exc) { m9ln = 382; goto L_ret; };
+        if (err->exc) { m9ln = 410; goto L_ret; };
         ri16 = m9v;
       }
       { __typeof__(i) m9t10to;
       i = INT64_C(0);
       m9t10to = m9_sub_i64 ((rows).len, INT64_C(1), err);
-      if (err->exc) { m9ln = 383; goto L_ret; };
+      if (err->exc) { m9ln = 411; goto L_ret; };
       if (i <= m9t10to) for (;;) {
+        M9_YCHK ();
         { __typeof__(r) m9v = (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err));
-          if (err->exc) { m9ln = 384; goto L_ret; };
+          if (err->exc) { m9ln = 412; goto L_ret; };
           r = m9v;
         }
         bool m9t11 = ((*(int16_t *) m9_at (ri16.p, r, ri16.len, sizeof (int16_t), err)) != Frame_MissI16 (f, name, err));
-        if (err->exc) { m9ln = 385; goto L_ret; };
+        if (err->exc) { m9ln = 413; goto L_ret; };
         if (m9t11) {
           { __typeof__((int64_t)((*(int16_t *) m9_at (ri16.p, r, ri16.len, sizeof (int16_t), err)))) m9a58 = (int64_t)((*(int16_t *) m9_at (ri16.p, r, ri16.len, sizeof (int16_t), err)));
-            if (err->exc) { m9ln = 386; goto L_ret; };
+            if (err->exc) { m9ln = 414; goto L_ret; };
           { __typeof__(Fmt_I64Str (m9a58, err)) m9a59 = Fmt_I64Str (m9a58, err);
-            if (err->exc) { m9ln = 386; goto L_ret; };
+            if (err->exc) { m9ln = 414; goto L_ret; };
           { __typeof__((*(m9_sl_UTF8 *) m9_at (out.p, i, out.len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (pool, m9a59, err);
-            if (err->exc) { m9ln = 386; goto L_ret; };
+            if (err->exc) { m9ln = 414; goto L_ret; };
             (*(m9_sl_UTF8 *) m9_at (out.p, i, out.len, sizeof (m9_sl_UTF8), err)) = m9v;
-            if (err->exc) { m9ln = 386; goto L_ret; };
+            if (err->exc) { m9ln = 414; goto L_ret; };
           }
           }
           }
@@ -1551,31 +1646,32 @@ static m9_sl_m9_sl_UTF8 NbShow_Cells (m9_pool *pool, Frame_Fr * f, m9_sl_UTF8 na
         i += 1;
       } }
   } else {
-    if ((k == Frame_KindByte)) {
+    if ((k == NbShow_KByte)) {
       { __typeof__(rb) m9v = Frame_ColBytes (f, name, err);
-        if (err->exc) { m9ln = 390; goto L_ret; };
+        if (err->exc) { m9ln = 418; goto L_ret; };
         rb = m9v;
       }
       { __typeof__(i) m9t12to;
       i = INT64_C(0);
       m9t12to = m9_sub_i64 ((rows).len, INT64_C(1), err);
-      if (err->exc) { m9ln = 391; goto L_ret; };
+      if (err->exc) { m9ln = 419; goto L_ret; };
       if (i <= m9t12to) for (;;) {
+        M9_YCHK ();
         { __typeof__(r) m9v = (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err));
-          if (err->exc) { m9ln = 392; goto L_ret; };
+          if (err->exc) { m9ln = 420; goto L_ret; };
           r = m9v;
         }
         bool m9t13 = ((*(uint8_t *) m9_at (rb.p, r, rb.len, sizeof (uint8_t), err)) != Frame_MissByte (f, name, err));
-        if (err->exc) { m9ln = 393; goto L_ret; };
+        if (err->exc) { m9ln = 421; goto L_ret; };
         if (m9t13) {
           { __typeof__((int64_t)((*(uint8_t *) m9_at (rb.p, r, rb.len, sizeof (uint8_t), err)))) m9a60 = (int64_t)((*(uint8_t *) m9_at (rb.p, r, rb.len, sizeof (uint8_t), err)));
-            if (err->exc) { m9ln = 394; goto L_ret; };
+            if (err->exc) { m9ln = 422; goto L_ret; };
           { __typeof__(Fmt_I64Str (m9a60, err)) m9a61 = Fmt_I64Str (m9a60, err);
-            if (err->exc) { m9ln = 394; goto L_ret; };
+            if (err->exc) { m9ln = 422; goto L_ret; };
           { __typeof__((*(m9_sl_UTF8 *) m9_at (out.p, i, out.len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (pool, m9a61, err);
-            if (err->exc) { m9ln = 394; goto L_ret; };
+            if (err->exc) { m9ln = 422; goto L_ret; };
             (*(m9_sl_UTF8 *) m9_at (out.p, i, out.len, sizeof (m9_sl_UTF8), err)) = m9v;
-            if (err->exc) { m9ln = 394; goto L_ret; };
+            if (err->exc) { m9ln = 422; goto L_ret; };
           }
           }
           }
@@ -1584,22 +1680,23 @@ static m9_sl_m9_sl_UTF8 NbShow_Cells (m9_pool *pool, Frame_Fr * f, m9_sl_UTF8 na
         i += 1;
       } }
   } else {
-    if ((k == Frame_KindStr)) {
+    if ((k == NbShow_KStr)) {
       { __typeof__(rstr) m9v = Frame_ColStrs (f, name, err);
-        if (err->exc) { m9ln = 398; goto L_ret; };
+        if (err->exc) { m9ln = 426; goto L_ret; };
         rstr = m9v;
       }
       { __typeof__(i) m9t14to;
       i = INT64_C(0);
       m9t14to = m9_sub_i64 ((rows).len, INT64_C(1), err);
-      if (err->exc) { m9ln = 399; goto L_ret; };
+      if (err->exc) { m9ln = 427; goto L_ret; };
       if (i <= m9t14to) for (;;) {
+        M9_YCHK ();
         { __typeof__((*(m9_sl_UTF8 *) m9_at (rstr.p, (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err)), rstr.len, sizeof (m9_sl_UTF8), err))) m9a62 = (*(m9_sl_UTF8 *) m9_at (rstr.p, (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err)), rstr.len, sizeof (m9_sl_UTF8), err));
-          if (err->exc) { m9ln = 399; goto L_ret; };
+          if (err->exc) { m9ln = 427; goto L_ret; };
         { __typeof__((*(m9_sl_UTF8 *) m9_at (out.p, i, out.len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (pool, m9a62, err);
-          if (err->exc) { m9ln = 399; goto L_ret; };
+          if (err->exc) { m9ln = 427; goto L_ret; };
           (*(m9_sl_UTF8 *) m9_at (out.p, i, out.len, sizeof (m9_sl_UTF8), err)) = m9v;
-          if (err->exc) { m9ln = 399; goto L_ret; };
+          if (err->exc) { m9ln = 427; goto L_ret; };
         }
         }
         if ((uint64_t) m9t14to - (uint64_t) i < (uint64_t) 1) break;
@@ -1607,22 +1704,23 @@ static m9_sl_m9_sl_UTF8 NbShow_Cells (m9_pool *pool, Frame_Fr * f, m9_sl_UTF8 na
       } }
   } else {
     { __typeof__(rbool) m9v = Frame_ColBools (f, name, err);
-      if (err->exc) { m9ln = 401; goto L_ret; };
+      if (err->exc) { m9ln = 429; goto L_ret; };
       rbool = m9v;
     }
     { __typeof__(i) m9t15to;
     i = INT64_C(0);
     m9t15to = m9_sub_i64 ((rows).len, INT64_C(1), err);
-    if (err->exc) { m9ln = 402; goto L_ret; };
+    if (err->exc) { m9ln = 430; goto L_ret; };
     if (i <= m9t15to) for (;;) {
+      M9_YCHK ();
       { __typeof__((*(bool *) m9_at (rbool.p, (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err)), rbool.len, sizeof (bool), err))) m9a63 = (*(bool *) m9_at (rbool.p, (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err)), rbool.len, sizeof (bool), err));
-        if (err->exc) { m9ln = 402; goto L_ret; };
+        if (err->exc) { m9ln = 430; goto L_ret; };
       { __typeof__(NbShow_BoolWord (m9a63, err)) m9a64 = NbShow_BoolWord (m9a63, err);
-        if (err->exc) { m9ln = 402; goto L_ret; };
+        if (err->exc) { m9ln = 430; goto L_ret; };
       { __typeof__((*(m9_sl_UTF8 *) m9_at (out.p, i, out.len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (pool, m9a64, err);
-        if (err->exc) { m9ln = 402; goto L_ret; };
+        if (err->exc) { m9ln = 430; goto L_ret; };
         (*(m9_sl_UTF8 *) m9_at (out.p, i, out.len, sizeof (m9_sl_UTF8), err)) = m9v;
-        if (err->exc) { m9ln = 402; goto L_ret; };
+        if (err->exc) { m9ln = 430; goto L_ret; };
       }
       }
       }
@@ -1657,13 +1755,13 @@ static m9_sl_I64 NbShow_RowsShown (m9_pool *pool, int64_t n, m9_state *err)
   { __typeof__(r) m9t1to;
   r = INT64_C(0);
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
-  if (err->exc) { m9ln = 414; goto L_ret; };
+  if (err->exc) { m9ln = 442; goto L_ret; };
   if (r <= m9t1to) for (;;) {
     bool m9t2 = NbShow_RowShown (r, n, err);
-    if (err->exc) { m9ln = 415; goto L_ret; };
+    if (err->exc) { m9ln = 443; goto L_ret; };
     if (m9t2) {
       { __typeof__(k) m9v = m9_add_i64 (k, INT64_C(1), err);
-        if (err->exc) { m9ln = 415; goto L_ret; };
+        if (err->exc) { m9ln = 443; goto L_ret; };
         k = m9v;
       }
     }
@@ -1671,22 +1769,22 @@ static m9_sl_I64 NbShow_RowsShown (m9_pool *pool, int64_t n, m9_state *err)
     r += 1;
   } }
   { __typeof__(rows) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), k, err);
-    if (err->exc) { m9ln = 417; goto L_ret; };
+    if (err->exc) { m9ln = 445; goto L_ret; };
     rows = m9v;
   }
   k = INT64_C(0);
   { __typeof__(r) m9t3to;
   r = INT64_C(0);
   m9t3to = m9_sub_i64 (n, INT64_C(1), err);
-  if (err->exc) { m9ln = 419; goto L_ret; };
+  if (err->exc) { m9ln = 447; goto L_ret; };
   if (r <= m9t3to) for (;;) {
     bool m9t4 = NbShow_RowShown (r, n, err);
-    if (err->exc) { m9ln = 420; goto L_ret; };
+    if (err->exc) { m9ln = 448; goto L_ret; };
     if (m9t4) {
       (*(int64_t *) m9_at (rows.p, k, rows.len, sizeof (int64_t), err)) = r;
-      if (err->exc) { m9ln = 421; goto L_ret; };
+      if (err->exc) { m9ln = 449; goto L_ret; };
       { __typeof__(k) m9v = m9_add_i64 (k, INT64_C(1), err);
-        if (err->exc) { m9ln = 422; goto L_ret; };
+        if (err->exc) { m9ln = 450; goto L_ret; };
         k = m9v;
       }
     }
@@ -1729,11 +1827,11 @@ static m9_sl_UTF8 NbShow_Render (Frame_Fr * f, m9_sl_I64 times, bool html, m9_st
   int64_t iw = 0; (void) iw;
   Time_Instant tm = {0}; (void) tm;
   { __typeof__(d) m9v = DynStr_New (&(scratch), err);
-    if (err->exc) { m9ln = 443; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 471; goto L_hdl_m9t1; };
     d = m9v;
   }
   { __typeof__(n) m9v = Frame_Rows (f, err);
-    if (err->exc) { m9ln = 444; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 472; goto L_hdl_m9t1; };
     n = m9v;
   }
   c0 = INT64_C(0);
@@ -1741,58 +1839,59 @@ static m9_sl_UTF8 NbShow_Render (Frame_Fr * f, m9_sl_I64 times, bool html, m9_st
     c0 = INT64_C(1);
   }
   { __typeof__(nc) m9v = m9_add_i64 (Frame_Cols (f, err), c0, err);
-    if (err->exc) { m9ln = 447; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 475; goto L_hdl_m9t1; };
     nc = m9v;
   }
   { __typeof__(rows) m9v = NbShow_RowsShown (&(scratch), n, err);
-    if (err->exc) { m9ln = 448; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 476; goto L_hdl_m9t1; };
     rows = m9v;
   }
   { __typeof__(names) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &(scratch), nc, err);
-    if (err->exc) { m9ln = 449; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 477; goto L_hdl_m9t1; };
     names = m9v;
   }
   { __typeof__(kinds) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &(scratch), nc, err);
-    if (err->exc) { m9ln = 450; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 478; goto L_hdl_m9t1; };
     kinds = m9v;
   }
   { __typeof__(cells) m9v = M9_POOL_SL (m9_sl_m9_sl_m9_sl_UTF8, m9_sl_m9_sl_UTF8, &(scratch), nc, err);
-    if (err->exc) { m9ln = 451; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 479; goto L_hdl_m9t1; };
     cells = m9v;
   }
   { __typeof__(left) m9v = M9_POOL_SL (m9_sl_BOOL, bool, &(scratch), nc, err);
-    if (err->exc) { m9ln = 452; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 480; goto L_hdl_m9t1; };
     left = m9v;
   }
   { __typeof__(width) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(scratch), nc, err);
-    if (err->exc) { m9ln = 453; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 481; goto L_hdl_m9t1; };
     width = m9v;
   }
   if ((c0 == INT64_C(1))) {
     (*(m9_sl_UTF8 *) m9_at (names.p, INT64_C(0), names.len, sizeof (m9_sl_UTF8), err)) = ((m9_sl_UTF8){ (uint8_t *) m9s57, 4 });
-    if (err->exc) { m9ln = 455; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 483; goto L_hdl_m9t1; };
     (*(m9_sl_UTF8 *) m9_at (kinds.p, INT64_C(0), kinds.len, sizeof (m9_sl_UTF8), err)) = ((m9_sl_UTF8){ (uint8_t *) m9s58, 3 });
-    if (err->exc) { m9ln = 456; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 484; goto L_hdl_m9t1; };
     { __typeof__((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, INT64_C(0), cells.len, sizeof (m9_sl_m9_sl_UTF8), err))) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &(scratch), (rows).len, err);
-      if (err->exc) { m9ln = 457; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 485; goto L_hdl_m9t1; };
       (*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, INT64_C(0), cells.len, sizeof (m9_sl_m9_sl_UTF8), err)) = m9v;
-      if (err->exc) { m9ln = 457; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 485; goto L_hdl_m9t1; };
     }
     { __typeof__(i) m9t3to;
     i = INT64_C(0);
     m9t3to = m9_sub_i64 ((rows).len, INT64_C(1), err);
-    if (err->exc) { m9ln = 458; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 486; goto L_hdl_m9t1; };
     if (i <= m9t3to) for (;;) {
+      M9_YCHK ();
       { __typeof__(tm.t) m9v = (double)((*(int64_t *) m9_at (times.p, (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err)), times.len, sizeof (int64_t), err)));
-        if (err->exc) { m9ln = 459; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 487; goto L_hdl_m9t1; };
         tm.t = m9v;
       }
       { __typeof__(Time_Iso (tm, INT64_C(0), err)) m9a65 = Time_Iso (tm, INT64_C(0), err);
-        if (err->exc) { m9ln = 460; goto L_hdl_m9t1; };
-      { __typeof__((*(m9_sl_UTF8 *) m9_at (({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, INT64_C(0), cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 460; goto L_hdl_m9t1; }; m9g; }).p, i, ({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, INT64_C(0), cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 460; goto L_hdl_m9t1; }; m9g; }).len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (&(scratch), m9a65, err);
-        if (err->exc) { m9ln = 460; goto L_hdl_m9t1; };
-        (*(m9_sl_UTF8 *) m9_at (({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, INT64_C(0), cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 460; goto L_hdl_m9t1; }; m9g; }).p, i, ({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, INT64_C(0), cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 460; goto L_hdl_m9t1; }; m9g; }).len, sizeof (m9_sl_UTF8), err)) = m9v;
-        if (err->exc) { m9ln = 460; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 488; goto L_hdl_m9t1; };
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, INT64_C(0), cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 488; goto L_hdl_m9t1; }; m9g; }).p, i, ({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, INT64_C(0), cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 488; goto L_hdl_m9t1; }; m9g; }).len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (&(scratch), m9a65, err);
+        if (err->exc) { m9ln = 488; goto L_hdl_m9t1; };
+        (*(m9_sl_UTF8 *) m9_at (({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, INT64_C(0), cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 488; goto L_hdl_m9t1; }; m9g; }).p, i, ({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, INT64_C(0), cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 488; goto L_hdl_m9t1; }; m9g; }).len, sizeof (m9_sl_UTF8), err)) = m9v;
+        if (err->exc) { m9ln = 488; goto L_hdl_m9t1; };
       }
       }
       if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
@@ -1802,41 +1901,42 @@ static m9_sl_UTF8 NbShow_Render (Frame_Fr * f, m9_sl_I64 times, bool html, m9_st
   { __typeof__(c) m9t4to;
   c = c0;
   m9t4to = m9_sub_i64 (nc, INT64_C(1), err);
-  if (err->exc) { m9ln = 463; goto L_hdl_m9t1; };
+  if (err->exc) { m9ln = 491; goto L_hdl_m9t1; };
   if (c <= m9t4to) for (;;) {
+    M9_YCHK ();
     { __typeof__(m9_sub_i64 (c, c0, err)) m9a66 = m9_sub_i64 (c, c0, err);
-      if (err->exc) { m9ln = 464; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 492; goto L_hdl_m9t1; };
     { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, c, names.len, sizeof (m9_sl_UTF8), err))) m9v = Frame_NameAt (f, m9a66, err);
-      if (err->exc) { m9ln = 464; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 492; goto L_hdl_m9t1; };
       (*(m9_sl_UTF8 *) m9_at (names.p, c, names.len, sizeof (m9_sl_UTF8), err)) = m9v;
-      if (err->exc) { m9ln = 464; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 492; goto L_hdl_m9t1; };
     }
     }
     { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, c, names.len, sizeof (m9_sl_UTF8), err))) m9a67 = (*(m9_sl_UTF8 *) m9_at (names.p, c, names.len, sizeof (m9_sl_UTF8), err));
-      if (err->exc) { m9ln = 465; goto L_hdl_m9t1; };
-    { __typeof__(Frame_KindOf (f, m9a67, err)) m9a68 = Frame_KindOf (f, m9a67, err);
-      if (err->exc) { m9ln = 465; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 493; goto L_hdl_m9t1; };
+    { __typeof__(NbShow_ColKind (f, m9a67, err)) m9a68 = NbShow_ColKind (f, m9a67, err);
+      if (err->exc) { m9ln = 493; goto L_hdl_m9t1; };
     { __typeof__((*(m9_sl_UTF8 *) m9_at (kinds.p, c, kinds.len, sizeof (m9_sl_UTF8), err))) m9v = NbShow_KindName (m9a68, err);
-      if (err->exc) { m9ln = 465; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 493; goto L_hdl_m9t1; };
       (*(m9_sl_UTF8 *) m9_at (kinds.p, c, kinds.len, sizeof (m9_sl_UTF8), err)) = m9v;
-      if (err->exc) { m9ln = 465; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 493; goto L_hdl_m9t1; };
     }
     }
     }
     { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, c, names.len, sizeof (m9_sl_UTF8), err))) m9a69 = (*(m9_sl_UTF8 *) m9_at (names.p, c, names.len, sizeof (m9_sl_UTF8), err));
-      if (err->exc) { m9ln = 466; goto L_hdl_m9t1; };
-    { __typeof__((*(bool *) m9_at (left.p, c, left.len, sizeof (bool), err))) m9v = (Frame_KindOf (f, m9a69, err) == Frame_KindStr);
-      if (err->exc) { m9ln = 466; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 494; goto L_hdl_m9t1; };
+    { __typeof__((*(bool *) m9_at (left.p, c, left.len, sizeof (bool), err))) m9v = (NbShow_ColKind (f, m9a69, err) == NbShow_KStr);
+      if (err->exc) { m9ln = 494; goto L_hdl_m9t1; };
       (*(bool *) m9_at (left.p, c, left.len, sizeof (bool), err)) = m9v;
-      if (err->exc) { m9ln = 466; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 494; goto L_hdl_m9t1; };
     }
     }
     { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, c, names.len, sizeof (m9_sl_UTF8), err))) m9a70 = (*(m9_sl_UTF8 *) m9_at (names.p, c, names.len, sizeof (m9_sl_UTF8), err));
-      if (err->exc) { m9ln = 467; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 495; goto L_hdl_m9t1; };
     { __typeof__((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))) m9v = NbShow_Cells (&(scratch), f, m9a70, rows, err);
-      if (err->exc) { m9ln = 467; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 495; goto L_hdl_m9t1; };
       (*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err)) = m9v;
-      if (err->exc) { m9ln = 467; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 495; goto L_hdl_m9t1; };
     }
     }
     if ((uint64_t) m9t4to - (uint64_t) c < (uint64_t) 1) break;
@@ -1844,110 +1944,115 @@ static m9_sl_UTF8 NbShow_Render (Frame_Fr * f, m9_sl_I64 times, bool html, m9_st
   } }
   if (html) {
     DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s59, 43 }), err);
-    if (err->exc) { m9ln = 471; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 499; goto L_hdl_m9t1; };
     { __typeof__(c) m9t5to;
     c = INT64_C(0);
     m9t5to = m9_sub_i64 (nc, INT64_C(1), err);
-    if (err->exc) { m9ln = 472; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 500; goto L_hdl_m9t1; };
     if (c <= m9t5to) for (;;) {
+      M9_YCHK ();
       { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, c, names.len, sizeof (m9_sl_UTF8), err))) m9a71 = (*(m9_sl_UTF8 *) m9_at (names.p, c, names.len, sizeof (m9_sl_UTF8), err));
-        if (err->exc) { m9ln = 472; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 500; goto L_hdl_m9t1; };
       { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s60, 4 }), NbShow_Esc (m9a71, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s61, 5 }), err)) m9a72 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s60, 4 }), NbShow_Esc (m9a71, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s61, 5 }), err);
-        if (err->exc) { m9ln = 472; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 500; goto L_hdl_m9t1; };
       DynStr_Append (&(d), &(scratch), m9a72, err);
-      if (err->exc) { m9ln = 472; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 500; goto L_hdl_m9t1; };
       }
       }
       if ((uint64_t) m9t5to - (uint64_t) c < (uint64_t) 1) break;
       c += 1;
     } }
     DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s62, 18 }), err);
-    if (err->exc) { m9ln = 473; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 501; goto L_hdl_m9t1; };
     { __typeof__(c) m9t6to;
     c = INT64_C(0);
     m9t6to = m9_sub_i64 (nc, INT64_C(1), err);
-    if (err->exc) { m9ln = 474; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 502; goto L_hdl_m9t1; };
     if (c <= m9t6to) for (;;) {
+      M9_YCHK ();
       { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s63, 7 }), (*(m9_sl_UTF8 *) m9_at (kinds.p, c, kinds.len, sizeof (m9_sl_UTF8), err)), err), ((m9_sl_UTF8){ (uint8_t *) m9s64, 9 }), err)) m9a73 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s63, 7 }), (*(m9_sl_UTF8 *) m9_at (kinds.p, c, kinds.len, sizeof (m9_sl_UTF8), err)), err), ((m9_sl_UTF8){ (uint8_t *) m9s64, 9 }), err);
-        if (err->exc) { m9ln = 474; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 502; goto L_hdl_m9t1; };
       DynStr_Append (&(d), &(scratch), m9a73, err);
-      if (err->exc) { m9ln = 474; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 502; goto L_hdl_m9t1; };
       }
       if ((uint64_t) m9t6to - (uint64_t) c < (uint64_t) 1) break;
       c += 1;
     } }
     DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s65, 20 }), err);
-    if (err->exc) { m9ln = 475; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 503; goto L_hdl_m9t1; };
     { __typeof__(i) m9t7to;
     i = INT64_C(0);
     m9t7to = m9_sub_i64 ((rows).len, INT64_C(1), err);
-    if (err->exc) { m9ln = 476; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 504; goto L_hdl_m9t1; };
     if (i <= m9t7to) for (;;) {
+      M9_YCHK ();
       { __typeof__((*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err))) m9a74 = (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err));
-        if (err->exc) { m9ln = 477; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 505; goto L_hdl_m9t1; };
       bool m9t8 = NbShow_RowGap (m9a74, n, err);
-      if (err->exc) { m9ln = 477; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 505; goto L_hdl_m9t1; };
       if (m9t8) {
         DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s66, 16 }), err);
-        if (err->exc) { m9ln = 478; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 506; goto L_hdl_m9t1; };
         { __typeof__(c) m9t9to;
         c = INT64_C(0);
         m9t9to = m9_sub_i64 (nc, INT64_C(1), err);
-        if (err->exc) { m9ln = 479; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 507; goto L_hdl_m9t1; };
         if (c <= m9t9to) for (;;) {
+          M9_YCHK ();
           DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s67, 12 }), err);
-          if (err->exc) { m9ln = 479; goto L_hdl_m9t1; };
+          if (err->exc) { m9ln = 507; goto L_hdl_m9t1; };
           if ((uint64_t) m9t9to - (uint64_t) c < (uint64_t) 1) break;
           c += 1;
         } }
         DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s68, 5 }), err);
-        if (err->exc) { m9ln = 480; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 508; goto L_hdl_m9t1; };
       } }
       { __typeof__((*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err))) m9a75 = (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err));
-        if (err->exc) { m9ln = 482; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 510; goto L_hdl_m9t1; };
       { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s69, 8 }), Fmt_I64Str (m9a75, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s70, 5 }), err)) m9a76 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s69, 8 }), Fmt_I64Str (m9a75, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s70, 5 }), err);
-        if (err->exc) { m9ln = 482; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 510; goto L_hdl_m9t1; };
       DynStr_Append (&(d), &(scratch), m9a76, err);
-      if (err->exc) { m9ln = 482; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 510; goto L_hdl_m9t1; };
       }
       }
       { __typeof__(c) m9t10to;
       c = INT64_C(0);
       m9t10to = m9_sub_i64 (nc, INT64_C(1), err);
-      if (err->exc) { m9ln = 483; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 511; goto L_hdl_m9t1; };
       if (c <= m9t10to) for (;;) {
-        { __typeof__((*(m9_sl_UTF8 *) m9_at (({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 483; goto L_hdl_m9t1; }; m9g; }).p, i, ({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 483; goto L_hdl_m9t1; }; m9g; }).len, sizeof (m9_sl_UTF8), err))) m9a77 = (*(m9_sl_UTF8 *) m9_at (({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 483; goto L_hdl_m9t1; }; m9g; }).p, i, ({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 483; goto L_hdl_m9t1; }; m9g; }).len, sizeof (m9_sl_UTF8), err));
-          if (err->exc) { m9ln = 483; goto L_hdl_m9t1; };
+        M9_YCHK ();
+        { __typeof__((*(m9_sl_UTF8 *) m9_at (({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 511; goto L_hdl_m9t1; }; m9g; }).p, i, ({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 511; goto L_hdl_m9t1; }; m9g; }).len, sizeof (m9_sl_UTF8), err))) m9a77 = (*(m9_sl_UTF8 *) m9_at (({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 511; goto L_hdl_m9t1; }; m9g; }).p, i, ({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 511; goto L_hdl_m9t1; }; m9g; }).len, sizeof (m9_sl_UTF8), err));
+          if (err->exc) { m9ln = 511; goto L_hdl_m9t1; };
         { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s71, 4 }), NbShow_Esc (m9a77, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s72, 5 }), err)) m9a78 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s71, 4 }), NbShow_Esc (m9a77, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s72, 5 }), err);
-          if (err->exc) { m9ln = 483; goto L_hdl_m9t1; };
+          if (err->exc) { m9ln = 511; goto L_hdl_m9t1; };
         DynStr_Append (&(d), &(scratch), m9a78, err);
-        if (err->exc) { m9ln = 483; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 511; goto L_hdl_m9t1; };
         }
         }
         if ((uint64_t) m9t10to - (uint64_t) c < (uint64_t) 1) break;
         c += 1;
       } }
       DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s73, 5 }), err);
-      if (err->exc) { m9ln = 484; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 512; goto L_hdl_m9t1; };
       if ((uint64_t) m9t7to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
     } }
     { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s74, 19 }), Fmt_I64Str (n, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s75, 8 }), err), Fmt_I64Str (nc, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s76, 12 }), err)) m9a79 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s74, 19 }), Fmt_I64Str (n, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s75, 8 }), err), Fmt_I64Str (nc, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s76, 12 }), err);
-      if (err->exc) { m9ln = 486; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 514; goto L_hdl_m9t1; };
     DynStr_Append (&(d), &(scratch), m9a79, err);
-    if (err->exc) { m9ln = 486; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 514; goto L_hdl_m9t1; };
     }
     err->res = m9res;
     m9ret = DynStr_View (d, err);
-    if (err->exc) { m9ln = 488; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 516; goto L_hdl_m9t1; };
     goto L_ret;
   }
   { __typeof__(m9_sub_i64 (n, INT64_C(1), err)) m9a80 = m9_sub_i64 (n, INT64_C(1), err);
-    if (err->exc) { m9ln = 494; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 522; goto L_hdl_m9t1; };
   { __typeof__(Fmt_I64Str (m9a80, err)) m9a81 = Fmt_I64Str (m9a80, err);
-    if (err->exc) { m9ln = 494; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 522; goto L_hdl_m9t1; };
   { __typeof__(iw) m9v = Text_BLen (m9a81, err);
-    if (err->exc) { m9ln = 494; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 522; goto L_hdl_m9t1; };
     iw = m9v;
   }
   }
@@ -1958,46 +2063,47 @@ static m9_sl_UTF8 NbShow_Render (Frame_Fr * f, m9_sl_I64 times, bool html, m9_st
   { __typeof__(c) m9t11to;
   c = INT64_C(0);
   m9t11to = m9_sub_i64 (nc, INT64_C(1), err);
-  if (err->exc) { m9ln = 496; goto L_hdl_m9t1; };
+  if (err->exc) { m9ln = 524; goto L_hdl_m9t1; };
   if (c <= m9t11to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, c, names.len, sizeof (m9_sl_UTF8), err))) m9a82 = (*(m9_sl_UTF8 *) m9_at (names.p, c, names.len, sizeof (m9_sl_UTF8), err));
-      if (err->exc) { m9ln = 497; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 525; goto L_hdl_m9t1; };
     { __typeof__((*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err))) m9v = Text_BLen (m9a82, err);
-      if (err->exc) { m9ln = 497; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 525; goto L_hdl_m9t1; };
       (*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err)) = m9v;
-      if (err->exc) { m9ln = 497; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 525; goto L_hdl_m9t1; };
     }
     }
     { __typeof__((*(m9_sl_UTF8 *) m9_at (kinds.p, c, kinds.len, sizeof (m9_sl_UTF8), err))) m9a83 = (*(m9_sl_UTF8 *) m9_at (kinds.p, c, kinds.len, sizeof (m9_sl_UTF8), err));
-      if (err->exc) { m9ln = 498; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 526; goto L_hdl_m9t1; };
     bool m9t12 = (Text_BLen (m9a83, err) > (*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err)));
-    if (err->exc) { m9ln = 498; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 526; goto L_hdl_m9t1; };
     if (m9t12) {
       { __typeof__((*(m9_sl_UTF8 *) m9_at (kinds.p, c, kinds.len, sizeof (m9_sl_UTF8), err))) m9a84 = (*(m9_sl_UTF8 *) m9_at (kinds.p, c, kinds.len, sizeof (m9_sl_UTF8), err));
-        if (err->exc) { m9ln = 498; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 526; goto L_hdl_m9t1; };
       { __typeof__((*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err))) m9v = Text_BLen (m9a84, err);
-        if (err->exc) { m9ln = 498; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 526; goto L_hdl_m9t1; };
         (*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err)) = m9v;
-        if (err->exc) { m9ln = 498; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 526; goto L_hdl_m9t1; };
       }
       }
     } }
     { __typeof__(i) m9t13to;
     i = INT64_C(0);
     m9t13to = m9_sub_i64 ((rows).len, INT64_C(1), err);
-    if (err->exc) { m9ln = 499; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 527; goto L_hdl_m9t1; };
     if (i <= m9t13to) for (;;) {
-      { __typeof__((*(m9_sl_UTF8 *) m9_at (({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 500; goto L_hdl_m9t1; }; m9g; }).p, i, ({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 500; goto L_hdl_m9t1; }; m9g; }).len, sizeof (m9_sl_UTF8), err))) m9a85 = (*(m9_sl_UTF8 *) m9_at (({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 500; goto L_hdl_m9t1; }; m9g; }).p, i, ({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 500; goto L_hdl_m9t1; }; m9g; }).len, sizeof (m9_sl_UTF8), err));
-        if (err->exc) { m9ln = 500; goto L_hdl_m9t1; };
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 528; goto L_hdl_m9t1; }; m9g; }).p, i, ({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 528; goto L_hdl_m9t1; }; m9g; }).len, sizeof (m9_sl_UTF8), err))) m9a85 = (*(m9_sl_UTF8 *) m9_at (({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 528; goto L_hdl_m9t1; }; m9g; }).p, i, ({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 528; goto L_hdl_m9t1; }; m9g; }).len, sizeof (m9_sl_UTF8), err));
+        if (err->exc) { m9ln = 528; goto L_hdl_m9t1; };
       bool m9t14 = (Text_BLen (m9a85, err) > (*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err)));
-      if (err->exc) { m9ln = 500; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 528; goto L_hdl_m9t1; };
       if (m9t14) {
-        { __typeof__((*(m9_sl_UTF8 *) m9_at (({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 500; goto L_hdl_m9t1; }; m9g; }).p, i, ({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 500; goto L_hdl_m9t1; }; m9g; }).len, sizeof (m9_sl_UTF8), err))) m9a86 = (*(m9_sl_UTF8 *) m9_at (({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 500; goto L_hdl_m9t1; }; m9g; }).p, i, ({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 500; goto L_hdl_m9t1; }; m9g; }).len, sizeof (m9_sl_UTF8), err));
-          if (err->exc) { m9ln = 500; goto L_hdl_m9t1; };
+        { __typeof__((*(m9_sl_UTF8 *) m9_at (({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 528; goto L_hdl_m9t1; }; m9g; }).p, i, ({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 528; goto L_hdl_m9t1; }; m9g; }).len, sizeof (m9_sl_UTF8), err))) m9a86 = (*(m9_sl_UTF8 *) m9_at (({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 528; goto L_hdl_m9t1; }; m9g; }).p, i, ({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 528; goto L_hdl_m9t1; }; m9g; }).len, sizeof (m9_sl_UTF8), err));
+          if (err->exc) { m9ln = 528; goto L_hdl_m9t1; };
         { __typeof__((*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err))) m9v = Text_BLen (m9a86, err);
-          if (err->exc) { m9ln = 500; goto L_hdl_m9t1; };
+          if (err->exc) { m9ln = 528; goto L_hdl_m9t1; };
           (*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err)) = m9v;
-          if (err->exc) { m9ln = 500; goto L_hdl_m9t1; };
+          if (err->exc) { m9ln = 528; goto L_hdl_m9t1; };
         }
         }
       } }
@@ -2008,38 +2114,39 @@ static m9_sl_UTF8 NbShow_Render (Frame_Fr * f, m9_sl_I64 times, bool html, m9_st
     c += 1;
   } }
   { __typeof__(NbShow_PadLeft (((m9_sl_UTF8){ NULL, 0 }), iw, err)) m9a87 = NbShow_PadLeft (((m9_sl_UTF8){ NULL, 0 }), iw, err);
-    if (err->exc) { m9ln = 503; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 531; goto L_hdl_m9t1; };
   DynStr_Append (&(d), &(scratch), m9a87, err);
-  if (err->exc) { m9ln = 503; goto L_hdl_m9t1; };
+  if (err->exc) { m9ln = 531; goto L_hdl_m9t1; };
   }
   { __typeof__(c) m9t15to;
   c = INT64_C(0);
   m9t15to = m9_sub_i64 (nc, INT64_C(1), err);
-  if (err->exc) { m9ln = 504; goto L_hdl_m9t1; };
+  if (err->exc) { m9ln = 532; goto L_hdl_m9t1; };
   if (c <= m9t15to) for (;;) {
+    M9_YCHK ();
     bool m9t16 = (*(bool *) m9_at (left.p, c, left.len, sizeof (bool), err));
-    if (err->exc) { m9ln = 505; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 533; goto L_hdl_m9t1; };
     if (m9t16) {
       { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, c, names.len, sizeof (m9_sl_UTF8), err))) m9a88 = (*(m9_sl_UTF8 *) m9_at (names.p, c, names.len, sizeof (m9_sl_UTF8), err));
-        if (err->exc) { m9ln = 505; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 533; goto L_hdl_m9t1; };
       { __typeof__((*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err))) m9a89 = (*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err));
-        if (err->exc) { m9ln = 505; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 533; goto L_hdl_m9t1; };
       { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s77, 2 }), NbShow_PadRight (m9a88, m9a89, err), err)) m9a90 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s77, 2 }), NbShow_PadRight (m9a88, m9a89, err), err);
-        if (err->exc) { m9ln = 505; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 533; goto L_hdl_m9t1; };
       DynStr_Append (&(d), &(scratch), m9a90, err);
-      if (err->exc) { m9ln = 505; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 533; goto L_hdl_m9t1; };
       }
       }
       }
     } else {
       { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, c, names.len, sizeof (m9_sl_UTF8), err))) m9a91 = (*(m9_sl_UTF8 *) m9_at (names.p, c, names.len, sizeof (m9_sl_UTF8), err));
-        if (err->exc) { m9ln = 506; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 534; goto L_hdl_m9t1; };
       { __typeof__((*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err))) m9a92 = (*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err));
-        if (err->exc) { m9ln = 506; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 534; goto L_hdl_m9t1; };
       { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s78, 2 }), NbShow_PadLeft (m9a91, m9a92, err), err)) m9a93 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s78, 2 }), NbShow_PadLeft (m9a91, m9a92, err), err);
-        if (err->exc) { m9ln = 506; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 534; goto L_hdl_m9t1; };
       DynStr_Append (&(d), &(scratch), m9a93, err);
-      if (err->exc) { m9ln = 506; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 534; goto L_hdl_m9t1; };
       }
       }
       }
@@ -2048,40 +2155,41 @@ static m9_sl_UTF8 NbShow_Render (Frame_Fr * f, m9_sl_I64 times, bool html, m9_st
     c += 1;
   } }
   DynStr_AppendChar (&(d), &(scratch), 10u, err);
-  if (err->exc) { m9ln = 508; goto L_hdl_m9t1; };
+  if (err->exc) { m9ln = 536; goto L_hdl_m9t1; };
   { __typeof__(NbShow_PadLeft (((m9_sl_UTF8){ NULL, 0 }), iw, err)) m9a94 = NbShow_PadLeft (((m9_sl_UTF8){ NULL, 0 }), iw, err);
-    if (err->exc) { m9ln = 509; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 537; goto L_hdl_m9t1; };
   DynStr_Append (&(d), &(scratch), m9a94, err);
-  if (err->exc) { m9ln = 509; goto L_hdl_m9t1; };
+  if (err->exc) { m9ln = 537; goto L_hdl_m9t1; };
   }
   { __typeof__(c) m9t17to;
   c = INT64_C(0);
   m9t17to = m9_sub_i64 (nc, INT64_C(1), err);
-  if (err->exc) { m9ln = 510; goto L_hdl_m9t1; };
+  if (err->exc) { m9ln = 538; goto L_hdl_m9t1; };
   if (c <= m9t17to) for (;;) {
+    M9_YCHK ();
     bool m9t18 = (*(bool *) m9_at (left.p, c, left.len, sizeof (bool), err));
-    if (err->exc) { m9ln = 511; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 539; goto L_hdl_m9t1; };
     if (m9t18) {
       { __typeof__((*(m9_sl_UTF8 *) m9_at (kinds.p, c, kinds.len, sizeof (m9_sl_UTF8), err))) m9a95 = (*(m9_sl_UTF8 *) m9_at (kinds.p, c, kinds.len, sizeof (m9_sl_UTF8), err));
-        if (err->exc) { m9ln = 511; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 539; goto L_hdl_m9t1; };
       { __typeof__((*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err))) m9a96 = (*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err));
-        if (err->exc) { m9ln = 511; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 539; goto L_hdl_m9t1; };
       { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s79, 2 }), NbShow_PadRight (m9a95, m9a96, err), err)) m9a97 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s79, 2 }), NbShow_PadRight (m9a95, m9a96, err), err);
-        if (err->exc) { m9ln = 511; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 539; goto L_hdl_m9t1; };
       DynStr_Append (&(d), &(scratch), m9a97, err);
-      if (err->exc) { m9ln = 511; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 539; goto L_hdl_m9t1; };
       }
       }
       }
     } else {
       { __typeof__((*(m9_sl_UTF8 *) m9_at (kinds.p, c, kinds.len, sizeof (m9_sl_UTF8), err))) m9a98 = (*(m9_sl_UTF8 *) m9_at (kinds.p, c, kinds.len, sizeof (m9_sl_UTF8), err));
-        if (err->exc) { m9ln = 512; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 540; goto L_hdl_m9t1; };
       { __typeof__((*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err))) m9a99 = (*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err));
-        if (err->exc) { m9ln = 512; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 540; goto L_hdl_m9t1; };
       { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s80, 2 }), NbShow_PadLeft (m9a98, m9a99, err), err)) m9a100 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s80, 2 }), NbShow_PadLeft (m9a98, m9a99, err), err);
-        if (err->exc) { m9ln = 512; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 540; goto L_hdl_m9t1; };
       DynStr_Append (&(d), &(scratch), m9a100, err);
-      if (err->exc) { m9ln = 512; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 540; goto L_hdl_m9t1; };
       }
       }
       }
@@ -2090,64 +2198,66 @@ static m9_sl_UTF8 NbShow_Render (Frame_Fr * f, m9_sl_I64 times, bool html, m9_st
     c += 1;
   } }
   DynStr_AppendChar (&(d), &(scratch), 10u, err);
-  if (err->exc) { m9ln = 514; goto L_hdl_m9t1; };
+  if (err->exc) { m9ln = 542; goto L_hdl_m9t1; };
   { __typeof__(i) m9t19to;
   i = INT64_C(0);
   m9t19to = m9_sub_i64 ((rows).len, INT64_C(1), err);
-  if (err->exc) { m9ln = 515; goto L_hdl_m9t1; };
+  if (err->exc) { m9ln = 543; goto L_hdl_m9t1; };
   if (i <= m9t19to) for (;;) {
+    M9_YCHK ();
     { __typeof__((*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err))) m9a101 = (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err));
-      if (err->exc) { m9ln = 516; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 544; goto L_hdl_m9t1; };
     bool m9t20 = NbShow_RowGap (m9a101, n, err);
-    if (err->exc) { m9ln = 516; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 544; goto L_hdl_m9t1; };
     if (m9t20) {
       { __typeof__(NbShow_PadLeft (((m9_sl_UTF8){ (uint8_t *) m9s81, 3 }), iw, err)) m9a102 = NbShow_PadLeft (((m9_sl_UTF8){ (uint8_t *) m9s81, 3 }), iw, err);
-        if (err->exc) { m9ln = 517; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 545; goto L_hdl_m9t1; };
       DynStr_Append (&(d), &(scratch), m9a102, err);
-      if (err->exc) { m9ln = 517; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 545; goto L_hdl_m9t1; };
       }
       DynStr_AppendChar (&(d), &(scratch), 10u, err);
-      if (err->exc) { m9ln = 518; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 546; goto L_hdl_m9t1; };
     } }
     { __typeof__((*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err))) m9a103 = (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err));
-      if (err->exc) { m9ln = 520; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 548; goto L_hdl_m9t1; };
     { __typeof__(Fmt_I64Str (m9a103, err)) m9a104 = Fmt_I64Str (m9a103, err);
-      if (err->exc) { m9ln = 520; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 548; goto L_hdl_m9t1; };
     { __typeof__(NbShow_PadLeft (m9a104, iw, err)) m9a105 = NbShow_PadLeft (m9a104, iw, err);
-      if (err->exc) { m9ln = 520; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 548; goto L_hdl_m9t1; };
     DynStr_Append (&(d), &(scratch), m9a105, err);
-    if (err->exc) { m9ln = 520; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 548; goto L_hdl_m9t1; };
     }
     }
     }
     { __typeof__(c) m9t21to;
     c = INT64_C(0);
     m9t21to = m9_sub_i64 (nc, INT64_C(1), err);
-    if (err->exc) { m9ln = 521; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 549; goto L_hdl_m9t1; };
     if (c <= m9t21to) for (;;) {
+      M9_YCHK ();
       bool m9t22 = (*(bool *) m9_at (left.p, c, left.len, sizeof (bool), err));
-      if (err->exc) { m9ln = 522; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 550; goto L_hdl_m9t1; };
       if (m9t22) {
-        { __typeof__((*(m9_sl_UTF8 *) m9_at (({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 522; goto L_hdl_m9t1; }; m9g; }).p, i, ({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 522; goto L_hdl_m9t1; }; m9g; }).len, sizeof (m9_sl_UTF8), err))) m9a106 = (*(m9_sl_UTF8 *) m9_at (({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 522; goto L_hdl_m9t1; }; m9g; }).p, i, ({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 522; goto L_hdl_m9t1; }; m9g; }).len, sizeof (m9_sl_UTF8), err));
-          if (err->exc) { m9ln = 522; goto L_hdl_m9t1; };
+        { __typeof__((*(m9_sl_UTF8 *) m9_at (({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 550; goto L_hdl_m9t1; }; m9g; }).p, i, ({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 550; goto L_hdl_m9t1; }; m9g; }).len, sizeof (m9_sl_UTF8), err))) m9a106 = (*(m9_sl_UTF8 *) m9_at (({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 550; goto L_hdl_m9t1; }; m9g; }).p, i, ({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 550; goto L_hdl_m9t1; }; m9g; }).len, sizeof (m9_sl_UTF8), err));
+          if (err->exc) { m9ln = 550; goto L_hdl_m9t1; };
         { __typeof__((*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err))) m9a107 = (*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err));
-          if (err->exc) { m9ln = 522; goto L_hdl_m9t1; };
+          if (err->exc) { m9ln = 550; goto L_hdl_m9t1; };
         { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s82, 2 }), NbShow_PadRight (m9a106, m9a107, err), err)) m9a108 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s82, 2 }), NbShow_PadRight (m9a106, m9a107, err), err);
-          if (err->exc) { m9ln = 522; goto L_hdl_m9t1; };
+          if (err->exc) { m9ln = 550; goto L_hdl_m9t1; };
         DynStr_Append (&(d), &(scratch), m9a108, err);
-        if (err->exc) { m9ln = 522; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 550; goto L_hdl_m9t1; };
         }
         }
         }
       } else {
-        { __typeof__((*(m9_sl_UTF8 *) m9_at (({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 523; goto L_hdl_m9t1; }; m9g; }).p, i, ({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 523; goto L_hdl_m9t1; }; m9g; }).len, sizeof (m9_sl_UTF8), err))) m9a109 = (*(m9_sl_UTF8 *) m9_at (({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 523; goto L_hdl_m9t1; }; m9g; }).p, i, ({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 523; goto L_hdl_m9t1; }; m9g; }).len, sizeof (m9_sl_UTF8), err));
-          if (err->exc) { m9ln = 523; goto L_hdl_m9t1; };
+        { __typeof__((*(m9_sl_UTF8 *) m9_at (({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 551; goto L_hdl_m9t1; }; m9g; }).p, i, ({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 551; goto L_hdl_m9t1; }; m9g; }).len, sizeof (m9_sl_UTF8), err))) m9a109 = (*(m9_sl_UTF8 *) m9_at (({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 551; goto L_hdl_m9t1; }; m9g; }).p, i, ({ m9_sl_m9_sl_UTF8 m9g = ((*(m9_sl_m9_sl_UTF8 *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_UTF8), err))); if (err->exc) { m9ln = 551; goto L_hdl_m9t1; }; m9g; }).len, sizeof (m9_sl_UTF8), err));
+          if (err->exc) { m9ln = 551; goto L_hdl_m9t1; };
         { __typeof__((*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err))) m9a110 = (*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err));
-          if (err->exc) { m9ln = 523; goto L_hdl_m9t1; };
+          if (err->exc) { m9ln = 551; goto L_hdl_m9t1; };
         { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s83, 2 }), NbShow_PadLeft (m9a109, m9a110, err), err)) m9a111 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s83, 2 }), NbShow_PadLeft (m9a109, m9a110, err), err);
-          if (err->exc) { m9ln = 523; goto L_hdl_m9t1; };
+          if (err->exc) { m9ln = 551; goto L_hdl_m9t1; };
         DynStr_Append (&(d), &(scratch), m9a111, err);
-        if (err->exc) { m9ln = 523; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 551; goto L_hdl_m9t1; };
         }
         }
         }
@@ -2156,18 +2266,18 @@ static m9_sl_UTF8 NbShow_Render (Frame_Fr * f, m9_sl_I64 times, bool html, m9_st
       c += 1;
     } }
     DynStr_AppendChar (&(d), &(scratch), 10u, err);
-    if (err->exc) { m9ln = 525; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 553; goto L_hdl_m9t1; };
     if ((uint64_t) m9t19to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, Fmt_I64Str (n, err), ((m9_sl_UTF8){ (uint8_t *) m9s84, 8 }), err), Fmt_I64Str (nc, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s85, 8 }), err)) m9a112 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, Fmt_I64Str (n, err), ((m9_sl_UTF8){ (uint8_t *) m9s84, 8 }), err), Fmt_I64Str (nc, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s85, 8 }), err);
-    if (err->exc) { m9ln = 527; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 555; goto L_hdl_m9t1; };
   DynStr_Append (&(d), &(scratch), m9a112, err);
-  if (err->exc) { m9ln = 527; goto L_hdl_m9t1; };
+  if (err->exc) { m9ln = 555; goto L_hdl_m9t1; };
   }
   err->res = m9res;
   m9ret = DynStr_View (d, err);
-  if (err->exc) { m9ln = 528; goto L_hdl_m9t1; };
+  if (err->exc) { m9ln = 556; goto L_hdl_m9t1; };
   goto L_ret;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -2213,18 +2323,18 @@ static void NbShow_Rich (m9_sl_UTF8 text, m9_sl_UTF8 html, m9_state *err)
   static const char m9pn[] = "NbShow.Rich"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   Io_WriteLineUtf (text, err);
-  if (err->exc) { m9ln = 564; goto L_ret; };
+  if (err->exc) { m9ln = 592; goto L_ret; };
   { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ NULL, 0 }), m9_utf_of_char (err->res, NbShow_Mark, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s89, 7 }), err), m9_utf_of_char (err->res, NbShow_Mark, err), err)) m9a113 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ NULL, 0 }), m9_utf_of_char (err->res, NbShow_Mark, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s89, 7 }), err), m9_utf_of_char (err->res, NbShow_Mark, err), err);
-    if (err->exc) { m9ln = 565; goto L_ret; };
+    if (err->exc) { m9ln = 593; goto L_ret; };
   Io_WriteLineUtf (m9a113, err);
-  if (err->exc) { m9ln = 565; goto L_ret; };
+  if (err->exc) { m9ln = 593; goto L_ret; };
   }
   Io_WriteLineUtf (html, err);
-  if (err->exc) { m9ln = 566; goto L_ret; };
+  if (err->exc) { m9ln = 594; goto L_ret; };
   { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ NULL, 0 }), m9_utf_of_char (err->res, NbShow_Mark, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s90, 8 }), err), m9_utf_of_char (err->res, NbShow_Mark, err), err)) m9a114 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ NULL, 0 }), m9_utf_of_char (err->res, NbShow_Mark, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s90, 8 }), err), m9_utf_of_char (err->res, NbShow_Mark, err), err);
-    if (err->exc) { m9ln = 567; goto L_ret; };
+    if (err->exc) { m9ln = 595; goto L_ret; };
   Io_WriteLineUtf (m9a114, err);
-  if (err->exc) { m9ln = 567; goto L_ret; };
+  if (err->exc) { m9ln = 595; goto L_ret; };
   }
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);

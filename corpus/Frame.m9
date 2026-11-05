@@ -188,22 +188,23 @@ PROCEDURE WriteCsv (f: PTR Fr ; RO path: STR)
    These are integer kind codes and typed accessors, written when a
    caller in another module could not CASE over Frame.Data or
    Frame.Conv (the generators could not type a cross-module variant
-   selector).  That gap closed 2026-09-15 (`corpus/KindUse.m9`); the
-   face stays because Parquet.m9 is built on it.  Retiring it means
-   moving Parquet's ColPhys/ColConv onto the variants, ledgered in
-   `docs/p3-ledger.md` as a workaround left standing. *)
+   selector).  That gap closed 2026-09-15 (`corpus/KindUse.m9`).  The
+   kind codes and KindOf are DEPRECATED since 0.27.0 (report par 3.9)
+   and go in the release after it: CASE over a column's Data says the
+   same.  The typed accessors below stay. *)
 
 CONST
-  KindF64 = 0 ;
-  KindF32 = 1 ;
-  KindI64 = 2 ;
-  KindI32 = 3 ;
-  KindI16 = 4 ;
-  KindByte = 5 ;
-  KindStr = 6 ;
-  KindBool = 7 ;
+  KindF64 [DEPRECATED 'Frame.Data.F64s, by CASE over Frame.GetCol (f, name).data'] = 0 ;
+  KindF32 [DEPRECATED 'Frame.Data.F32s, by CASE over Frame.GetCol (f, name).data'] = 1 ;
+  KindI64 [DEPRECATED 'Frame.Data.I64s, by CASE over Frame.GetCol (f, name).data'] = 2 ;
+  KindI32 [DEPRECATED 'Frame.Data.I32s, by CASE over Frame.GetCol (f, name).data'] = 3 ;
+  KindI16 [DEPRECATED 'Frame.Data.I16s, by CASE over Frame.GetCol (f, name).data'] = 4 ;
+  KindByte [DEPRECATED 'Frame.Data.Bytes, by CASE over Frame.GetCol (f, name).data'] = 5 ;
+  KindStr [DEPRECATED 'Frame.Data.Strs, by CASE over Frame.GetCol (f, name).data'] = 6 ;
+  KindBool [DEPRECATED 'Frame.Data.Bools, by CASE over Frame.GetCol (f, name).data'] = 7 ;
 
-PROCEDURE KindOf (f: PTR Fr ; RO name: STR) : I64 RAISES Unknown ;
+PROCEDURE KindOf (f: PTR Fr ; RO name: STR) : I64 RAISES Unknown
+  [DEPRECATED 'CASE Frame.GetCol (f, name).data OF | Frame.Data.F64s (v, m) : ...'] ;
 PROCEDURE ColI32 (f: PTR Fr ; RO name: STR) : RO SLICE OF I32
   RAISES Unknown, WrongType ;
 PROCEDURE ColI16 (f: PTR Fr ; RO name: STR) : RO SLICE OF I16
@@ -291,18 +292,21 @@ PROCEDURE TsRes (ts: PTR Ts) : I64 ;
 PROCEDURE TsConv (ts: PTR Ts) : Conv ;
 PROCEDURE TsDescr (ts: PTR Ts) : STR ;
 
-(* These are the six reducers, as functions, because a caller in
-   another module cannot spell Frame.How.Mean today (the cross-module
-   payload-less constructor gap, logged in Csv.m9 too). *)
-PROCEDURE HowMean () : How ;
-PROCEDURE HowSum () : How ;
-PROCEDURE HowLo () : How ;
-PROCEDURE HowHi () : How ;
-PROCEDURE HowFirst () : How ;
-PROCEDURE HowLast () : How ;
-PROCEDURE ConvStart () : Conv ;
-PROCEDURE ConvEnd () : Conv ;
-PROCEDURE ConvMid () : Conv ;
+(* These are the six reducers and three conventions as functions,
+   written when a caller in another module could not spell
+   Frame.How.Mean (the cross-module payload-less constructor gap,
+   closed 2026-09-15).  They are DEPRECATED since 0.27.0 (report par
+   3.9) and go in the release after it; runtime/test/frame_driver.c
+   then builds them in C. *)
+PROCEDURE HowMean () : How [DEPRECATED 'Frame.How.Mean'] ;
+PROCEDURE HowSum () : How [DEPRECATED 'Frame.How.Sum'] ;
+PROCEDURE HowLo () : How [DEPRECATED 'Frame.How.Lo'] ;
+PROCEDURE HowHi () : How [DEPRECATED 'Frame.How.Hi'] ;
+PROCEDURE HowFirst () : How [DEPRECATED 'Frame.How.First'] ;
+PROCEDURE HowLast () : How [DEPRECATED 'Frame.How.Last'] ;
+PROCEDURE ConvStart () : Conv [DEPRECATED 'Frame.Conv.AtStart'] ;
+PROCEDURE ConvEnd () : Conv [DEPRECATED 'Frame.Conv.AtEnd'] ;
+PROCEDURE ConvMid () : Conv [DEPRECATED 'Frame.Conv.AtMid'] ;
 
 PROCEDURE Average (VAR pool: POOL ; KEPT ts: PTR Ts ; toRes: I64 ;
                    how: SLICE OF How ; minCount: I64)

@@ -1,0 +1,38 @@
+// Shapes is written by hand in .m9f.  It holds the declarations and
+// blocks that Breaks does not: a constant table, a loop with exit, a
+// for, a names_ escape, and a module of its own, Tally.  Shapes.out
+// holds what it prints.
+module Shapes
+
+import Io, Fmt, Tally
+
+const
+  Sizes = [3, 12, 150, 7, 99, 1000]
+  Limit = 500
+
+var
+  c : Tally.Counts
+  i, to_ : I64        // to is a keyword, so the name is to_
+  sum : I64
+
+{
+  c = Tally.Counts (0, 0, 0)
+  to_ = LEN (Sizes) - 1
+  for i = 0 to to_ {
+    Tally.Add (c, Sizes[i])
+  }
+  Io.WriteLine ('small ' + Fmt.I64Str (c.small) + ', big ' + Fmt.I64Str (c.big)
+                + ', other ' + Fmt.I64Str (c.in_))
+  Io.WriteLine ('total ' + Fmt.I64Str (Tally.Total (c)))
+
+  // loop runs until exit.  A % b is M9's A MOD B.
+  sum = 0
+  i = 0
+  loop {
+    if sum > Limit { exit }
+    sum = sum + Sizes[i % LEN (Sizes)]
+    i = i + 1
+  }
+  Io.WriteLine ('passed ' + Fmt.I64Str (Limit) + ' after ' + Fmt.I64Str (i)
+                + ' sizes, at ' + Fmt.I64Str (sum))
+} Shapes.

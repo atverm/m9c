@@ -1,0 +1,15 @@
+(* EXPECT: [DEPRECATED] says what to write instead: [DEPRECATED 'Mod.New (x)'] *)
+DEFINITION MODULE m ;
+(* A deprecation note tells the caller what to write instead, and the
+   attribute is where that text comes from (par 3.9, 2026-11-05).  The
+   legal form comes first: Twice names its replacement.  Thrice names
+   nothing, and its callers would learn only that it is going. *)
+PROCEDURE Twice (n: I64) : I64 [DEPRECATED 'm.Double (n)'] ;
+PROCEDURE Double (n: I64) : I64 ;
+PROCEDURE Thrice (n: I64) : I64 [DEPRECATED] ;
+END m.
+IMPLEMENTATION MODULE m ;
+PROCEDURE Twice (n: I64) : I64 = BEGIN RETURN n + n END Twice ;
+PROCEDURE Double (n: I64) : I64 = BEGIN RETURN n + n END Double ;
+PROCEDURE Thrice (n: I64) : I64 = BEGIN RETURN n + n + n END Thrice ;
+END m.

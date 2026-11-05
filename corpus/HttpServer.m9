@@ -22,8 +22,12 @@ DEFINITION MODULE HttpServer ;
    A HANDLER MAY RAISE ValueRange, and a handler that raises nothing
    fits the type as well (report par 2.2.3).  Anything that escapes
    it costs that one request a 500 and is counted; it never costs the
-   process.  That covers ValueRange, and IndexError, Overflow and
-   OutOfMemory, which the checker does not account for.  A procedure
+   process.  That covers ValueRange, and IndexError, Overflow,
+   OutOfMemory and Poisoned, which the checker does not account for.
+   A handler that crashes inside a monitor of the program's poisons
+   it (report par 6): every later request through it is a 500, until
+   the program rebuilds it with a [RESET] procedure, as SrvFix's
+   /count does.  A procedure
    value cannot capture.  So a handler's context is module state the
    program sets before Run (read-only from then on), state behind the
    program's own MONITOR, or state indexed by Request.worker.
@@ -99,7 +103,19 @@ DEFINITION MODULE HttpServer ;
    answered, refusals included, is one line through Logger.Msg at
    Info: `http method=GET path=/x status=200 bytes=512 ms=3
    client=10.0.0.7 worker=2`.  The line stays whole even when every
-   worker logs at once.                                              *)
+   worker logs at once.
+
+   CONNECTIONS AS TASKS (Config.tasks, 2026-11-02; stage 3 of
+   docs/task-plan.md).  Each accepted connection gets a TASK of its
+   own, up to Config.maxOpen at once; over it the answer is 503, as
+   for a full ring.  A connection waiting for its next request parks
+   in the poller and holds no thread, so 10,000 kept connections cost
+   memory, not threads.  workers keeps its meaning for a handler: at
+   most that many run at once, and each holds a worker's number
+   (Request.worker) from the handler to the last octet sent.  So one
+   database connection per worker is still right.  A refusal before
+   any handler ran logs worker=-1.  On Windows a TASK is a THREAD,
+   so there tasks is for tests, not for 10,000 connections. *)
 
 EXCEPTION
   BindError (RO msg: STR) ;
@@ -170,7 +186,14 @@ TYPE
     port : I64 ;               (* The server listens on 127.0.0.1: the
                                   runtime's contract.  A reverse proxy
                                   faces out. *)
-    workers : I64 ;            (* 1 .. MaxWorkers *)
+    workers : I64 ;            (* 1 .. MaxWorkers.  With tasks, set it to
+                                  the requests expected at once: a
+                                  connection that waits for a worker's
+                                  number waits in a monitor, and each
+                                  request's end wakes every one waiting.
+                                  64 connections on 8 took 164 us of CPU
+                                  a request on ct121, on 64 took 64 us
+                                  (2026-11-03). *)
     queue : I64 ;              (* accepted connections waiting for a
                                   worker, 1 .. MaxQueue.  Over it, the
                                   answer is 503. *)
@@ -199,6 +222,17 @@ TYPE
                                   default) keeps none.  A worker gives
                                   them back when the ring is empty.
                                   System.KeepAtMost says more. *)
+    tasks : BOOL ;             (* serve each connection in a TASK of its
+                                  own instead of on a worker thread;
+                                  FALSE (the default) keeps the
+                                  threads.  workers is then how many
+                                  handlers run at once. *)
+    maxOpen : I64 ;            (* with tasks, the connections open at
+                                  once; over it, the answer is 503.
+                                  10,000 by default.  Such a server
+                                  wants a backlog of thousands too:
+                                  with 128, Linux drops a burst's SYNs,
+                                  and each costs its client a second. *)
   END ;
 
   Stats = RECORD
@@ -476,28 +510,47 @@ TYPE
     frozen : BOOL ;
   END ;
 
+  (* Q is the ring between the accepting thread and the workers.  With
+     cfg.tasks it holds the handler tokens and the open count instead.
+     Either way, tot sums each worker's or connection's Stats as it
+     ends. *)
   Q = MONITOR RECORD
     fds : ARRAY 1024 OF I64 ;
     head, tail, count, cap : I64 ;
     closing : BOOL ;
     exited : I64 ;
+    free : ARRAY 64 OF I64 ;   (* the tokens not taken *)
+    nfree : I64 ;
+    open : I64 ;               (* connection tasks running *)
+    tot : Stats ;
   END ;
 
-  Srv = RECORD
-    q : Q ;
-    r : PTR Router ;           (* frozen: read only *)
-    cfg : Config ;
-    st : ARRAY 64 OF Stats ;   (* one per worker: no shared writes *)
-  END ;
-
+  (* A Worker is a worker thread's, or with cfg.tasks one connection
+     slot's.  k is the worker's number.  A connection takes a token
+     for k while its handler runs, and holds -1 between requests. *)
   Worker = RECORD
     s : PTR Srv ;
     k : I64 ;
     last : I64 ;               (* the status the last answer went with *)
+    fd : I64 ;                 (* the connection, with cfg.tasks *)
+    slot : I64 ;               (* its index in Srv.ws *)
+    st : Stats ;               (* its own: no shared writes *)
   END [SHARABLE] ;
 
   (* WorkerP is the one pointer-shaped argument a THREAD may take. *)
   WorkerP = PTR Worker ;
+
+  (* With cfg.tasks, ws holds maxOpen Workers made once, and a
+     connection's task takes a free one.  So a server that runs for
+     months allocates nothing per connection. *)
+  Srv = RECORD
+    q : Q ;
+    r : PTR Router ;           (* frozen: read only *)
+    cfg : Config ;
+    ws : SLICE OF WorkerP ;
+    slots : SLICE OF I64 ;     (* the free slots, below LEN - q.open;
+                                  touched only by Q's procedures *)
+  END ;
 
   (* Conn is one connection's read side.  cb[0 .. have) holds the
      octets that have arrived and are not yet consumed.  A request is
@@ -814,6 +867,8 @@ BEGIN
   c.accessLog := FALSE ;
   c.signals := TRUE ;
   c.keepBytes := 0 ;
+  c.tasks := FALSE ;
+  c.maxOpen := 10000 ;
   RETURN c
 END Defaults ;
 
@@ -872,11 +927,85 @@ BEGIN
   SIGNAL (q)
 END Shut ;
 
-PROCEDURE Exited (VAR q: Q) =
+PROCEDURE AddStats (VAR to: Stats ; RO st: Stats) =
 BEGIN
+  to.requests := to.requests + st.requests ;
+  to.faults := to.faults + st.faults ;
+  to.s2xx := to.s2xx + st.s2xx ;
+  to.s3xx := to.s3xx + st.s3xx ;
+  to.s4xx := to.s4xx + st.s4xx ;
+  to.s5xx := to.s5xx + st.s5xx ;
+  to.bytesOut := to.bytesOut + st.bytesOut
+END AddStats ;
+
+PROCEDURE Exited (VAR q: Q ; RO st: Stats) =
+BEGIN
+  AddStats (q.tot, st) ;
   q.exited := q.exited + 1 ;
   SIGNAL (q)
 END Exited ;
+
+PROCEDURE Totals (VAR q: Q ; VAR st: Stats) =
+BEGIN
+  AddStats (st, q.tot)
+END Totals ;
+
+(* ---- the tokens and the open count, with cfg.tasks ---------------- *)
+
+PROCEDURE SetTokens (VAR q: Q ; n: I64 ; VAR slots: SLICE OF I64) =
+VAR k : I64 ;
+BEGIN
+  FOR k := 0 TO n - 1 DO q.free[k] := k END ;
+  q.nfree := n ;
+  FOR k := 0 TO LEN (slots) - 1 DO slots[k] := k END ;
+  q.open := 0
+END SetTokens ;
+
+PROCEDURE TakeToken (VAR q: Q) : I64 =
+  (* TakeToken answers a worker number no other handler holds now,
+     and waits for one when all are taken. *)
+BEGIN
+  WHILE q.nfree = 0 DO
+    WAIT (q)
+  END ;
+  q.nfree := q.nfree - 1 ;
+  RETURN q.free[q.nfree]
+END TakeToken ;
+
+PROCEDURE GiveToken (VAR q: Q ; k: I64) =
+BEGIN
+  q.free[q.nfree] := k ;
+  q.nfree := q.nfree + 1 ;
+  SIGNAL (q)
+END GiveToken ;
+
+PROCEDURE Opened (VAR q: Q ; VAR slots: SLICE OF I64) : I64 =
+  (* Opened answers a free connection slot, or -1 when maxOpen are
+     open: that connection is the accepting thread's 503. *)
+BEGIN
+  IF q.open >= LEN (slots) THEN RETURN -1 END ;
+  q.open := q.open + 1 ;
+  RETURN slots[LEN (slots) - q.open]
+END Opened ;
+
+PROCEDURE Closed (VAR q: Q ; VAR slots: SLICE OF I64 ; slot: I64 ;
+                  RO st: Stats) : I64 =
+  (* Closed gives a connection's slot back, adds its counts, and
+     answers how many are still open. *)
+BEGIN
+  AddStats (q.tot, st) ;
+  slots[LEN (slots) - q.open] := slot ;
+  q.open := q.open - 1 ;
+  SIGNAL (q) ;
+  RETURN q.open
+END Closed ;
+
+PROCEDURE AwaitClosed (VAR q: Q) =
+BEGIN
+  WHILE q.open > 0 DO
+    WAIT (q)
+  END
+END AwaitClosed ;
 
 PROCEDURE AwaitExits (VAR q: Q ; n: I64) =
 BEGIN
@@ -1271,12 +1400,12 @@ END Head ;
 PROCEDURE Tally (VAR w: Worker ; status: I64) =
 BEGIN
   w.last := status ;
-  IF status < 300 THEN w.s.st[w.k].s2xx := w.s.st[w.k].s2xx + 1
-  ELSIF status < 400 THEN w.s.st[w.k].s3xx := w.s.st[w.k].s3xx + 1
-  ELSIF status < 500 THEN w.s.st[w.k].s4xx := w.s.st[w.k].s4xx + 1
-  ELSE w.s.st[w.k].s5xx := w.s.st[w.k].s5xx + 1
+  IF status < 300 THEN w.st.s2xx := w.st.s2xx + 1
+  ELSIF status < 400 THEN w.st.s3xx := w.st.s3xx + 1
+  ELSIF status < 500 THEN w.st.s4xx := w.st.s4xx + 1
+  ELSE w.st.s5xx := w.st.s5xx + 1
   END ;
-  w.s.st[w.k].requests := w.s.st[w.k].requests + 1
+  w.st.requests := w.st.requests + 1
 END Tally ;
 
 PROCEDURE SendBody (VAR w: Worker ; VAR c: Conn ; status: I64 ; RO ctype: STR ;
@@ -1290,7 +1419,7 @@ BEGIN
   ok := Head (c.fd, status, ctype, headers, extra, LEN (body), keep, keepAlive10) ;
   IF ok AND NOT head AND NOT NoBody (status) THEN
     ok := WriteAll (c.fd, body) ;
-    IF ok THEN w.s.st[w.k].bytesOut := w.s.st[w.k].bytesOut + LEN (body) END
+    IF ok THEN w.st.bytesOut := w.st.bytesOut + LEN (body) END
   END ;
   Tally (w, status) ;
   RETURN ok
@@ -1454,7 +1583,7 @@ BEGIN
       RETURN FALSE
   END ;
   IF LEN (b) # n OR NOT WriteAll (fd, b) THEN RETURN FALSE END ;
-  w.s.st[w.k].bytesOut := w.s.st[w.k].bytesOut + n ;
+  w.st.bytesOut := w.st.bytesOut + n ;
   RETURN TRUE
 END FilePiece ;
 
@@ -1603,13 +1732,15 @@ BEGIN
     s := p (q, part)
   EXCEPT
   | ValueRange :
-      w.s.st[w.k].faults := w.s.st[w.k].faults + 1 ; RETURN -1
+      w.st.faults := w.st.faults + 1 ; RETURN -1
   | IndexError :
-      w.s.st[w.k].faults := w.s.st[w.k].faults + 1 ; RETURN -1
+      w.st.faults := w.st.faults + 1 ; RETURN -1
   | Overflow :
-      w.s.st[w.k].faults := w.s.st[w.k].faults + 1 ; RETURN -1
+      w.st.faults := w.st.faults + 1 ; RETURN -1
   | OutOfMemory :
-      w.s.st[w.k].faults := w.s.st[w.k].faults + 1 ; RETURN -1
+      w.st.faults := w.st.faults + 1 ; RETURN -1
+  | Poisoned :
+      w.st.faults := w.st.faults + 1 ; RETURN -1
   END ;
   IF Text.BLen (s) = 0 THEN RETURN 1 END ;
   b := OCTETS (s) ;
@@ -1623,7 +1754,7 @@ BEGIN
     ok := WriteAll (fd, b)
   END ;
   IF NOT ok THEN RETURN -1 END ;
-  w.s.st[w.k].bytesOut := w.s.st[w.k].bytesOut + LEN (b) ;
+  w.st.bytesOut := w.st.bytesOut + LEN (b) ;
   RETURN 0
 END StreamPart ;
 
@@ -1689,7 +1820,7 @@ VAR
   extra : STR ;
 BEGIN
   IF NOT HeadersOk (resp.headers) OR resp.status < 100 OR resp.status > 599 THEN
-    w.s.st[w.k].faults := w.s.st[w.k].faults + 1 ;
+    w.st.faults := w.st.faults + 1 ;
     RETURN SendBody (w, c, 500, 'text/plain; charset=utf-8', '', '',
                      OCTETS ('a handler answered a malformed response'),
                      head, keep, keepAlive10)
@@ -1826,11 +1957,11 @@ VAR
   b0 : I64 ;
 BEGIN
   t0 := F64 (NowSec ()) ;
-  b0 := w.s.st[w.k].bytesOut ;
+  b0 := w.st.bytesOut ;
   ok := SendBody (w, c, status, 'text/plain; charset=utf-8', '', '',
                   OCTETS (why), FALSE, FALSE, FALSE) ;
   IF w.s.cfg.accessLog THEN
-    AccessLine (w, '-', '-', status, w.s.st[w.k].bytesOut - b0, t0, c.peer)
+    AccessLine (w, '-', '-', status, w.st.bytesOut - b0, t0, c.peer)
   END ;
   IF ok THEN Linger (c) END ;
   RETURN FALSE
@@ -1997,13 +2128,15 @@ BEGIN
             RETURN f (q)
           EXCEPT
           | ValueRange :
-              w.s.st[w.k].faults := w.s.st[w.k].faults + 1
+              w.st.faults := w.st.faults + 1
           | IndexError :
-              w.s.st[w.k].faults := w.s.st[w.k].faults + 1
+              w.st.faults := w.st.faults + 1
           | Overflow :
-              w.s.st[w.k].faults := w.s.st[w.k].faults + 1
+              w.st.faults := w.st.faults + 1
           | OutOfMemory :
-              w.s.st[w.k].faults := w.s.st[w.k].faults + 1
+              w.st.faults := w.st.faults + 1
+          | Poisoned :
+              w.st.faults := w.st.faults + 1
           END ;
           RETURN Reply (500, 'text/plain; charset=utf-8',
                         'the handler failed')
@@ -2051,6 +2184,37 @@ BEGIN
   END ;
   RETURN DynStr.ViewIn (pool, d)
 END HeadText ;
+
+PROCEDURE Answer1 (VAR w: Worker ; VAR c: Conn ; RO q: Request ;
+                   RO version: STR ; keep, keep10: BOOL) : BOOL
+  RAISES ValueRange =
+  (* Answer1 runs the handler for q, sends its answer, and says
+     whether the connection is kept. *)
+VAR
+  resp : Response ;
+  b0 : I64 ;
+  t0 : F64 ;
+  isHead, sent : BOOL ;
+BEGIN
+  isHead := Text.Eq (q.method, 'HEAD') ;
+  resp := Dispatch (w, q) ;
+  IF resp.close THEN keep := FALSE END ;
+  (* After a stop that came while the handler ran, this answer is the
+     last. *)
+  IF I64 (Stopping ()) # 0 OR Closing (w.s.q) THEN keep := FALSE END ;
+  (* a stream to HTTP/1.0 has no length: the close ends it *)
+  IF NOT Text.Eq (version, 'HTTP/1.1') THEN
+    IF resp.stream IS SOME p THEN keep := FALSE END
+  END ;
+  t0 := F64 (NowSec ()) ;
+  b0 := w.st.bytesOut ;
+  sent := Send (w, c, q, resp, isHead, keep, keep10 AND keep) ;
+  IF w.s.cfg.accessLog THEN
+    AccessLine (w, q.method, q.path, w.last, w.st.bytesOut - b0, t0, q.client)
+  END ;
+  IF NOT sent THEN RETURN FALSE END ;
+  RETURN keep
+END Answer1 ;
 
 PROCEDURE One (VAR w: Worker ; VAR c: Conn ; served: I64) : BOOL
   RAISES ValueRange =
@@ -2277,7 +2441,6 @@ BEGIN
   END ;
   q.peer := c.peer ;
   q.client := ClientOf (c.peer, w.s.cfg.trusted, Header (q, 'X-Forwarded-For')) ;
-  q.worker := w.k ;
 
   (* ---- keep the connection? ---- *)
   keep10 := FALSE ;
@@ -2292,23 +2455,21 @@ BEGIN
   END ;
 
   (* ---- the answer ---- *)
-  isHead := Text.Eq (q.method, 'HEAD') ;
-  resp := Dispatch (w, q) ;
-  IF resp.close THEN keep := FALSE END ;
-  (* After a stop that came while the handler ran, this answer is the
-     last. *)
-  IF I64 (Stopping ()) # 0 OR Closing (w.s.q) THEN keep := FALSE END ;
-  (* a stream to HTTP/1.0 has no length: the close ends it *)
-  IF NOT Text.Eq (version, 'HTTP/1.1') THEN
-    IF resp.stream IS SOME p THEN keep := FALSE END
+  IF NOT w.s.cfg.tasks THEN
+    q.worker := w.k ;
+    RETURN Answer1 (w, c, q, version, keep, keep10)
   END ;
-  t0 := F64 (NowSec ()) ;
-  b0 := w.s.st[w.k].bytesOut ;
-  sent := Send (w, c, q, resp, isHead, keep, keep10 AND keep) ;
-  IF w.s.cfg.accessLog THEN
-    AccessLine (w, q.method, q.path, w.last, w.s.st[w.k].bytesOut - b0, t0, q.client)
+  (* A connection task holds a worker's number from the handler to
+     the last octet sent, as a worker thread does.  So state indexed
+     by Request.worker is still one handler's at a time. *)
+  w.k := TakeToken (w.s.q) ;
+  BEGIN
+    q.worker := w.k ;
+    keep := Answer1 (w, c, q, version, keep, keep10)
+  FINALLY
+    GiveToken (w.s.q, w.k) ;
+    w.k := -1
   END ;
-  IF NOT sent THEN RETURN FALSE END ;
   RETURN keep
 END One ;
 
@@ -2348,13 +2509,15 @@ BEGIN
     END
   EXCEPT
   | ValueRange :
-      w.s.st[w.k].faults := w.s.st[w.k].faults + 1
+      w.st.faults := w.st.faults + 1
   | IndexError :
-      w.s.st[w.k].faults := w.s.st[w.k].faults + 1
+      w.st.faults := w.st.faults + 1
   | Overflow :
-      w.s.st[w.k].faults := w.s.st[w.k].faults + 1
+      w.st.faults := w.st.faults + 1
   | OutOfMemory :
-      w.s.st[w.k].faults := w.s.st[w.k].faults + 1
+      w.st.faults := w.st.faults + 1
+  | Poisoned :
+      w.st.faults := w.st.faults + 1
   END
 END Serve1 ;
 
@@ -2375,8 +2538,18 @@ BEGIN
     Serve1 (w, fd) ;
     IF Waiting (w.s.q) = 0 THEN ReleaseKept () END
   END ;
-  Exited (w.s.q)
+  Exited (w.s.q, w.st)
 END WorkerRun ;
+
+PROCEDURE ConnRun (VAR w: Worker) =
+  (* ConnRun is one connection's task, with cfg.tasks: it serves the
+     connection and gives its slot back.  The last connection to close
+     gives the kept blocks back, as a worker does at an empty ring. *)
+BEGIN
+  KeepAtMost (C.SSizeT (w.s.cfg.keepBytes)) ;
+  Serve1 (w, w.fd) ;
+  IF Closed (w.s.q, w.s.slots, w.slot, w.st) = 0 THEN ReleaseKept () END
+END ConnRun ;
 
 PROCEDURE Busy (fd: I64)
   RAISES ValueRange =
@@ -2440,7 +2613,7 @@ BEGIN
      cfg.queue < 1 OR cfg.queue > MaxQueue OR cfg.backlog < 1 OR
      cfg.lineMax < 16 OR cfg.headerMax < cfg.lineMax OR
      cfg.bodyMax < 0 OR cfg.idleMs < 1 OR cfg.headerMs < 1 OR
-     cfg.perConn < 1 OR cfg.maxConn < 0 THEN
+     cfg.perConn < 1 OR cfg.maxConn < 0 OR cfg.maxOpen < 1 THEN
     RETURN BadConfig
   END ;
   IF Text.BLen (cfg.bind) = 0 OR Text.BLen (cfg.bind) > 45 THEN RETURN BadConfig END ;
@@ -2458,12 +2631,26 @@ BEGIN
   s.r := r ;
   s.cfg := cfg ;
   SetCap (s.q, cfg.queue) ;
-  FOR k := 0 TO cfg.workers - 1 DO
-    w := NEW (pool, Worker) ;
-    w.s := s ;
-    w.k := k ;
-    w.last := 0 ;
-    THREAD (WorkerRun, w)
+  IF cfg.tasks THEN
+    s.slots := NEW (pool, I64, cfg.maxOpen) ;
+    SetTokens (s.q, cfg.workers, s.slots) ;
+    s.ws := NEW (pool, WorkerP, cfg.maxOpen) ;
+    FOR k := 0 TO cfg.maxOpen - 1 DO
+      w := NEW (pool, Worker) ;
+      w.s := s ;
+      w.slot := k ;
+      s.ws[k] := w
+    END
+  ELSE
+    FOR k := 0 TO cfg.workers - 1 DO
+      w := NEW (pool, Worker) ;
+      w.s := s ;
+      w.k := k ;
+      w.last := 0 ;
+      w.fd := -1 ;
+      Clear (w.st) ;
+      THREAD (WorkerRun, w)
+    END
   END ;
   BEGIN
     LOOP
@@ -2474,7 +2661,20 @@ BEGIN
       IF cfd = -1 THEN EXIT END ;
       IF cfd >= 0 THEN
         st.connections := st.connections + 1 ;
-        IF NOT Offer (s.q, cfd) THEN
+        IF cfg.tasks THEN
+          k := Opened (s.q, s.slots) ;
+          IF k >= 0 THEN
+            w := s.ws[k] ;
+            w.k := -1 ;
+            w.last := 0 ;
+            w.fd := cfd ;
+            Clear (w.st) ;
+            TASK (ConnRun, w)
+          ELSE
+            Busy (cfd) ;
+            st.busy := st.busy + 1
+          END
+        ELSIF NOT Offer (s.q, cfd) THEN
           Busy (cfd) ;
           st.busy := st.busy + 1
         END
@@ -2483,18 +2683,10 @@ BEGIN
   FINALLY
     n := I64 (Close (C.Int (lfd))) ;
     Shut (s.q) ;
-    AwaitExits (s.q, cfg.workers) ;
+    IF cfg.tasks THEN AwaitClosed (s.q) ELSE AwaitExits (s.q, cfg.workers) END ;
     IF cfg.signals THEN Signals (C.Int (0)) END
   END ;
-  FOR k := 0 TO cfg.workers - 1 DO
-    st.requests := st.requests + s.st[k].requests ;
-    st.faults := st.faults + s.st[k].faults ;
-    st.s2xx := st.s2xx + s.st[k].s2xx ;
-    st.s3xx := st.s3xx + s.st[k].s3xx ;
-    st.s4xx := st.s4xx + s.st[k].s4xx ;
-    st.s5xx := st.s5xx + s.st[k].s5xx ;
-    st.bytesOut := st.bytesOut + s.st[k].bytesOut
-  END ;
+  Totals (s.q, st) ;
   RETURN why
 END Run ;
 

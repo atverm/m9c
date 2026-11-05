@@ -1,13 +1,13 @@
-REVIEW HttpServer -- 96 procedures with a body, 68 of them functions; 23 headings in a DEFINITION
+REVIEW HttpServer -- 106 procedures with a body, 72 of them functions; 23 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              68
-  assignments                                   473
-  arguments                                    1108
-  RETURN values                                 252
-  operands of a comparison or an operator       496
+  functions answering on every path              72
+  assignments                                   505
+  arguments                                    1148
+  RETURN values                                 259
+  operands of a comparison or an operator       514
   CASE labels                                    35
-  THREAD arguments                                1
+  THREAD arguments                                2
   CASE over variants, proved total                0
 
 CAN TRAP AT RUN TIME -- a byte cut a character can straddle
@@ -23,6 +23,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   DISPOSE                                         0
   SHARED (x)                                      0
   THREAD                                          1   Run
+  TASK                                            1   Run
   [SHARABLE] records                              1   Worker
   module variables                                0
 
@@ -38,8 +39,9 @@ TRUSTED -- outside what the checker can see
 COUNTED -- how much there was to check
   CASE statements                                 1
   RAISE statements                                7
-  handlers                                       18
+  handlers                                       21
   NEW in the frame                                0
-  NEW in a named pool                            10
+  NEW in a named pool                            13
   calls of a STR form with a UTF twin             0
   STR subscripts, writes and LEN                  0
+  uses of a deprecated name                       0

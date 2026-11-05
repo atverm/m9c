@@ -54,7 +54,7 @@ check Parse Ast Lex Text
 check Gen Ast DynStr Text
 check Sem Ast DynStr Print Text
 check Io DynStr
-check M9c Io Ast Parse Gen Sem DynStr Doc Review Lex System Text
+check M9c Io Ast Parse Gen Sem DynStr Doc Review Lex M9f System Text
 
 # Usage and exit status are part of the tool, so they are checked too.
 # A request for help SUCCEEDS.  The usage you get because you gave no
@@ -496,11 +496,11 @@ rm -rf "$LIB"; mkdir -p "$LIB"; cd "$LIB"
 export M9RUNTIME="$RT"
 export M9LIBRARY="$SRC"
 
-for m in DynStr Text Io System Lex Ast Parse Print Sem Gen Doc Review; do "$M9C" -c $m; done
+for m in DynStr Text Io System Lex M9f Ast Parse Print Sem Gen Doc Review; do "$M9C" -c $m; done
 "$M9C" -v --ar libm9.a M9c 2>ar.txt
 [ -f libm9.a ] || { echo "FAIL: --ar produced no archive"; exit 1; }
 # The members are the closure m9c just resolved, and its own object.
-for o in M9c.o DynStr.o Io.o System.o Lex.o Ast.o Parse.o Print.o Sem.o Gen.o Doc.o Review.o; do
+for o in M9c.o DynStr.o Io.o System.o Lex.o M9f.o Ast.o Parse.o Print.o Sem.o Gen.o Doc.o Review.o; do
   ar t libm9.a | grep -qx "$o" ||
     { echo "FAIL: $o is not in the archive"; exit 1; }
 done

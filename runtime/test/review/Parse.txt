@@ -2,10 +2,10 @@ REVIEW Parse -- 57 procedures with a body, 46 of them functions; 9 headings in a
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              46
-  assignments                                   216
-  arguments                                    1836
+  assignments                                   219
+  arguments                                    1848
   RETURN values                                 142
-  operands of a comparison or an operator       268
+  operands of a comparison or an operator       270
   CASE labels                                    37
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -23,6 +23,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   DISPOSE                                         0
   SHARED (x)                                      0
   THREAD                                          0
+  TASK                                            0
   [SHARABLE] records                              0
   module variables                                0
 
@@ -43,3 +44,4 @@ COUNTED -- how much there was to check
   NEW in a named pool                             1
   calls of a STR form with a UTF twin             0
   STR subscripts, writes and LEN                  0
+  uses of a deprecated name                       0

@@ -94,6 +94,7 @@ int main (int argc, char **argv)
     m9t4to = m9_sub_i64 (Io_ArgCount (err), INT64_C(1), err);
     if (err->exc) { m9ln = 37; goto L_hdl_m9t1; };
     if (i <= m9t4to) for (;;) {
+      M9_YCHK ();
       { __typeof__(Io_ArgUtf (&(pool), i, err)) m9a2 = Io_ArgUtf (&(pool), i, err);
         if (err->exc) { m9ln = 38; goto L_hdl_m9t1; };
       Hello_Greet (&(pool), m9a2, err);

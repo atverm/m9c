@@ -142,9 +142,13 @@ _(documented with the group below)_
 
 ### SetReal (VAR t: PTR Table ; c: I64) RAISES IndexError
 
+**Deprecated** (report par 3.9): write `Csv.SetKind (t, c, Csv.Kind.Real)` instead.  The name goes in the next release.
+
 _(documented with the group below)_
 
 ### SetReal64 (VAR t: PTR Table ; c: I64) RAISES IndexError
+
+**Deprecated** (report par 3.9): write `Csv.SetKind (t, c, Csv.Kind.Real64)` instead.  The name goes in the next release.
 
 MEASUREMENTS ARE F32 by default, and the module header says why.
 SetReal64 is the exception that header names: "a caller needing
@@ -156,26 +160,35 @@ number.
 
 ### SetInt (VAR t: PTR Table ; c: I64) RAISES IndexError
 
+**Deprecated** (report par 3.9): write `Csv.SetKind (t, c, Csv.Kind.Int)` instead.  The name goes in the next release.
+
 _(documented with the group below)_
 
 ### SetText (VAR t: PTR Table ; c: I64) RAISES IndexError
+
+**Deprecated** (report par 3.9): write `Csv.SetKind (t, c, Csv.Kind.Text)` instead.  The name goes in the next release.
 
 _(documented with the group below)_
 
 ### SetSkip (VAR t: PTR Table ; c: I64) RAISES IndexError
 
+**Deprecated** (report par 3.9): write `Csv.SetKind (t, c, Csv.Kind.Skip)` instead.  The name goes in the next release.
+
 _(documented with the group below)_
 
 ### SetStamp (VAR t: PTR Table ; c: I64 ; format: I64) RAISES IndexError
+
+**Deprecated** (report par 3.9): write `Csv.SetKind (t, c, Csv.Kind.Stamp (format))` instead.  The name goes in the next release.
 
 These setters say the same thing as SetKind without naming the
 variant.  They date from when a caller in another module could
 not write `Csv.Kind.Real` (the checker accepted it, the
 generator refused it).  That gap CLOSED 2026-09-15
 (`corpus/KindUse.m9` is the gendiff fixture that writes every
-form).  `SetKind (t, c, Csv.Kind.Real)` works from anywhere and
-is the preferred spelling.  The setters stay for their callers
-and for C, which has no constructor syntax.
+form).  `SetKind (t, c, Csv.Kind.Real)` works from anywhere.  The
+setters are DEPRECATED since 0.27.0 (report par 3.9) and go in the
+release after it; runtime/test/csv_driver.c then builds the kind
+in C.
 
 ### KindAt (t: PTR Table ; c: I64) : Kind RAISES IndexError
 

@@ -3,7 +3,7 @@ MODULE Boids ;
 (* Boids is the flocking benchmark of docs/task-plan.md, stage 0, in
    all three shapes.
 
-     Boids N STEPS THREADS
+     Boids N STEPS THREADS [task]
 
    N birds fly on a square torus for STEPS steps.  Each bird steers by
    three rules over its neighbours within Radius: separation,
@@ -18,6 +18,9 @@ MODULE Boids ;
                 THREAD per bird.  Shapes (b) and (c) differ in this
                 number only, so the difference in time is the price
                 of the threads.
+   With the word task, the workers of (b) and (c) are TASKs, not
+   THREADs (stage 2 of docs/task-plan.md); the line printed is the
+   same.
 
    A step reads buffer cur of the positions and velocities and writes
    buffer 1 - cur.  So a bird's new state depends on the old states
@@ -37,6 +40,7 @@ MODULE Boids ;
 IMPORT Io ;
 IMPORT Fmt ;
 IMPORT Math ;
+IMPORT Text ;
 
 CONST
   Density = 2.0 ;                (* birds per unit area *)
@@ -314,15 +318,17 @@ VAR
   pool : POOL ;
   j : PTR Job ;
   n, steps, threads, s, t, cur : I64 ;
+  tasks : BOOL ;
 
 BEGIN
   IF Io.ArgCount () < 4 THEN
-    Io.ErrLine ('usage: Boids N STEPS THREADS (0: serial)') ;
+    Io.ErrLine ('usage: Boids N STEPS THREADS [task] (0: serial)') ;
     Io.Halt (2)
   END ;
   n := Io.ParseI64 (Io.Arg (pool, 1)) ;
   steps := Io.ParseI64 (Io.Arg (pool, 2)) ;
   threads := Io.ParseI64 (Io.Arg (pool, 3)) ;
+  tasks := Io.ArgCount () > 4 AND Text.Eq (Io.Arg (pool, 4), 'task') ;
   IF threads < 0 THEN threads := 0 END ;
   IF threads > n THEN threads := n END ;
   j := NEW (pool, Job) ;
@@ -336,7 +342,11 @@ BEGIN
       cur := 1 - cur
     END
   ELSE
-    FOR t := 1 TO threads DO THREAD (Worker, j) END ;
+    IF tasks THEN
+      FOR t := 1 TO threads DO TASK (Worker, j) END
+    ELSE
+      FOR t := 1 TO threads DO THREAD (Worker, j) END
+    END ;
     FOR s := 1 TO steps DO
       BuildGrid (j.w, cur) ;
       Open (j.go, s) ;

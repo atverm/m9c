@@ -53,7 +53,7 @@ esac
 
 # COMPILER lists the modules m9c itself is made of, in dependency
 # order.
-COMPILER="DynStr Io Lex Ast Parse Print Text System Sem Gen Doc DynUtf Review M9c"
+COMPILER="DynStr Io Lex M9f Ast Parse Print Text System Sem Gen Doc DynUtf Review M9c"
 
 # LIBRARY lists everything else a program may import: the standard
 # library, shipped as source.  M9 has no binary module format: the .m9
@@ -63,8 +63,8 @@ COMPILER="DynStr Io Lex Ast Parse Print Text System Sem Gen Doc DynUtf Review M9
 # 0.4.1's changelog said it did, and /usr/lib/m9 of that release held
 # no Lsp.m9: the claim had no gate.  debian/tests/compile-a-program
 # builds both now.
-LIBRARY="DynStr Io Lex Ast Parse Print Text Fmt Sem Gen \
-         Json JsonUtf Chars DynUtf Tsk Dict Faults Mat Math Bits Sort Seq Check Arrays Numeric Png Time Logger Syslog Http HttpServer OpenApi ApiSpec \
+LIBRARY="DynStr Io Lex M9f Ast Parse Print Text Fmt Sem Gen \
+         Json JsonUtf Chars DynUtf Tsk Chan Sup Dict Faults Mat Math Bits Sort Seq Check Arrays Numeric Png Time Logger Syslog Http HttpServer OpenApi ApiSpec \
          Arrow Doc Review \
          NetCDF Grib Csv Delim Zip Pg Sparql Rdf Regex Xml Hash Smtp Rsa Map Stats System Frame Parquet NbCells NbShow \
          Plot ZarrStore Zarr Diag Lsp M9fmt M9elide"
@@ -145,13 +145,14 @@ for d in docs/M9-report.md docs/pools.md docs/bench.md; do
 done
 if [ -d tools/vscode-m9 ]; then
 # The VS Code extension gives syntax highlighting plus docstring hovers
-# and completion (fed by m9c --doc).  Extensions are per-user, so
-# the package ships the files and the user links them in once:
+# and completion (fed by m9c --doc), and m9c's diagnostics, for .m9 and
+# .m9f.  Extensions are per-user, so the package ships the files and
+# the user links them in once:
 #   ln -s /usr/share/m9/vscode-m9 ~/.vscode/extensions/atverm.m9-lang-0.2.0
 # (or ~/.vscode-server/extensions for VS Code Remote).  README.deb
 # in the directory says the same thing.
 install -d "$DESTDIR/usr/share/m9/vscode-m9/syntaxes" "$DESTDIR/usr/share/m9/vscode-m9/images"
-for f in package.json extension.js language-configuration.json; do
+for f in package.json extension.js language-configuration.json language-configuration-m9f.json; do
   install -m 644 "tools/vscode-m9/$f" "$DESTDIR/usr/share/m9/vscode-m9/$f"
 done
 install -m 644 tools/vscode-m9/syntaxes/*.json \
@@ -163,7 +164,7 @@ printf '%s\n' \
   "To use the M9 VS Code extension from this package:" \
   "  ln -s /usr/share/m9/vscode-m9 ~/.vscode/extensions/atverm.m9-lang-0.2.0" \
   "(use ~/.vscode-server/extensions under VS Code Remote), then reload" \
-  "VS Code.  Hovers and completion use /usr/bin/m9c; point" \
+  "VS Code.  Hovers, completion and diagnostics use /usr/bin/m9c; point" \
   "m9.includePaths at your build directory for cross-module docs." \
   > "$DESTDIR/usr/share/m9/vscode-m9/README.deb"
 else

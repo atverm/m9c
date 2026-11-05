@@ -10,7 +10,10 @@
 # byte-verified load on eight kept connections with the server's
 # descriptors and resident memory read from /proc; a full queue
 # answered 503; a connection limit that drains the server and prints
-# counts that must add up; the per-connection limit.
+# counts that must add up; the per-connection limit.  All of it runs
+# twice: on worker threads, and with --tasks, a task per connection.
+# Then 10,000 kept connections at once on tasks, and handlers that
+# crash beside a steady load.
 #
 # Sabotage.m9 srvfix SHOWS the gate ABLE TO FAIL: it makes one-line
 # breaks of HttpServer.m9 (and of Logger and the runtime where the
@@ -49,6 +52,22 @@ SRC=$(cd srvfix && pwd)
 st=0
 "$PY" srvfix/srvfix.py "$W/srvfix" || st=$?
 [ $st -eq 0 ] || { echo "httpserver: FAIL"; exit 1; }
+# The same checks with a task per connection (Config.tasks), on ports
+# a hundred higher.
+SRVFIX_ARGS=--tasks SRVFIX_PORT=$(( ${SRVFIX_PORT:-18350} + 100 )) \
+  "$PY" srvfix/srvfix.py "$W/srvfix" || st=$?
+[ $st -eq 0 ] || { echo "httpserver: FAIL with --tasks"; exit 1; }
+# 10,000 kept connections open at once, each answered twice, with the
+# server's memory and threads stated (srvfix/c10k.py).  C10K_N sets
+# the count.
+python3 srvfix/c10k.py "$W/srvfix" $(( ${SRVFIX_PORT:-18350} + 200 )) "${C10K_N:-10000}" || st=$?
+[ $st -eq 0 ] || { echo "httpserver: FAIL c10k"; exit 1; }
+# Handlers crash while other clients are served (stage 5): an IndexError
+# in a handler, and a crash inside a shared monitor that poisons it and
+# that /count rebuilds with [RESET].  Every /hello stays a 200; the
+# latencies are printed (srvfix/crashload.py).
+python3 srvfix/crashload.py "$W/srvfix" $(( ${SRVFIX_PORT:-18350} + 210 )) || st=$?
+[ $st -eq 0 ] || { echo "httpserver: FAIL crashload"; exit 1; }
 
 # ---- the Windows half: the same fixture against a mingw build, under
 # wine (plan stage 3).  The library's C is runtime/gen, archived so the
