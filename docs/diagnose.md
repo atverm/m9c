@@ -30,6 +30,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `an ARRAY's count has no value: N DIV Z divides by 0 or passes MAX (I64) (par 2.2)` | an array's count is fixed when the program is compiled; a CONST divisor of 0 or a value past MAX (I64) gives it none (par 2.2) | give the divisor a CONST other than 0, or count fewer elements | `array-count-no-value` |
 | `an ARRAY holds at least one element; its count is -3` | an ARRAY's count folds to a constant below 1; until 2026-10-22 the generator refused it as `array count form unsupported yet' (par 2.2.1) | give the count as a constant of at least 1, or use a SLICE when the length is known only at run time | `array-count-not-positive` |
 | `an ARRAY m.Colour OF is indexed by a m.Colour value, not an integer literal` | an ARRAY indexed by an enumeration is indexed BY THE TYPE -- its subscript is a member of that enumeration, and its length is the member count -- so an integer subscript (or a value of some other type) is refused; the compiler proves a[Colour.Red] is in range precisely because a Colour is always one of the members | write the member: a[Colour.Red], not a[0]; that is what makes the array bounds-checked at compile time, with no runtime check and no ordinal to keep in step with the type | `array-enum-index-int` |
+| `cannot lend ARRAY 4 OF F64 to a VAR SLICE parameter` | an array lends itself as a slice of all its elements, but a VAR slice parameter may be given a new slice, which an array cannot hold (par 4.1); until 0.27.1 the array went through as the slice and the callee wrote the wrong memory | drop VAR from the parameter: a value SLICE OF parameter writes the elements, and RO reads them | `array-to-var-slice` |
 | `cannot assign to P -- P is a PROCEDURE, not a variable` | the target of := names a procedure; a procedure is a declaration, not storage -- until 2026-10-22 a bare one was refused as an unknown name and a qualified one reached the C compiler (par 3 rule 7) | call it (P ()), or hold a procedure value in a variable of procedure type: VAR a : OPT Act ; a := SOME (P) | `assign-to-procedure` |
 | `unknown name: x` | a bare name on the left of := is declared nowhere -- not a local, parameter, module variable, or a CONST (writing a CONST is its own refusal); until 2026-10-08 only the generator said so, as `gen: unknown name' | declare it (VAR in the procedure or at module level), or spell the name as declared -- names are case sensitive | `assign-to-undeclared` |
 | `only [DEPRECATED] carries a text; [PURE] takes none` | only [DEPRECATED] carries a text (par 3.9); every other attribute is a bare name, and a text on it would be read by nothing | drop the text, or write the note as a comment beside the heading | `attribute-text-not-deprecated` |
@@ -177,6 +178,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `use of p in the next turn of the loop, after it was moved into an OWN parameter of Eat at line 35 (par 4.2)` | a module variable moved in the module body (handed to an OWN parameter or a THREAD, DISPOSEd) is used again -- the body tracks ownership as a procedure does (par 4.2) | give it a fresh value after the move (p := NEW (OWN, T)), or move it once; a POOL allocation is lent to a thread, not moved | `module-body-use-after-move` |
 | `module Other is named and not imported: write IMPORT Other` | the same refusal; the probe holds what must stay LEGAL before it -- an implementation naming a module only its definition imports, a module naming itself, a local variable that has a module's name | IMPORT the module the last procedure names | `module-import-allowed-forms` |
 | `unknown name: Lib.Nosuch -- Lib declares no such name` | a qualified name Mod.X names a module the checker has loaded and a member it does not declare -- no procedure, type, constant, exception or exported variable X; a module NOT loaded stays soft (that is a missing import, said elsewhere) | spell the member as the module declares it (m9c --json MODULE lists them), or import the module that has it | `module-member-unknown` |
+| `m.time: this procedure declares a time of its own, which hides the module's` | a module names itself (par 3 rule 5): inside Mod, Mod.x is x.  Where the procedure declares an x of its own, the bare name is the procedure's, and the checker gives the module's variable no second name yet, since its storage judgements follow a variable by one name | rename the parameter or the local, and write the module variable bare or as Mod.x | `module-name-hidden` |
 | `module Lib is named and not imported: write IMPORT Lib` | a qualified name's module is known to the compiler -- something imported imports it -- and this module does not import it; until 2026-10-02 any module in the import closure could be named, so a program's IMPORT lines did not say what it depended on (museum/named-not-imported.m9) | add the line: IMPORT Lib ;  An implementation may lean on its definition's IMPORT and the other way round.  NOT SOURCE COMPATIBLE for a program that leaned on the gap: 5 sites in 386 files (par 3) | `module-named-not-imported` |
 | `module Lib is named and not imported: write IMPORT Lib` | a borrowed slice or pointer is an argument of a variant or record CONSTRUCTOR handed to a KEPT parameter (Keep (f, Data.F64s (v, 0.0))); since 2026-10-08 the call check reads through the constructor, as it reads a record value's fields | declare KEPT on the caller's own parameter, as for a bare borrow; or construct the value from a copy | `module-shadow-by-scope` |
 | `module-level state requires STATEFUL on the definition` | a module-level VAR is state, and a module with state must say so | add [STATEFUL] to the DEFINITION MODULE, or move the state into a record the caller owns (par 6) | `module-state-without-stateful` |
@@ -637,6 +639,18 @@ TYPE Colour = (Red, Green, Blue) ;
 VAR names : ARRAY Colour OF I64 ;
 BEGIN
   names[0] := 7
+END m.
+```
+
+### array-to-var-slice
+
+`cannot lend ARRAY 4 OF F64 to a VAR SLICE parameter`
+
+```
+MODULE m ;
+TYPE R = RECORD n : I64 ; a : ARRAY 4 OF F64 END ;
+PROCEDURE Fill (VAR s: SLICE OF F64) = BEGIN s[0] := 2.5 END Fill ;
+PROCEDURE F (VAR r: R) = BEGIN Fill (r.a) END F ;
 END m.
 ```
 
@@ -4289,6 +4303,24 @@ BEGIN
   n := Lib.Zero () ;
   n := Lib.v ;
   x := Lib.Nosuch + 1.0
+END m.
+```
+
+### module-name-hidden
+
+`m.time: this procedure declares a time of its own, which hides the module's`
+
+```
+(* A module names itself (par 3 rule 5): the legal forms come first.
+   The refusal is the one name a procedure hides with its own. *)
+MODULE m ;
+CONST K = 3 ;
+TYPE R = RECORD n : I64 END ;
+VAR time : I64 ; r : m.R ;
+PROCEDURE P () : I64 = BEGIN RETURN m.K + m.time END P ;
+PROCEDURE Set (time: I64) = BEGIN m.time := time END Set ;
+BEGIN
+  m.r.n := m.P ()
 END m.
 ```
 

@@ -215,7 +215,7 @@ Measured, on one machine, twice; the method and the losses are in
 | | M9 | C | Rust | Object Pascal | Scala | Python |
 |---|---:|---:|---:|---:|---:|---:|
 | mandelbrot, N=4000 | **0.73s** | 0.73s | 0.75s | 2.26s | 0.93s | ~39s |
-| fannkuch-redux, n=11 | 1.90s | 1.94s | 1.31s | 3.40s | 1.68s | ~45s |
+| fannkuch-redux, n=11 | 1.87s | 1.94s | 1.31s | 3.40s | 1.68s | ~45s |
 | binary-trees, depth 18 | 0.86s | 0.53s | 0.28s | 1.04s | 0.42s | 5.9s |
 | stripped executable | **26 KB** | 14 KB | 382 KB | 513 KB | 9.2 MB jar | — |
 | build, one file | 0.45s | 0.15s | 0.38s | 0.09s | 3.9s | — |

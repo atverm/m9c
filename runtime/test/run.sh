@@ -98,8 +98,38 @@ export M9CACHE="$RW/cache"
   # copy.
   "$M9C" --run "$M9LIBRARY/ExportUse.m9" < /dev/null > o8.txt 2>&1 ||
     { echo "FAIL: ExportUse did not run:"; tail -3 o8.txt; exit 1; }
-  printf 'ExportUse compares a Shade across modules\nand its negation\nExportUse reads count 40, LEN xs 3, version 2, LEN row 4\nExportDef sees count 42, xs[1] 9.50, box.n 7, version 2\n' > want8.txt
+  printf 'ExportUse compares a Shade across modules\nand its negation\nExportUse reads count 40, LEN xs 3, version 2, LEN row 4\nExportDef sees count 42, xs[1] 9.50, box.n 7, version 2\ntime 6, ExportDef.time 12, exit 6\nSetTime (1) gives 5\n' > want8.txt
   cmp -s o8.txt want8.txt || { echo "FAIL: ExportUse said:"; cat o8.txt; exit 1; }
+  # On x86-64 m9c tells the C compiler -mno-mmx, and on no other
+  # processor (gcc 12 and 13 left the x87 state full after an MMX
+  # move, and Math.Fmod answered NaN in that thread; 2026-11-14).
+  "$M9C" -v --make -o eu9 "$M9LIBRARY/ExportUse.m9" < /dev/null > o9.txt 2>&1 ||
+    { echo "FAIL: ExportUse did not build with -v:"; tail -3 o9.txt; exit 1; }
+  case "$( (${CC:-cc} -dumpmachine || gcc -dumpmachine) 2>/dev/null | head -1)" in
+    x86_64*|amd64*)
+      grep -q -- ' -mno-mmx ' o9.txt ||
+        { echo "FAIL: on x86-64 the cc line has no -mno-mmx"; exit 1; }
+      # What the word is for: no instruction that names an MMX
+      # register, in the program just built and in the compiler
+      # itself, the largest generated C there is.  The server's two
+      # handlers that had them are not ours to keep here, and no
+      # program of this tree made gcc 12 or 13 write one (60 gate
+      # binaries scanned, 2026-11-14).  So this holds the property,
+      # and the line above holds the word.
+      if command -v objdump > /dev/null 2>&1; then
+        for b in eu9 "$M9C"; do
+          n=$(objdump -d --no-show-raw-insn "$b" | grep -c '[ ,(]%mm[0-7]')
+          [ "$n" = 0 ] ||
+            { echo "FAIL: $n MMX instructions in $b (x87 answers NaN after one)"; exit 1; }
+        done
+      else
+        echo "run: no objdump, the MMX scan is skipped"
+      fi ;;
+    *)
+      if grep -q -- '-mno-mmx' o9.txt; then
+        echo "FAIL: -mno-mmx given to a compiler that is not for x86-64"; exit 1
+      fi ;;
+  esac
   # A RAISE's strings outlive the frame that built them (report par 5,
   # 2026-10-06).  The program tries four ways, a thousand raises each,
   # and reads every message back after the handler allocated.  0.16.0

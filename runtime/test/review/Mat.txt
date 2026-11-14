@@ -1,11 +1,11 @@
-REVIEW Mat -- 50 procedures with a body, 25 of them functions; 29 headings in a DEFINITION
+REVIEW Mat -- 53 procedures with a body, 25 of them functions; 31 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              25
-  assignments                                   313
-  arguments                                     341
+  assignments                                   339
+  arguments                                     361
   RETURN values                                  28
-  operands of a comparison or an operator       334
+  operands of a comparison or an operator       361
   CASE labels                                     0
   THREAD arguments                                3
   CASE over variants, proved total                2
@@ -15,7 +15,7 @@ CAN TRAP AT RUN TIME -- a byte cut a character can straddle
 
 DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
-  local pools                                    12   InvBand.wpool, CholeskyT.scratch, CholInverse.scratch, AddNormal.scratch, Solve.scratch, Det.scratch, +6 more
+  local pools                                    13   InvBand.wpool, FactorLower.scratch, CholInverse.scratch, CholInverseInPlace.scratch, AddNormal.scratch, Solve.scratch, +7 more
   pool parameters                                21   New, SubRowVector, MulM, MulV, Transpose, AddM, +15 more
   KEPT parameters                                 0
   HEAP named                                      0
@@ -38,10 +38,10 @@ TRUSTED -- outside what the checker can see
 
 COUNTED -- how much there was to check
   CASE statements                                 2
-  RAISE statements                               30
+  RAISE statements                               32
   handlers                                        0
   NEW in the frame                                0
-  NEW in a named pool                            12
+  NEW in a named pool                            16
   calls of a STR form with a UTF twin             0
   STR subscripts, writes and LEN                  0
   uses of a deprecated name                       0

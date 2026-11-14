@@ -24,6 +24,12 @@ CC=${CC:-cc}
 # for missing exactly those two, because only CFLAGS was read.  The C
 # standard is ours and stays outside them.
 CFLAGS=${CFLAGS:--O2}
+# On x86-64 the C compiler is told -mno-mmx, as m9c tells it (FpWords
+# in corpus/M9c.m9 says why).  The word is ours, and it is added to a
+# packager's CFLAGS too.
+case "$($CC -dumpmachine 2>/dev/null)" in
+  x86_64*|amd64*) CFLAGS="$CFLAGS -mno-mmx" ;;
+esac
 CPPFLAGS=${CPPFLAGS:-}
 LDFLAGS=${LDFLAGS:-}
 OUT=${OUT:-out}

@@ -42,6 +42,8 @@ extern m9_pool * const ExportDef_box_pool;
 extern int64_t * const ExportDef_version;
 extern m9_sl_F64 * const ExportDef_limits;
 extern m9_pool * const ExportDef_limits_pool;
+extern int64_t * const ExportDef_time;
 void ExportDef_Show (m9_state *err);
+void ExportDef_SetTime (int64_t t, m9_state *err);
 
 #endif

@@ -1,0 +1,6 @@
+(* EXPECT: cannot lend ARRAY 4 OF F64 to a VAR SLICE parameter *)
+MODULE m ;
+TYPE R = RECORD n : I64 ; a : ARRAY 4 OF F64 END ;
+PROCEDURE Fill (VAR s: SLICE OF F64) = BEGIN s[0] := 2.5 END Fill ;
+PROCEDURE F (VAR r: R) = BEGIN Fill (r.a) END F ;
+END m.

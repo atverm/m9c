@@ -5,12 +5,12 @@
 extern int64_t m9_utf_cpcount_p (const void *, int64_t);
 extern int64_t m9_utf_find (const void *, int64_t, const void *, int64_t, int64_t);
 
-static int64_t nextId;
-static m9_sl_Ast_Nodep tys;
-static m9_sl_m9_sl_UTF8 tstr;
-static m9_sl_BOOL nows;
-static m9_sl_BOOL rdos;
-static m9_pool typool;
+static int64_t Ast__nextId;
+static m9_sl_Ast_Nodep Ast__tys;
+static m9_sl_m9_sl_UTF8 Ast__tstr;
+static m9_sl_BOOL Ast__nows;
+static m9_sl_BOOL Ast__rdos;
+static m9_pool Ast__typool;
 static m9_pool m9mframe = {0};
 
 static const uint8_t m9s0[1] = { 45 };
@@ -47,10 +47,10 @@ Ast_Node * Ast_NewNode (m9_pool *pool, int64_t kind, int64_t line, int64_t col, 
     n->kids = m9v;
   }
   n->nkids = INT64_C(0);
-  n->id = nextId;
-  { __typeof__(nextId) m9v = m9_add_i64 (nextId, INT64_C(1), err);
+  n->id = Ast__nextId;
+  { __typeof__(Ast__nextId) m9v = m9_add_i64 (Ast__nextId, INT64_C(1), err);
     if (err->exc) { m9ln = 228; goto L_ret; };
-    nextId = m9v;
+    Ast__nextId = m9v;
   }
   err->res = m9res;
   m9ret = n;
@@ -311,8 +311,8 @@ void Ast_SetType (int64_t id, Ast_Node * t, m9_state *err)
   if ((id < INT64_C(0))) {
     goto L_ret;
   }
-  if ((id >= (tys).len)) {
-    { __typeof__(n) m9v = m9_mul_i64 (INT64_C(2), (tys).len, err);
+  if ((id >= (Ast__tys).len)) {
+    { __typeof__(n) m9v = m9_mul_i64 (INT64_C(2), (Ast__tys).len, err);
       if (err->exc) { m9ln = 260; goto L_ret; };
       n = m9v;
     }
@@ -324,16 +324,16 @@ void Ast_SetType (int64_t id, Ast_Node * t, m9_state *err)
         n = m9v;
       }
     }
-    { __typeof__(grown) m9v = M9_POOL_SL (m9_sl_Ast_Nodep, Ast_Node *, &(typool), n, err);
+    { __typeof__(grown) m9v = M9_POOL_SL (m9_sl_Ast_Nodep, Ast_Node *, &(Ast__typool), n, err);
       if (err->exc) { m9ln = 262; goto L_ret; };
       grown = m9v;
     }
     { __typeof__(i) m9t2to;
     i = INT64_C(0);
-    m9t2to = m9_sub_i64 ((tys).len, INT64_C(1), err);
+    m9t2to = m9_sub_i64 ((Ast__tys).len, INT64_C(1), err);
     if (err->exc) { m9ln = 263; goto L_ret; };
     if (i <= m9t2to) for (;;) {
-      { __typeof__((*(Ast_Node * *) m9_at (grown.p, i, grown.len, sizeof (Ast_Node *), err))) m9v = (*(Ast_Node * *) m9_at (tys.p, i, tys.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (grown.p, i, grown.len, sizeof (Ast_Node *), err))) m9v = (*(Ast_Node * *) m9_at (Ast__tys.p, i, Ast__tys.len, sizeof (Ast_Node *), err));
         if (err->exc) { m9ln = 263; goto L_ret; };
         (*(Ast_Node * *) m9_at (grown.p, i, grown.len, sizeof (Ast_Node *), err)) = m9v;
         if (err->exc) { m9ln = 263; goto L_ret; };
@@ -341,9 +341,9 @@ void Ast_SetType (int64_t id, Ast_Node * t, m9_state *err)
       if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
     } }
-    tys = grown;
+    Ast__tys = grown;
   }
-  (*(Ast_Node * *) m9_at (tys.p, id, tys.len, sizeof (Ast_Node *), err)) = t;
+  (*(Ast_Node * *) m9_at (Ast__tys.p, id, Ast__tys.len, sizeof (Ast_Node *), err)) = t;
   if (err->exc) { m9ln = 266; goto L_ret; };
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -361,9 +361,9 @@ Ast_Node * Ast_TypeAt (int64_t id, m9_state *err)
   static const char m9pn[] = "Ast.TypeAt"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   Ast_Node * m9ret = NULL;
-  if (((id >= INT64_C(0)) && (id < (tys).len))) {
+  if (((id >= INT64_C(0)) && (id < (Ast__tys).len))) {
     err->res = m9res;
-    m9ret = (*(Ast_Node * *) m9_at (tys.p, id, tys.len, sizeof (Ast_Node *), err));
+    m9ret = (*(Ast_Node * *) m9_at (Ast__tys.p, id, Ast__tys.len, sizeof (Ast_Node *), err));
     if (err->exc) { m9ln = 271; goto L_ret; };
     goto L_ret;
   }
@@ -394,8 +394,8 @@ void Ast_SetTyStr (int64_t id, m9_sl_UTF8 t, m9_state *err)
   if ((id < INT64_C(0))) {
     goto L_ret;
   }
-  if ((id >= (tstr).len)) {
-    { __typeof__(n) m9v = m9_mul_i64 (INT64_C(2), (tstr).len, err);
+  if ((id >= (Ast__tstr).len)) {
+    { __typeof__(n) m9v = m9_mul_i64 (INT64_C(2), (Ast__tstr).len, err);
       if (err->exc) { m9ln = 283; goto L_ret; };
       n = m9v;
     }
@@ -407,16 +407,16 @@ void Ast_SetTyStr (int64_t id, m9_sl_UTF8 t, m9_state *err)
         n = m9v;
       }
     }
-    { __typeof__(grown) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &(typool), n, err);
+    { __typeof__(grown) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &(Ast__typool), n, err);
       if (err->exc) { m9ln = 285; goto L_ret; };
       grown = m9v;
     }
     { __typeof__(i) m9t2to;
     i = INT64_C(0);
-    m9t2to = m9_sub_i64 ((tstr).len, INT64_C(1), err);
+    m9t2to = m9_sub_i64 ((Ast__tstr).len, INT64_C(1), err);
     if (err->exc) { m9ln = 286; goto L_ret; };
     if (i <= m9t2to) for (;;) {
-      { __typeof__((*(m9_sl_UTF8 *) m9_at (grown.p, i, grown.len, sizeof (m9_sl_UTF8), err))) m9v = (*(m9_sl_UTF8 *) m9_at (tstr.p, i, tstr.len, sizeof (m9_sl_UTF8), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (grown.p, i, grown.len, sizeof (m9_sl_UTF8), err))) m9v = (*(m9_sl_UTF8 *) m9_at (Ast__tstr.p, i, Ast__tstr.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) { m9ln = 286; goto L_ret; };
         (*(m9_sl_UTF8 *) m9_at (grown.p, i, grown.len, sizeof (m9_sl_UTF8), err)) = m9v;
         if (err->exc) { m9ln = 286; goto L_ret; };
@@ -424,10 +424,10 @@ void Ast_SetTyStr (int64_t id, m9_sl_UTF8 t, m9_state *err)
       if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
     } }
-    tstr = grown;
+    Ast__tstr = grown;
   }
   o = m9_utf_octets (t);
-  { __typeof__(q) m9v = m9_utf_octets ((*(m9_sl_UTF8 *) m9_at (tstr.p, id, tstr.len, sizeof (m9_sl_UTF8), err)));
+  { __typeof__(q) m9v = m9_utf_octets ((*(m9_sl_UTF8 *) m9_at (Ast__tstr.p, id, Ast__tstr.len, sizeof (m9_sl_UTF8), err)));
     if (err->exc) { m9ln = 290; goto L_ret; };
     q = m9v;
   }
@@ -449,9 +449,9 @@ void Ast_SetTyStr (int64_t id, m9_sl_UTF8 t, m9_state *err)
       goto L_ret;
     }
   }
-  { __typeof__((*(m9_sl_UTF8 *) m9_at (tstr.p, id, tstr.len, sizeof (m9_sl_UTF8), err))) m9v = m9_utf_from_bytes (&(typool), m9_utf_octets (t), err);
+  { __typeof__((*(m9_sl_UTF8 *) m9_at (Ast__tstr.p, id, Ast__tstr.len, sizeof (m9_sl_UTF8), err))) m9v = m9_utf_from_bytes (&(Ast__typool), m9_utf_octets (t), err);
     if (err->exc) { m9ln = 297; goto L_ret; };
-    (*(m9_sl_UTF8 *) m9_at (tstr.p, id, tstr.len, sizeof (m9_sl_UTF8), err)) = m9v;
+    (*(m9_sl_UTF8 *) m9_at (Ast__tstr.p, id, Ast__tstr.len, sizeof (m9_sl_UTF8), err)) = m9v;
     if (err->exc) { m9ln = 297; goto L_ret; };
   }
 L_ret: ;
@@ -470,9 +470,9 @@ m9_sl_UTF8 Ast_TyStrAt (int64_t id, m9_state *err)
   static const char m9pn[] = "Ast.TyStrAt"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
-  if (((id >= INT64_C(0)) && (id < (tstr).len))) {
+  if (((id >= INT64_C(0)) && (id < (Ast__tstr).len))) {
     err->res = m9res;
-    m9ret = (*(m9_sl_UTF8 *) m9_at (tstr.p, id, tstr.len, sizeof (m9_sl_UTF8), err));
+    m9ret = (*(m9_sl_UTF8 *) m9_at (Ast__tstr.p, id, Ast__tstr.len, sizeof (m9_sl_UTF8), err));
     if (err->exc) { m9ln = 302; goto L_ret; };
     goto L_ret;
   }
@@ -501,8 +501,8 @@ void Ast_SetNoWrites (int64_t id, m9_state *err)
   if ((id < INT64_C(0))) {
     goto L_ret;
   }
-  if ((id >= (nows).len)) {
-    { __typeof__(n) m9v = m9_mul_i64 (INT64_C(2), (nows).len, err);
+  if ((id >= (Ast__nows).len)) {
+    { __typeof__(n) m9v = m9_mul_i64 (INT64_C(2), (Ast__nows).len, err);
       if (err->exc) { m9ln = 313; goto L_ret; };
       n = m9v;
     }
@@ -514,16 +514,16 @@ void Ast_SetNoWrites (int64_t id, m9_state *err)
         n = m9v;
       }
     }
-    { __typeof__(grown) m9v = M9_POOL_SL (m9_sl_BOOL, bool, &(typool), n, err);
+    { __typeof__(grown) m9v = M9_POOL_SL (m9_sl_BOOL, bool, &(Ast__typool), n, err);
       if (err->exc) { m9ln = 315; goto L_ret; };
       grown = m9v;
     }
     { __typeof__(i) m9t2to;
     i = INT64_C(0);
-    m9t2to = m9_sub_i64 ((nows).len, INT64_C(1), err);
+    m9t2to = m9_sub_i64 ((Ast__nows).len, INT64_C(1), err);
     if (err->exc) { m9ln = 316; goto L_ret; };
     if (i <= m9t2to) for (;;) {
-      { __typeof__((*(bool *) m9_at (grown.p, i, grown.len, sizeof (bool), err))) m9v = (*(bool *) m9_at (nows.p, i, nows.len, sizeof (bool), err));
+      { __typeof__((*(bool *) m9_at (grown.p, i, grown.len, sizeof (bool), err))) m9v = (*(bool *) m9_at (Ast__nows.p, i, Ast__nows.len, sizeof (bool), err));
         if (err->exc) { m9ln = 316; goto L_ret; };
         (*(bool *) m9_at (grown.p, i, grown.len, sizeof (bool), err)) = m9v;
         if (err->exc) { m9ln = 316; goto L_ret; };
@@ -531,9 +531,9 @@ void Ast_SetNoWrites (int64_t id, m9_state *err)
       if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
     } }
-    nows = grown;
+    Ast__nows = grown;
   }
-  (*(bool *) m9_at (nows.p, id, nows.len, sizeof (bool), err)) = true;
+  (*(bool *) m9_at (Ast__nows.p, id, Ast__nows.len, sizeof (bool), err)) = true;
   if (err->exc) { m9ln = 319; goto L_ret; };
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -551,9 +551,9 @@ bool Ast_NoWritesAt (int64_t id, m9_state *err)
   static const char m9pn[] = "Ast.NoWritesAt"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
-  if (((id >= INT64_C(0)) && (id < (nows).len))) {
+  if (((id >= INT64_C(0)) && (id < (Ast__nows).len))) {
     err->res = m9res;
-    m9ret = (*(bool *) m9_at (nows.p, id, nows.len, sizeof (bool), err));
+    m9ret = (*(bool *) m9_at (Ast__nows.p, id, Ast__nows.len, sizeof (bool), err));
     if (err->exc) { m9ln = 324; goto L_ret; };
     goto L_ret;
   }
@@ -581,8 +581,8 @@ void Ast_SetReadsOnly (int64_t id, m9_state *err)
   if ((id < INT64_C(0))) {
     goto L_ret;
   }
-  if ((id >= (rdos).len)) {
-    { __typeof__(n) m9v = m9_mul_i64 (INT64_C(2), (rdos).len, err);
+  if ((id >= (Ast__rdos).len)) {
+    { __typeof__(n) m9v = m9_mul_i64 (INT64_C(2), (Ast__rdos).len, err);
       if (err->exc) { m9ln = 335; goto L_ret; };
       n = m9v;
     }
@@ -594,16 +594,16 @@ void Ast_SetReadsOnly (int64_t id, m9_state *err)
         n = m9v;
       }
     }
-    { __typeof__(grown) m9v = M9_POOL_SL (m9_sl_BOOL, bool, &(typool), n, err);
+    { __typeof__(grown) m9v = M9_POOL_SL (m9_sl_BOOL, bool, &(Ast__typool), n, err);
       if (err->exc) { m9ln = 337; goto L_ret; };
       grown = m9v;
     }
     { __typeof__(i) m9t2to;
     i = INT64_C(0);
-    m9t2to = m9_sub_i64 ((rdos).len, INT64_C(1), err);
+    m9t2to = m9_sub_i64 ((Ast__rdos).len, INT64_C(1), err);
     if (err->exc) { m9ln = 338; goto L_ret; };
     if (i <= m9t2to) for (;;) {
-      { __typeof__((*(bool *) m9_at (grown.p, i, grown.len, sizeof (bool), err))) m9v = (*(bool *) m9_at (rdos.p, i, rdos.len, sizeof (bool), err));
+      { __typeof__((*(bool *) m9_at (grown.p, i, grown.len, sizeof (bool), err))) m9v = (*(bool *) m9_at (Ast__rdos.p, i, Ast__rdos.len, sizeof (bool), err));
         if (err->exc) { m9ln = 338; goto L_ret; };
         (*(bool *) m9_at (grown.p, i, grown.len, sizeof (bool), err)) = m9v;
         if (err->exc) { m9ln = 338; goto L_ret; };
@@ -611,9 +611,9 @@ void Ast_SetReadsOnly (int64_t id, m9_state *err)
       if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
     } }
-    rdos = grown;
+    Ast__rdos = grown;
   }
-  (*(bool *) m9_at (rdos.p, id, rdos.len, sizeof (bool), err)) = true;
+  (*(bool *) m9_at (Ast__rdos.p, id, Ast__rdos.len, sizeof (bool), err)) = true;
   if (err->exc) { m9ln = 341; goto L_ret; };
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -631,9 +631,9 @@ bool Ast_ReadsOnlyAt (int64_t id, m9_state *err)
   static const char m9pn[] = "Ast.ReadsOnlyAt"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
-  if (((id >= INT64_C(0)) && (id < (rdos).len))) {
+  if (((id >= INT64_C(0)) && (id < (Ast__rdos).len))) {
     err->res = m9res;
-    m9ret = (*(bool *) m9_at (rdos.p, id, rdos.len, sizeof (bool), err));
+    m9ret = (*(bool *) m9_at (Ast__rdos.p, id, Ast__rdos.len, sizeof (bool), err));
     if (err->exc) { m9ln = 346; goto L_ret; };
     goto L_ret;
   }

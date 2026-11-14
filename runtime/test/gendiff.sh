@@ -138,11 +138,18 @@ grep -q 'static const m9_arr_3_AggUse_Status Statuses_k = { {' "$TG"/gen_want.tx
 # constant pointer, the importer's write through it.  Two generators
 # that both dropped the feature would also agree byte for byte.
 run ExportDef Io Fmt
-grep -q '^int64_t \* const ExportDef_count = &count;$' "$TG"/gen_want.txt \
+grep -q '^int64_t \* const ExportDef_count = &ExportDef__count;$' "$TG"/gen_want.txt \
   || { echo "ExportDef: the exported pointer NOT generated"; exit 1; }
+# A module variable named like a C library function carries its
+# module's name, in the definition's module and in a program
+# (2026-11-14: `time' did not compile against <time.h>).
+grep -q '^static int64_t ExportDef__time;$' "$TG"/gen_want.txt \
+  || { echo "ExportDef: the module variable time does not carry its module's name"; exit 1; }
 run ExportUse ExportDef Io Fmt
 grep -q '(\*ExportDef_count)' "$TG"/gen_want.txt \
   || { echo "ExportUse: the write through ExportDef_count NOT generated"; exit 1; }
+grep -q '^static int64_t ExportUse__time;$' "$TG"/gen_want.txt \
+  || { echo "ExportUse: the program variable time does not carry its module's name"; exit 1; }
 # An imported record's enumeration field against an imported member
 # is a tag compare, not a C struct == (cp-kernel's finding on 0.19.0).
 grep -q 'shade).tag == ' "$TG"/gen_want.txt \
@@ -161,11 +168,11 @@ run ShareUse Io
 grep -q 'for (int64_t m9t[0-9]*i = 0; m9t[0-9]*i < m9t[0-9]*s.len; ) { ch = m9_utf_next (m9t[0-9]*s, &m9t[0-9]*i);' "$TG"/gen_want.txt \
   && grep -q '{ __typeof__(arr) \*m9t[0-9]*s = &(arr);' "$TG"/gen_want.txt \
   || { echo "ShareUse: FOR x IN is not the once-evaluated loop -- in BOTH generators"; exit 1; }
-grep -q -A2 '__typeof__(b) m9v = ShareUse_Make (n, err);' "$TG"/gen_want.txt \
-  && grep -A2 '__typeof__(b) m9v = ShareUse_Make (n, err);' "$TG"/gen_want.txt | grep -q 'if (err->exc) .*goto' \
-  && grep -A3 '__typeof__(b) m9v = ShareUse_Make (n, err);' "$TG"/gen_want.txt | grep -q '  b = m9v;' \
+grep -q -A2 '__typeof__(ShareUse__b) m9v = ShareUse_Make (n, err);' "$TG"/gen_want.txt \
+  && grep -A2 '__typeof__(ShareUse__b) m9v = ShareUse_Make (n, err);' "$TG"/gen_want.txt | grep -q 'if (err->exc) .*goto' \
+  && grep -A3 '__typeof__(ShareUse__b) m9v = ShareUse_Make (n, err);' "$TG"/gen_want.txt | grep -q '  ShareUse__b = m9v;' \
   || { echo "ShareUse: a raising call's answer is stored before its error slot is read -- in BOTH generators"; exit 1; }
-if grep -q 'b = ((__typeof__(b)) m9_share_copy (m9v));' "$TG"/gen_want.txt; then
+if grep -q 'ShareUse__b = ((__typeof__(ShareUse__b)) m9_share_copy (m9v));' "$TG"/gen_want.txt; then
   echo "ShareUse: a call's SHARED answer is share-copied, a count too many -- in BOTH generators"; exit 1
 fi
 # A raising call nested as an ARGUMENT is hoisted into a guarded
@@ -180,8 +187,10 @@ grep -q 'm9_f32_f64 (x, err)' "$TG"/gen_want.txt \
   || { echo "ShareUse: F32 of a double is not the checked conversion -- in BOTH generators"; exit 1; }
 grep -q 'm9_gridof (m9t[0-9]*\.len, m9t[0-9]*n, 2, m9t[0-9]*r\.n, m9t[0-9]*r\.s, err);' "$TG"/gen_want.txt \
   || { echo "ShareUse: GRID (s, n0, n1) is not laid over the slice through m9_gridof -- in BOTH generators"; exit 1; }
-grep -q 'static double y0_;' "$TG"/gen_want.txt \
-  || { echo "ShareUse: a module variable named y0 is not escaped from libm's Bessel function -- in BOTH generators"; exit 1; }
+# A module variable carries its module's name (2026-11-09), so y0 is
+# kept apart from libm's Bessel function, and from all of the C library.
+grep -q 'static double ShareUse__y0;' "$TG"/gen_want.txt \
+  || { echo "ShareUse: a module variable named y0 does not carry its module's name -- in BOTH generators"; exit 1; }
 # A string literal is its UTF-8 octets since STR is the UTF-8 type
 # (2026-10-31): `déjà ' is d, two octets, j, two octets, a space.
 grep -q '{ 100, 195, 169, 106, 195, 160, 32 }' "$TG"/gen_want.txt \

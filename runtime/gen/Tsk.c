@@ -7,6 +7,7 @@ const m9_exc Tsk_Failed = { "Failed" };
 
 extern int m9_cores (void);
 extern int m9_os (void);
+extern int m9_machine (void);
 extern int m9_exe_path (void *, int);
 extern void m9_meminfo (void *);
 extern void m9_keep_at_most (int64_t);

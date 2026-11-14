@@ -72,35 +72,35 @@ struct Plot_Geo {
   double width;
 };
 
-static double heatLo;
-static double heatHi;
-static bool heatFixed;
-static m9_arr_32768_double serX;
-static m9_arr_32768_double serY;
-static m9_arr_4_int64_t serN;
-static m9_arr_4_int64_t serCol;
-static m9_arr_4_m9_sl_UTF8 serLbl;
-static int64_t nSer;
-static m9_arr_32768_double barAt;
-static m9_arr_32768_double barV;
-static m9_arr_4_int64_t barN;
-static m9_arr_4_int64_t barCol;
-static m9_arr_4_m9_sl_UTF8 barLbl;
-static m9_arr_4_m9_sl_UTF8 barHex;
-static m9_arr_4_m9_sl_UTF8 serHex;
-static m9_arr_4_m9_sl_F64 barErr;
-static m9_arr_4_bool barHasErr;
-static int64_t nBar;
-static int64_t barDir;
-static int64_t barMode;
-static int64_t barPlace;
-static bool barFilled;
-static double barWidth;
-static bool logX;
-static bool logY;
-static m9_sl_F64 dotX;
-static m9_sl_F64 dotY;
-static int64_t dotN;
+static double Plot__heatLo;
+static double Plot__heatHi;
+static bool Plot__heatFixed;
+static m9_arr_32768_double Plot__serX;
+static m9_arr_32768_double Plot__serY;
+static m9_arr_4_int64_t Plot__serN;
+static m9_arr_4_int64_t Plot__serCol;
+static m9_arr_4_m9_sl_UTF8 Plot__serLbl;
+static int64_t Plot__nSer;
+static m9_arr_32768_double Plot__barAt;
+static m9_arr_32768_double Plot__barV;
+static m9_arr_4_int64_t Plot__barN;
+static m9_arr_4_int64_t Plot__barCol;
+static m9_arr_4_m9_sl_UTF8 Plot__barLbl;
+static m9_arr_4_m9_sl_UTF8 Plot__barHex;
+static m9_arr_4_m9_sl_UTF8 Plot__serHex;
+static m9_arr_4_m9_sl_F64 Plot__barErr;
+static m9_arr_4_bool Plot__barHasErr;
+static int64_t Plot__nBar;
+static int64_t Plot__barDir;
+static int64_t Plot__barMode;
+static int64_t Plot__barPlace;
+static bool Plot__barFilled;
+static double Plot__barWidth;
+static bool Plot__logX;
+static bool Plot__logY;
+static m9_sl_F64 Plot__dotX;
+static m9_sl_F64 Plot__dotY;
+static int64_t Plot__dotN;
 static const m9_arr_6_double StdTick_k = { {
   (0.25),
   (0.5),
@@ -771,31 +771,31 @@ void Plot_ClearFigure (m9_state *err)
   static const char m9pn[] = "Plot.ClearFigure"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   int64_t i = 0; (void) i;
-  nSer = INT64_C(0);
-  dotN = INT64_C(0);
-  nBar = INT64_C(0);
+  Plot__nSer = INT64_C(0);
+  Plot__dotN = INT64_C(0);
+  Plot__nBar = INT64_C(0);
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (Plot_MaxSer, INT64_C(1), err);
   if (err->exc) { m9ln = 551; goto L_ret; };
   if (i <= m9t1to) for (;;) {
-    (*(bool *) m9_at (barHasErr.v, i, INT64_C(4), sizeof (bool), err)) = false;
+    (*(bool *) m9_at (Plot__barHasErr.v, i, INT64_C(4), sizeof (bool), err)) = false;
     if (err->exc) { m9ln = 552; goto L_ret; };
-    (*(m9_sl_UTF8 *) m9_at (barHex.v, i, INT64_C(4), sizeof (m9_sl_UTF8), err)) = ((m9_sl_UTF8){ NULL, 0 });
+    (*(m9_sl_UTF8 *) m9_at (Plot__barHex.v, i, INT64_C(4), sizeof (m9_sl_UTF8), err)) = ((m9_sl_UTF8){ NULL, 0 });
     if (err->exc) { m9ln = 553; goto L_ret; };
-    (*(m9_sl_UTF8 *) m9_at (serHex.v, i, INT64_C(4), sizeof (m9_sl_UTF8), err)) = ((m9_sl_UTF8){ NULL, 0 });
+    (*(m9_sl_UTF8 *) m9_at (Plot__serHex.v, i, INT64_C(4), sizeof (m9_sl_UTF8), err)) = ((m9_sl_UTF8){ NULL, 0 });
     if (err->exc) { m9ln = 554; goto L_ret; };
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
-  barDir = Plot_BarVertical;
-  barMode = Plot_BarGrouped;
-  barPlace = Plot_BarAtValue;
-  barFilled = true;
-  barWidth = 0.8;
-  logX = false;
-  logY = false;
-  heatFixed = false;
+  Plot__barDir = Plot_BarVertical;
+  Plot__barMode = Plot_BarGrouped;
+  Plot__barPlace = Plot_BarAtValue;
+  Plot__barFilled = true;
+  Plot__barWidth = 0.8;
+  Plot__logX = false;
+  Plot__logY = false;
+  Plot__heatFixed = false;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
@@ -813,7 +813,7 @@ void Plot_AddLine (m9_sl_F64 xs, m9_sl_F64 ys, int64_t colorIdx, m9_sl_UTF8 labe
   int32_t m9ln = 0; (void) m9ln;
   int64_t n = 0; (void) n;
   int64_t i = 0; (void) i;
-  if ((nSer >= Plot_MaxSer)) {
+  if ((Plot__nSer >= Plot_MaxSer)) {
     goto L_ret;
   }
   n = (xs).len;
@@ -825,28 +825,28 @@ void Plot_AddLine (m9_sl_F64 xs, m9_sl_F64 ys, int64_t colorIdx, m9_sl_UTF8 labe
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) { m9ln = 871; goto L_ret; };
   if (i <= m9t1to) for (;;) {
-    { __typeof__((*(double *) m9_at (serX.v, m9_add_i64 (m9_mul_i64 (nSer, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err))) m9v = (*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err));
+    { __typeof__((*(double *) m9_at (Plot__serX.v, m9_add_i64 (m9_mul_i64 (Plot__nSer, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err))) m9v = (*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err));
       if (err->exc) { m9ln = 872; goto L_ret; };
-      (*(double *) m9_at (serX.v, m9_add_i64 (m9_mul_i64 (nSer, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err)) = m9v;
+      (*(double *) m9_at (Plot__serX.v, m9_add_i64 (m9_mul_i64 (Plot__nSer, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err)) = m9v;
       if (err->exc) { m9ln = 872; goto L_ret; };
     }
-    { __typeof__((*(double *) m9_at (serY.v, m9_add_i64 (m9_mul_i64 (nSer, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err))) m9v = (*(double *) m9_at (ys.p, i, ys.len, sizeof (double), err));
+    { __typeof__((*(double *) m9_at (Plot__serY.v, m9_add_i64 (m9_mul_i64 (Plot__nSer, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err))) m9v = (*(double *) m9_at (ys.p, i, ys.len, sizeof (double), err));
       if (err->exc) { m9ln = 873; goto L_ret; };
-      (*(double *) m9_at (serY.v, m9_add_i64 (m9_mul_i64 (nSer, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err)) = m9v;
+      (*(double *) m9_at (Plot__serY.v, m9_add_i64 (m9_mul_i64 (Plot__nSer, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err)) = m9v;
       if (err->exc) { m9ln = 873; goto L_ret; };
     }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
-  (*(int64_t *) m9_at (serN.v, nSer, INT64_C(4), sizeof (int64_t), err)) = n;
+  (*(int64_t *) m9_at (Plot__serN.v, Plot__nSer, INT64_C(4), sizeof (int64_t), err)) = n;
   if (err->exc) { m9ln = 875; goto L_ret; };
-  (*(int64_t *) m9_at (serCol.v, nSer, INT64_C(4), sizeof (int64_t), err)) = colorIdx;
+  (*(int64_t *) m9_at (Plot__serCol.v, Plot__nSer, INT64_C(4), sizeof (int64_t), err)) = colorIdx;
   if (err->exc) { m9ln = 876; goto L_ret; };
-  (*(m9_sl_UTF8 *) m9_at (serLbl.v, nSer, INT64_C(4), sizeof (m9_sl_UTF8), err)) = label;
+  (*(m9_sl_UTF8 *) m9_at (Plot__serLbl.v, Plot__nSer, INT64_C(4), sizeof (m9_sl_UTF8), err)) = label;
   if (err->exc) { m9ln = 877; goto L_ret; };
-  { __typeof__(nSer) m9v = m9_add_i64 (nSer, INT64_C(1), err);
+  { __typeof__(Plot__nSer) m9v = m9_add_i64 (Plot__nSer, INT64_C(1), err);
     if (err->exc) { m9ln = 878; goto L_ret; };
-    nSer = m9v;
+    Plot__nSer = m9v;
   }
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -863,11 +863,11 @@ void Plot_SetDots (m9_sl_F64 xs, m9_sl_F64 ys, m9_state *err)
   err->res = &m9frame;
   static const char m9pn[] = "Plot.SetDots"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
-  dotX = xs;
-  dotY = ys;
-  dotN = (xs).len;
-  if (((ys).len < dotN)) {
-    dotN = (ys).len;
+  Plot__dotX = xs;
+  Plot__dotY = ys;
+  Plot__dotN = (xs).len;
+  if (((ys).len < Plot__dotN)) {
+    Plot__dotN = (ys).len;
   }
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -886,7 +886,7 @@ void Plot_AddBars (m9_sl_F64 at, m9_sl_F64 v, int64_t colorIdx, m9_sl_UTF8 label
   int32_t m9ln = 0; (void) m9ln;
   int64_t n = 0; (void) n;
   int64_t i = 0; (void) i;
-  if ((nBar >= Plot_MaxSer)) {
+  if ((Plot__nBar >= Plot_MaxSer)) {
     goto L_ret;
   }
   n = (at).len;
@@ -901,28 +901,28 @@ void Plot_AddBars (m9_sl_F64 at, m9_sl_F64 v, int64_t colorIdx, m9_sl_UTF8 label
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) { m9ln = 691; goto L_ret; };
   if (i <= m9t1to) for (;;) {
-    { __typeof__((*(double *) m9_at (barAt.v, m9_add_i64 (m9_mul_i64 (nBar, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err))) m9v = (*(double *) m9_at (at.p, i, at.len, sizeof (double), err));
+    { __typeof__((*(double *) m9_at (Plot__barAt.v, m9_add_i64 (m9_mul_i64 (Plot__nBar, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err))) m9v = (*(double *) m9_at (at.p, i, at.len, sizeof (double), err));
       if (err->exc) { m9ln = 692; goto L_ret; };
-      (*(double *) m9_at (barAt.v, m9_add_i64 (m9_mul_i64 (nBar, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err)) = m9v;
+      (*(double *) m9_at (Plot__barAt.v, m9_add_i64 (m9_mul_i64 (Plot__nBar, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err)) = m9v;
       if (err->exc) { m9ln = 692; goto L_ret; };
     }
-    { __typeof__((*(double *) m9_at (barV.v, m9_add_i64 (m9_mul_i64 (nBar, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err))) m9v = (*(double *) m9_at (v.p, i, v.len, sizeof (double), err));
+    { __typeof__((*(double *) m9_at (Plot__barV.v, m9_add_i64 (m9_mul_i64 (Plot__nBar, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err))) m9v = (*(double *) m9_at (v.p, i, v.len, sizeof (double), err));
       if (err->exc) { m9ln = 693; goto L_ret; };
-      (*(double *) m9_at (barV.v, m9_add_i64 (m9_mul_i64 (nBar, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err)) = m9v;
+      (*(double *) m9_at (Plot__barV.v, m9_add_i64 (m9_mul_i64 (Plot__nBar, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err)) = m9v;
       if (err->exc) { m9ln = 693; goto L_ret; };
     }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
-  (*(int64_t *) m9_at (barN.v, nBar, INT64_C(4), sizeof (int64_t), err)) = n;
+  (*(int64_t *) m9_at (Plot__barN.v, Plot__nBar, INT64_C(4), sizeof (int64_t), err)) = n;
   if (err->exc) { m9ln = 695; goto L_ret; };
-  (*(int64_t *) m9_at (barCol.v, nBar, INT64_C(4), sizeof (int64_t), err)) = colorIdx;
+  (*(int64_t *) m9_at (Plot__barCol.v, Plot__nBar, INT64_C(4), sizeof (int64_t), err)) = colorIdx;
   if (err->exc) { m9ln = 696; goto L_ret; };
-  (*(m9_sl_UTF8 *) m9_at (barLbl.v, nBar, INT64_C(4), sizeof (m9_sl_UTF8), err)) = label;
+  (*(m9_sl_UTF8 *) m9_at (Plot__barLbl.v, Plot__nBar, INT64_C(4), sizeof (m9_sl_UTF8), err)) = label;
   if (err->exc) { m9ln = 697; goto L_ret; };
-  { __typeof__(nBar) m9v = m9_add_i64 (nBar, INT64_C(1), err);
+  { __typeof__(Plot__nBar) m9v = m9_add_i64 (Plot__nBar, INT64_C(1), err);
     if (err->exc) { m9ln = 698; goto L_ret; };
-    nBar = m9v;
+    Plot__nBar = m9v;
   }
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -939,13 +939,13 @@ void Plot_SetBarStyle (int64_t dir, int64_t mode, int64_t place, bool filled, do
   err->res = &m9frame;
   static const char m9pn[] = "Plot.SetBarStyle"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
-  barDir = dir;
-  barMode = mode;
-  barPlace = place;
-  barFilled = filled;
+  Plot__barDir = dir;
+  Plot__barMode = mode;
+  Plot__barPlace = place;
+  Plot__barFilled = filled;
   if ((width > 0.0)) {
     if ((width <= 1.0)) {
-      barWidth = width;
+      Plot__barWidth = width;
     }
   }
 L_ret: ;
@@ -966,9 +966,9 @@ void Plot_SetBarErrors (int64_t series, m9_sl_F64 err_, m9_state *err)
   if (((series < INT64_C(0)) || (series >= Plot_MaxSer))) {
     goto L_ret;
   }
-  (*(m9_sl_F64 *) m9_at (barErr.v, series, INT64_C(4), sizeof (m9_sl_F64), err)) = err_;
+  (*(m9_sl_F64 *) m9_at (Plot__barErr.v, series, INT64_C(4), sizeof (m9_sl_F64), err)) = err_;
   if (err->exc) { m9ln = 641; goto L_ret; };
-  (*(bool *) m9_at (barHasErr.v, series, INT64_C(4), sizeof (bool), err)) = true;
+  (*(bool *) m9_at (Plot__barHasErr.v, series, INT64_C(4), sizeof (bool), err)) = true;
   if (err->exc) { m9ln = 642; goto L_ret; };
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -988,7 +988,7 @@ void Plot_SetBarColor (int64_t series, m9_sl_UTF8 hex, m9_state *err)
   if (((series < INT64_C(0)) || (series >= Plot_MaxSer))) {
     goto L_ret;
   }
-  (*(m9_sl_UTF8 *) m9_at (barHex.v, series, INT64_C(4), sizeof (m9_sl_UTF8), err)) = hex;
+  (*(m9_sl_UTF8 *) m9_at (Plot__barHex.v, series, INT64_C(4), sizeof (m9_sl_UTF8), err)) = hex;
   if (err->exc) { m9ln = 648; goto L_ret; };
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -1077,7 +1077,7 @@ void Plot_SetLineColor (int64_t series, m9_sl_UTF8 hex, m9_state *err)
   if (((series < INT64_C(0)) || (series >= Plot_MaxSer))) {
     goto L_ret;
   }
-  (*(m9_sl_UTF8 *) m9_at (serHex.v, series, INT64_C(4), sizeof (m9_sl_UTF8), err)) = hex;
+  (*(m9_sl_UTF8 *) m9_at (Plot__serHex.v, series, INT64_C(4), sizeof (m9_sl_UTF8), err)) = hex;
   if (err->exc) { m9ln = 664; goto L_ret; };
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -1094,7 +1094,7 @@ void Plot_SetLogX (bool on, m9_state *err)
   err->res = &m9frame;
   static const char m9pn[] = "Plot.SetLogX"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
-  logX = on;
+  Plot__logX = on;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
@@ -1110,7 +1110,7 @@ void Plot_SetLogY (bool on, m9_state *err)
   err->res = &m9frame;
   static const char m9pn[] = "Plot.SetLogY"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
-  logY = on;
+  Plot__logY = on;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
@@ -1156,7 +1156,7 @@ m9_sl_UTF8 Plot_Render (m9_sl_UTF8 title, m9_sl_UTF8 xlabel, m9_sl_UTF8 ylabel, 
   double v1 = 0; (void) v1;
   bool seen = false; (void) seen;
   bool pen = false; (void) pen;
-  if (((nSer == INT64_C(0)) && (nBar == INT64_C(0)))) {
+  if (((Plot__nSer == INT64_C(0)) && (Plot__nBar == INT64_C(0)))) {
     err->res = m9res;
     m9ret = ((m9_sl_UTF8){ NULL, 0 });
     goto L_ret;
@@ -1168,32 +1168,32 @@ m9_sl_UTF8 Plot_Render (m9_sl_UTF8 title, m9_sl_UTF8 xlabel, m9_sl_UTF8 ylabel, 
   ymax = 1.0;
   { __typeof__(s) m9t1to;
   s = INT64_C(0);
-  m9t1to = m9_sub_i64 (nSer, INT64_C(1), err);
+  m9t1to = m9_sub_i64 (Plot__nSer, INT64_C(1), err);
   if (err->exc) { m9ln = 896; goto L_ret; };
   if (s <= m9t1to) for (;;) {
     M9_YCHK ();
     { __typeof__(i) m9t2to;
     i = INT64_C(0);
-    m9t2to = m9_sub_i64 ((*(int64_t *) m9_at (serN.v, s, INT64_C(4), sizeof (int64_t), err)), INT64_C(1), err);
+    m9t2to = m9_sub_i64 ((*(int64_t *) m9_at (Plot__serN.v, s, INT64_C(4), sizeof (int64_t), err)), INT64_C(1), err);
     if (err->exc) { m9ln = 897; goto L_ret; };
     if (i <= m9t2to) for (;;) {
       M9_YCHK ();
-      { __typeof__(v) m9v = (*(double *) m9_at (serX.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err));
+      { __typeof__(v) m9v = (*(double *) m9_at (Plot__serX.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err));
         if (err->exc) { m9ln = 898; goto L_ret; };
         v = m9v;
       }
-      { __typeof__(w) m9v = (*(double *) m9_at (serY.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err));
+      { __typeof__(w) m9v = (*(double *) m9_at (Plot__serY.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err));
         if (err->exc) { m9ln = 899; goto L_ret; };
         w = m9v;
       }
-      bool m9t3 = (Plot_Loggable (v, logX, err) && Plot_Loggable (w, logY, err));
+      bool m9t3 = (Plot_Loggable (v, Plot__logX, err) && Plot_Loggable (w, Plot__logY, err));
       if (err->exc) { m9ln = 900; goto L_ret; };
       if (m9t3) {
-        { __typeof__(v) m9v = Plot_Axis (v, logX, err);
+        { __typeof__(v) m9v = Plot_Axis (v, Plot__logX, err);
           if (err->exc) { m9ln = 901; goto L_ret; };
           v = m9v;
         }
-        { __typeof__(w) m9v = Plot_Axis (w, logY, err);
+        { __typeof__(w) m9v = Plot_Axis (w, Plot__logY, err);
           if (err->exc) { m9ln = 902; goto L_ret; };
           w = m9v;
         }
@@ -1226,26 +1226,26 @@ m9_sl_UTF8 Plot_Render (m9_sl_UTF8 title, m9_sl_UTF8 xlabel, m9_sl_UTF8 ylabel, 
   } }
   { __typeof__(i) m9t4to;
   i = INT64_C(0);
-  m9t4to = m9_sub_i64 (dotN, INT64_C(1), err);
+  m9t4to = m9_sub_i64 (Plot__dotN, INT64_C(1), err);
   if (err->exc) { m9ln = 916; goto L_ret; };
   if (i <= m9t4to) for (;;) {
     M9_YCHK ();
-    { __typeof__(v) m9v = (*(double *) m9_at (dotX.p, i, dotX.len, sizeof (double), err));
+    { __typeof__(v) m9v = (*(double *) m9_at (Plot__dotX.p, i, Plot__dotX.len, sizeof (double), err));
       if (err->exc) { m9ln = 917; goto L_ret; };
       v = m9v;
     }
-    { __typeof__(w) m9v = (*(double *) m9_at (dotY.p, i, dotY.len, sizeof (double), err));
+    { __typeof__(w) m9v = (*(double *) m9_at (Plot__dotY.p, i, Plot__dotY.len, sizeof (double), err));
       if (err->exc) { m9ln = 918; goto L_ret; };
       w = m9v;
     }
-    bool m9t5 = (Plot_Loggable (v, logX, err) && Plot_Loggable (w, logY, err));
+    bool m9t5 = (Plot_Loggable (v, Plot__logX, err) && Plot_Loggable (w, Plot__logY, err));
     if (err->exc) { m9ln = 919; goto L_ret; };
     if (m9t5) {
-      { __typeof__(v) m9v = Plot_Axis (v, logX, err);
+      { __typeof__(v) m9v = Plot_Axis (v, Plot__logX, err);
         if (err->exc) { m9ln = 920; goto L_ret; };
         v = m9v;
       }
-      { __typeof__(w) m9v = Plot_Axis (w, logY, err);
+      { __typeof__(w) m9v = Plot_Axis (w, Plot__logY, err);
         if (err->exc) { m9ln = 921; goto L_ret; };
         w = m9v;
       }
@@ -1273,7 +1273,7 @@ m9_sl_UTF8 Plot_Render (m9_sl_UTF8 title, m9_sl_UTF8 xlabel, m9_sl_UTF8 ylabel, 
     if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
-  if ((nBar > INT64_C(0))) {
+  if ((Plot__nBar > INT64_C(0))) {
     { __typeof__(slot) m9v = Plot_SlotWidth (err);
       if (err->exc) { m9ln = 943; goto L_ret; };
       slot = m9v;
@@ -1281,13 +1281,13 @@ m9_sl_UTF8 Plot_Render (m9_sl_UTF8 title, m9_sl_UTF8 xlabel, m9_sl_UTF8 ylabel, 
     half = (slot * 0.5);
     { __typeof__(s) m9t6to;
     s = INT64_C(0);
-    m9t6to = m9_sub_i64 (nBar, INT64_C(1), err);
+    m9t6to = m9_sub_i64 (Plot__nBar, INT64_C(1), err);
     if (err->exc) { m9ln = 945; goto L_ret; };
     if (s <= m9t6to) for (;;) {
       M9_YCHK ();
       { __typeof__(i) m9t7to;
       i = INT64_C(0);
-      m9t7to = m9_sub_i64 ((*(int64_t *) m9_at (barN.v, s, INT64_C(4), sizeof (int64_t), err)), INT64_C(1), err);
+      m9t7to = m9_sub_i64 ((*(int64_t *) m9_at (Plot__barN.v, s, INT64_C(4), sizeof (int64_t), err)), INT64_C(1), err);
       if (err->exc) { m9ln = 946; goto L_ret; };
       if (i <= m9t7to) for (;;) {
         M9_YCHK ();
@@ -1295,7 +1295,7 @@ m9_sl_UTF8 Plot_Render (m9_sl_UTF8 title, m9_sl_UTF8 xlabel, m9_sl_UTF8 ylabel, 
           if (err->exc) { m9ln = 947; goto L_ret; };
           v = m9v;
         }
-        { __typeof__(w) m9v = (*(double *) m9_at (barV.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err));
+        { __typeof__(w) m9v = (*(double *) m9_at (Plot__barV.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err));
           if (err->exc) { m9ln = 948; goto L_ret; };
           w = m9v;
         }
@@ -1307,13 +1307,13 @@ m9_sl_UTF8 Plot_Render (m9_sl_UTF8 title, m9_sl_UTF8 xlabel, m9_sl_UTF8 ylabel, 
             base = m9v;
           }
           top = (base + w);
-          bool m9t9 = (*(bool *) m9_at (barHasErr.v, s, INT64_C(4), sizeof (bool), err));
+          bool m9t9 = (*(bool *) m9_at (Plot__barHasErr.v, s, INT64_C(4), sizeof (bool), err));
           if (err->exc) { m9ln = 952; goto L_ret; };
           if (m9t9) {
-            bool m9t10 = (i < ((*(m9_sl_F64 *) m9_at (barErr.v, s, INT64_C(4), sizeof (m9_sl_F64), err))).len);
+            bool m9t10 = (i < ((*(m9_sl_F64 *) m9_at (Plot__barErr.v, s, INT64_C(4), sizeof (m9_sl_F64), err))).len);
             if (err->exc) { m9ln = 953; goto L_ret; };
             if (m9t10) {
-              { __typeof__(e) m9v = (*(double *) m9_at (({ m9_sl_F64 m9g = ((*(m9_sl_F64 *) m9_at (barErr.v, s, INT64_C(4), sizeof (m9_sl_F64), err))); if (err->exc) { m9ln = 954; goto L_ret; }; m9g; }).p, i, ({ m9_sl_F64 m9g = ((*(m9_sl_F64 *) m9_at (barErr.v, s, INT64_C(4), sizeof (m9_sl_F64), err))); if (err->exc) { m9ln = 954; goto L_ret; }; m9g; }).len, sizeof (double), err));
+              { __typeof__(e) m9v = (*(double *) m9_at (({ m9_sl_F64 m9g = ((*(m9_sl_F64 *) m9_at (Plot__barErr.v, s, INT64_C(4), sizeof (m9_sl_F64), err))); if (err->exc) { m9ln = 954; goto L_ret; }; m9g; }).p, i, ({ m9_sl_F64 m9g = ((*(m9_sl_F64 *) m9_at (Plot__barErr.v, s, INT64_C(4), sizeof (m9_sl_F64), err))); if (err->exc) { m9ln = 954; goto L_ret; }; m9g; }).len, sizeof (double), err));
                 if (err->exc) { m9ln = 954; goto L_ret; };
                 e = m9v;
               }
@@ -1326,43 +1326,43 @@ m9_sl_UTF8 Plot_Render (m9_sl_UTF8 title, m9_sl_UTF8 xlabel, m9_sl_UTF8 ylabel, 
               }
             }
           }
-          if ((barDir == Plot_BarHorizontal)) {
-            { __typeof__(c0) m9v = Plot_Axis ((v - half), logY, err);
+          if ((Plot__barDir == Plot_BarHorizontal)) {
+            { __typeof__(c0) m9v = Plot_Axis ((v - half), Plot__logY, err);
               if (err->exc) { m9ln = 963; goto L_ret; };
               c0 = m9v;
             }
-            { __typeof__(c1) m9v = Plot_Axis ((v + half), logY, err);
+            { __typeof__(c1) m9v = Plot_Axis ((v + half), Plot__logY, err);
               if (err->exc) { m9ln = 963; goto L_ret; };
               c1 = m9v;
             }
-            if ((logX && (base <= 0.0))) {
+            if ((Plot__logX && (base <= 0.0))) {
               base = (top / 100.0);
             }
-            { __typeof__(v0) m9v = Plot_Axis (base, logX, err);
+            { __typeof__(v0) m9v = Plot_Axis (base, Plot__logX, err);
               if (err->exc) { m9ln = 965; goto L_ret; };
               v0 = m9v;
             }
-            { __typeof__(v1) m9v = Plot_Axis (top, logX, err);
+            { __typeof__(v1) m9v = Plot_Axis (top, Plot__logX, err);
               if (err->exc) { m9ln = 965; goto L_ret; };
               v1 = m9v;
             }
           } else {
-            { __typeof__(c0) m9v = Plot_Axis ((v - half), logX, err);
+            { __typeof__(c0) m9v = Plot_Axis ((v - half), Plot__logX, err);
               if (err->exc) { m9ln = 967; goto L_ret; };
               c0 = m9v;
             }
-            { __typeof__(c1) m9v = Plot_Axis ((v + half), logX, err);
+            { __typeof__(c1) m9v = Plot_Axis ((v + half), Plot__logX, err);
               if (err->exc) { m9ln = 967; goto L_ret; };
               c1 = m9v;
             }
-            if ((logY && (base <= 0.0))) {
+            if ((Plot__logY && (base <= 0.0))) {
               base = (top / 100.0);
             }
-            { __typeof__(v0) m9v = Plot_Axis (base, logY, err);
+            { __typeof__(v0) m9v = Plot_Axis (base, Plot__logY, err);
               if (err->exc) { m9ln = 969; goto L_ret; };
               v0 = m9v;
             }
-            { __typeof__(v1) m9v = Plot_Axis (top, logY, err);
+            { __typeof__(v1) m9v = Plot_Axis (top, Plot__logY, err);
               if (err->exc) { m9ln = 969; goto L_ret; };
               v1 = m9v;
             }
@@ -1371,7 +1371,7 @@ m9_sl_UTF8 Plot_Render (m9_sl_UTF8 title, m9_sl_UTF8 xlabel, m9_sl_UTF8 ylabel, 
             v0 = top;
             v1 = base;
           }
-          if ((barDir == Plot_BarHorizontal)) {
+          if ((Plot__barDir == Plot_BarHorizontal)) {
             Plot_ExtendRange (&(ymin), &(ymax), &(xmin), &(xmax), &(seen), c0, c1, v0, v1, err);
             if (err->exc) { m9ln = 973; goto L_ret; };
           } else {
@@ -1402,7 +1402,7 @@ m9_sl_UTF8 Plot_Render (m9_sl_UTF8 title, m9_sl_UTF8 xlabel, m9_sl_UTF8 ylabel, 
   if (err->exc) { m9ln = 989; goto L_ret; };
   DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s2, 45 }), err);
   if (err->exc) { m9ln = 990; goto L_ret; };
-  if (logY) {
+  if (Plot__logY) {
     { __typeof__(t) m9v = Plot_DecadeFloor (ymin, err);
       if (err->exc) { m9ln = 999; goto L_ret; };
       t = m9v;
@@ -1516,7 +1516,7 @@ m9_sl_UTF8 Plot_Render (m9_sl_UTF8 title, m9_sl_UTF8 xlabel, m9_sl_UTF8 ylabel, 
       t = (t + step);
     }
   }
-  if (logX) {
+  if (Plot__logX) {
     { __typeof__(t) m9v = Plot_DecadeFloor (xmin, err);
       if (err->exc) { m9ln = 1034; goto L_ret; };
       t = m9v;
@@ -1666,34 +1666,34 @@ m9_sl_UTF8 Plot_Render (m9_sl_UTF8 title, m9_sl_UTF8 xlabel, m9_sl_UTF8 ylabel, 
   if (err->exc) { m9ln = 1081; goto L_ret; };
   DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s48, 37 }), err);
   if (err->exc) { m9ln = 1082; goto L_ret; };
-  if ((nBar > INT64_C(0))) {
-    { __typeof__(slot) m9v = (Plot_SlotWidth (err) * barWidth);
+  if ((Plot__nBar > INT64_C(0))) {
+    { __typeof__(slot) m9v = (Plot_SlotWidth (err) * Plot__barWidth);
       if (err->exc) { m9ln = 1091; goto L_ret; };
       slot = m9v;
     }
-    if ((barMode == Plot_BarStacked)) {
+    if ((Plot__barMode == Plot_BarStacked)) {
       grp = slot;
     } else {
-      grp = (slot / (double)(nBar));
+      grp = (slot / (double)(Plot__nBar));
     }
     { __typeof__(s) m9t12to;
     s = INT64_C(0);
-    m9t12to = m9_sub_i64 (nBar, INT64_C(1), err);
+    m9t12to = m9_sub_i64 (Plot__nBar, INT64_C(1), err);
     if (err->exc) { m9ln = 1094; goto L_ret; };
     if (s <= m9t12to) for (;;) {
       M9_YCHK ();
-      if ((barMode == Plot_BarStacked)) {
+      if ((Plot__barMode == Plot_BarStacked)) {
         off = 0.0;
       } else {
         off = ((0.0 - (slot * 0.5)) + (grp * (((double)(s) + 0.5))));
       }
       { __typeof__(i) m9t13to;
       i = INT64_C(0);
-      m9t13to = m9_sub_i64 ((*(int64_t *) m9_at (barN.v, s, INT64_C(4), sizeof (int64_t), err)), INT64_C(1), err);
+      m9t13to = m9_sub_i64 ((*(int64_t *) m9_at (Plot__barN.v, s, INT64_C(4), sizeof (int64_t), err)), INT64_C(1), err);
       if (err->exc) { m9ln = 1097; goto L_ret; };
       if (i <= m9t13to) for (;;) {
         M9_YCHK ();
-        { __typeof__(w) m9v = (*(double *) m9_at (barV.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err));
+        { __typeof__(w) m9v = (*(double *) m9_at (Plot__barV.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err));
           if (err->exc) { m9ln = 1098; goto L_ret; };
           w = m9v;
         }
@@ -1709,44 +1709,44 @@ m9_sl_UTF8 Plot_Render (m9_sl_UTF8 title, m9_sl_UTF8 xlabel, m9_sl_UTF8 ylabel, 
             base = m9v;
           }
           top = (base + w);
-          if ((barDir == Plot_BarHorizontal)) {
-            if ((logX && (base <= 0.0))) {
+          if ((Plot__barDir == Plot_BarHorizontal)) {
+            if ((Plot__logX && (base <= 0.0))) {
               { __typeof__(base) m9v = Plot_Pow10 (xmin, err);
                 if (err->exc) { m9ln = 1108; goto L_ret; };
                 base = m9v;
               }
             }
           } else {
-            if ((logY && (base <= 0.0))) {
+            if ((Plot__logY && (base <= 0.0))) {
               { __typeof__(base) m9v = Plot_Pow10 (ymin, err);
                 if (err->exc) { m9ln = 1110; goto L_ret; };
                 base = m9v;
               }
             }
           }
-          if ((barDir == Plot_BarHorizontal)) {
-            { __typeof__(Plot_Axis ((v + (grp * 0.5)), logY, err)) m9a15 = Plot_Axis ((v + (grp * 0.5)), logY, err);
+          if ((Plot__barDir == Plot_BarHorizontal)) {
+            { __typeof__(Plot_Axis ((v + (grp * 0.5)), Plot__logY, err)) m9a15 = Plot_Axis ((v + (grp * 0.5)), Plot__logY, err);
               if (err->exc) { m9ln = 1113; goto L_ret; };
             { __typeof__(c0) m9v = Plot_PYof (m9a15, ymin, ymax, err);
               if (err->exc) { m9ln = 1113; goto L_ret; };
               c0 = m9v;
             }
             }
-            { __typeof__(Plot_Axis ((v - (grp * 0.5)), logY, err)) m9a16 = Plot_Axis ((v - (grp * 0.5)), logY, err);
+            { __typeof__(Plot_Axis ((v - (grp * 0.5)), Plot__logY, err)) m9a16 = Plot_Axis ((v - (grp * 0.5)), Plot__logY, err);
               if (err->exc) { m9ln = 1114; goto L_ret; };
             { __typeof__(c1) m9v = Plot_PYof (m9a16, ymin, ymax, err);
               if (err->exc) { m9ln = 1114; goto L_ret; };
               c1 = m9v;
             }
             }
-            { __typeof__(Plot_Axis (base, logX, err)) m9a17 = Plot_Axis (base, logX, err);
+            { __typeof__(Plot_Axis (base, Plot__logX, err)) m9a17 = Plot_Axis (base, Plot__logX, err);
               if (err->exc) { m9ln = 1115; goto L_ret; };
             { __typeof__(v0) m9v = Plot_PXof (m9a17, xmin, xmax, err);
               if (err->exc) { m9ln = 1115; goto L_ret; };
               v0 = m9v;
             }
             }
-            { __typeof__(Plot_Axis (top, logX, err)) m9a18 = Plot_Axis (top, logX, err);
+            { __typeof__(Plot_Axis (top, Plot__logX, err)) m9a18 = Plot_Axis (top, Plot__logX, err);
               if (err->exc) { m9ln = 1116; goto L_ret; };
             { __typeof__(v1) m9v = Plot_PXof (m9a18, xmin, xmax, err);
               if (err->exc) { m9ln = 1116; goto L_ret; };
@@ -1754,28 +1754,28 @@ m9_sl_UTF8 Plot_Render (m9_sl_UTF8 title, m9_sl_UTF8 xlabel, m9_sl_UTF8 ylabel, 
             }
             }
           } else {
-            { __typeof__(Plot_Axis ((v - (grp * 0.5)), logX, err)) m9a19 = Plot_Axis ((v - (grp * 0.5)), logX, err);
+            { __typeof__(Plot_Axis ((v - (grp * 0.5)), Plot__logX, err)) m9a19 = Plot_Axis ((v - (grp * 0.5)), Plot__logX, err);
               if (err->exc) { m9ln = 1118; goto L_ret; };
             { __typeof__(c0) m9v = Plot_PXof (m9a19, xmin, xmax, err);
               if (err->exc) { m9ln = 1118; goto L_ret; };
               c0 = m9v;
             }
             }
-            { __typeof__(Plot_Axis ((v + (grp * 0.5)), logX, err)) m9a20 = Plot_Axis ((v + (grp * 0.5)), logX, err);
+            { __typeof__(Plot_Axis ((v + (grp * 0.5)), Plot__logX, err)) m9a20 = Plot_Axis ((v + (grp * 0.5)), Plot__logX, err);
               if (err->exc) { m9ln = 1119; goto L_ret; };
             { __typeof__(c1) m9v = Plot_PXof (m9a20, xmin, xmax, err);
               if (err->exc) { m9ln = 1119; goto L_ret; };
               c1 = m9v;
             }
             }
-            { __typeof__(Plot_Axis (top, logY, err)) m9a21 = Plot_Axis (top, logY, err);
+            { __typeof__(Plot_Axis (top, Plot__logY, err)) m9a21 = Plot_Axis (top, Plot__logY, err);
               if (err->exc) { m9ln = 1120; goto L_ret; };
             { __typeof__(v0) m9v = Plot_PYof (m9a21, ymin, ymax, err);
               if (err->exc) { m9ln = 1120; goto L_ret; };
               v0 = m9v;
             }
             }
-            { __typeof__(Plot_Axis (base, logY, err)) m9a22 = Plot_Axis (base, logY, err);
+            { __typeof__(Plot_Axis (base, Plot__logY, err)) m9a22 = Plot_Axis (base, Plot__logY, err);
               if (err->exc) { m9ln = 1121; goto L_ret; };
             { __typeof__(v1) m9v = Plot_PYof (m9a22, ymin, ymax, err);
               if (err->exc) { m9ln = 1121; goto L_ret; };
@@ -1795,7 +1795,7 @@ m9_sl_UTF8 Plot_Render (m9_sl_UTF8 title, m9_sl_UTF8 xlabel, m9_sl_UTF8 ylabel, 
           }
           DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s49, 9 }), err);
           if (err->exc) { m9ln = 1125; goto L_ret; };
-          if ((barDir == Plot_BarHorizontal)) {
+          if ((Plot__barDir == Plot_BarHorizontal)) {
             Plot_EmitR (&(d), &(pool), v0, err);
             if (err->exc) { m9ln = 1126; goto L_ret; };
           } else {
@@ -1804,7 +1804,7 @@ m9_sl_UTF8 Plot_Render (m9_sl_UTF8 title, m9_sl_UTF8 xlabel, m9_sl_UTF8 ylabel, 
           }
           DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s50, 5 }), err);
           if (err->exc) { m9ln = 1128; goto L_ret; };
-          if ((barDir == Plot_BarHorizontal)) {
+          if ((Plot__barDir == Plot_BarHorizontal)) {
             Plot_EmitR (&(d), &(pool), c0, err);
             if (err->exc) { m9ln = 1129; goto L_ret; };
           } else {
@@ -1813,7 +1813,7 @@ m9_sl_UTF8 Plot_Render (m9_sl_UTF8 title, m9_sl_UTF8 xlabel, m9_sl_UTF8 ylabel, 
           }
           DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s51, 9 }), err);
           if (err->exc) { m9ln = 1131; goto L_ret; };
-          if ((barDir == Plot_BarHorizontal)) {
+          if ((Plot__barDir == Plot_BarHorizontal)) {
             Plot_EmitR (&(d), &(pool), (v1 - v0), err);
             if (err->exc) { m9ln = 1132; goto L_ret; };
           } else {
@@ -1822,14 +1822,14 @@ m9_sl_UTF8 Plot_Render (m9_sl_UTF8 title, m9_sl_UTF8 xlabel, m9_sl_UTF8 ylabel, 
           }
           DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s52, 10 }), err);
           if (err->exc) { m9ln = 1134; goto L_ret; };
-          if ((barDir == Plot_BarHorizontal)) {
+          if ((Plot__barDir == Plot_BarHorizontal)) {
             Plot_EmitR (&(d), &(pool), (c1 - c0), err);
             if (err->exc) { m9ln = 1135; goto L_ret; };
           } else {
             Plot_EmitR (&(d), &(pool), (v1 - v0), err);
             if (err->exc) { m9ln = 1136; goto L_ret; };
           }
-          if (barFilled) {
+          if (Plot__barFilled) {
             DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s53, 8 }), err);
             if (err->exc) { m9ln = 1141; goto L_ret; };
             Plot_EmitBarColor (&(d), &(pool), s, err);
@@ -1853,35 +1853,35 @@ m9_sl_UTF8 Plot_Render (m9_sl_UTF8 title, m9_sl_UTF8 xlabel, m9_sl_UTF8 ylabel, 
     } }
     { __typeof__(s) m9t15to;
     s = INT64_C(0);
-    m9t15to = m9_sub_i64 (nBar, INT64_C(1), err);
+    m9t15to = m9_sub_i64 (Plot__nBar, INT64_C(1), err);
     if (err->exc) { m9ln = 1157; goto L_ret; };
     if (s <= m9t15to) for (;;) {
       M9_YCHK ();
-      bool m9t16 = (*(bool *) m9_at (barHasErr.v, s, INT64_C(4), sizeof (bool), err));
+      bool m9t16 = (*(bool *) m9_at (Plot__barHasErr.v, s, INT64_C(4), sizeof (bool), err));
       if (err->exc) { m9ln = 1158; goto L_ret; };
       if (m9t16) {
-        if ((barMode == Plot_BarStacked)) {
+        if ((Plot__barMode == Plot_BarStacked)) {
           off = 0.0;
         } else {
           off = ((0.0 - (slot * 0.5)) + (grp * (((double)(s) + 0.5))));
         }
         { __typeof__(i) m9t17to;
         i = INT64_C(0);
-        m9t17to = m9_sub_i64 ((*(int64_t *) m9_at (barN.v, s, INT64_C(4), sizeof (int64_t), err)), INT64_C(1), err);
+        m9t17to = m9_sub_i64 ((*(int64_t *) m9_at (Plot__barN.v, s, INT64_C(4), sizeof (int64_t), err)), INT64_C(1), err);
         if (err->exc) { m9ln = 1161; goto L_ret; };
         if (i <= m9t17to) for (;;) {
           M9_YCHK ();
-          { __typeof__(w) m9v = (*(double *) m9_at (barV.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err));
+          { __typeof__(w) m9v = (*(double *) m9_at (Plot__barV.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err));
             if (err->exc) { m9ln = 1162; goto L_ret; };
             w = m9v;
           }
           bool m9t18 = (!Plot_IsNaN (w, err));
           if (err->exc) { m9ln = 1163; goto L_ret; };
           if (m9t18) {
-            bool m9t19 = (i < ((*(m9_sl_F64 *) m9_at (barErr.v, s, INT64_C(4), sizeof (m9_sl_F64), err))).len);
+            bool m9t19 = (i < ((*(m9_sl_F64 *) m9_at (Plot__barErr.v, s, INT64_C(4), sizeof (m9_sl_F64), err))).len);
             if (err->exc) { m9ln = 1164; goto L_ret; };
             if (m9t19) {
-              { __typeof__(e) m9v = (*(double *) m9_at (({ m9_sl_F64 m9g = ((*(m9_sl_F64 *) m9_at (barErr.v, s, INT64_C(4), sizeof (m9_sl_F64), err))); if (err->exc) { m9ln = 1165; goto L_ret; }; m9g; }).p, i, ({ m9_sl_F64 m9g = ((*(m9_sl_F64 *) m9_at (barErr.v, s, INT64_C(4), sizeof (m9_sl_F64), err))); if (err->exc) { m9ln = 1165; goto L_ret; }; m9g; }).len, sizeof (double), err));
+              { __typeof__(e) m9v = (*(double *) m9_at (({ m9_sl_F64 m9g = ((*(m9_sl_F64 *) m9_at (Plot__barErr.v, s, INT64_C(4), sizeof (m9_sl_F64), err))); if (err->exc) { m9ln = 1165; goto L_ret; }; m9g; }).p, i, ({ m9_sl_F64 m9g = ((*(m9_sl_F64 *) m9_at (Plot__barErr.v, s, INT64_C(4), sizeof (m9_sl_F64), err))); if (err->exc) { m9ln = 1165; goto L_ret; }; m9g; }).len, sizeof (double), err));
                 if (err->exc) { m9ln = 1165; goto L_ret; };
                 e = m9v;
               }
@@ -1897,22 +1897,22 @@ m9_sl_UTF8 Plot_Render (m9_sl_UTF8 title, m9_sl_UTF8 xlabel, m9_sl_UTF8 ylabel, 
                     if (err->exc) { m9ln = 1169; goto L_ret; };
                     top = m9v;
                   }
-                  if ((barDir == Plot_BarHorizontal)) {
-                    { __typeof__(Plot_Axis (v, logY, err)) m9a23 = Plot_Axis (v, logY, err);
+                  if ((Plot__barDir == Plot_BarHorizontal)) {
+                    { __typeof__(Plot_Axis (v, Plot__logY, err)) m9a23 = Plot_Axis (v, Plot__logY, err);
                       if (err->exc) { m9ln = 1171; goto L_ret; };
                     { __typeof__(c0) m9v = Plot_PYof (m9a23, ymin, ymax, err);
                       if (err->exc) { m9ln = 1171; goto L_ret; };
                       c0 = m9v;
                     }
                     }
-                    { __typeof__(Plot_Axis ((top - e), logX, err)) m9a24 = Plot_Axis ((top - e), logX, err);
+                    { __typeof__(Plot_Axis ((top - e), Plot__logX, err)) m9a24 = Plot_Axis ((top - e), Plot__logX, err);
                       if (err->exc) { m9ln = 1172; goto L_ret; };
                     { __typeof__(v0) m9v = Plot_PXof (m9a24, xmin, xmax, err);
                       if (err->exc) { m9ln = 1172; goto L_ret; };
                       v0 = m9v;
                     }
                     }
-                    { __typeof__(Plot_Axis ((top + e), logX, err)) m9a25 = Plot_Axis ((top + e), logX, err);
+                    { __typeof__(Plot_Axis ((top + e), Plot__logX, err)) m9a25 = Plot_Axis ((top + e), Plot__logX, err);
                       if (err->exc) { m9ln = 1173; goto L_ret; };
                     { __typeof__(v1) m9v = Plot_PXof (m9a25, xmin, xmax, err);
                       if (err->exc) { m9ln = 1173; goto L_ret; };
@@ -1922,21 +1922,21 @@ m9_sl_UTF8 Plot_Render (m9_sl_UTF8 title, m9_sl_UTF8 xlabel, m9_sl_UTF8 ylabel, 
                     Plot_EmitWhisker (&(d), &(pool), v0, c0, v1, c0, true, err);
                     if (err->exc) { m9ln = 1174; goto L_ret; };
                   } else {
-                    { __typeof__(Plot_Axis (v, logX, err)) m9a26 = Plot_Axis (v, logX, err);
+                    { __typeof__(Plot_Axis (v, Plot__logX, err)) m9a26 = Plot_Axis (v, Plot__logX, err);
                       if (err->exc) { m9ln = 1176; goto L_ret; };
                     { __typeof__(c0) m9v = Plot_PXof (m9a26, xmin, xmax, err);
                       if (err->exc) { m9ln = 1176; goto L_ret; };
                       c0 = m9v;
                     }
                     }
-                    { __typeof__(Plot_Axis ((top - e), logY, err)) m9a27 = Plot_Axis ((top - e), logY, err);
+                    { __typeof__(Plot_Axis ((top - e), Plot__logY, err)) m9a27 = Plot_Axis ((top - e), Plot__logY, err);
                       if (err->exc) { m9ln = 1177; goto L_ret; };
                     { __typeof__(v0) m9v = Plot_PYof (m9a27, ymin, ymax, err);
                       if (err->exc) { m9ln = 1177; goto L_ret; };
                       v0 = m9v;
                     }
                     }
-                    { __typeof__(Plot_Axis ((top + e), logY, err)) m9a28 = Plot_Axis ((top + e), logY, err);
+                    { __typeof__(Plot_Axis ((top + e), Plot__logY, err)) m9a28 = Plot_Axis ((top + e), Plot__logY, err);
                       if (err->exc) { m9ln = 1178; goto L_ret; };
                     { __typeof__(v1) m9v = Plot_PYof (m9a28, ymin, ymax, err);
                       if (err->exc) { m9ln = 1178; goto L_ret; };
@@ -1960,24 +1960,24 @@ m9_sl_UTF8 Plot_Render (m9_sl_UTF8 title, m9_sl_UTF8 xlabel, m9_sl_UTF8 ylabel, 
   }
   { __typeof__(i) m9t21to;
   i = INT64_C(0);
-  m9t21to = m9_sub_i64 (dotN, INT64_C(1), err);
+  m9t21to = m9_sub_i64 (Plot__dotN, INT64_C(1), err);
   if (err->exc) { m9ln = 1191; goto L_ret; };
   if (i <= m9t21to) for (;;) {
     M9_YCHK ();
-    { __typeof__(v) m9v = (*(double *) m9_at (dotX.p, i, dotX.len, sizeof (double), err));
+    { __typeof__(v) m9v = (*(double *) m9_at (Plot__dotX.p, i, Plot__dotX.len, sizeof (double), err));
       if (err->exc) { m9ln = 1192; goto L_ret; };
       v = m9v;
     }
-    { __typeof__(w) m9v = (*(double *) m9_at (dotY.p, i, dotY.len, sizeof (double), err));
+    { __typeof__(w) m9v = (*(double *) m9_at (Plot__dotY.p, i, Plot__dotY.len, sizeof (double), err));
       if (err->exc) { m9ln = 1193; goto L_ret; };
       w = m9v;
     }
-    bool m9t22 = (Plot_Loggable (v, logX, err) && Plot_Loggable (w, logY, err));
+    bool m9t22 = (Plot_Loggable (v, Plot__logX, err) && Plot_Loggable (w, Plot__logY, err));
     if (err->exc) { m9ln = 1194; goto L_ret; };
     if (m9t22) {
       DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s57, 12 }), err);
       if (err->exc) { m9ln = 1195; goto L_ret; };
-      { __typeof__(Plot_Axis (v, logX, err)) m9a29 = Plot_Axis (v, logX, err);
+      { __typeof__(Plot_Axis (v, Plot__logX, err)) m9a29 = Plot_Axis (v, Plot__logX, err);
         if (err->exc) { m9ln = 1196; goto L_ret; };
       { __typeof__(Plot_PXof (m9a29, xmin, xmax, err)) m9a30 = Plot_PXof (m9a29, xmin, xmax, err);
         if (err->exc) { m9ln = 1196; goto L_ret; };
@@ -1987,7 +1987,7 @@ m9_sl_UTF8 Plot_Render (m9_sl_UTF8 title, m9_sl_UTF8 xlabel, m9_sl_UTF8 ylabel, 
       }
       DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s58, 6 }), err);
       if (err->exc) { m9ln = 1197; goto L_ret; };
-      { __typeof__(Plot_Axis (w, logY, err)) m9a31 = Plot_Axis (w, logY, err);
+      { __typeof__(Plot_Axis (w, Plot__logY, err)) m9a31 = Plot_Axis (w, Plot__logY, err);
         if (err->exc) { m9ln = 1198; goto L_ret; };
       { __typeof__(Plot_PYof (m9a31, ymin, ymax, err)) m9a32 = Plot_PYof (m9a31, ymin, ymax, err);
         if (err->exc) { m9ln = 1198; goto L_ret; };
@@ -2003,7 +2003,7 @@ m9_sl_UTF8 Plot_Render (m9_sl_UTF8 title, m9_sl_UTF8 xlabel, m9_sl_UTF8 ylabel, 
   } }
   { __typeof__(s) m9t23to;
   s = INT64_C(0);
-  m9t23to = m9_sub_i64 (nSer, INT64_C(1), err);
+  m9t23to = m9_sub_i64 (Plot__nSer, INT64_C(1), err);
   if (err->exc) { m9ln = 1203; goto L_ret; };
   if (s <= m9t23to) for (;;) {
     M9_YCHK ();
@@ -2012,31 +2012,31 @@ m9_sl_UTF8 Plot_Render (m9_sl_UTF8 title, m9_sl_UTF8 xlabel, m9_sl_UTF8 ylabel, 
     pen = false;
     { __typeof__(i) m9t24to;
     i = INT64_C(0);
-    m9t24to = m9_sub_i64 ((*(int64_t *) m9_at (serN.v, s, INT64_C(4), sizeof (int64_t), err)), INT64_C(1), err);
+    m9t24to = m9_sub_i64 ((*(int64_t *) m9_at (Plot__serN.v, s, INT64_C(4), sizeof (int64_t), err)), INT64_C(1), err);
     if (err->exc) { m9ln = 1206; goto L_ret; };
     if (i <= m9t24to) for (;;) {
       M9_YCHK ();
-      { __typeof__(v) m9v = (*(double *) m9_at (serX.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err));
+      { __typeof__(v) m9v = (*(double *) m9_at (Plot__serX.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err));
         if (err->exc) { m9ln = 1207; goto L_ret; };
         v = m9v;
       }
-      { __typeof__(w) m9v = (*(double *) m9_at (serY.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err));
+      { __typeof__(w) m9v = (*(double *) m9_at (Plot__serY.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err));
         if (err->exc) { m9ln = 1208; goto L_ret; };
         w = m9v;
       }
-      bool m9t25 = (!((Plot_Loggable (v, logX, err) && Plot_Loggable (w, logY, err))));
+      bool m9t25 = (!((Plot_Loggable (v, Plot__logX, err) && Plot_Loggable (w, Plot__logY, err))));
       if (err->exc) { m9ln = 1209; goto L_ret; };
       if (m9t25) {
         pen = false;
       } else {
-        { __typeof__(Plot_Axis (v, logX, err)) m9a33 = Plot_Axis (v, logX, err);
+        { __typeof__(Plot_Axis (v, Plot__logX, err)) m9a33 = Plot_Axis (v, Plot__logX, err);
           if (err->exc) { m9ln = 1212; goto L_ret; };
         { __typeof__(px) m9v = Plot_PXof (m9a33, xmin, xmax, err);
           if (err->exc) { m9ln = 1212; goto L_ret; };
           px = m9v;
         }
         }
-        { __typeof__(Plot_Axis (w, logY, err)) m9a34 = Plot_Axis (w, logY, err);
+        { __typeof__(Plot_Axis (w, Plot__logY, err)) m9a34 = Plot_Axis (w, Plot__logY, err);
           if (err->exc) { m9ln = 1213; goto L_ret; };
         { __typeof__(py) m9v = Plot_PYof (m9a34, ymin, ymax, err);
           if (err->exc) { m9ln = 1213; goto L_ret; };
@@ -2075,7 +2075,7 @@ m9_sl_UTF8 Plot_Render (m9_sl_UTF8 title, m9_sl_UTF8 xlabel, m9_sl_UTF8 ylabel, 
   ly = (Plot_MTop + 14.0);
   { __typeof__(s) m9t26to;
   s = INT64_C(0);
-  m9t26to = m9_sub_i64 (nSer, INT64_C(1), err);
+  m9t26to = m9_sub_i64 (Plot__nSer, INT64_C(1), err);
   if (err->exc) { m9ln = 1227; goto L_ret; };
   if (s <= m9t26to) for (;;) {
     M9_YCHK ();
@@ -2111,7 +2111,7 @@ m9_sl_UTF8 Plot_Render (m9_sl_UTF8 title, m9_sl_UTF8 xlabel, m9_sl_UTF8 ylabel, 
     if (err->exc) { m9ln = 1239; goto L_ret; };
     DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s73, 29 }), err);
     if (err->exc) { m9ln = 1240; goto L_ret; };
-    { __typeof__((*(m9_sl_UTF8 *) m9_at (serLbl.v, s, INT64_C(4), sizeof (m9_sl_UTF8), err))) m9a35 = (*(m9_sl_UTF8 *) m9_at (serLbl.v, s, INT64_C(4), sizeof (m9_sl_UTF8), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (Plot__serLbl.v, s, INT64_C(4), sizeof (m9_sl_UTF8), err))) m9a35 = (*(m9_sl_UTF8 *) m9_at (Plot__serLbl.v, s, INT64_C(4), sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 1241; goto L_ret; };
     DynStr_Append (&(d), &(pool), m9a35, err);
     if (err->exc) { m9ln = 1241; goto L_ret; };
@@ -2124,7 +2124,7 @@ m9_sl_UTF8 Plot_Render (m9_sl_UTF8 title, m9_sl_UTF8 xlabel, m9_sl_UTF8 ylabel, 
   } }
   { __typeof__(s) m9t27to;
   s = INT64_C(0);
-  m9t27to = m9_sub_i64 (nBar, INT64_C(1), err);
+  m9t27to = m9_sub_i64 (Plot__nBar, INT64_C(1), err);
   if (err->exc) { m9ln = 1249; goto L_ret; };
   if (s <= m9t27to) for (;;) {
     M9_YCHK ();
@@ -2138,7 +2138,7 @@ m9_sl_UTF8 Plot_Render (m9_sl_UTF8 title, m9_sl_UTF8 xlabel, m9_sl_UTF8 ylabel, 
     if (err->exc) { m9ln = 1252; goto L_ret; };
     DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s77, 23 }), err);
     if (err->exc) { m9ln = 1253; goto L_ret; };
-    if (barFilled) {
+    if (Plot__barFilled) {
       DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s78, 7 }), err);
       if (err->exc) { m9ln = 1255; goto L_ret; };
       Plot_EmitBarColor (&(d), &(pool), s, err);
@@ -2163,7 +2163,7 @@ m9_sl_UTF8 Plot_Render (m9_sl_UTF8 title, m9_sl_UTF8 xlabel, m9_sl_UTF8 ylabel, 
     if (err->exc) { m9ln = 1265; goto L_ret; };
     DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s84, 29 }), err);
     if (err->exc) { m9ln = 1266; goto L_ret; };
-    { __typeof__((*(m9_sl_UTF8 *) m9_at (barLbl.v, s, INT64_C(4), sizeof (m9_sl_UTF8), err))) m9a36 = (*(m9_sl_UTF8 *) m9_at (barLbl.v, s, INT64_C(4), sizeof (m9_sl_UTF8), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (Plot__barLbl.v, s, INT64_C(4), sizeof (m9_sl_UTF8), err))) m9a36 = (*(m9_sl_UTF8 *) m9_at (Plot__barLbl.v, s, INT64_C(4), sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 1267; goto L_ret; };
     DynStr_Append (&(d), &(pool), m9a36, err);
     if (err->exc) { m9ln = 1267; goto L_ret; };
@@ -2253,9 +2253,9 @@ m9_sl_UTF8 Plot_RenderHeat (m9_sl_UTF8 title, Mat_Matrix * m, Plot_Cmap cmap, bo
       mn = (- mx);
     }
   }
-  if (heatFixed) {
-    mn = heatLo;
-    mx = heatHi;
+  if (Plot__heatFixed) {
+    mn = Plot__heatLo;
+    mx = Plot__heatHi;
   }
   if ((mx == mn)) {
     mx = (mn + 1.0);
@@ -2407,9 +2407,9 @@ void Plot_SetHeatRange (double lo, double hi, m9_state *err)
   static const char m9pn[] = "Plot.SetHeatRange"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   if ((lo < hi)) {
-    heatLo = lo;
-    heatHi = hi;
-    heatFixed = true;
+    Plot__heatLo = lo;
+    Plot__heatHi = hi;
+    Plot__heatFixed = true;
   }
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -3916,18 +3916,18 @@ static void Plot_EmitLineColor (DynStr_DString * *d, m9_pool *d_pool, int64_t s,
   err->res = &m9frame;
   static const char m9pn[] = "Plot.EmitLineColor"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
-  { __typeof__((*(m9_sl_UTF8 *) m9_at (serHex.v, s, INT64_C(4), sizeof (m9_sl_UTF8), err))) m9a70 = (*(m9_sl_UTF8 *) m9_at (serHex.v, s, INT64_C(4), sizeof (m9_sl_UTF8), err));
+  { __typeof__((*(m9_sl_UTF8 *) m9_at (Plot__serHex.v, s, INT64_C(4), sizeof (m9_sl_UTF8), err))) m9a70 = (*(m9_sl_UTF8 *) m9_at (Plot__serHex.v, s, INT64_C(4), sizeof (m9_sl_UTF8), err));
     if (err->exc) { m9ln = 674; goto L_ret; };
   bool m9t1 = (Text_BLen (m9a70, err) > INT64_C(0));
   if (err->exc) { m9ln = 674; goto L_ret; };
   if (m9t1) {
-    { __typeof__((*(m9_sl_UTF8 *) m9_at (serHex.v, s, INT64_C(4), sizeof (m9_sl_UTF8), err))) m9a71 = (*(m9_sl_UTF8 *) m9_at (serHex.v, s, INT64_C(4), sizeof (m9_sl_UTF8), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (Plot__serHex.v, s, INT64_C(4), sizeof (m9_sl_UTF8), err))) m9a71 = (*(m9_sl_UTF8 *) m9_at (Plot__serHex.v, s, INT64_C(4), sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 675; goto L_ret; };
     DynStr_Append (d, d_pool, m9a71, err);
     if (err->exc) { m9ln = 675; goto L_ret; };
     }
   } else {
-    { __typeof__((*(int64_t *) m9_at (serCol.v, s, INT64_C(4), sizeof (int64_t), err))) m9a72 = (*(int64_t *) m9_at (serCol.v, s, INT64_C(4), sizeof (int64_t), err));
+    { __typeof__((*(int64_t *) m9_at (Plot__serCol.v, s, INT64_C(4), sizeof (int64_t), err))) m9a72 = (*(int64_t *) m9_at (Plot__serCol.v, s, INT64_C(4), sizeof (int64_t), err));
       if (err->exc) { m9ln = 677; goto L_ret; };
     Plot_EmitColor (d, d_pool, m9a72, err);
     if (err->exc) { m9ln = 677; goto L_ret; };
@@ -3949,18 +3949,18 @@ static void Plot_EmitBarColor (DynStr_DString * *d, m9_pool *d_pool, int64_t s, 
   err->res = &m9frame;
   static const char m9pn[] = "Plot.EmitBarColor"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
-  { __typeof__((*(m9_sl_UTF8 *) m9_at (barHex.v, s, INT64_C(4), sizeof (m9_sl_UTF8), err))) m9a73 = (*(m9_sl_UTF8 *) m9_at (barHex.v, s, INT64_C(4), sizeof (m9_sl_UTF8), err));
+  { __typeof__((*(m9_sl_UTF8 *) m9_at (Plot__barHex.v, s, INT64_C(4), sizeof (m9_sl_UTF8), err))) m9a73 = (*(m9_sl_UTF8 *) m9_at (Plot__barHex.v, s, INT64_C(4), sizeof (m9_sl_UTF8), err));
     if (err->exc) { m9ln = 707; goto L_ret; };
   bool m9t1 = (Text_BLen (m9a73, err) > INT64_C(0));
   if (err->exc) { m9ln = 707; goto L_ret; };
   if (m9t1) {
-    { __typeof__((*(m9_sl_UTF8 *) m9_at (barHex.v, s, INT64_C(4), sizeof (m9_sl_UTF8), err))) m9a74 = (*(m9_sl_UTF8 *) m9_at (barHex.v, s, INT64_C(4), sizeof (m9_sl_UTF8), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (Plot__barHex.v, s, INT64_C(4), sizeof (m9_sl_UTF8), err))) m9a74 = (*(m9_sl_UTF8 *) m9_at (Plot__barHex.v, s, INT64_C(4), sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 708; goto L_ret; };
     DynStr_Append (d, d_pool, m9a74, err);
     if (err->exc) { m9ln = 708; goto L_ret; };
     }
   } else {
-    { __typeof__((*(int64_t *) m9_at (barCol.v, s, INT64_C(4), sizeof (int64_t), err))) m9a75 = (*(int64_t *) m9_at (barCol.v, s, INT64_C(4), sizeof (int64_t), err));
+    { __typeof__((*(int64_t *) m9_at (Plot__barCol.v, s, INT64_C(4), sizeof (int64_t), err))) m9a75 = (*(int64_t *) m9_at (Plot__barCol.v, s, INT64_C(4), sizeof (int64_t), err));
       if (err->exc) { m9ln = 710; goto L_ret; };
     Plot_EmitColor (d, d_pool, m9a75, err);
     if (err->exc) { m9ln = 710; goto L_ret; };
@@ -4188,13 +4188,13 @@ static double Plot_BarPos (int64_t s, int64_t i, m9_state *err)
   static const char m9pn[] = "Plot.BarPos"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   double m9ret = 0;
-  if ((barPlace == Plot_BarDiscrete)) {
+  if ((Plot__barPlace == Plot_BarDiscrete)) {
     err->res = m9res;
     m9ret = (double)(i);
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = (*(double *) m9_at (barAt.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err));
+  m9ret = (*(double *) m9_at (Plot__barAt.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err));
   if (err->exc) { m9ln = 803; goto L_ret; };
   goto L_ret;
 L_ret: ;
@@ -4220,7 +4220,7 @@ static double Plot_SlotWidth (m9_state *err)
   double a = 0; (void) a;
   double b = 0; (void) b;
   bool seen = false; (void) seen;
-  if ((barPlace == Plot_BarDiscrete)) {
+  if ((Plot__barPlace == Plot_BarDiscrete)) {
     err->res = m9res;
     m9ret = 1.0;
     goto L_ret;
@@ -4229,20 +4229,20 @@ static double Plot_SlotWidth (m9_state *err)
   gap = 1.0;
   { __typeof__(s) m9t1to;
   s = INT64_C(0);
-  m9t1to = m9_sub_i64 (nBar, INT64_C(1), err);
+  m9t1to = m9_sub_i64 (Plot__nBar, INT64_C(1), err);
   if (err->exc) { m9ln = 816; goto L_ret; };
   if (s <= m9t1to) for (;;) {
     M9_YCHK ();
     { __typeof__(i) m9t2to;
     i = INT64_C(1);
-    m9t2to = m9_sub_i64 ((*(int64_t *) m9_at (barN.v, s, INT64_C(4), sizeof (int64_t), err)), INT64_C(1), err);
+    m9t2to = m9_sub_i64 ((*(int64_t *) m9_at (Plot__barN.v, s, INT64_C(4), sizeof (int64_t), err)), INT64_C(1), err);
     if (err->exc) { m9ln = 817; goto L_ret; };
     if (i <= m9t2to) for (;;) {
-      { __typeof__(a) m9v = (*(double *) m9_at (barAt.v, m9_sub_i64 (m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(1), err), INT64_C(32768), sizeof (double), err));
+      { __typeof__(a) m9v = (*(double *) m9_at (Plot__barAt.v, m9_sub_i64 (m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(1), err), INT64_C(32768), sizeof (double), err));
         if (err->exc) { m9ln = 818; goto L_ret; };
         a = m9v;
       }
-      { __typeof__(b) m9v = (*(double *) m9_at (barAt.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err));
+      { __typeof__(b) m9v = (*(double *) m9_at (Plot__barAt.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err));
         if (err->exc) { m9ln = 819; goto L_ret; };
         b = m9v;
       }
@@ -4292,7 +4292,7 @@ static double Plot_StackBase (int64_t s, int64_t i, m9_state *err)
   double acc = 0; (void) acc;
   double v = 0; (void) v;
   acc = 0.0;
-  if ((barMode != Plot_BarStacked)) {
+  if ((Plot__barMode != Plot_BarStacked)) {
     err->res = m9res;
     m9ret = acc;
     goto L_ret;
@@ -4302,10 +4302,10 @@ static double Plot_StackBase (int64_t s, int64_t i, m9_state *err)
   m9t1to = m9_sub_i64 (s, INT64_C(1), err);
   if (err->exc) { m9ln = 841; goto L_ret; };
   if (k <= m9t1to) for (;;) {
-    bool m9t2 = (i < (*(int64_t *) m9_at (barN.v, k, INT64_C(4), sizeof (int64_t), err)));
+    bool m9t2 = (i < (*(int64_t *) m9_at (Plot__barN.v, k, INT64_C(4), sizeof (int64_t), err)));
     if (err->exc) { m9ln = 842; goto L_ret; };
     if (m9t2) {
-      { __typeof__(v) m9v = (*(double *) m9_at (barV.v, m9_add_i64 (m9_mul_i64 (k, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err));
+      { __typeof__(v) m9v = (*(double *) m9_at (Plot__barV.v, m9_add_i64 (m9_mul_i64 (k, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err));
         if (err->exc) { m9ln = 843; goto L_ret; };
         v = m9v;
       }

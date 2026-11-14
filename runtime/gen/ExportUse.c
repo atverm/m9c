@@ -31,8 +31,10 @@ extern int64_t m9_fmt_fixed (double, int64_t, void *, int64_t);
 extern int64_t m9_fmt_sci (double, int64_t, void *, int64_t);
 extern int64_t m9_fmt_short (double, void *, int64_t);
 
-static m9_arr_4_double row;
-static ExportDef_Cell * c;
+static m9_arr_4_double ExportUse__row;
+static ExportDef_Cell * ExportUse__c;
+static int64_t ExportUse__time;
+static int64_t ExportUse__exit;
 static m9_pool m9mframe = {0};
 
 static const uint8_t m9s0[41] = { 69, 120, 112, 111, 114, 116, 85, 115, 101, 32, 99, 111, 109, 112, 97, 114, 101, 115, 32, 97, 32, 83, 104, 97, 100, 101, 32, 97, 99, 114, 111, 115, 115, 32, 109, 111, 100, 117, 108, 101, 115 };
@@ -41,6 +43,10 @@ static const uint8_t m9s2[22] = { 69, 120, 112, 111, 114, 116, 85, 115, 101, 32,
 static const uint8_t m9s3[9] = { 44, 32, 76, 69, 78, 32, 120, 115, 32 };
 static const uint8_t m9s4[10] = { 44, 32, 118, 101, 114, 115, 105, 111, 110, 32 };
 static const uint8_t m9s5[10] = { 44, 32, 76, 69, 78, 32, 114, 111, 119, 32 };
+static const uint8_t m9s6[5] = { 116, 105, 109, 101, 32 };
+static const uint8_t m9s7[17] = { 44, 32, 69, 120, 112, 111, 114, 116, 68, 101, 102, 46, 116, 105, 109, 101, 32 };
+static const uint8_t m9s8[7] = { 44, 32, 101, 120, 105, 116, 32 };
+static const uint8_t m9s9[18] = { 83, 101, 116, 84, 105, 109, 101, 32, 40, 49, 41, 32, 103, 105, 118, 101, 115, 32 };
 
 
 int main (int argc, char **argv)
@@ -54,47 +60,72 @@ int main (int argc, char **argv)
   ExportDef_m9init (err); if (err->exc) goto L_ret;
   Io_m9init (err); if (err->exc) goto L_ret;
   Fmt_m9init (err); if (err->exc) goto L_ret;
-  { __typeof__(c) m9v = (ExportDef_Cell *) m9_pool_alloc (err->res, sizeof (ExportDef_Cell), 1, err);
-    if (err->exc) { m9ln = 17; goto L_hdl_m9t1; };
-    c = m9v;
+  { __typeof__(ExportUse__c) m9v = (ExportDef_Cell *) m9_pool_alloc (err->res, sizeof (ExportDef_Cell), 1, err);
+    if (err->exc) { m9ln = 18; goto L_hdl_m9t1; };
+    ExportUse__c = m9v;
   }
-  (*(double *) m9_at (row.v, INT64_C(0), INT64_C(4), sizeof (double), err)) = 1.0;
-  if (err->exc) { m9ln = 20; goto L_hdl_m9t1; };
-  ({ __auto_type m9g = (c); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->shade = ((ExportDef_Shade){ .tag = ExportDef_Shade_Dark });
-  if (((({ __auto_type m9g = (c); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->shade).tag == (((ExportDef_Shade){ .tag = ExportDef_Shade_Dark })).tag)) {
+  (*(double *) m9_at (ExportUse__row.v, INT64_C(0), INT64_C(4), sizeof (double), err)) = 1.0;
+  if (err->exc) { m9ln = 21; goto L_hdl_m9t1; };
+  ({ __auto_type m9g = (ExportUse__c); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->shade = ((ExportDef_Shade){ .tag = ExportDef_Shade_Dark });
+  if (((({ __auto_type m9g = (ExportUse__c); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->shade).tag == (((ExportDef_Shade){ .tag = ExportDef_Shade_Dark })).tag)) {
     Io_WriteLineUtf (((m9_sl_UTF8){ (uint8_t *) m9s0, 41 }), err);
-    if (err->exc) { m9ln = 22; goto L_hdl_m9t1; };
-  }
-  if (((({ __auto_type m9g = (c); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->shade).tag != (((ExportDef_Shade){ .tag = ExportDef_Shade_Light })).tag)) {
-    Io_WriteLineUtf (((m9_sl_UTF8){ (uint8_t *) m9s1, 16 }), err);
     if (err->exc) { m9ln = 23; goto L_hdl_m9t1; };
   }
-  { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s2, 22 }), Fmt_I64Str ((*ExportDef_count), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s3, 9 }), err), Fmt_I64Str (((*ExportDef_xs)).len, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s4, 10 }), err), Fmt_I64Str ((*ExportDef_version), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s5, 10 }), err), Fmt_I64Str (INT64_C(4), err), err)) m9a1 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s2, 22 }), Fmt_I64Str ((*ExportDef_count), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s3, 9 }), err), Fmt_I64Str (((*ExportDef_xs)).len, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s4, 10 }), err), Fmt_I64Str ((*ExportDef_version), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s5, 10 }), err), Fmt_I64Str (INT64_C(4), err), err);
+  if (((({ __auto_type m9g = (ExportUse__c); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->shade).tag != (((ExportDef_Shade){ .tag = ExportDef_Shade_Light })).tag)) {
+    Io_WriteLineUtf (((m9_sl_UTF8){ (uint8_t *) m9s1, 16 }), err);
     if (err->exc) { m9ln = 24; goto L_hdl_m9t1; };
+  }
+  { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s2, 22 }), Fmt_I64Str ((*ExportDef_count), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s3, 9 }), err), Fmt_I64Str (((*ExportDef_xs)).len, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s4, 10 }), err), Fmt_I64Str ((*ExportDef_version), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s5, 10 }), err), Fmt_I64Str (INT64_C(4), err), err)) m9a1 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s2, 22 }), Fmt_I64Str ((*ExportDef_count), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s3, 9 }), err), Fmt_I64Str (((*ExportDef_xs)).len, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s4, 10 }), err), Fmt_I64Str ((*ExportDef_version), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s5, 10 }), err), Fmt_I64Str (INT64_C(4), err), err);
+    if (err->exc) { m9ln = 25; goto L_hdl_m9t1; };
   Io_WriteLineUtf (m9a1, err);
-  if (err->exc) { m9ln = 24; goto L_hdl_m9t1; };
+  if (err->exc) { m9ln = 25; goto L_hdl_m9t1; };
   }
   { __typeof__((*ExportDef_count)) m9v = m9_add_i64 ((*ExportDef_count), INT64_C(2), err);
-    if (err->exc) { m9ln = 28; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 29; goto L_hdl_m9t1; };
     (*ExportDef_count) = m9v;
   }
   (*(double *) m9_at ((*ExportDef_xs).p, INT64_C(1), (*ExportDef_xs).len, sizeof (double), err)) = 9.5;
-  if (err->exc) { m9ln = 29; goto L_hdl_m9t1; };
+  if (err->exc) { m9ln = 30; goto L_hdl_m9t1; };
   ({ __auto_type m9g = ((*ExportDef_box)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->n = INT64_C(7);
   ExportDef_Show (err);
-  if (err->exc) { m9ln = 31; goto L_hdl_m9t1; };
+  if (err->exc) { m9ln = 32; goto L_hdl_m9t1; };
+  { __typeof__(ExportUse__time) m9v = m9_add_i64 ((*ExportDef_time), INT64_C(1), err);
+    if (err->exc) { m9ln = 35; goto L_hdl_m9t1; };
+    ExportUse__time = m9v;
+  }
+  { __typeof__((*ExportDef_time)) m9v = m9_mul_i64 (ExportUse__time, INT64_C(2), err);
+    if (err->exc) { m9ln = 36; goto L_hdl_m9t1; };
+    (*ExportDef_time) = m9v;
+  }
+  { __typeof__(ExportUse__exit) m9v = m9_sub_i64 ((*ExportDef_time), ExportUse__time, err);
+    if (err->exc) { m9ln = 37; goto L_hdl_m9t1; };
+    ExportUse__exit = m9v;
+  }
+  { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s6, 5 }), Fmt_I64Str (ExportUse__time, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s7, 17 }), err), Fmt_I64Str ((*ExportDef_time), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s8, 7 }), err), Fmt_I64Str (ExportUse__exit, err), err)) m9a2 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s6, 5 }), Fmt_I64Str (ExportUse__time, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s7, 17 }), err), Fmt_I64Str ((*ExportDef_time), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s8, 7 }), err), Fmt_I64Str (ExportUse__exit, err), err);
+    if (err->exc) { m9ln = 38; goto L_hdl_m9t1; };
+  Io_WriteLineUtf (m9a2, err);
+  if (err->exc) { m9ln = 38; goto L_hdl_m9t1; };
+  }
+  ExportDef_SetTime (INT64_C(1), err);
+  if (err->exc) { m9ln = 40; goto L_hdl_m9t1; };
+  ExportUse__exit = (*ExportDef_time);
+  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s9, 18 }), Fmt_I64Str (ExportUse__exit, err), err)) m9a3 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s9, 18 }), Fmt_I64Str (ExportUse__exit, err), err);
+    if (err->exc) { m9ln = 42; goto L_hdl_m9t1; };
+  Io_WriteLineUtf (m9a3, err);
+  if (err->exc) { m9ln = 42; goto L_hdl_m9t1; };
+  }
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
     Io_Halt (INT64_C(2), err);
-    if (err->exc) { m9ln = 34; goto L_ret; };
+    if (err->exc) { m9ln = 45; goto L_ret; };
     goto L_dn_m9t2;
   }
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
     Io_Halt (INT64_C(3), err);
-    if (err->exc) { m9ln = 36; goto L_ret; };
+    if (err->exc) { m9ln = 47; goto L_ret; };
     goto L_dn_m9t2;
   }
   goto L_ret;

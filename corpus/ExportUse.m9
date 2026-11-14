@@ -10,6 +10,7 @@ IMPORT ExportDef ;
 VAR
   row : ARRAY ExportDef.Width OF F64 ;   (* an imported CONST as a bound *)
   c : PTR ExportDef.Cell ;
+  time, exit : I64 ;   (* named like C library functions, beside the imported ExportDef.time *)
 BEGIN
   (* This compares a field of an imported record with an imported
      enumeration's member.  `c.shade = ExportDef.Shade.Dark' was a C
@@ -28,7 +29,17 @@ BEGIN
   ExportDef.count := ExportDef.count + 2 ;
   ExportDef.xs[1] := 9.5 ;
   ExportDef.box.n := 7 ;
-  ExportDef.Show ()
+  ExportDef.Show () ;
+  (* A program's variable and an imported one share a name with the C
+     library's time ().  Each is its own storage. *)
+  time := ExportDef.time + 1 ;
+  ExportDef.time := time * 2 ;
+  exit := ExportDef.time - time ;
+  Io.WriteLine ('time ' + Fmt.I64Str (time) + ', ExportDef.time ' +
+                Fmt.I64Str (ExportDef.time) + ', exit ' + Fmt.I64Str (exit)) ;
+  ExportDef.SetTime (1) ;
+  ExportUse.exit := ExportDef.time ;
+  Io.WriteLine ('SetTime (1) gives ' + Fmt.I64Str (ExportUse.exit))
 EXCEPT
 | ValueRange :
     Io.Halt (2)

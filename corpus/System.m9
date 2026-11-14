@@ -40,6 +40,10 @@ TYPE
 
 EXCEPTION NoPool (i, n: I64) ;
 
+PROCEDURE Machine () : STR ;
+  (* Machine answers the processor this program was built for:
+     'x86-64', 'arm64', or 'other'. *)
+
 PROCEDURE Os () : STR ;
   (* Os answers the platform this program is running on, as a VALUE:
      'linux', 'windows', 'macos', or 'posix' for another Unix.  M9 has
@@ -216,6 +220,8 @@ UNSAFE DEFINITION MODULE FOR "C" csys ;
 
 PROCEDURE NCpu = "m9_cores" () : C.Int  [REENTRANT] ;
 PROCEDURE OsCode = "m9_os" () : C.Int  [REENTRANT] ;
+PROCEDURE MachineCode = "m9_machine" () : C.Int  [REENTRANT] ;
+  (* MachineCode answers 1 x86-64, 2 arm64, 0 another. *)
   (* OsCode answers 1 linux, 2 windows, 3 macos, 0 another POSIX; Os
      spells them. *)
 PROCEDURE ExePath = "m9_exe_path" (buf: C.MutPtr ; cap: C.Int) : C.Int
@@ -274,7 +280,7 @@ UNSAFE IMPLEMENTATION MODULE System ;
 IMPORT Io ;
 IMPORT DynStr ;
 IMPORT Text ;
-FROM csys IMPORT NCpu, OsCode, ExePath, MemInfo, PoolN, PoolI, ExecStart,
+FROM csys IMPORT NCpu, OsCode, MachineCode, ExePath, MemInfo, PoolN, PoolI, ExecStart,
                  ExecStatus, ExecStopped, ExecLen, ExecCopy, ExecRelease,
                  BecomeC, Pid, KeepAtMostC, ReleaseKeptC, KeptBytesC ;
 
@@ -285,6 +291,15 @@ CONST
 
 (* the runtime answers a number so that the words appear here, once
    each, in the one place a reader looks for them *)
+PROCEDURE Machine () : STR =
+BEGIN
+  CASE I64 (MachineCode ()) OF
+  | 1 : RETURN 'x86-64'
+  | 2 : RETURN 'arm64'
+  ELSE  RETURN 'other'
+  END
+END Machine ;
+
 PROCEDURE Os () : STR =
 BEGIN
   CASE I64 (OsCode ()) OF

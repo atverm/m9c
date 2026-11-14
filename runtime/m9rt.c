@@ -3244,7 +3244,11 @@ void m9_mon_make (m9_mon *m)
 #define M9_TASK_CACHE 64
 #define M9_CARRIERS_MAX 256
 #define M9_TASK_SPINS 400
-#define M9_MON_SPINS 64
+/* A task spins this many times for a held monitor before it parks.
+   A crew woken by one SIGNAL enters its monitor one by one.  With 64
+   spins, most of 20 entrants parked, and each leave woke the next one
+   into a busy carrier's runnext (Tsk.For on ct121, 2026-11-06). */
+#define M9_MON_SPINS 512
 #define M9_STEAL_MAX 32
 
 typedef struct m9_task m9_task;
@@ -4879,6 +4883,18 @@ void m9_mon_signal_tasks (m9_mon *m)
     for (t = movable; t; t = n) { n = t->next; t->next = NULL; m9_task_ready (t); }
     return;
   }
+  /* A crew goes back to the carriers it ran on.  Those carriers have
+     just finished the last round, so they are often still spinning,
+     and no kernel wake is needed.  m9_deal started at the next carrier
+     in turn, which usually slept: a Tsk.For round of 20 tasks cost
+     150 us on ct121's 32 carriers, against 60 us with M9_CARRIERS=20
+     (2026-11-06).  A herd larger than the carriers is still dealt:
+     sent home one lock at a time, 1,000 senders made ChanStress time
+     out in 15 of 20 runs. */
+  if (nm <= __atomic_load_n (&m9_ncars, __ATOMIC_ACQUIRE)) {
+    for (t = movable; t; t = n) { n = t->next; t->next = NULL; m9_rq_push (t->home, t); }
+    return;
+  }
   m9_deal (movable, nm);
 }
 
@@ -5036,6 +5052,17 @@ int m9_cores (void)
   }
 #endif
   return n < 1 ? 1 : (int) n;
+#endif
+}
+
+int m9_machine (void)
+{
+#if defined (__x86_64__) || defined (_M_X64)
+  return 1;
+#elif defined (__aarch64__) || defined (_M_ARM64)
+  return 2;
+#else
+  return 0;
 #endif
 }
 

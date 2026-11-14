@@ -68,6 +68,8 @@ Mat_Matrix * Mat_CholSolve (m9_pool *pool, Mat_Matrix * l, Mat_Matrix * b, m9_st
 Mat_Matrix * Mat_SpdInverse (m9_pool *pool, Mat_Matrix * a, m9_state *err);
 Mat_Matrix * Mat_CholeskyT (m9_pool *pool, Mat_Matrix * a, int64_t threads, m9_state *err);
 Mat_Matrix * Mat_CholInverse (m9_pool *pool, Mat_Matrix * l, int64_t threads, m9_state *err);
+void Mat_CholeskyInPlace (Mat_Matrix * *a, m9_pool *a_pool, int64_t threads, m9_state *err);
+void Mat_CholInverseInPlace (Mat_Matrix * *a, m9_pool *a_pool, int64_t threads, m9_state *err);
 void Mat_AddNormal (Mat_Matrix * h, m9_sl_F64 w, Mat_Matrix * *k, m9_pool *k_pool, int64_t threads, m9_state *err);
 Mat_Matrix * Mat_Solve (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state *err);
 double Mat_Det (Mat_Matrix * a, m9_state *err);

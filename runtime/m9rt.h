@@ -1364,6 +1364,10 @@ int     m9_cores (void);
    side spells the names, so a number appears here and a word there,
    once each. */
 int     m9_os (void);
+/* m9_machine answers the processor this program was built for: 1
+   x86-64, 2 arm64, 0 another.  m9c asks, to give the C compiler the
+   words one processor needs (-mno-mmx). */
+int     m9_machine (void);
 /* m9_exe_path writes the running executable's resolved path
    (readlink /proc/self/exe, GetModuleFileName) as bytes into buf and
    answers its length, or -1 when the system will not say.  It is NOT

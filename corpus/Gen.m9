@@ -1035,6 +1035,27 @@ BEGIN
   RETURN n
 END CN ;
 
+(* MvC answers the C name of this module's variable n: the module's
+   name, two underscores, n.  A bare static clashed with what the
+   system headers declare: a program's `time' did not compile
+   (2026-11-09).  Two underscores keep it apart from Mod_v, the
+   pointer an exported variable publishes, since no M9 name holds
+   an underscore. *)
+PROCEDURE MvC (RO n: UTF) : UTF =
+BEGIN
+  RETURN S3 (CP (modName), '__', n)
+END MvC ;
+
+(* VN answers the C name of the variable n names here.  A module
+   variable gets MvC's name.  A local or a parameter keeps CN's. *)
+PROCEDURE VN (RO n: UTF) : UTF =
+VAR ix : I64 ;
+BEGIN
+  ix := ScopeFind (n) ;
+  IF ix >= mvBase AND ix < mvBase + nmv THEN RETURN MvC (n) END ;
+  RETURN CN (n)
+END VN ;
+
 PROCEDURE CMap (RO n: UTF) : UTF =
 BEGIN
   IF Text.Eq (n, 'Int') THEN RETURN 'int' END ;
@@ -3063,6 +3084,7 @@ BEGIN
   END ;
   IF u.kind = Ast.NProgram THEN isProgram := TRUE END ;
   IF Text.BLen (modName) = 0 THEN modName := u.au END ;
+  IF Text.Eq (u.au, modName) THEN SelfQual (u) END ;
   FOR i := 0 TO u.nkids - 1 DO
     IF u.kids[i] IS SOME d THEN
       IF d.kind = Ast.NProcDecl THEN
@@ -4168,7 +4190,7 @@ BEGIN
     ErrAt (d, S2 ('unknown name: ', d.au)) ;
     RETURN '0'
   END ;
-  res := CN (d.au) ;
+  res := VN (d.au) ;
   IF Text.Eq (ScopeMode (d.au), 'v') OR
      Text.Eq (ScopeMode (d.au), 'o') OR
      Text.Eq (ScopeMode (d.au), 'r') THEN
@@ -7216,12 +7238,12 @@ BEGIN
         IF StartsW (TagOfExpr (st.kids[0]), 'CR:') THEN
           w := NewTmp () ;
           Line (KPbuf, ind, S3 ('{ int32_t ', w, 'to;')) ;
-          Line (KPbuf, ind, S5 (CN (st.au), '.tag = (', EX (st.kids[0], ''),
+          Line (KPbuf, ind, S5 (VN (st.au), '.tag = (', EX (st.kids[0], ''),
             ').tag;', '')) ;
           Line (KPbuf, ind, S5 (w, 'to = (', EX (st.kids[1], ''),
             ').tag;', '')) ;
-          Line (KPbuf, ind, S9 ('for (; ', CN (st.au), '.tag <= ', w,
-            'to; ', CN (st.au), '.tag++', ') {', '')) ;
+          Line (KPbuf, ind, S9 ('for (; ', VN (st.au), '.tag <= ', w,
+            'to; ', VN (st.au), '.tag++', ') {', '')) ;
           sv := inSwitch ; inSwitch := 0 ;
           sf := finDepth ; finDepth := 0 ;
           savedXit := xitLbl ; xitLbl := '' ; loopDepth := loopDepth + 1 ;
@@ -7249,8 +7271,8 @@ BEGIN
            is reached at all, and left when the distance still to go,
            in unsigned arithmetic, is less than the step: the variable
            never leaves lo .. to, and holds the last value it took. *)
-        Line (KPbuf, ind, S5 ('{ __typeof__(', CN (st.au), ') ', w, 'to;')) ;
-        Line (KPbuf, ind, S4 (CN (st.au), ' = ', l, ';')) ;
+        Line (KPbuf, ind, S5 ('{ __typeof__(', VN (st.au), ') ', w, 'to;')) ;
+        Line (KPbuf, ind, S4 (VN (st.au), ' = ', l, ';')) ;
         h0 := h0 + Lower (st.kids[1], ind) ;
         r := EX (st.kids[1], '') ;
         rs := LeftRaises (st.kids[0]) OR LeftRaises (st.kids[1]) ;
@@ -7279,9 +7301,9 @@ BEGIN
           END
         END ;
         IF B (stp, 0) = ORD ('-') THEN
-          Line (KPbuf, ind, S6 ('if (', CN (st.au), ' >= ', w, 'to) for (;;) {', ''))
+          Line (KPbuf, ind, S6 ('if (', VN (st.au), ' >= ', w, 'to) for (;;) {', ''))
         ELSE
-          Line (KPbuf, ind, S6 ('if (', CN (st.au), ' <= ', w, 'to) for (;;) {', ''))
+          Line (KPbuf, ind, S6 ('if (', VN (st.au), ' <= ', w, 'to) for (;;) {', ''))
         END ;
         sv := inSwitch ; inSwitch := 0 ;
         sf := finDepth ; finDepth := 0 ;
@@ -7290,13 +7312,13 @@ BEGIN
         EmitSeq (st.kids[3], ind + 1) ;
         LoopExit (ind + 1) ;
         IF B (stp, 0) = ORD ('-') THEN
-          Line (KPbuf, ind + 1, S7 ('if ((uint64_t) ', CN (st.au), ' - (uint64_t) ', w,
+          Line (KPbuf, ind + 1, S7 ('if ((uint64_t) ', VN (st.au), ' - (uint64_t) ', w,
             'to < (uint64_t) ', SLICE (stp, 1, Text.BLen (stp) - 1), ') break;'))
         ELSE
-          Line (KPbuf, ind + 1, S7 ('if ((uint64_t) ', w, 'to - (uint64_t) ', CN (st.au),
+          Line (KPbuf, ind + 1, S7 ('if ((uint64_t) ', w, 'to - (uint64_t) ', VN (st.au),
             ' < (uint64_t) ', stp, ') break;'))
         END ;
-        Line (KPbuf, ind + 1, S4 (CN (st.au), ' += ', stp, ';')) ;
+        Line (KPbuf, ind + 1, S4 (VN (st.au), ' += ', stp, ';')) ;
         loopDepth := loopDepth - 1 ; xitLbl := savedXit ;
         inSwitch := sv ; finDepth := sf ;
         Line (KPbuf, ind, '} }') ;
@@ -7323,27 +7345,27 @@ BEGIN
              slice's are. *)
           Line (KPbuf, ind, S9 ('for (int64_t ', w, 'i = 0; ', w,
             'i < (int64_t) (sizeof (', w, 's->v) / sizeof (', w,
-            S5 ('s->v[0])); ', w, 'i++) { ', CN (st.au), S3 (' = ',
+            S5 ('s->v[0])); ', w, 'i++) { ', VN (st.au), S3 (' = ',
               NnGuard (S4 (w, 's->v[', w, 'i]'), NONE, FALSE), ';'))))
         ELSIF Text.Eq (tg, 'ARR') THEN
           Line (KPbuf, ind, S9 ('for (int64_t ', w, 'i = 0; ', w,
             'i < (int64_t) (sizeof (', w, 's->v) / sizeof (', w,
-            S5 ('s->v[0])); ', w, 'i++) { ', CN (st.au), S4 (' = ', w, 's->v[', S2 (w, 'i];')))))
+            S5 ('s->v[0])); ', w, 'i++) { ', VN (st.au), S4 (' = ', w, 's->v[', S2 (w, 'i];')))))
         ELSIF Text.Eq (tg, 'UTF') THEN
           (* FOR c IN u decodes: the index is a byte offset the decoding
              step moves (docs/utf8-plan.md, U3) *)
           Line (KPbuf, ind, S9 ('for (int64_t ', w, 'i = 0; ', w, 'i < ', w,
-            's.len; ) { ', CN (st.au), S5 (' = m9_utf_next (', w, 's, &', w, 'i);')))
+            's.len; ) { ', VN (st.au), S5 (' = m9_utf_next (', w, 's, &', w, 'i);')))
         ELSIF ForInPtr (st.kids[0]) THEN
           (* a pointer element is tested before the body follows it, as
              s[i] is (decision 58): an unset one raised SIGSEGV in the
              body (review2 N6) *)
           Line (KPbuf, ind, S9 ('for (int64_t ', w, 'i = 0; ', w, 'i < ', w,
-            's.len; ', w, S5 ('i++) { ', CN (st.au), ' = ',
+            's.len; ', w, S5 ('i++) { ', VN (st.au), ' = ',
             NnGuard (S4 (w, 's.p[', w, 'i]'), NONE, FALSE), ';')))
         ELSE
           Line (KPbuf, ind, S9 ('for (int64_t ', w, 'i = 0; ', w, 'i < ', w,
-            's.len; ', w, S5 ('i++) { ', CN (st.au), ' = ', w, S4 ('s.p[', w, 'i];', ''))))
+            's.len; ', w, S5 ('i++) { ', VN (st.au), ' = ', w, S4 ('s.p[', w, 'i];', ''))))
         END ;
         sv := inSwitch ; inSwitch := 0 ;
         sf := finDepth ; finDepth := 0 ;
@@ -8598,7 +8620,7 @@ BEGIN
       any := TRUE ;
       ty := TyC (mvT[i]) ;
       cn := S3 (CP (modName), '_', mvN[i]) ;
-      Line (KRec3, 0, S6 (ty, ' * const ', cn, ' = &', CN (mvN[i]), ';')) ;
+      Line (KRec3, 0, S6 (ty, ' * const ', cn, ' = &', MvC (mvN[i]), ';')) ;
       Line (KHdrProtos, 0, S5 ('extern ', ty, ' * const ', cn, ';')) ;
       (* A STR or slice publishes its pool too (the second review's gen
          N4, 2026-10-26).  An importer's `Fill (ExpV.s)' is called from
@@ -8696,6 +8718,60 @@ BEGIN
   END
 END ExportWalk ;
 
+(* SelfQual reads a type or exception this module names by its own
+   name, `Mod.T' inside Mod, as T.  The report lets a module name
+   itself (par 3 rule 5), and until 0.27.1 only an exception built. *)
+PROCEDURE SelfQual (VAR n: PTR Ast.Node) =
+VAR i : I64 ;
+BEGIN
+  IF n.kind = Ast.NQualident AND Text.BLen (n.bu) > 0 AND
+     Text.Eq (n.au, modName) THEN
+    Ast.SetA (gpool, n, n.bu) ;
+    Ast.SetB (gpool, n, '')
+  END ;
+  FOR i := 0 TO n.nkids - 1 DO
+    IF n.kids[i] IS SOME c THEN SelfQual (c) END
+  END
+END SelfQual ;
+
+(* SelfWalk is Sem.SelfWalk's twin: a designator rooted at this
+   module's own name, `Mod.v', `Mod.K', `Mod.P (x)', `Mod.Hue.Red',
+   becomes the bare name.  A name the procedure declares itself is
+   left; the checker refuses that one.  A variable, constant or type
+   named like the module is that name, and the selection its field. *)
+PROCEDURE SelfWalk (VAR n: PTR Ast.Node ; scope: Ast.Kid) =
+VAR i : I64 ;
+BEGIN
+  IF n.kind = Ast.NDesignator AND n.nkids > 0 AND Text.Eq (n.au, modName) THEN
+    IF n.kids[0] IS SOME s THEN
+      IF s.kind = Ast.NSelField AND NOT NameShadowed (scope, n.au) AND
+         NOT DeclaresName (scope, s.au) THEN
+        Ast.SetA (gpool, n, s.au) ;
+        FOR i := 0 TO n.nkids - 2 DO n.kids[i] := n.kids[i + 1] END ;
+        n.nkids := n.nkids - 1
+      END
+    END
+  END ;
+  FOR i := 0 TO n.nkids - 1 DO
+    IF n.kids[i] IS SOME c THEN
+      IF n.kind = Ast.NProcDecl THEN
+        SelfWalk (c, SOME (n))
+      ELSE
+        SelfWalk (c, scope)
+      END
+    END
+  END
+END SelfWalk ;
+
+PROCEDURE SelfWalks () =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO ngps - 1 DO
+    IF gps[i].node IS SOME pn THEN SelfWalk (pn, NONE) END
+  END ;
+  IF mainBody IS SOME mb THEN SelfWalk (mb, NONE) END
+END SelfWalks ;
+
 PROCEDURE ExportWalks () =
 VAR i : I64 ;
 BEGIN
@@ -8767,6 +8843,7 @@ BEGIN
   bGate := DynStr.New (gpool) ;
   tdefN := 0 ; sprotoN := 0 ; litN := 0 ; hdrConstN := 0 ;
   MInit (arrSeen) ;
+  SelfWalks () ;
   ExportWalks () ;
   (* under --utf-str the first line says so: m9c's --make reads it and
      rebuilds a module whose header was generated the other way (a
@@ -9112,7 +9189,7 @@ BEGIN
      rec2 now so their array typedefs register before tdefs is
      spliced. *)
   FOR i := 0 TO nmv - 1 DO
-    Line (KRec3, 0, S5 ('static ', TyC (mvT[i]), ' ', CN (mvN[i]), ';'))
+    Line (KRec3, 0, S5 ('static ', TyC (mvT[i]), ' ', MvC (mvN[i]), ';'))
   END ;
   EmitAggs () ;
   (* The MODULE FRAME is the arena of the init body (a program's

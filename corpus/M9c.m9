@@ -171,6 +171,7 @@ VAR
   prefix  : UTF ;
   windows : BOOL ;   (* System.Os: ';' separates $M9LIBRARY, and the
                         C compiler is gcc, bundled or on PATH *)
+  x86     : BOOL ;   (* System.Machine: the C compiler is told -mno-mmx *)
   macos   : BOOL ;   (* System.Os: cc is Apple clang and the linker
                         is ld64, neither of which takes gcc's or GNU
                         ld's words, and OpenSSL is not the system's
@@ -240,7 +241,7 @@ CONST
      compiler is the one artifact that cannot read its own package
      version, and a generated file would drag the build system into
      the bootstrap. *)
-  Version = '0.27.0' ;
+  Version = '0.27.1' ;
   (* StdInclude is where its runtime lives, which --help quotes so
      that the example a user copies out of it actually compiles. *)
   StdInclude = '/usr/include/m9' ;
@@ -458,6 +459,7 @@ PROCEDURE Locate () RAISES ValueRange =
 BEGIN
   windows := Text.Eq (System.Os (), 'windows') ;
   macos := Text.Eq (System.Os (), 'macos') ;
+  x86 := Text.Eq (System.Machine (), 'x86-64') ;
   prefix := DirOf (DirOf (System.ExecutableUtf (pool)))
 END Locate ;
 
@@ -1469,9 +1471,18 @@ END MacFlags ;
    failed there.
    Alex, 2026-10-05: the flag, not a stated difference.  On baseline
    x86-64 it changes no instruction (measured: identical objects). *)
+(* On x86-64 it adds -mno-mmx.  gcc 13 moved a 64-bit zero through
+   an MMX register, with no emms after it, in two handlers of a server
+   (-O2, Ubuntu 24.04).  MMX registers are the x87 registers, so every
+   x87 instruction in that thread answered NaN from then on, and gcc
+   expands fmod as the x87 fprem: Math.Fmod (199.5, 360.0) raised
+   ValueRange in a worker and nowhere else (2026-11-14).  With the
+   word the same source has no MMX instruction.  SSE2 is untouched;
+   it is the baseline there. *)
 PROCEDURE FpWords () =
 BEGIN
-  Word ('-ffp-contract=off')
+  Word ('-ffp-contract=off') ;
+  IF x86 THEN Word ('-mno-mmx') END
 END FpWords ;
 
 (* SystemLibs adds the system libraries the runtime needs, after it on

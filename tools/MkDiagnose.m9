@@ -348,7 +348,9 @@ CONST
     'deprecated-not-in-definition',
     'deprecated-without-text',
     'attribute-text-not-deprecated',
-    'const-attribute-not-deprecated'
+    'const-attribute-not-deprecated',
+    'array-to-var-slice',
+    'module-name-hidden'
   ] ;
   Cause = [
     'ADR takes the address of a value, which is the one thing the memory rules cannot check',
@@ -664,7 +666,9 @@ CONST
     '[DEPRECATED] retires a name for one release, and each use from another module gets a note (par 3.9); a caller reads the definition, so a mark in the implementation or in a program module would reach nobody',
     "the note a use of a deprecated name gets says what to write instead, and that text is the attribute's (par 3.9); without one the caller learns only that the name is going",
     'only [DEPRECATED] carries a text (par 3.9); every other attribute is a bare name, and a text on it would be read by nothing',
-    "a CONST takes one attribute, [DEPRECATED 'text'], written before its = (par 3.9); [PURE] and the others say something about a procedure or a record"
+    "a CONST takes one attribute, [DEPRECATED 'text'], written before its = (par 3.9); [PURE] and the others say something about a procedure or a record",
+    'an array lends itself as a slice of all its elements, but a VAR slice parameter may be given a new slice, which an array cannot hold (par 4.1); until 0.27.1 the array went through as the slice and the callee wrote the wrong memory',
+    "a module names itself (par 3 rule 5): inside Mod, Mod.x is x.  Where the procedure declares an x of its own, the bare name is the procedure's, and the checker gives the module's variable no second name yet, since its storage judgements follow a variable by one name"
   ] ;
   Fix = [
     'put the procedure in an UNSAFE module, or pass a SLICE/VAR instead of an address (par 7)',
@@ -980,7 +984,9 @@ CONST
     "move [DEPRECATED 'text'] to the procedure's heading or the CONST in the module's DEFINITION; the implementation's heading need not repeat it",
     "say what to write instead: [DEPRECATED 'Mod.New (x)']",
     'drop the text, or write the note as a comment beside the heading',
-    "drop the attribute, or write [DEPRECATED 'what to write instead']"
+    "drop the attribute, or write [DEPRECATED 'what to write instead']",
+    'drop VAR from the parameter: a value SLICE OF parameter writes the elements, and RO reads them',
+    'rename the parameter or the local, and write the module variable bare or as Mod.x'
   ] ;
 
 VAR

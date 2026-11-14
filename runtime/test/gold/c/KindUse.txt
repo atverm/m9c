@@ -48,7 +48,7 @@ extern int m9_append_file (const void *, const void *, size_t);
 extern double m9_now (void);
 extern void m9_sleep_ms (int64_t);
 
-static Csv_Kind k;
+static Csv_Kind KindUse__k;
 static m9_pool m9mframe = {0};
 
 static int64_t KindUse_Width (Csv_Kind x, m9_state *err);
@@ -122,8 +122,8 @@ int main (int argc, char **argv)
   Io_m9init (err); if (err->exc) goto L_ret;
   DynStr_m9init (err); if (err->exc) goto L_ret;
   Time_m9init (err); if (err->exc) goto L_ret;
-  k = ((Csv_Kind){ .tag = Csv_Kind_Real });
-  { __typeof__(KindUse_Width (k, err)) m9a1 = KindUse_Width (k, err);
+  KindUse__k = ((Csv_Kind){ .tag = Csv_Kind_Real });
+  { __typeof__(KindUse_Width (KindUse__k, err)) m9a1 = KindUse_Width (KindUse__k, err);
     if (err->exc) { m9ln = 42; goto L_ret; };
   Io_WriteI64 (m9a1, err);
   if (err->exc) { m9ln = 42; goto L_ret; };

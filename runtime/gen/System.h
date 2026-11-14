@@ -54,6 +54,7 @@ struct System_ResultUtf {
   bool stopped;
 };
 
+m9_sl_UTF8 System_Machine (m9_state *err);
 m9_sl_UTF8 System_Os (m9_state *err);
 int64_t System_Cores (m9_state *err);
 System_Memory System_Mem (m9_state *err);

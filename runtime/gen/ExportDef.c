@@ -30,22 +30,24 @@ extern int64_t m9_fmt_fixed (double, int64_t, void *, int64_t);
 extern int64_t m9_fmt_sci (double, int64_t, void *, int64_t);
 extern int64_t m9_fmt_short (double, void *, int64_t);
 
-static int64_t count;
-static m9_sl_F64 xs;
-static ExportDef_Box * box;
-static int64_t version;
-static m9_sl_F64 limits;
-static int64_t i;
+static int64_t ExportDef__count;
+static m9_sl_F64 ExportDef__xs;
+static ExportDef_Box * ExportDef__box;
+static int64_t ExportDef__version;
+static m9_sl_F64 ExportDef__limits;
+static int64_t ExportDef__time;
+static int64_t ExportDef__i;
 static m9_pool m9mframe = {0};
 
-int64_t * const ExportDef_count = &count;
-m9_sl_F64 * const ExportDef_xs = &xs;
+int64_t * const ExportDef_count = &ExportDef__count;
+m9_sl_F64 * const ExportDef_xs = &ExportDef__xs;
 m9_pool * const ExportDef_xs_pool = &m9mframe;
-ExportDef_Box * * const ExportDef_box = &box;
+ExportDef_Box * * const ExportDef_box = &ExportDef__box;
 m9_pool * const ExportDef_box_pool = &m9mframe;
-int64_t * const ExportDef_version = &version;
-m9_sl_F64 * const ExportDef_limits = &limits;
+int64_t * const ExportDef_version = &ExportDef__version;
+m9_sl_F64 * const ExportDef_limits = &ExportDef__limits;
 m9_pool * const ExportDef_limits_pool = &m9mframe;
+int64_t * const ExportDef_time = &ExportDef__time;
 
 static const uint8_t m9s0[21] = { 69, 120, 112, 111, 114, 116, 68, 101, 102, 32, 115, 101, 101, 115, 32, 99, 111, 117, 110, 116, 32 };
 static const uint8_t m9s1[8] = { 44, 32, 120, 115, 91, 49, 93, 32 };
@@ -62,12 +64,12 @@ void ExportDef_Show (m9_state *err)
   err->res = &m9frame;
   static const char m9pn[] = "ExportDef.Show"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
-  { __typeof__((*(double *) m9_at (xs.p, INT64_C(1), xs.len, sizeof (double), err))) m9a1 = (*(double *) m9_at (xs.p, INT64_C(1), xs.len, sizeof (double), err));
-    if (err->exc) { m9ln = 42; goto L_hdl_m9t1; };
-  { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s0, 21 }), Fmt_I64Str (count, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s1, 8 }), err), Fmt_FixedUtf (m9a1, INT64_C(2), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s2, 8 }), err), Fmt_I64Str (({ __auto_type m9g = (box); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->n, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s3, 10 }), err), Fmt_I64Str (version, err), err)) m9a2 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s0, 21 }), Fmt_I64Str (count, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s1, 8 }), err), Fmt_FixedUtf (m9a1, INT64_C(2), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s2, 8 }), err), Fmt_I64Str (({ __auto_type m9g = (box); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->n, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s3, 10 }), err), Fmt_I64Str (version, err), err);
-    if (err->exc) { m9ln = 42; goto L_hdl_m9t1; };
+  { __typeof__((*(double *) m9_at (ExportDef__xs.p, INT64_C(1), ExportDef__xs.len, sizeof (double), err))) m9a1 = (*(double *) m9_at (ExportDef__xs.p, INT64_C(1), ExportDef__xs.len, sizeof (double), err));
+    if (err->exc) { m9ln = 47; goto L_hdl_m9t1; };
+  { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s0, 21 }), Fmt_I64Str (ExportDef__count, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s1, 8 }), err), Fmt_FixedUtf (m9a1, INT64_C(2), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s2, 8 }), err), Fmt_I64Str (({ __auto_type m9g = (ExportDef__box); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->n, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s3, 10 }), err), Fmt_I64Str (ExportDef__version, err), err)) m9a2 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s0, 21 }), Fmt_I64Str (ExportDef__count, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s1, 8 }), err), Fmt_FixedUtf (m9a1, INT64_C(2), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s2, 8 }), err), Fmt_I64Str (({ __auto_type m9g = (ExportDef__box); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->n, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s3, 10 }), err), Fmt_I64Str (ExportDef__version, err), err);
+    if (err->exc) { m9ln = 47; goto L_hdl_m9t1; };
   Io_WriteLineUtf (m9a2, err);
-  if (err->exc) { m9ln = 42; goto L_hdl_m9t1; };
+  if (err->exc) { m9ln = 47; goto L_hdl_m9t1; };
   }
   }
   goto L_dn_m9t2;
@@ -75,11 +77,30 @@ L_hdl_m9t1: ;
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
     Io_WriteLineUtf (((m9_sl_UTF8){ (uint8_t *) m9s4, 30 }), err);
-    if (err->exc) { m9ln = 48; goto L_ret; };
+    if (err->exc) { m9ln = 53; goto L_ret; };
     goto L_dn_m9t2;
   }
   goto L_ret;
 L_dn_m9t2: ;
+L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
+void ExportDef_SetTime (int64_t t, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  static const char m9pn[] = "ExportDef.SetTime"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
+  { __typeof__(ExportDef__time) m9v = m9_add_i64 (t, ExportDef_Width, err);
+    if (err->exc) { m9ln = 58; goto L_ret; };
+    ExportDef__time = m9v;
+  }
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
@@ -98,30 +119,31 @@ void ExportDef_m9init (m9_state *err)
   int32_t m9ln = 0; (void) m9ln;
   Io_m9init (err); if (err->exc) goto L_ret;
   Fmt_m9init (err); if (err->exc) goto L_ret;
-  count = INT64_C(40);
-  { __typeof__(xs) m9v = M9_POOL_SL (m9_sl_F64, double, err->res, INT64_C(3), err);
-    if (err->exc) { m9ln = 53; goto L_ret; };
-    xs = m9v;
+  ExportDef__count = INT64_C(40);
+  { __typeof__(ExportDef__xs) m9v = M9_POOL_SL (m9_sl_F64, double, err->res, INT64_C(3), err);
+    if (err->exc) { m9ln = 63; goto L_ret; };
+    ExportDef__xs = m9v;
   }
-  { __typeof__(i) m9t1to;
-  i = INT64_C(0);
+  { __typeof__(ExportDef__i) m9t1to;
+  ExportDef__i = INT64_C(0);
   m9t1to = INT64_C(2);
-  if (i <= m9t1to) for (;;) {
-    (*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)) = (double)(i);
-    if (err->exc) { m9ln = 54; goto L_ret; };
-    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
-    i += 1;
+  if (ExportDef__i <= m9t1to) for (;;) {
+    (*(double *) m9_at (ExportDef__xs.p, ExportDef__i, ExportDef__xs.len, sizeof (double), err)) = (double)(ExportDef__i);
+    if (err->exc) { m9ln = 64; goto L_ret; };
+    if ((uint64_t) m9t1to - (uint64_t) ExportDef__i < (uint64_t) 1) break;
+    ExportDef__i += 1;
   } }
-  { __typeof__(box) m9v = (ExportDef_Box *) m9_pool_alloc (err->res, sizeof (ExportDef_Box), 1, err);
-    if (err->exc) { m9ln = 55; goto L_ret; };
-    box = m9v;
+  { __typeof__(ExportDef__box) m9v = (ExportDef_Box *) m9_pool_alloc (err->res, sizeof (ExportDef_Box), 1, err);
+    if (err->exc) { m9ln = 65; goto L_ret; };
+    ExportDef__box = m9v;
   }
-  ({ __auto_type m9g = (box); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n = INT64_C(1);
-  version = INT64_C(2);
-  { __typeof__(limits) m9v = M9_POOL_SL (m9_sl_F64, double, err->res, INT64_C(2), err);
-    if (err->exc) { m9ln = 58; goto L_ret; };
-    limits = m9v;
+  ({ __auto_type m9g = (ExportDef__box); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n = INT64_C(1);
+  ExportDef__version = INT64_C(2);
+  { __typeof__(ExportDef__limits) m9v = M9_POOL_SL (m9_sl_F64, double, err->res, INT64_C(2), err);
+    if (err->exc) { m9ln = 68; goto L_ret; };
+    ExportDef__limits = m9v;
   }
+  ExportDef__time = INT64_C(5);
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9prev;

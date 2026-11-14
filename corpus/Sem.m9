@@ -10516,6 +10516,15 @@ BEGIN
       ErrN (site, ctx, S5 ('argument ', ItoA (k + 1), ' of ', name,
         S4 (': cannot pass ', TyName (aTy), ' where ',
             Cat (TyName (pTy), ' is expected'))))
+    ELSIF isVar AND Text.StartsWith (pTy, 'SLICE OF ') AND Text.StartsWith (at, 'ARRAY ') THEN
+      (* An array is a view for a value or RO slice only.  A VAR slice
+         may be given a new slice, which an array cannot hold.  The
+         generator passed the array's address as the slice, and the
+         callee wrote through the wrong memory (LPJ-GUESS port, M15,
+         2026-11-05). *)
+      ErrN (site, ctx, S5 ('argument ', ItoA (k + 1), ' of ', name,
+        S3 (': cannot lend ', TyName (aTy),
+            ' to a VAR SLICE parameter: VAR may give it a new slice, which an array cannot hold -- drop VAR, since a SLICE OF parameter writes the elements (par 4.1)')))
     END
   END ;
   IF an IS SOME a THEN
@@ -20129,6 +20138,45 @@ BEGIN
   END
 END ExportWalk ;
 
+(* SelfWalk reads a designator rooted at the unit's own name, `Mod.v',
+   `Mod.K', `Mod.P (x)', `Mod.Hue.Red' inside Mod, as the bare name: a
+   module names itself (par 3 rule 5).  Until 0.27.1 such a name was
+   passed over untyped, and only an exception built.  It is ONE name
+   for the checker, so a variable has one name in every judgement.
+   A name the procedure declares itself hides the module's: there the
+   bare name is the procedure's, a second name for the module's
+   variable is not given yet, and the form is refused. *)
+PROCEDURE SelfWalk (VAR n: PTR Ast.Node ; root: PTR Ast.Node ; RO me: UTF ;
+                    scope: Ast.Kid) =
+VAR i : I64 ;
+BEGIN
+  IF n.kind = Ast.NDesignator AND n.nkids > 0 AND Text.Eq (n.au, me) THEN
+    IF n.kids[0] IS SOME s THEN
+      IF s.kind = Ast.NSelField AND
+         NOT NameShadowed (root, me, scope, me) THEN
+        IF DeclaresName (scope, s.au) THEN
+          ErrN (n, me, me + '.' + s.au + ': this procedure declares a ' +
+                s.au + " of its own, which hides the module's" +
+                ' -- rename the parameter or local (par 3)')
+        ELSE
+          Ast.SetA (pool, n, s.au) ;
+          FOR i := 0 TO n.nkids - 2 DO n.kids[i] := n.kids[i + 1] END ;
+          n.nkids := n.nkids - 1
+        END
+      END
+    END
+  END ;
+  FOR i := 0 TO n.nkids - 1 DO
+    IF n.kids[i] IS SOME c THEN
+      IF n.kind = Ast.NProcDecl OR n.kind = Ast.NModBody THEN
+        SelfWalk (c, root, me, SOME (n))
+      ELSE
+        SelfWalk (c, root, me, scope)
+      END
+    END
+  END
+END SelfWalk ;
+
 (* AddModuleVars adds the module variables a body of unit u sees,
    after its parameters and locals.  These are u's own, and its
    definition's when u is an implementation (until 2026-10-04 an
@@ -20806,6 +20854,7 @@ BEGIN
         END
       END ;
       CheckImports (root, u) ;
+      SelfWalk (u, root, u.au, NONE) ;
       ExportWalk (u, root, u.au, NONE) ;
       CheckDeclaredOnce (u) ;
       IF TypeCycles (u) THEN RETURN END ;

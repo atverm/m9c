@@ -31,6 +31,11 @@ Result and ResultUtf are one type since STR is the UTF-8 type
 
 _(documented with the group below)_
 
+### Machine () : STR
+
+Machine answers the processor this program was built for:
+'x86-64', 'arm64', or 'other'.
+
 ### Os () : STR
 
 Os answers the platform this program is running on, as a VALUE:
@@ -182,8 +187,11 @@ _(documented with the group below)_
 
 ### OsCode () : C.Int [REENTRANT]
 
-OsCode answers 1 linux, 2 windows, 3 macos, 0 another POSIX; Os
-spells them.
+_(documented with the group below)_
+
+### MachineCode () : C.Int [REENTRANT]
+
+MachineCode answers 1 x86-64, 2 arm64, 0 another.
 
 ### ExePath (buf: C.MutPtr ; cap: C.Int) : C.Int [REENTRANT]
 

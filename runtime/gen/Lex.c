@@ -6,9 +6,9 @@
 extern int64_t m9_utf_cpcount_p (const void *, int64_t);
 extern int64_t m9_utf_find (const void *, int64_t, const void *, int64_t, int64_t);
 
-static bool comOn;
-static m9_sl_Lex_Comment coms;
-static int64_t ncom;
+static bool Lex__comOn;
+static m9_sl_Lex_Comment Lex__coms;
+static int64_t Lex__ncom;
 static const m9_arr_128_uint32_t Ascii_k = { {
   0u,
   1u,
@@ -819,9 +819,9 @@ void Lex_Collect (bool on, m9_state *err)
   err->res = &m9frame;
   static const char m9pn[] = "Lex.Collect"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
-  comOn = on;
+  Lex__comOn = on;
   if (on) {
-    ncom = INT64_C(0);
+    Lex__ncom = INT64_C(0);
   }
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -840,7 +840,7 @@ int64_t Lex_ComCount (m9_state *err)
   int32_t m9ln = 0; (void) m9ln;
   int64_t m9ret = 0;
   err->res = m9res;
-  m9ret = ncom;
+  m9ret = Lex__ncom;
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -858,15 +858,15 @@ Lex_Comment Lex_ComAt (int64_t i, m9_state *err)
   static const char m9pn[] = "Lex.ComAt"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   Lex_Comment m9ret = {0};
-  if (((i < INT64_C(0)) || (i >= ncom))) {
+  if (((i < INT64_C(0)) || (i >= Lex__ncom))) {
     err->i[0] = i;
-    err->i[1] = ncom;
+    err->i[1] = Lex__ncom;
     m9_raise (err, &m9_exc_IndexError);
     m9_site (err, 197, m9pn);
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = (*(Lex_Comment *) m9_at (coms.p, i, coms.len, sizeof (Lex_Comment), err));
+  m9ret = (*(Lex_Comment *) m9_at (Lex__coms.p, i, Lex__coms.len, sizeof (Lex_Comment), err));
   if (err->exc) { m9ln = 198; goto L_ret; };
   goto L_ret;
 L_ret: ;
@@ -887,24 +887,24 @@ static void Lex_Note (int64_t line, int64_t col, int64_t endLine, m9_sl_UTF8 tex
   int32_t m9ln = 0; (void) m9ln;
   m9_sl_Lex_Comment nc = {0}; (void) nc;
   int64_t i = 0; (void) i;
-  if ((ncom == (coms).len)) {
-    if (((coms).len == INT64_C(0))) {
+  if ((Lex__ncom == (Lex__coms).len)) {
+    if (((Lex__coms).len == INT64_C(0))) {
       { __typeof__(nc) m9v = M9_POOL_SL (m9_sl_Lex_Comment, Lex_Comment, &(m9_heap), INT64_C(64), err);
         if (err->exc) { m9ln = 215; goto L_ret; };
         nc = m9v;
       }
     } else {
-      { __typeof__(nc) m9v = M9_POOL_SL (m9_sl_Lex_Comment, Lex_Comment, &(m9_heap), m9_mul_i64 (INT64_C(2), (coms).len, err), err);
+      { __typeof__(nc) m9v = M9_POOL_SL (m9_sl_Lex_Comment, Lex_Comment, &(m9_heap), m9_mul_i64 (INT64_C(2), (Lex__coms).len, err), err);
         if (err->exc) { m9ln = 217; goto L_ret; };
         nc = m9v;
       }
     }
     { __typeof__(i) m9t1to;
     i = INT64_C(0);
-    m9t1to = m9_sub_i64 (ncom, INT64_C(1), err);
+    m9t1to = m9_sub_i64 (Lex__ncom, INT64_C(1), err);
     if (err->exc) { m9ln = 219; goto L_ret; };
     if (i <= m9t1to) for (;;) {
-      { __typeof__((*(Lex_Comment *) m9_at (nc.p, i, nc.len, sizeof (Lex_Comment), err))) m9v = (*(Lex_Comment *) m9_at (coms.p, i, coms.len, sizeof (Lex_Comment), err));
+      { __typeof__((*(Lex_Comment *) m9_at (nc.p, i, nc.len, sizeof (Lex_Comment), err))) m9v = (*(Lex_Comment *) m9_at (Lex__coms.p, i, Lex__coms.len, sizeof (Lex_Comment), err));
         if (err->exc) { m9ln = 219; goto L_ret; };
         (*(Lex_Comment *) m9_at (nc.p, i, nc.len, sizeof (Lex_Comment), err)) = m9v;
         if (err->exc) { m9ln = 219; goto L_ret; };
@@ -912,22 +912,22 @@ static void Lex_Note (int64_t line, int64_t col, int64_t endLine, m9_sl_UTF8 tex
       if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
     } }
-    coms = nc;
+    Lex__coms = nc;
   }
-  (*(Lex_Comment *) m9_at (coms.p, ncom, coms.len, sizeof (Lex_Comment), err)).line = line;
+  (*(Lex_Comment *) m9_at (Lex__coms.p, Lex__ncom, Lex__coms.len, sizeof (Lex_Comment), err)).line = line;
   if (err->exc) { m9ln = 222; goto L_ret; };
-  (*(Lex_Comment *) m9_at (coms.p, ncom, coms.len, sizeof (Lex_Comment), err)).col = col;
+  (*(Lex_Comment *) m9_at (Lex__coms.p, Lex__ncom, Lex__coms.len, sizeof (Lex_Comment), err)).col = col;
   if (err->exc) { m9ln = 223; goto L_ret; };
-  (*(Lex_Comment *) m9_at (coms.p, ncom, coms.len, sizeof (Lex_Comment), err)).endLine = endLine;
+  (*(Lex_Comment *) m9_at (Lex__coms.p, Lex__ncom, Lex__coms.len, sizeof (Lex_Comment), err)).endLine = endLine;
   if (err->exc) { m9ln = 224; goto L_ret; };
-  { __typeof__((*(Lex_Comment *) m9_at (coms.p, ncom, coms.len, sizeof (Lex_Comment), err)).text) m9v = m9_utf_from_bytes (&(m9_heap), m9_utf_octets (text), err);
+  { __typeof__((*(Lex_Comment *) m9_at (Lex__coms.p, Lex__ncom, Lex__coms.len, sizeof (Lex_Comment), err)).text) m9v = m9_utf_from_bytes (&(m9_heap), m9_utf_octets (text), err);
     if (err->exc) { m9ln = 225; goto L_ret; };
-    (*(Lex_Comment *) m9_at (coms.p, ncom, coms.len, sizeof (Lex_Comment), err)).text = m9v;
+    (*(Lex_Comment *) m9_at (Lex__coms.p, Lex__ncom, Lex__coms.len, sizeof (Lex_Comment), err)).text = m9v;
     if (err->exc) { m9ln = 225; goto L_ret; };
   }
-  { __typeof__(ncom) m9v = m9_add_i64 (ncom, INT64_C(1), err);
+  { __typeof__(Lex__ncom) m9v = m9_add_i64 (Lex__ncom, INT64_C(1), err);
     if (err->exc) { m9ln = 226; goto L_ret; };
-    ncom = m9v;
+    Lex__ncom = m9v;
   }
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -1692,7 +1692,7 @@ static void Lex_Skip (Lex_Lexer *lx, m9_pool *lx_pool, bool *bad, int64_t *eline
             Lex_Advance (lx, lx_pool, err);
             if (err->exc) { m9ln = 510; goto L_ret; };
             if ((depth == INT64_C(0))) {
-              if (comOn) {
+              if (Lex__comOn) {
                 { __typeof__(m9_utf_slice ((*lx).src, cstart, m9_sub_i64 ((*lx).pos, cstart, err), err)) m9a11 = m9_utf_slice ((*lx).src, cstart, m9_sub_i64 ((*lx).pos, cstart, err), err);
                   if (err->exc) { m9ln = 520; goto L_ret; };
                 Lex_Note ((*eline), (*ecol), (*lx).line, m9a11, err);

@@ -37,7 +37,7 @@
    THE CERTIFICATE IS VERIFIED.  A TLS client that skips verification
    is worse than a plain socket, because it looks encrypted.  The
    default verify paths are loaded, and SSL_VERIFY_PEER is on.
-   SSL_set1_host makes the hostname part of the handshake rather than
+   expect_host makes the hostname part of the handshake rather than
    something a caller is trusted to check afterwards.  SNI is set from
    the same name, because most hosts worth reaching are virtual.
 
@@ -282,6 +282,18 @@ static int go_nonblocking (int fd)
    stale entry makes SSL_get_error answer SSL_ERROR_SSL, so the queue
    is cleared before every call.  It answers 1 when the handshake
    succeeded. */
+/* expect_host tells the handshake which name the certificate must
+   carry: an address literal as an address, anything else as a DNS
+   name.  It is what SSL_set1_host did, which OpenSSL 4.0 deprecates
+   (Arch's build refused it, 2026-11-14).  These two calls are in
+   every OpenSSL from 1.1.0 on. */
+static void expect_host (SSL *ssl, const char *host)
+{
+  X509_VERIFY_PARAM *vp = SSL_get0_param (ssl);
+  if (X509_VERIFY_PARAM_set1_ip_asc (vp, host) != 1)
+    X509_VERIFY_PARAM_set1_host (vp, host, 0);
+}
+
 static int handshake (SSL *ssl, int fd, int nb)
 {
   int r;
@@ -315,7 +327,7 @@ int tls_connect (const char *host, int port)
   nb = go_nonblocking (fd);
   SSL_set_fd (ssl, fd);
   SSL_set_tlsext_host_name (ssl, host);
-  SSL_set1_host (ssl, host);
+  expect_host (ssl, host);
   if (!handshake (ssl, fd, nb))
   {
     SSL_free (ssl);
@@ -349,7 +361,7 @@ int tls_wrap (int fd, const char *host)
   nb = go_nonblocking (fd);
   SSL_set_fd (ssl, fd);
   SSL_set_tlsext_host_name (ssl, host);
-  SSL_set1_host (ssl, host);
+  expect_host (ssl, host);
   if (!handshake (ssl, fd, nb))
   {
     SSL_free (ssl);

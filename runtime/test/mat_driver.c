@@ -236,6 +236,55 @@ int main (void)
         Mat_CholeskyT (&pool, NS2, 2, &err);
         ck (err.exc == &Mat_NotSPD, "CholeskyT raises NotSPD on a negative pivot in a later panel");
         err.exc = NULL;
+        /* CholeskyInPlace and CholInverseInPlace must be CholeskyT and
+           CholInverse BIT FOR BIT, in the input's own storage.  The
+           upper triangle keeps the input until the inverse.  This is
+           checked on the 100 x 100 and on a 300 x 300 (ten panels),
+           at 1 and 4 threads. */
+        for (int sz = 0; sz < 2; sz++) {
+          int m = sz == 0 ? 100 : 300;
+          Mat_Matrix *H = Mat_New (&pool, m, m, &err);
+          for (int i = 0; i < m; i++)
+            for (int j = 0; j < m; j++)
+              Mat_Set (&H, &pool, i, j, (i == j) ? 4.0 + 0.01 * i : 1.0 / (1.0 + abs (i - j)), &err);
+          Mat_Matrix *HL = Mat_CholeskyT (&pool, H, 4, &err);
+          Mat_Matrix *HP = Mat_CholInverse (&pool, HL, 4, &err);
+          for (int t = 1; t <= 4; t += 3) {
+            Mat_Matrix *IP = Mat_CopyM (&pool, H, &err);
+            Mat_CholeskyInPlace (&IP, &pool, t, &err);
+            bool lo = err.exc == NULL, up = lo;
+            for (int i = 0; i < m; i++)
+              for (int j = 0; j < m; j++) {
+                double a = Mat_Get (IP, i, j, &err);
+                double b = j <= i ? Mat_Get (HL, i, j, &err) : Mat_Get (H, i, j, &err);
+                if (memcmp (&a, &b, sizeof (double)) != 0) { if (j <= i) lo = false; else up = false; }
+              }
+            ck (lo, t == 1 ? "CholeskyInPlace (1 thread) is bit-identical to CholeskyT"
+                           : "CholeskyInPlace (4 threads) is bit-identical to CholeskyT");
+            ck (up, "CholeskyInPlace leaves the upper triangle as it was");
+            Mat_CholInverseInPlace (&IP, &pool, t, &err);
+            bool bit = err.exc == NULL;
+            for (int i = 0; i < m; i++)
+              for (int j = 0; j < m; j++) {
+                double a = Mat_Get (IP, i, j, &err), b = Mat_Get (HP, i, j, &err);
+                if (memcmp (&a, &b, sizeof (double)) != 0) bit = false;
+              }
+            ck (bit, t == 1 ? "CholInverseInPlace (1 thread) is bit-identical to CholInverse"
+                            : "CholInverseInPlace (4 threads) is bit-identical to CholInverse");
+          }
+        }
+        Mat_Matrix *NS3 = Mat_Identity (&pool, 40, &err);
+        Mat_Set (&NS3, &pool, 37, 37, -1.0, &err);
+        Mat_CholeskyInPlace (&NS3, &pool, 2, &err);
+        ck (err.exc == &Mat_NotSPD, "CholeskyInPlace raises NotSPD on a negative pivot in a later panel");
+        err.exc = NULL;
+        Mat_Matrix *R2 = Mat_New (&pool, 3, 2, &err);
+        Mat_CholeskyInPlace (&R2, &pool, 1, &err);
+        ck (err.exc == &Faults_SizeError, "CholeskyInPlace of a 3 x 2 is SizeError");
+        err.exc = NULL;
+        Mat_CholInverseInPlace (&R2, &pool, 1, &err);
+        ck (err.exc == &Faults_SizeError, "CholInverseInPlace of a 3 x 2 is SizeError");
+        err.exc = NULL;
       }
 
       /* shape refusals and NotSPD */

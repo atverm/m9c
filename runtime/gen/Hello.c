@@ -27,9 +27,9 @@ extern int m9_rename (const void *, const void *);
 extern int m9_write_file (const void *, const void *, size_t);
 extern int m9_append_file (const void *, const void *, size_t);
 
-static int64_t greeted;
-static m9_pool pool;
-static int64_t i;
+static int64_t Hello__greeted;
+static m9_pool Hello__pool;
+static int64_t Hello__i;
 static m9_pool m9mframe = {0};
 
 static const uint8_t m9s0[7] = { 104, 101, 108, 108, 111, 44, 32 };
@@ -62,9 +62,9 @@ static void Hello_Greet (m9_pool *pool, m9_sl_UTF8 who, m9_state *err)
   Io_WriteLineUtf (m9a1, err);
   if (err->exc) { m9ln = 25; goto L_ret; };
   }
-  { __typeof__(greeted) m9v = m9_add_i64 (greeted, INT64_C(1), err);
+  { __typeof__(Hello__greeted) m9v = m9_add_i64 (Hello__greeted, INT64_C(1), err);
     if (err->exc) { m9ln = 26; goto L_ret; };
-    greeted = m9v;
+    Hello__greeted = m9v;
   }
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -86,25 +86,25 @@ int main (int argc, char **argv)
   bool m9t3 = (Io_ArgCount (err) <= INT64_C(1));
   if (err->exc) { m9ln = 34; goto L_hdl_m9t1; };
   if (m9t3) {
-    Hello_Greet (&(pool), ((m9_sl_UTF8){ (uint8_t *) m9s1, 5 }), err);
+    Hello_Greet (&(Hello__pool), ((m9_sl_UTF8){ (uint8_t *) m9s1, 5 }), err);
     if (err->exc) { m9ln = 35; goto L_hdl_m9t1; };
   } else {
-    { __typeof__(i) m9t4to;
-    i = INT64_C(1);
+    { __typeof__(Hello__i) m9t4to;
+    Hello__i = INT64_C(1);
     m9t4to = m9_sub_i64 (Io_ArgCount (err), INT64_C(1), err);
     if (err->exc) { m9ln = 37; goto L_hdl_m9t1; };
-    if (i <= m9t4to) for (;;) {
+    if (Hello__i <= m9t4to) for (;;) {
       M9_YCHK ();
-      { __typeof__(Io_ArgUtf (&(pool), i, err)) m9a2 = Io_ArgUtf (&(pool), i, err);
+      { __typeof__(Io_ArgUtf (&(Hello__pool), Hello__i, err)) m9a2 = Io_ArgUtf (&(Hello__pool), Hello__i, err);
         if (err->exc) { m9ln = 38; goto L_hdl_m9t1; };
-      Hello_Greet (&(pool), m9a2, err);
+      Hello_Greet (&(Hello__pool), m9a2, err);
       if (err->exc) { m9ln = 38; goto L_hdl_m9t1; };
       }
-      if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
-      i += 1;
+      if ((uint64_t) m9t4to - (uint64_t) Hello__i < (uint64_t) 1) break;
+      Hello__i += 1;
     } }
   }
-  Io_WriteI64 (greeted, err);
+  Io_WriteI64 (Hello__greeted, err);
   if (err->exc) { m9ln = 41; goto L_hdl_m9t1; };
   Io_WriteLineUtf (((m9_sl_UTF8){ NULL, 0 }), err);
   if (err->exc) { m9ln = 42; goto L_hdl_m9t1; };

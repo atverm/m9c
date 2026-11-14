@@ -58,7 +58,7 @@ extern int m9_rename (const void *, const void *);
 extern int m9_write_file (const void *, const void *, size_t);
 extern int m9_append_file (const void *, const void *, size_t);
 
-static Palette_Hue h;
+static Palette_Hue EnumUse__h;
 static m9_pool m9mframe = {0};
 
 static const uint8_t m9s0[4] = { 119, 97, 114, 109 };
@@ -251,8 +251,8 @@ int main (int argc, char **argv)
   m9_args (argc, argv);
   Palette_m9init (err); if (err->exc) goto L_ret;
   Io_m9init (err); if (err->exc) goto L_ret;
-  h = ((Palette_Hue){ .tag = Palette_Hue_Cool });
-  { __typeof__(EnumUse_Nm (h, err)) m9a2 = EnumUse_Nm (h, err);
+  EnumUse__h = ((Palette_Hue){ .tag = Palette_Hue_Cool });
+  { __typeof__(EnumUse_Nm (EnumUse__h, err)) m9a2 = EnumUse_Nm (EnumUse__h, err);
     if (err->exc) { m9ln = 88; goto L_hdl_m9t1; };
   Io_WriteLineUtf (m9a2, err);
   if (err->exc) { m9ln = 88; goto L_hdl_m9t1; };
@@ -265,13 +265,13 @@ int main (int argc, char **argv)
   if (err->exc) { m9ln = 89; goto L_hdl_m9t1; };
   }
   }
-  Io_WriteI64 ((int64_t)((h).tag), err);
+  Io_WriteI64 ((int64_t)((EnumUse__h).tag), err);
   if (err->exc) { m9ln = 90; goto L_hdl_m9t1; };
   EnumUse_Round (INT64_C(2), err);
   if (err->exc) { m9ln = 91; goto L_hdl_m9t1; };
   Io_WriteLineUtf (((m9_sl_UTF8){ NULL, 0 }), err);
   if (err->exc) { m9ln = 92; goto L_hdl_m9t1; };
-  Io_WriteLineUtf ((Palette_Hue_names[(h).tag]), err);
+  Io_WriteLineUtf ((Palette_Hue_names[(EnumUse__h).tag]), err);
   if (err->exc) { m9ln = 93; goto L_hdl_m9t1; };
   Io_WriteLineUtf ((Palette_Hue_names[(((Palette_Hue){ .tag = Palette_Hue_Warm })).tag]), err);
   if (err->exc) { m9ln = 94; goto L_hdl_m9t1; };
@@ -279,11 +279,11 @@ int main (int argc, char **argv)
   if (err->exc) { m9ln = 95; goto L_hdl_m9t1; };
   EnumUse_Tables (err);
   if (err->exc) { m9ln = 96; goto L_hdl_m9t1; };
-  if (((h).tag == (((Palette_Hue){ .tag = Palette_Hue_Cool })).tag)) {
+  if (((EnumUse__h).tag == (((Palette_Hue){ .tag = Palette_Hue_Cool })).tag)) {
     Io_WriteLineUtf (((m9_sl_UTF8){ (uint8_t *) m9s5, 9 }), err);
     if (err->exc) { m9ln = 98; goto L_hdl_m9t1; };
   }
-  if (((h).tag != (((Palette_Hue){ .tag = Palette_Hue_Warm })).tag)) {
+  if (((EnumUse__h).tag != (((Palette_Hue){ .tag = Palette_Hue_Warm })).tag)) {
     Io_WriteLineUtf (((m9_sl_UTF8){ (uint8_t *) m9s6, 13 }), err);
     if (err->exc) { m9ln = 99; goto L_hdl_m9t1; };
   }

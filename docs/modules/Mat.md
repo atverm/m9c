@@ -161,6 +161,29 @@ same in the same order whatever the thread count, so the answer
 is bit-identical for 1 and for 32.  threads <= 1 runs
 in the caller's thread.
 
+### CholeskyInPlace (VAR a: PTR Matrix ; threads: I64) RAISES Faults.SizeError, NotSPD, ValueRange
+
+CholeskyInPlace is CholeskyT in a's own storage.  The lower
+triangle of a becomes L, and the upper triangle keeps what it
+held.  CholSolve and CholInverse read only the lower triangle, so
+they take a as it is.  The loop is CholeskyT's own, so L is
+bit-identical to CholeskyT's at any thread count.  On NotSPD the
+lower triangle is spoilt.  An inverse by CholeskyT and
+CholInverse holds three n x n matrices beside the input; one
+year inversion held six at once and stopped near 40 000 unknowns
+(cpflexdev, 2026-11-09).
+
+### CholInverseInPlace (VAR a: PTR Matrix ; threads: I64) RAISES Faults.SizeError
+
+CholInverseInPlace takes a factor in a's lower triangle, from
+CholeskyInPlace, and leaves (L L^T)^-1 in the whole of a.  It
+needs two vectors of n beside a: L's diagonal, and P's diagonal
+until the end.  T = (L^-1)^T goes into the upper triangle, P
+into the strict lower triangle, and a last pass mirrors P into
+the upper.  Each cell is CholInverse's arithmetic in
+CholInverse's order, so the answer is bit-identical to
+CholInverse's at any thread count.
+
 ### AddNormal (h: PTR Matrix ; RO w: SLICE OF F64 ; VAR k: PTR Matrix ; threads: I64) RAISES Faults.SizeError
 
 AddNormal computes k := k + H^T diag (w) H, the normal matrix of

@@ -35,9 +35,9 @@ struct ProcUse_Holder {
   int64_t n;
 };
 
-static ProcUse_Holder h;
-static ProcUse_Less chosen;
-static int64_t total;
+static ProcUse_Holder ProcUse__h;
+static ProcUse_Less ProcUse__chosen;
+static int64_t ProcUse__total;
 static m9_pool m9mframe = {0};
 
 static const uint8_t m9s0[3] = { 111, 110, 101 };
@@ -253,8 +253,8 @@ static void ProcUse_Run (m9_state *err)
   ProcUse_Show (((m9_sl_UTF8){ (uint8_t *) m9s5, 16 }), m9a2, err);
   if (err->exc) { m9ln = 79; goto L_ret; };
   }
-  chosen = ProcUse_Down;
-  { ProcUse_Less l = chosen;
+  ProcUse__chosen = ProcUse_Down;
+  { ProcUse_Less l = ProcUse__chosen;
   if (l != NULL) {
     { __typeof__(ProcUse_Pick (l, INT64_C(7), INT64_C(9), err)) m9a3 = ProcUse_Pick (l, INT64_C(7), INT64_C(9), err);
       if (err->exc) { m9ln = 82; goto L_ret; };
@@ -262,8 +262,8 @@ static void ProcUse_Run (m9_state *err)
     if (err->exc) { m9ln = 82; goto L_ret; };
     }
   } }
-  h.k = ProcUse_Twice;
-  { ProcUse_Kernel k = h.k;
+  ProcUse__h.k = ProcUse_Twice;
+  { ProcUse_Kernel k = ProcUse__h.k;
   if (k != NULL) {
     { __typeof__(m9_i64_f64 ((double)(ProcUse_Apply (k, 1.5, err)), err)) m9a4 = m9_i64_f64 ((double)(ProcUse_Apply (k, 1.5, err)), err);
       if (err->exc) { m9ln = 86; goto L_ret; };
@@ -271,10 +271,10 @@ static void ProcUse_Run (m9_state *err)
     if (err->exc) { m9ln = 86; goto L_ret; };
     }
   } }
-  total = INT64_C(0);
-  ProcUse_Each (ProcUse_AddLen, &(total), err);
+  ProcUse__total = INT64_C(0);
+  ProcUse_Each (ProcUse_AddLen, &(ProcUse__total), err);
   if (err->exc) { m9ln = 89; goto L_ret; };
-  ProcUse_Show (((m9_sl_UTF8){ (uint8_t *) m9s8, 14 }), total, err);
+  ProcUse_Show (((m9_sl_UTF8){ (uint8_t *) m9s8, 14 }), ProcUse__total, err);
   if (err->exc) { m9ln = 90; goto L_ret; };
   { __typeof__(v) m9v = m9_i64_f64 ((double)(ProcUse_Apply (ProcUse_Twice, (- 1.0), err)), err);
     if (err->exc) { m9ln = 94; goto L_ret; };

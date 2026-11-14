@@ -1,12 +1,12 @@
-REVIEW System -- 37 procedures with a body, 32 of them functions; 25 headings in a DEFINITION
+REVIEW System -- 38 procedures with a body, 33 of them functions; 26 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              32
+  functions answering on every path              33
   assignments                                   100
   arguments                                     162
-  RETURN values                                  48
+  RETURN values                                  51
   operands of a comparison or an operator        81
-  CASE labels                                     3
+  CASE labels                                     5
   THREAD arguments                                0
   CASE over variants, proved total                0
 
@@ -29,15 +29,15 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
 
 TRUSTED -- outside what the checker can see
   UNSAFE units                                    2   csys, System
-  foreign procedures                             17
+  foreign procedures                             18
     of them [SERIAL]                              0
-    of them [REENTRANT]                          17
+    of them [REENTRANT]                          18
   THREADs writing STATEFUL state                  0
   ADR sites (C reading or writing M9 storage)     9   writes or reads in Mem, writes or reads in PoolAt, writes or reads in PoolBytes, writes or reads in StreamUtf, writes or reads in ExecWithinUtf, reads in ExecWithinUtf, +3 more
     of them filling a descriptor ([FRESH])        0
 
 COUNTED -- how much there was to check
-  CASE statements                                 1
+  CASE statements                                 2
   RAISE statements                                4
   handlers                                        5
   NEW in the frame                                6

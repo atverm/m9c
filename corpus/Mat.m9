@@ -164,6 +164,29 @@ PROCEDURE CholInverse (VAR pool: POOL ; l: PTR Matrix ; threads: I64)
      is bit-identical for 1 and for 32.  threads <= 1 runs
      in the caller's thread.                                        *)
 
+PROCEDURE CholeskyInPlace (VAR a: PTR Matrix ; threads: I64)
+  RAISES Faults.SizeError, NotSPD, ValueRange ;
+  (* CholeskyInPlace is CholeskyT in a's own storage.  The lower
+     triangle of a becomes L, and the upper triangle keeps what it
+     held.  CholSolve and CholInverse read only the lower triangle, so
+     they take a as it is.  The loop is CholeskyT's own, so L is
+     bit-identical to CholeskyT's at any thread count.  On NotSPD the
+     lower triangle is spoilt.  An inverse by CholeskyT and
+     CholInverse holds three n x n matrices beside the input; one
+     year inversion held six at once and stopped near 40 000 unknowns
+     (cpflexdev, 2026-11-09). *)
+
+PROCEDURE CholInverseInPlace (VAR a: PTR Matrix ; threads: I64)
+  RAISES Faults.SizeError ;
+  (* CholInverseInPlace takes a factor in a's lower triangle, from
+     CholeskyInPlace, and leaves (L L^T)^-1 in the whole of a.  It
+     needs two vectors of n beside a: L's diagonal, and P's diagonal
+     until the end.  T = (L^-1)^T goes into the upper triangle, P
+     into the strict lower triangle, and a last pass mirrors P into
+     the upper.  Each cell is CholInverse's arithmetic in
+     CholInverse's order, so the answer is bit-identical to
+     CholInverse's at any thread count. *)
+
 PROCEDURE AddNormal (h: PTR Matrix ; RO w: SLICE OF F64 ;
                      VAR k: PTR Matrix ; threads: I64)
   RAISES Faults.SizeError ;
@@ -639,6 +662,8 @@ TYPE
     l : PTR Matrix ;             (* the factor, read by all *)
     t : PTR Matrix ;             (* the transpose of the inverse factor: row j belongs to the band holding j *)
     p : PTR Matrix ;             (* the inverse: rows of a band *)
+    ld : SLICE OF F64 ;          (* in place: L's diagonal, which T overwrites *)
+    pd : SLICE OF F64 ;          (* in place: P's diagonal, until the mirror *)
     n, band, nbands, pass : I64
   END [SHARABLE] ;
 
@@ -677,7 +702,11 @@ END ResetWork ;
 
 PROCEDURE InvBand (VAR j: InvJob ; b: I64) =
   (* InvBand fills rows [c0, c1) of T in pass 1, and rows [c0, c1) of
-     P and their mirror in pass 2. *)
+     P and their mirror in pass 2.  Passes 3 to 5 are the same work in
+     the one matrix l, for CholInverseInPlace.  Pass 3 writes row col
+     of T into l's upper triangle and reads only l's strict lower
+     triangle and ld.  Pass 4 writes column a of P into the strict
+     lower triangle and P's diagonal into pd.  Pass 5 mirrors. *)
 VAR
   wpool : POOL ;
   x : SLICE OF F64 ;
@@ -702,7 +731,7 @@ BEGIN
       FOR i := 0 TO col - 1 DO j.t.d[col, i] := 0.0 END ;
       FOR i := col TO n - 1 DO j.t.d[col, i] := x[i] END
     END
-  ELSE
+  ELSIF j.pass = 2 THEN
     FOR a := c0 TO c1 - 1 DO
       FOR bb := a TO n - 1 DO
         acc := 0.0 ;
@@ -712,6 +741,33 @@ BEGIN
         j.p.d[a, bb] := acc ;
         j.p.d[bb, a] := acc
       END
+    END
+  ELSIF j.pass = 3 THEN
+    x := NEW (wpool, F64, n) ;
+    FOR col := c0 TO c1 - 1 DO
+      FOR i := col TO n - 1 DO
+        IF i = col THEN acc := 1.0 ELSE acc := 0.0 END ;
+        FOR m := col TO i - 1 DO
+          acc := acc - j.l.d[i, m] * x[m]
+        END ;
+        x[i] := acc / j.ld[i]
+      END ;
+      FOR i := col TO n - 1 DO j.l.d[col, i] := x[i] END
+    END
+  ELSIF j.pass = 4 THEN
+    FOR a := c0 TO c1 - 1 DO
+      FOR bb := a TO n - 1 DO
+        acc := 0.0 ;
+        FOR kk := bb TO n - 1 DO
+          acc := acc + j.l.d[a, kk] * j.l.d[bb, kk]
+        END ;
+        IF bb = a THEN j.pd[a] := acc ELSE j.l.d[bb, a] := acc END
+      END
+    END
+  ELSE
+    FOR a := c0 TO c1 - 1 DO
+      j.l.d[a, a] := j.pd[a] ;
+      FOR bb := a + 1 TO n - 1 DO j.l.d[a, bb] := j.l.d[bb, a] END
     END
   END
 END InvBand ;
@@ -806,22 +862,17 @@ BEGIN
   AwaitAll (j.w, threads)
 END RunChol ;
 
-PROCEDURE CholeskyT (VAR pool: POOL ; a: PTR Matrix ; threads: I64)
-  : PTR Matrix IN pool
-  RAISES Faults.SizeError, NotSPD, ValueRange =
+(* FactorLower factors the lower triangle of l where it lies.  It is
+   CholeskyT's loop and CholeskyInPlace's, so the two cannot drift. *)
+PROCEDURE FactorLower (VAR l: PTR Matrix ; threads: I64)
+  RAISES NotSPD, ValueRange =
 VAR
   scratch : POOL ;
   j : PTR CholJob IN scratch ;
-  l : PTR Matrix IN pool ;
   n, nb, k0, k1, i, jj, k : I64 ;
   acc : F64 ;
 BEGIN
-  IF Rows (a) # Cols (a) THEN RAISE Faults.SizeError (Rows (a), Cols (a)) END ;
-  n := Rows (a) ;
-  l := New (pool, n, n) ;
-  FOR i := 0 TO n - 1 DO
-    FOR jj := 0 TO i DO l.d[i, jj] := a.d[i, jj] END
-  END ;
+  n := Rows (l) ;
   nb := 128 ;
   IF n < 512 THEN nb := 32 END ;
   j := NEW (scratch, CholJob) ;
@@ -858,9 +909,32 @@ BEGIN
       l := j.l
     END ;
     k0 := k1
+  END
+END FactorLower ;
+
+PROCEDURE CholeskyT (VAR pool: POOL ; a: PTR Matrix ; threads: I64)
+  : PTR Matrix IN pool
+  RAISES Faults.SizeError, NotSPD, ValueRange =
+VAR
+  l : PTR Matrix IN pool ;
+  n, i, jj : I64 ;
+BEGIN
+  IF Rows (a) # Cols (a) THEN RAISE Faults.SizeError (Rows (a), Cols (a)) END ;
+  n := Rows (a) ;
+  l := New (pool, n, n) ;
+  FOR i := 0 TO n - 1 DO
+    FOR jj := 0 TO i DO l.d[i, jj] := a.d[i, jj] END
   END ;
+  FactorLower (l, threads) ;
   RETURN l
 END CholeskyT ;
+
+PROCEDURE CholeskyInPlace (VAR a: PTR Matrix ; threads: I64)
+  RAISES Faults.SizeError, NotSPD, ValueRange =
+BEGIN
+  IF Rows (a) # Cols (a) THEN RAISE Faults.SizeError (Rows (a), Cols (a)) END ;
+  FactorLower (a, threads)
+END CholeskyInPlace ;
 
 PROCEDURE CholInverse (VAR pool: POOL ; l: PTR Matrix ; threads: I64)
   : PTR Matrix IN pool
@@ -889,6 +963,33 @@ BEGIN
   RunInv (j, threads) ;
   RETURN j.p
 END CholInverse ;
+
+PROCEDURE CholInverseInPlace (VAR a: PTR Matrix ; threads: I64)
+  RAISES Faults.SizeError =
+VAR
+  scratch : POOL ;
+  j : PTR InvJob IN scratch ;
+  n, i : I64 ;
+BEGIN
+  IF Rows (a) # Cols (a) THEN RAISE Faults.SizeError (Rows (a), Cols (a)) END ;
+  n := Rows (a) ;
+  j := NEW (scratch, InvJob) ;
+  j.n := n ;
+  j.l := a ;
+  j.ld := NEW (scratch, F64, n) ;
+  j.pd := NEW (scratch, F64, n) ;
+  FOR i := 0 TO n - 1 DO j.ld[i] := a.d[i, i] END ;
+  (* The bands are CholInverse's: small, claimed as workers free up. *)
+  j.band := 32 ;
+  IF n < 128 THEN j.band := 8 END ;
+  j.nbands := (n + j.band - 1) DIV j.band ;
+  j.pass := 3 ;
+  RunInv (j, threads) ;
+  j.pass := 4 ;
+  RunInv (j, threads) ;
+  j.pass := 5 ;
+  RunInv (j, threads)
+END CholInverseInPlace ;
 
 PROCEDURE NormalBand (VAR j: NormalJob ; b: I64) =
 VAR

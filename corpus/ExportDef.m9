@@ -24,8 +24,13 @@ VAR
   box : PTR Box ;
   RO version : I64 ;
   RO limits : SLICE OF F64 ;   (* nothing writes through it *)
+  time : I64 ;                (* named like the C library's time (): its C name carries the module's, so the two never meet (2026-11-14) *)
 
 PROCEDURE Show () RAISES ValueRange ;
+PROCEDURE SetTime (t: I64) ;
+  (* SetTime stores into the module's time.  Its body writes
+     ExportDef.time and reads ExportDef.Width: a module names itself
+     (par 3 rule 5). *)
 
 END ExportDef.
 
@@ -48,6 +53,11 @@ EXCEPT
     Io.WriteLine ('ExportDef: xs has no element 1')
 END Show ;
 
+PROCEDURE SetTime (t: I64) =
+BEGIN
+  ExportDef.time := t + ExportDef.Width
+END SetTime ;
+
 BEGIN
   count := 40 ;
   xs := NEW (F64, 3) ;
@@ -55,5 +65,6 @@ BEGIN
   box := NEW (Box) ;
   box.n := 1 ;
   version := 2 ;
-  limits := NEW (F64, 2)
+  limits := NEW (F64, 2) ;
+  time := 5
 END ExportDef.

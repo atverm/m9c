@@ -30,9 +30,9 @@ extern int m9_append_file (const void *, const void *, size_t);
 extern int64_t m9_utf_cpcount_p (const void *, int64_t);
 extern int64_t m9_utf_find (const void *, int64_t, const void *, int64_t, int64_t);
 
-static m9_sl_UTF8 s;
-static DynStr_DString * d;
-static int64_t n;
+static m9_sl_UTF8 Concat__s;
+static DynStr_DString * Concat__d;
+static int64_t Concat__n;
 static m9_pool m9mframe = {0};
 
 static const uint8_t m9s0[7] = { 104, 101, 108, 108, 111, 44, 32 };
@@ -118,34 +118,34 @@ int main (int argc, char **argv)
   Io_WriteLineUtf (m9a1, err);
   if (err->exc) { m9ln = 80; goto L_ret; };
   }
-  s = ((m9_sl_UTF8){ NULL, 0 });
-  { __typeof__(n) m9t1to;
-  n = INT64_C(1);
+  Concat__s = ((m9_sl_UTF8){ NULL, 0 });
+  { __typeof__(Concat__n) m9t1to;
+  Concat__n = INT64_C(1);
   m9t1to = INT64_C(3);
-  if (n <= m9t1to) for (;;) {
-    { __typeof__(s) m9v = m9_utf_cat (err->res, s, ((m9_sl_UTF8){ (uint8_t *) m9s4, 2 }), err);
+  if (Concat__n <= m9t1to) for (;;) {
+    { __typeof__(Concat__s) m9v = m9_utf_cat (err->res, Concat__s, ((m9_sl_UTF8){ (uint8_t *) m9s4, 2 }), err);
       if (err->exc) { m9ln = 83; goto L_ret; };
-      s = m9v;
+      Concat__s = m9v;
     }
-    if ((uint64_t) m9t1to - (uint64_t) n < (uint64_t) 1) break;
-    n += 1;
+    if ((uint64_t) m9t1to - (uint64_t) Concat__n < (uint64_t) 1) break;
+    Concat__n += 1;
   } }
-  Io_WriteLineUtf (s, err);
+  Io_WriteLineUtf (Concat__s, err);
   if (err->exc) { m9ln = 85; goto L_ret; };
-  { __typeof__(Text_BLen (s, err)) m9a2 = Text_BLen (s, err);
+  { __typeof__(Text_BLen (Concat__s, err)) m9a2 = Text_BLen (Concat__s, err);
     if (err->exc) { m9ln = 86; goto L_ret; };
   Io_WriteI64 (m9a2, err);
   if (err->exc) { m9ln = 86; goto L_ret; };
   }
   Io_WriteLineUtf (((m9_sl_UTF8){ NULL, 0 }), err);
   if (err->exc) { m9ln = 87; goto L_ret; };
-  { __typeof__(d) m9v = DynStr_New (&(m9_heap), err);
+  { __typeof__(Concat__d) m9v = DynStr_New (&(m9_heap), err);
     if (err->exc) { m9ln = 89; goto L_ret; };
-    d = m9v;
+    Concat__d = m9v;
   }
-  DynStr_Append (({ __typeof__ (&(d)) m9v = &(d); if (err->exc) { m9ln = 90; goto L_ret; }; m9v; }), &m9mframe, ((m9_sl_UTF8){ (uint8_t *) m9s5, 8 }), err);
+  DynStr_Append (({ __typeof__ (&(Concat__d)) m9v = &(Concat__d); if (err->exc) { m9ln = 90; goto L_ret; }; m9v; }), &m9mframe, ((m9_sl_UTF8){ (uint8_t *) m9s5, 8 }), err);
   if (err->exc) { m9ln = 90; goto L_ret; };
-  { __typeof__(({ __auto_type m9n = (d); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a3 = ({ __auto_type m9n = (d); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+  { __typeof__(({ __auto_type m9n = (Concat__d); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a3 = ({ __auto_type m9n = (Concat__d); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
     if (err->exc) { m9ln = 91; goto L_ret; };
   { __typeof__(DynStr_View (m9a3, err)) m9a4 = DynStr_View (m9a3, err);
     if (err->exc) { m9ln = 91; goto L_ret; };

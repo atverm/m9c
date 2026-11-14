@@ -1,11 +1,11 @@
-REVIEW Sem -- 678 procedures with a body, 470 of them functions; 95 headings in a DEFINITION
+REVIEW Sem -- 679 procedures with a body, 470 of them functions; 95 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path             470
-  assignments                                  2758
-  arguments                                   11745
+  assignments                                  2760
+  arguments                                   11788
   RETURN values                                1687
-  operands of a comparison or an operator      3562
+  operands of a comparison or an operator      3572
   CASE labels                                   188
   THREAD arguments                                0
   CASE over variants, proved total                0

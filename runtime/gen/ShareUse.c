@@ -44,11 +44,11 @@ struct ShareUse_Box {
   int64_t n;
 };
 
-static double y0_;
-static ShareUse_Box * b;
-static ShareUse_Box * c;
-static m9_sl_UTF8 p;
-static uint64_t big;
+static double ShareUse__y0;
+static ShareUse_Box * ShareUse__b;
+static ShareUse_Box * ShareUse__c;
+static m9_sl_UTF8 ShareUse__p;
+static uint64_t ShareUse__big;
 static m9_pool m9mframe = {0};
 
 static const uint8_t m9s0[5] = { 117, 115, 101, 100, 32 };
@@ -250,13 +250,13 @@ static void ShareUse_Try (int64_t n, m9_state *err)
   err->res = &m9frame;
   static const char m9pn[] = "ShareUse.Try"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
-  { __typeof__(b) m9v = ShareUse_Make (n, err);
+  { __typeof__(ShareUse__b) m9v = ShareUse_Make (n, err);
     if (err->exc) { m9ln = 76; goto L_hdl_m9t1; };
-    b = m9v;
+    ShareUse__b = m9v;
   }
   Io_WriteUtf (((m9_sl_UTF8){ (uint8_t *) m9s4, 5 }), err);
   if (err->exc) { m9ln = 77; goto L_hdl_m9t1; };
-  Io_WriteI64 (({ __auto_type m9g = (b); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->n, err);
+  Io_WriteI64 (({ __auto_type m9g = (ShareUse__b); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->n, err);
   if (err->exc) { m9ln = 77; goto L_hdl_m9t1; };
   Io_WriteLineUtf (((m9_sl_UTF8){ NULL, 0 }), err);
   if (err->exc) { m9ln = 77; goto L_hdl_m9t1; };
@@ -674,24 +674,24 @@ int main (int argc, char **argv)
   int32_t m9ln = 0; (void) m9ln;
   m9_args (argc, argv);
   Io_m9init (err); if (err->exc) goto L_ret;
-  p = ((m9_sl_UTF8){ (uint8_t *) m9s32, 6 });
+  ShareUse__p = ((m9_sl_UTF8){ (uint8_t *) m9s32, 6 });
   ShareUse_Try (INT64_C(3), err);
   if (err->exc) { m9ln = 240; goto L_ret; };
   ShareUse_Try (INT64_C(0), err);
   if (err->exc) { m9ln = 241; goto L_ret; };
-  { __typeof__(c) m9v = ({ __auto_type m9n = (b); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+  { __typeof__(ShareUse__c) m9v = ({ __auto_type m9n = (ShareUse__b); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
     if (err->exc) { m9ln = 242; goto L_ret; };
-    c = ((__typeof__(c)) m9_share_copy (m9v));
+    ShareUse__c = ((__typeof__(ShareUse__c)) m9_share_copy (m9v));
   }
   Io_WriteUtf (((m9_sl_UTF8){ (uint8_t *) m9s33, 7 }), err);
   if (err->exc) { m9ln = 243; goto L_ret; };
-  Io_WriteI64 (({ __auto_type m9g = (c); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, err);
+  Io_WriteI64 (({ __auto_type m9g = (ShareUse__c); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, err);
   if (err->exc) { m9ln = 243; goto L_ret; };
   Io_WriteLineUtf (((m9_sl_UTF8){ NULL, 0 }), err);
   if (err->exc) { m9ln = 243; goto L_ret; };
   Io_WriteUtf (((m9_sl_UTF8){ (uint8_t *) m9s34, 7 }), err);
   if (err->exc) { m9ln = 244; goto L_ret; };
-  { __typeof__(({ __auto_type m9n = (b); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a5 = ({ __auto_type m9n = (b); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+  { __typeof__(({ __auto_type m9n = (ShareUse__b); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a5 = ({ __auto_type m9n = (ShareUse__b); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
     if (err->exc) { m9ln = 244; goto L_ret; };
   { __typeof__(ShareUse_Peek (m9a5, err)) m9a6 = ShareUse_Peek (m9a5, err);
     if (err->exc) { m9ln = 244; goto L_ret; };
@@ -709,8 +709,8 @@ int main (int argc, char **argv)
   if (err->exc) { m9ln = 247; goto L_ret; };
   ShareUse_Narrow (1.0e300, err);
   if (err->exc) { m9ln = 248; goto L_ret; };
-  big = UINT64_C(18446744073709551615);
-  if ((big == UINT64_C(18446744073709551615))) {
+  ShareUse__big = UINT64_C(18446744073709551615);
+  if ((ShareUse__big == UINT64_C(18446744073709551615))) {
     Io_WriteLineUtf (((m9_sl_UTF8){ (uint8_t *) m9s35, 3 }), err);
     if (err->exc) { m9ln = 250; goto L_ret; };
   }
@@ -718,8 +718,8 @@ int main (int argc, char **argv)
   if (err->exc) { m9ln = 251; goto L_ret; };
   ShareUse_GridOf (INT64_C(4), INT64_C(2), err);
   if (err->exc) { m9ln = 252; goto L_ret; };
-  y0_ = 1.0;
-  if ((y0_ > 0.0)) {
+  ShareUse__y0 = 1.0;
+  if ((ShareUse__y0 > 0.0)) {
     Io_WriteLineUtf (((m9_sl_UTF8){ (uint8_t *) m9s36, 6 }), err);
     if (err->exc) { m9ln = 254; goto L_ret; };
   }

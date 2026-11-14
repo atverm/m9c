@@ -1046,7 +1046,12 @@ the sub-slice, bounds-checked like indexing; start and length, never
 an inclusive end — the corpus met the empty string on the first day
 and `s[a..a-1]` is not a bank statement. A whole `ARRAY N OF T`
 variable is accepted where a `SLICE OF T` is expected: the view of
-all N elements, no copy.  `SLICE` views storage, so its array must be
+all N elements, no copy.  A `VAR SLICE OF T` parameter does not take
+one: VAR may give it a new slice, which an array cannot hold, and a
+value `SLICE OF T` parameter already writes the elements (since
+2026-11-06; until then the array's address went through as the slice,
+and the callee wrote the wrong memory; probe `array-to-var-slice`).
+`SLICE` views storage, so its array must be
 one a variable holds: an `ARRAY` a call answers is a value in a
 temporary of the statement, and `SLICE (Mk (), 0, 2)` is refused —
 name it first (`a := Mk () ; SLICE (a, 0, 2)`); a function answering
@@ -1312,7 +1317,14 @@ Rules:
    `IMPORT` lines of a module are the whole list of what it depends
    on. The definition and the implementation of a module are one
    module here: an import in either serves both. A module names
-   itself freely, and a variable, parameter, type or constant
+   itself freely: inside `Clock`, `Clock.time`, `Clock.K`,
+   `Clock.Set (x)` and `Clock.Stamp` are `time`, `K`, `Set (x)` and
+   `Stamp` (built in 0.27.1; until then the checker passed such a name
+   over untyped and only an exception built). One form is refused: a
+   name the procedure declares itself hides the module's, and
+   `Clock.time` beside a parameter `time` does not reach past it yet
+   (probe `module-name-hidden`); rename the parameter. A variable,
+   parameter, type or constant
    declared in the procedure, or at the module's own level, is that
    name and not a module's; a binder is, inside the statements it
    binds -- the THEN or DO of its `IS SOME`, the CASE arm, the
