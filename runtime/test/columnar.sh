@@ -20,7 +20,7 @@ cd "$(dirname "$0")"
 REPO=$(cd ../.. && pwd)
 . ./lib/freshm9c.sh   # M9C: built from runtime/gen, or the caller's $M9C
 # PY judges the PARQUET half.  It is $COLUMNAR_PY when the system's
-# Python has no pyarrow (zoefii: ~/miniconda3/bin/python3, pyarrow
+# Python has no pyarrow (host2: ~/miniconda3/bin/python3, pyarrow
 # 25.0.1; the suite sets it, or that half SKIPs there).  The NETCDF
 # half stays on the system python3 and its distribution netCDF4.  That
 # half loads libnetcdf through ctypes, and miniconda's Python loading

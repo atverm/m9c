@@ -94,6 +94,12 @@ name (2026-10-29).
 
 _(documented with the group below)_
 
+### SetVerifyClaims (on: BOOL)
+
+SetVerifyClaims makes the body of a FOR whose INRANGE claim is
+TRUE keep its subscript checks, and stop the program on one that
+fails (m9c --verify-claims, docs/loop-check-plan.md).
+
 ### SetStrUtf (on: BOOL)
 
 SetStrUtf rehearses the switch (Sem.SetStrUtf).  STR is

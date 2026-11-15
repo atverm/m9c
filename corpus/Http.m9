@@ -599,7 +599,7 @@ END HexVal ;
 
 (* Line reads one CRLF-terminated line, LF tolerated alone.  It
    answers -1 at end of stream.  A line of UTF-8 octets is its text,
-   as a request goes out as its text's octets (Alex, 2026-10-31).  A
+   as a request goes out as its text's octets (decided 2026-10-31).  A
    line that is not UTF-8 keeps one CHAR per octet.  So a Location
    comes back out as the octets it came in as. *)
 PROCEDURE Line (VAR c: Conn ; VAR out: STR) : I64

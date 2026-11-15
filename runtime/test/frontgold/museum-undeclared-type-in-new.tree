@@ -1,0 +1,14 @@
+MODULE Attrs ;
+
+TYPE
+  Attr = RECORD
+    name, value : STR
+  END ;
+
+VAR
+  pool : POOL ;
+  kids : SLICE OF Attr ;
+
+BEGIN
+  kids := NEW (pool, AttrsKids, 64)
+END Attrs.

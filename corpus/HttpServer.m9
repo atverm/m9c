@@ -192,7 +192,7 @@ TYPE
                                   number waits in a monitor, and each
                                   request's end wakes every one waiting.
                                   64 connections on 8 took 164 us of CPU
-                                  a request on ct121, on 64 took 64 us
+                                  a request on host1, on 64 took 64 us
                                   (2026-11-03). *)
     queue : I64 ;              (* accepted connections waiting for a
                                   worker, 1 .. MaxQueue.  Over it, the
@@ -1393,7 +1393,7 @@ BEGIN
   END ;
   CrLf (d) ;
   (* The head goes out as its UTF-8 octets, a handler's header values
-     included (Alex, 2026-10-31).  Octets views them without a copy. *)
+     included (decided 2026-10-31).  Octets views them without a copy. *)
   RETURN WriteAll (fd, DynStr.Octets (d))
 END Head ;
 
@@ -2160,7 +2160,7 @@ END Dispatch ;
 PROCEDURE HeadText (VAR pool: POOL ; RO b: SLICE OF BYTE) : STR
   RAISES ValueRange =
   (* HeadText answers the text of a request head, in pool, judged line
-     by line as Http's Line judges a response (Alex, 2026-10-31).  A
+     by line as Http's Line judges a response (decided 2026-10-31).  A
      line of UTF-8 octets reads as its text.  Any other line reads one
      CHAR per octet.  So a Latin-1 header leaves a UTF-8 path as it
      is.  Every LF stays where it was, so the lines of the answer are
@@ -2526,7 +2526,7 @@ PROCEDURE WorkerRun (VAR w: Worker) =
      worker never returns while the server runs, so the runtime would
      never give its kept blocks back.  So the worker keeps at most
      cfg.keepBytes, and gives them back whenever the ring is empty
-     (Alex, 2026-10-31: the program that starts the threads decides;
+     (decided 2026-10-31: the program that starts the threads decides;
      zpd's 32 workers held 7.33 GB against 5.43 GB at the same
      speed). *)
 VAR fd : I64 ;
@@ -2712,7 +2712,7 @@ BEGIN
   CrLf (d) ;
   DynStr.Append (d, 'Content-Length: ') ;
   DynStr.AppendI64 (d, Text.BLen (body)) ;
-  (* The answer goes out as its UTF-8 octets (Alex, 2026-10-31).  The
+  (* The answer goes out as its UTF-8 octets (decided 2026-10-31).  The
      length counts those octets, so it cannot lie.  A character past
      255 needs no refusal. *)
   CrLf (d) ;

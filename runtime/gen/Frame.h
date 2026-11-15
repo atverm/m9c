@@ -110,14 +110,6 @@ extern const m9_exc Frame_WrongType;
 extern const m9_exc Frame_Duplicate;
 extern const m9_exc Frame_Disorder;
 
-#define Frame_KindF64 INT64_C(0)
-#define Frame_KindF32 INT64_C(1)
-#define Frame_KindI64 INT64_C(2)
-#define Frame_KindI32 INT64_C(3)
-#define Frame_KindI16 INT64_C(4)
-#define Frame_KindByte INT64_C(5)
-#define Frame_KindStr INT64_C(6)
-#define Frame_KindBool INT64_C(7)
 #define Frame_KeyReal INT64_C(0)
 #define Frame_KeyInt INT64_C(1)
 #define Frame_KeyStr INT64_C(2)
@@ -182,7 +174,6 @@ m9_sl_m9_sl_UTF8 Frame_ColStrs (Frame_Fr * f, m9_sl_UTF8 name, m9_state *err);
 m9_sl_BOOL Frame_ColBools (Frame_Fr * f, m9_sl_UTF8 name, m9_state *err);
 Frame_Fr * Frame_FromCsv (m9_pool *pool, Csv_Table * t, m9_state *err);
 void Frame_WriteCsv (Frame_Fr * f, m9_sl_UTF8 path, m9_state *err);
-int64_t Frame_KindOf (Frame_Fr * f, m9_sl_UTF8 name, m9_state *err);
 m9_sl_I32 Frame_ColI32 (Frame_Fr * f, m9_sl_UTF8 name, m9_state *err);
 m9_sl_I16 Frame_ColI16 (Frame_Fr * f, m9_sl_UTF8 name, m9_state *err);
 m9_sl_BYTE Frame_ColBytes (Frame_Fr * f, m9_sl_UTF8 name, m9_state *err);
@@ -203,15 +194,6 @@ m9_sl_I64 Frame_TsTime (Frame_Ts * ts, m9_state *err);
 int64_t Frame_TsRes (Frame_Ts * ts, m9_state *err);
 Frame_Conv Frame_TsConv (Frame_Ts * ts, m9_state *err);
 m9_sl_UTF8 Frame_TsDescr (Frame_Ts * ts, m9_state *err);
-Frame_How Frame_HowMean (m9_state *err);
-Frame_How Frame_HowSum (m9_state *err);
-Frame_How Frame_HowLo (m9_state *err);
-Frame_How Frame_HowHi (m9_state *err);
-Frame_How Frame_HowFirst (m9_state *err);
-Frame_How Frame_HowLast (m9_state *err);
-Frame_Conv Frame_ConvStart (m9_state *err);
-Frame_Conv Frame_ConvEnd (m9_state *err);
-Frame_Conv Frame_ConvMid (m9_state *err);
 Frame_Ts * Frame_Average (m9_pool *pool, Frame_Ts * ts, int64_t toRes, m9_sl_Frame_How how, int64_t minCount, m9_state *err);
 Frame_Ts * Frame_MakeContiguous (m9_pool *pool, Frame_Ts * ts, m9_state *err);
 Frame_Fr * Frame_Take (m9_pool *pool, Frame_Fr * f, m9_sl_I64 rows, m9_state *err);

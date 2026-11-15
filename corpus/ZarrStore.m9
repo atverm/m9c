@@ -631,7 +631,7 @@ EXCEPT
 | ValueRange : RAISE StoreError ('a chunk larger than blosc takes (a C int)')
 END Decompress ;
 
-(* Slot answers the ONE chunk buffer an Array holds (2026-10-24, Alex:
+(* Slot answers the ONE chunk buffer an Array holds (2026-10-24, the author:
    "reuse memory on a miss").  It is made on the first read and REUSED
    after: a hit answers it, a miss refills it in place, a missing
    chunk is filled with fill_value in place.  Its coords say which chunk

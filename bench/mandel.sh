@@ -20,6 +20,12 @@
 # that was measured and lost.
 set -e
 cd "$(dirname "$0")"
+# GNU time, for -f.  macOS has it as gtime (Homebrew's gnu-time), and
+# GNU stat comes first on PATH there (coreutils' gnubin).
+TIME=${TIME:-/usr/bin/time}
+# The Python that has numpy, when python3 does not: PYNP=/path/to/venv/bin/python
+PYNP=${PYNP:-python3}
+command -v gtime > /dev/null 2>&1 && TIME=$(command -v gtime)
 
 N=${1:-4000}                    # the timed size
 PYN=${2:-400}                   # pure CPython runs here instead
@@ -30,7 +36,7 @@ CORPUS=$(cd ../corpus && pwd)
 SRC=$(pwd)
 M9C=${M9C:-$R/test/m9c}
 [ -x "$M9C" ] || M9C=$(cd .. && pwd)/out/m9c
-RUSTC=${RUSTC:-$HOME/.cargo/bin/rustc}
+RUSTC=${RUSTC:-$(command -v rustc || echo "$HOME/.cargo/bin/rustc")}
 rm -rf "$OUT"; mkdir -p "$OUT"
 
 have () { [ -x "$1" ] || command -v "$1" >/dev/null 2>&1; }
@@ -41,7 +47,7 @@ have () { [ -x "$1" ] || command -v "$1" >/dev/null 2>&1; }
 # discard the measurement with it.  That mistake produced a table of
 # empty columns the first time this ran.
 took () {
-  /usr/bin/time -f %e -o "$OUT/t.time" "$@" >/dev/null 2>/dev/null
+  "$TIME" -f %e -o "$OUT/t.time" "$@" >/dev/null 2>/dev/null
   cat "$OUT/t.time"
 }
 
@@ -49,7 +55,7 @@ took () {
 # otherwise end up INSIDE the number, which is how the first run
 # reported fpc's banner as its build time
 timeit () {
-  /usr/bin/time -f %e -o "$OUT/b.time" "$@" >/dev/null 2>/dev/null
+  "$TIME" -f %e -o "$OUT/b.time" "$@" >/dev/null 2>/dev/null
   cat "$OUT/b.time"
 }
 
@@ -61,15 +67,15 @@ echo "building (and timing the build) ..."
 # number this project controls.
 t_m9c=$(timeit sh -c "cd '$OUT' && '$M9C' '$SRC/Mandel.m9' '$CORPUS/Io.m9' '$CORPUS/DynStr.m9'")
 t_m9cc=$(timeit gcc -O2 -std=c11 -iquote "$R" -iquote "$R/gen" \
-    "$R/m9rt.c" "$R/gen/DynStr.c" "$R/gen/Io.c" "$OUT/Mandel.c" -o "$OUT/m_m9")
+    "$R/m9rt.c" "$R/gen/DynStr.c" "$R/gen/Io.c" "$R/gen/Fmt.c" "$R/gen/Text.c" "$OUT/Mandel.c" -o "$OUT/m_m9")
 t_m9=$(echo "$t_m9c $t_m9cc" | awk '{printf "%.2f", $1 + $2}')
 
 t_c=$(timeit gcc -O2 -std=c11 mandel_c.c -o "$OUT/m_c")
 
 if have clang; then
-  clang -w -O2 -std=c11 -iquote "$R" -iquote "$R/gen" "$R/m9rt.c" \
-      "$R/gen/DynStr.c" "$R/gen/Io.c" "$OUT/Mandel.c" -o "$OUT/m_m9_clang"
-  clang -w -O2 -std=c11 mandel_c.c -o "$OUT/m_c_clang"
+  clang -w -O2 -std=c11 -ffp-contract=off -iquote "$R" -iquote "$R/gen" "$R/m9rt.c" \
+      "$R/gen/DynStr.c" "$R/gen/Io.c" "$R/gen/Fmt.c" "$R/gen/Text.c" "$OUT/Mandel.c" -o "$OUT/m_m9_clang"
+  clang -w -O2 -std=c11 -ffp-contract=off mandel_c.c -o "$OUT/m_c_clang"
 fi
 
 if [ -x "$RUSTC" ]; then
@@ -118,7 +124,7 @@ check c        "$OUT/m_c"
 [ -f "$OUT/mandel.jar" ] && check scala java -jar "$OUT/mandel.jar"
 have julia && check julia julia mandel.jl
 check py    python3 mandel.py
-check numpy python3 mandel_np.py
+check numpy $PYNP mandel_np.py
 [ "$agree" = 1 ] || { echo "implementations disagree -- not timing anything"; exit 1; }
 echo "all implementations produce the same $(stat -c %s "$OUT/ref.pbm")-byte bitmap"
 
@@ -160,7 +166,7 @@ if have julia; then
   c=$(julia mandel.jl "$N" "$OUT/t.pbm" 2>&1 >/dev/null | tail -1)
   printf '  %-28s %s\n' '' "$c"
 fi
-r_np=$(best python3 mandel_np.py); printf '  %-28s %ss\n' 'Python + numpy' "$r_np"
+r_np=$(best $PYNP mandel_np.py); printf '  %-28s %ss\n' 'Python + numpy' "$r_np"
 
 echo
 echo "pure CPython is run at N=$PYN instead, and scaled:"

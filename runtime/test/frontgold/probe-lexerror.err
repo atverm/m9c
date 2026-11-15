@@ -1,0 +1,3 @@
+parseprobes/lexerror.m9:5:8: parse: lex: char literal is a surrogate code point, not a scalar
+parseprobes/lexerror.m9:5:15: parse: expression expected, found Semi
+m9c: 2 parse errors in parseprobes/lexerror.m9

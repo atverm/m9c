@@ -434,12 +434,12 @@ BEGIN
     'a remote context is refused: http://example.org/context.jsonld') ;
   BEGIN
     ctx := Json.ParseIn (p, '{"name": "http://xmlns.com/foaf/0.1/name", "@base": "http://e/"}') ;
-    g := Rdf.ParseJsonLd (p, '{"@id": "me", "name": "Alex"}', 'http://other/', SOME (ctx)) ;
+    g := Rdf.ParseJsonLd (p, '{"@id": "me", "name": "Anna"}', 'http://other/', SOME (ctx)) ;
     Check.EqI64 (t, 'JSON-LD: a context handed in gives one triple', Rdf.Count (g), 1) ;
     tr := Rdf.Get (g, 0) ;
     Check.EqStr (t, 'JSON-LD: the term from the context handed in', tr.p.value, 'http://xmlns.com/foaf/0.1/name') ;
     Check.EqStr (t, 'JSON-LD: the @base from the context handed in', tr.s.value, 'http://e/me') ;
-    Check.EqStr (t, 'JSON-LD: the plain string', tr.o.value, 'Alex')
+    Check.EqStr (t, 'JSON-LD: the plain string', tr.o.value, 'Anna')
   EXCEPT
   | Rdf.SyntaxError (m, l, c) :
       em := m ;
@@ -464,7 +464,7 @@ BEGIN
   BEGIN
     g := Rdf.ParseTurtle (p,
       '@prefix ex: <http://e/> . @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .' +
-      'ex:a a ex:T ; ex:name "Alex" ; ex:n 3 ; ex:knows ex:b ; ex:tags ( "x" "y" ) ; ex:note "hi"@en . ex:b ex:name "Bo" .', '') ;
+      'ex:a a ex:T ; ex:name "Anna" ; ex:n 3 ; ex:knows ex:b ; ex:tags ( "x" "y" ) ; ex:note "hi"@en . ex:b ex:name "Bo" .', '') ;
     ctx := Json.ParseIn (p, '{"ex": "http://e/", "name": "http://e/name", "n": {"@id": "http://e/n", "@type": "http://www.w3.org/2001/XMLSchema#integer"}, "knows": {"@id": "http://e/knows", "@type": "@id"}, "tags": {"@id": "http://e/tags", "@container": "@list"}}') ;
     doc := Rdf.JsonLd (g, SOME (ctx)) ;
     Check.EqStr (t, 'JSON-LD written: flattened and compacted', doc,
@@ -482,7 +482,7 @@ BEGIN
       '      "@type": "ex:T",' + 0AC +
       '      "knows": "ex:b",' + 0AC +
       '      "n": "3",' + 0AC +
-      '      "name": "Alex",' + 0AC +
+      '      "name": "Anna",' + 0AC +
       '      "ex:note": {' + 0AC + '        "@value": "hi",' + 0AC + '        "@language": "en"' + 0AC + '      },' + 0AC +
       '      "tags": [' + 0AC + '        "x",' + 0AC + '        "y"' + 0AC + '      ]' + 0AC +
       '    },' + 0AC +
@@ -658,7 +658,7 @@ BEGIN
   BEGIN
     g := Rdf.ParseTurtle (p,
       '@prefix ex: <http://e/x#> .' + 0AC +
-      '<http://e/a> ex:name "Alex" ; ex:note "hi"@en ; ex:n "3"^^<http://www.w3.org/2001/XMLSchema#integer> ;' + 0AC +
+      '<http://e/a> ex:name "Anna" ; ex:note "hi"@en ; ex:n "3"^^<http://www.w3.org/2001/XMLSchema#integer> ;' + 0AC +
       '  <http://o/p/knows> _:b ; ex:raw "a < b & \"c\"" .' + 0AC +
       '_:b ex:name "Bo" ; ex:self _:b .', '') ;
     doc := Rdf.RdfXml (g) ;

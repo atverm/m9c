@@ -117,8 +117,6 @@ PROCEDURE SetBarColor (series: I64 ; RO KEPT hex: STR) ;
      verbatim, so it is the caller's business that it is a colour;
      an empty string restores the palette entry.                   *)
 
-PROCEDURE Viridis () : Cmap [DEPRECATED 'Plot.Cmap.Viridis'] ;
-PROCEDURE Coolwarm () : Cmap [DEPRECATED 'Plot.Cmap.Coolwarm'] ;
 PROCEDURE CmapHex (cmap: Cmap ; t: F64) : STR RAISES ValueRange ;
   (* CmapHex answers the colour at t in 0 .. 1 of a colour map, as
      '#rrggbb'.  That is what RenderHeat fills a cell with, for a
@@ -137,7 +135,7 @@ PROCEDURE SetLineColor (series: I64 ; RO KEPT hex: STR) ;
      '#cc3311').  The colour is written into the document verbatim, so
      it is the caller's business that it is a colour; an empty string
      restores the C0..C3 entry.  It was added because the palette has
-     no black and a measured series wants one (Alex, 2026-09-01).    *)
+     no black and a measured series wants one (decided 2026-09-01).    *)
 
 PROCEDURE SetLogX (on: BOOL) ;
 PROCEDURE SetLogY (on: BOOL) ;
@@ -175,7 +173,7 @@ PROCEDURE SetHeatRange (lo: F64 ; hi: F64) ;
      clears it.  It serves a rounded, stable scale that a caller
      controls.                                                       *)
 
-(* ---- the Taylor diagram (2026-10-02; Alex: "we will also need
+(* ---- the Taylor diagram (2026-10-02; the author: "we will also need
    taylor plots") ----------------------------------------------------
 
    It is one figure for how well several fields match their references
@@ -232,7 +230,7 @@ PROCEDURE RenderTaylor (RO title: STR ;
      grids differ in shape or the names do not count their rows and
      columns. *)
 
-(* ---- a time-series chart (2026-10-03; Alex: "lift chart into
+(* ---- a time-series chart (2026-10-03; the author: "lift chart into
    plot" -- m9curve's Chart.m9, which drew the ICOS Curve) ----------
 
    Chart draws one figure: a time axis in years, months or days as the
@@ -647,16 +645,6 @@ BEGIN
   IF series < 0 OR series >= MaxSer THEN RETURN END ;
   barHex[series] := hex
 END SetBarColor ;
-
-PROCEDURE Viridis () : Cmap =
-BEGIN
-  RETURN Cmap.Viridis
-END Viridis ;
-
-PROCEDURE Coolwarm () : Cmap =
-BEGIN
-  RETURN Cmap.Coolwarm
-END Coolwarm ;
 
 PROCEDURE SetLineColor (series: I64 ; RO KEPT hex: STR) =
 BEGIN

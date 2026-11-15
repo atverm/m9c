@@ -1,0 +1,97 @@
+(* FxDecls is a front-end fixture (docs/fpc-removal-plan.md): every
+   form of a declaration.  It is parsed and printed, never checked. *)
+
+DEFINITION MODULE FxDecls ;
+
+CONST
+  Limit = 100 ;
+  Half = Limit DIV 2 ;
+  Name = 'fixture' ;
+  Old [DEPRECATED 'use Limit'] = 99 ;
+  Gone [DEPRECATED] = 98 ;
+
+TYPE
+  Hidden ;
+  Count = I64 ;
+  Other = Text.Line ;
+
+VAR
+  one : I64 ;
+  two, three : F64 ;
+
+EXCEPTION
+  Plain ;
+  Carry (code: I64) ;
+  Wide (code: I64 ; text: STR ; a, b: F64) ;
+
+PROCEDURE None () ;
+PROCEDURE Answer () : I64 ;
+PROCEDURE Value (x: I64) ;
+PROCEDURE Modes (a: I64 ; VAR b: I64 ; OWN c: PTR Count ; RO d: STR) ;
+PROCEDURE Kept (KEPT a: PTR Count ; RO KEPT b: STR ; VAR KEPT c, d: Hidden) ;
+PROCEDURE Lists (a, b, c: I64 ; x, y: F64) : F64 ;
+PROCEDURE Raising (x: I64) : I64 RAISES Plain ;
+PROCEDURE RaisingMany (x: I64) RAISES Plain, Carry, Io.IOError, ValueRange ;
+PROCEDURE Pure (x: F64) : F64 [PURE] ;
+PROCEDURE All (RO s: STR) : STR RAISES Plain [PURE] ;
+PROCEDURE OldOne (x: I64) [DEPRECATED 'use Value'] ;
+PROCEDURE Qualified (x: Text.Line) : Io.File ;
+
+END FxDecls.
+
+IMPLEMENTATION MODULE FxDecls ;
+
+CONST
+  Primes = [2, 3, 5, 7] ;
+  Reals = [1.5, 2.5] ;
+  Words = ['a', 'bc'] ;
+  One = [Limit] ;
+  Sums = [1 + 2, Limit * 2, -1] ;
+
+TYPE
+  Hidden = RECORD n : I64 END ;
+
+PROCEDURE None () =
+BEGIN
+END None ;
+
+PROCEDURE Answer () : I64 =
+BEGIN
+  RETURN 42
+END Answer ;
+
+PROCEDURE Value (x: I64) =
+CONST Local = 3 ;
+TYPE Pair = RECORD a, b : I64 END ;
+VAR p : Pair ;
+EXCEPTION Inner ;
+
+  PROCEDURE Nested (y: I64) : I64 =
+  VAR z : I64 ;
+
+    PROCEDURE Deeper () : I64 =
+    BEGIN
+      RETURN y + z
+    END Deeper ;
+
+  BEGIN
+    z := y ;
+    RETURN Deeper ()
+  END Nested ;
+
+BEGIN
+  p.a := Nested (x) + Local
+END Value ;
+
+PROCEDURE Raising (x: I64) : I64 RAISES Plain =
+BEGIN
+  IF x < 0 THEN RAISE Plain END ;
+  RETURN x
+END Raising ;
+
+PROCEDURE Pure (x: F64) : F64 [PURE] =
+BEGIN
+  RETURN x
+END Pure ;
+
+END FxDecls.

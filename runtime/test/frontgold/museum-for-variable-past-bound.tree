@@ -1,0 +1,17 @@
+MODULE m ;
+
+IMPORT Io, Fmt ;
+
+VAR
+  j, n : I64 ;
+
+BEGIN
+  n := 0 ;
+  FOR j := 0 TO 2 DO
+    n := n + 1 ;
+    IF j = 0 THEN
+      j := 3
+    END
+  END ;
+  Io.WriteLine (Fmt.I64Str (n))
+END m.

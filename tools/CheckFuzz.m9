@@ -1,0 +1,454 @@
+#!/usr/bin/env -S m9c --run
+MODULE CheckFuzz ;
+
+(* CheckFuzz holds the two checkers to each other on programs NOBODY
+   WROTE (2026-10-11).  semdiff and probediff compare them on the
+   corpus and the probes, programs written to pass or to fail one way.
+   Two checkers agree easily there.  A RAISES hole in m9c's checker (a
+   call in a condition, a CASE selector or a FOR bound counted nothing)
+   lived from 0.14.0 at least until the Pascal twin refused one line of
+   new compiler code.  This program makes the programs instead.  It
+   mutates each seed one small edit at a time; a seed is a
+   self-contained .m9 (the probes, the museum, genforms).  Both drivers
+   check every mutant, and a mutant on which they say different things
+   is kept, with both answers.
+
+   The Pascal checker is FROZEN since 2026-10-31 (before m9's
+   UTF-8 switch), and no gate compares the two any more.  --emit is
+   what runs: soundfuzz's mutants.
+
+     CheckFuzz --fpc=PATH --m9=PATH --out=DIR SEED.m9 ...
+
+   --fpc  host/fpc/semdump, the Pascal oracle's driver
+   --m9   runtime/test/semdump_m9, the M9 checker's (both read one file,
+          no library, and print the same lines when they agree)
+   --out  where the divergent mutants go: NNNN.m9, NNNN.fpc, NNNN.m9.txt
+   --emit=DIR  compare nothing: write every mutant as DIR/NNNNN/SEED.m9
+          (the seed's own name, so it builds as its module) with a first
+          line saying what was done.  runtime/test/soundfuzz.sh RUNS the
+          ones the checker accepts under the sanitizers (2026-10-21, the
+          compiler review's tier 2 item 10).
+   --every=N  with --emit, write only every Nth mutant (a fixed sample of
+          a large seed set: the corpus's tests give 13,000)
+
+   The mutations, each applied at ONE place at a time:
+     - delete a line (a RAISES clause, a handler arm, a declaration, a
+       statement, half of an IF ...);
+     - drop one word where it occurs as a word: KEPT, RO, VAR, OWN,
+       SHARED, NOT, and an `IN pool' clause, and NEW's `OWN, '.
+   Blank and comment-only lines are not deleted.  The mutant's meaning
+   does not matter; only the two checkers' agreement about it does.
+   This is a helper, so it is in M9 (decided 2026-10-04); the drivers it
+   compares are the oracle and the twin.
+
+   CheckFuzz exits 1 when one checker gives a diagnostic and the other
+   does not (order aside).  That includes every VERDICT difference, one
+   accepting what the other refuses, and runtime/test/checkfuzz.sh
+   gates it.  The same diagnostics in another order are printed and
+   kept in --out, not failed. *)
+
+IMPORT DynStr ;
+IMPORT Fmt ;
+IMPORT Io ;
+IMPORT Sort ;
+IMPORT System ;
+IMPORT Text ;
+
+CONST
+  Words = ['KEPT ', 'RO ', 'VAR ', 'OWN ', 'SHARED ', 'NOT ', 'OWN, ', ' IN pool'] ;
+  IntTypes = ['I8', 'I16', 'I32', 'U8', 'U16', 'U32', 'BYTE'] ;
+
+VAR
+  pool : POOL ;
+  fpc, m9, out, emit : STR ;
+  nMut, nDiv, nVerdict, nSet, every, nKept : I64 ;
+
+(* run one driver on path, answer what it said (both streams) *)
+PROCEDURE Says (RO prog, path: STR) : STR RAISES ValueRange =
+VAR
+  r : System.Result ;
+  args : SLICE OF STR ;
+BEGIN
+  args := NEW (STR, 1) ;
+  args[0] := path ;
+  r := System.ExecWithin (pool, prog, args, '', NEW (STR, 0), 10.0) ;
+  IF r.stopped THEN RETURN 'TIMEOUT' END ;
+  RETURN r.out + r.err
+EXCEPT
+| Io.IOError (m) : RETURN 'NOT RUN: ' + m
+END Says ;
+
+(* Sorted answers the lines of what a driver said, sorted.  The same
+   diagnostics in another order are the same verdict and findings. *)
+PROCEDURE Sorted (RO said: STR) : STR RAISES IndexError =
+VAR lines : SLICE OF STR ;
+BEGIN
+  (* The split is of a copy: Split's pieces view their text, and said
+     is read-only, which Sort may not write. *)
+  lines := Text.Split (said + '', 0AC) ;
+  Sort.Strs (lines) ;
+  RETURN Text.Join (lines, '' + 0AC)
+END Sorted ;
+
+(* check one mutant; keep it when the two disagree *)
+PROCEDURE Try (RO text, seed, what: STR) RAISES ValueRange =
+VAR
+  path, a, b, stem : STR ;
+  i : I64 ;
+BEGIN
+  nMut := nMut + 1 ;
+  IF Text.BLen (emit) > 0 THEN
+    IF nMut MOD every # 0 THEN RETURN END ;
+    nKept := nKept + 1 ;
+    stem := emit + '/' + Fmt.I64Pad (nMut, 6, TRUE) ;
+    Io.MkDirs (stem) ;
+    i := Text.LastChar (seed, '/') ;
+    Io.WriteFile (stem + '/' + SLICE (seed, i + 1, Text.BLen (seed) - i - 1),
+      '(* from ' + seed + ': ' + what + ' *)' + 0AC + text) ;
+    RETURN
+  END ;
+  path := out + '/cur.m9' ;
+  Io.WriteFile (path, text) ;
+  a := Says (fpc, path) ;
+  b := Says (m9, path) ;
+  IF NOT Text.Eq (a, b) THEN
+    nDiv := nDiv + 1 ;
+    (* First the VERDICT: one accepts what the other refuses.  That is
+       the soundness question, and the gate's.  The rest (order, a
+       cascade's second message) is printed and kept, not failed. *)
+    IF (Text.BLen (a) = 0) # (Text.BLen (b) = 0) THEN
+      nVerdict := nVerdict + 1 ;
+      Io.WriteLine ('VERDICT DIFFERS: ' + seed + ': ' + what)
+    END ;
+    (* Then the FINDINGS: a diagnostic one checker gives and the other
+       does not, in any order.  `use of s after it was moved' missing
+       on one side is a different program even where both refuse. *)
+    IF NOT Text.Eq (Sorted (a), Sorted (b)) THEN
+      nSet := nSet + 1 ;
+      Io.WriteLine ('FINDINGS DIFFER: ' + seed + ': ' + what)
+    END ;
+    stem := out + '/' + Fmt.I64Pad (nDiv, 4, TRUE) ;
+    Io.WriteFile (stem + '.m9', '(* from ' + seed + ': ' + what + ' *)' + 0AC + text) ;
+    Io.WriteFile (stem + '.fpc', a) ;
+    Io.WriteFile (stem + '.m9.txt', b) ;
+    Io.WriteLine ('DIVERGES ' + Fmt.I64Pad (nDiv, 4, TRUE) + ' ' + seed + ': ' + what)
+  END
+EXCEPT
+| Io.IOError (m) : Io.WriteLine ('cannot write ' + path + ': ' + m)
+| IndexError : Io.WriteLine ('IndexError comparing ' + seed + ': ' + what)
+END Try ;
+
+PROCEDURE Blank (RO line: STR) : BOOL =
+VAR t : STR ;
+BEGIN
+  t := Text.Trim (line) ;
+  RETURN Text.BLen (t) = 0 OR Text.StartsWith (t, '(*')
+END Blank ;
+
+(* ---- moving a store's destination (--emit only; the review's tier 2
+   item 10).  A local or parameter that is a STR or a SLICE is stored,
+   where its procedure has it, into a place that outlives the
+   procedure: a module variable, a field of one, an element of one.
+   It is read through at the end of the module body.  Whatever the
+   procedure held in its frame, or was lent, is then read after the
+   procedure is gone.  The checker must refuse the store, or the
+   poisoned arenas trap the read.  The mutation is textual, so a mutant
+   that does not parse is merely refused. *)
+
+(* Ends asks whether the line ends where a statement may follow it. *)
+PROCEDURE Ends (RO line: STR) : BOOL =
+VAR t : STR ;
+BEGIN
+  t := Text.TrimRight (line) ;
+  RETURN Text.EndsWith (t, ';') OR Text.EndsWith (t, 'BEGIN') OR
+         Text.EndsWith (t, 'THEN') OR Text.EndsWith (t, 'DO') OR
+         Text.EndsWith (t, 'ELSE') OR Text.EndsWith (t, 'LOOP')
+END Ends ;
+
+(* After answers the line with the statement s after it. *)
+PROCEDURE After (RO line, s: STR) : STR =
+BEGIN
+  IF Ends (line) THEN RETURN line + 0AC + '  ' + s + ' ;' END ;
+  RETURN line + ' ;' + 0AC + '  ' + s
+END After ;
+
+(* Build answers the seed with decl before line pd, store after line ps
+   and read after line pr. *)
+PROCEDURE Build (RO lines: SLICE OF STR ; pd : I64 ; RO decl : STR ;
+                 ps : I64 ; RO store : STR ; pr : I64 ; RO read : STR) : STR =
+VAR
+  i : I64 ;
+  line : STR ;
+  d : PTR DynStr.DString IN pool ;
+BEGIN
+  d := DynStr.New (pool) ;
+  FOR i := 0 TO LEN (lines) - 1 DO
+    IF i = pd THEN DynStr.Append (d, decl) ; DynStr.AppendChar (d, 0AC) END ;
+    line := lines[i] ;
+    IF i = ps THEN line := After (line, store) END ;
+    IF i = pr THEN line := After (line, read) END ;
+    DynStr.Append (d, line) ;
+    IF i < LEN (lines) - 1 THEN DynStr.AppendChar (d, 0AC) END
+  END ;
+  RETURN DynStr.View (d)
+END Build ;
+
+(* Show answers the element X[0] printed, so that the read is not dead
+   code.  gcc -O2 dropped an element only assigned somewhere nobody
+   reads, and the mutant ran clean over freed storage.  Show answers ''
+   for an element type this cannot print. *)
+PROCEDURE Show (RO e, x: STR) : STR =
+BEGIN
+  IF Text.Eq (e, 'STR') THEN RETURN 'Io.WriteLine (' + x + ')' END ;
+  IF Text.Eq (e, 'CHAR') THEN RETURN 'Io.WriteLine (' + "''" + ' + ' + x + ')' END ;
+  IF Text.Eq (e, 'I64') THEN RETURN 'Io.WriteLine (Fmt.I64Str (' + x + '))' END ;
+  IF Text.OneOf (e, IntTypes) THEN RETURN 'Io.WriteLine (Fmt.I64Str (I64 (' + x + ')))' END ;
+  IF Text.Eq (e, 'F64') THEN RETURN 'Io.WriteLine (Fmt.Short (' + x + '))' END ;
+  RETURN ''
+END Show ;
+
+(* Keeps tries one candidate at every destination. *)
+PROCEDURE Keeps (RO seed: STR ; RO lines: SLICE OF STR ; RO name, ty, proc: STR ;
+                 pd, ps, pr : I64) RAISES ValueRange =
+VAR
+  e, what : STR ;
+BEGIN
+  IF Text.Eq (ty, 'STR') THEN e := 'CHAR' ELSE e := SLICE (ty, 9, Text.BLen (ty) - 9) END ;
+  IF Text.BLen (Show (e, 'x')) = 0 THEN RETURN END ;
+  what := name + ' of ' + proc + ' kept in ' ;
+  Try (Build (lines, pd, 'VAR fzKeep : ' + ty + ' ;',
+         ps, 'fzKeep := ' + name, pr,
+         'IF LEN (fzKeep) > 0 THEN ' + Show (e, 'fzKeep[0]') + ' END'),
+       seed, what + 'a module variable') ;
+  Try (Build (lines, pd, 'TYPE FzBox = RECORD k : ' + ty + ' END ; VAR fzBox : FzBox ;',
+         ps, 'fzBox.k := ' + name, pr,
+         'IF LEN (fzBox.k) > 0 THEN ' + Show (e, 'fzBox.k[0]') + ' END'),
+       seed, what + 'a module record field') ;
+  Try (Build (lines, pd, 'VAR fzArr : ARRAY 2 OF ' + ty + ' ;',
+         ps, 'fzArr[1] := ' + name, pr,
+         'IF LEN (fzArr[1]) > 0 THEN ' + Show (e, 'fzArr[1][0]') + ' END'),
+       seed, what + 'a module array element')
+END Keeps ;
+
+(* Group answers the names declared by `a, b : T', and the type
+   through ty. *)
+PROCEDURE Group (RO g: STR ; VAR ty: STR) : SLICE OF STR RAISES IndexError =
+VAR
+  t : STR ;
+  c, i : I64 ;
+  names : SLICE OF STR ;
+BEGIN
+  t := Text.Trim (g) ;
+  LOOP
+    IF Text.StartsWith (t, 'VAR ') THEN t := Text.Trim (SLICE (t, 4, Text.BLen (t) - 4))
+    ELSIF Text.StartsWith (t, 'RO ') THEN t := Text.Trim (SLICE (t, 3, Text.BLen (t) - 3))
+    ELSIF Text.StartsWith (t, 'KEPT ') THEN t := Text.Trim (SLICE (t, 5, Text.BLen (t) - 5))
+    ELSIF Text.StartsWith (t, 'OWN ') THEN t := Text.Trim (SLICE (t, 4, Text.BLen (t) - 4))
+    ELSE EXIT
+    END
+  END ;
+  c := Text.FindChar (t, ':') ;
+  IF c < 0 THEN ty := '' ; RETURN NEW (pool, STR, 0) END ;
+  ty := Text.Trim (SLICE (t, c + 1, Text.BLen (t) - c - 1)) ;
+  IF Text.EndsWith (ty, ';') THEN ty := Text.Trim (SLICE (ty, 0, Text.BLen (ty) - 1)) END ;
+  names := Text.Split (SLICE (t, 0, c) + '', ',') ;   (* a copy: the names are trimmed in place *)
+  FOR i := 0 TO LEN (names) - 1 DO names[i] := Text.Trim (names[i]) END ;
+  RETURN names
+END Group ;
+
+PROCEDURE Wanted (RO ty: STR) : BOOL =
+BEGIN
+  RETURN Text.Eq (ty, 'STR') OR
+    (Text.StartsWith (ty, 'SLICE OF ') AND NOT Text.Contains (ty, ' IN '))
+END Wanted ;
+
+PROCEDURE Retain (RO seed: STR ; RO lines: SLICE OF STR) RAISES ValueRange =
+VAR
+  i, j, k, he, b, en, pd, pr, mb, g, n, open, close : I64 ;
+  head, ty, proc : STR ;
+  groups, names : SLICE OF STR ;
+  io, fm : BOOL ;
+BEGIN
+  pd := -1 ;
+  mb := -1 ;
+  FOR i := 0 TO LEN (lines) - 1 DO
+    IF pd < 0 AND Text.StartsWith (lines[i], 'PROCEDURE ') THEN pd := i END ;
+    IF Text.Eq (Text.TrimRight (lines[i]), 'BEGIN') THEN mb := i END
+  END ;
+  IF pd < 0 OR mb < 0 THEN RETURN END ;
+  (* The read prints through Io and Fmt.  A seed importing neither is
+     left alone (an IMPORT added could collide with its own). *)
+  io := FALSE ;
+  fm := FALSE ;
+  FOR i := 0 TO pd - 1 DO
+    IF Text.StartsWith (lines[i], 'IMPORT ') THEN
+      IF Text.Contains (lines[i], 'Io') THEN io := TRUE END ;
+      IF Text.Contains (lines[i], 'Fmt') THEN fm := TRUE END
+    END
+  END ;
+  IF NOT io OR NOT fm THEN RETURN END ;
+  (* the module body's last statement: before its EXCEPT, FINALLY or END *)
+  pr := -1 ;
+  i := mb + 1 ;
+  WHILE i < LEN (lines) AND pr < 0 DO
+    IF Text.StartsWith (lines[i], 'EXCEPT') OR Text.StartsWith (lines[i], 'FINALLY') OR
+       Text.StartsWith (lines[i], 'END ') THEN pr := i - 1 END ;
+    i := i + 1
+  END ;
+  IF pr < 0 THEN RETURN END ;
+  i := pd ;
+  WHILE i < mb DO
+    IF Text.StartsWith (lines[i], 'PROCEDURE ') THEN
+      (* the heading, to the line ending in `=' (a forward one ends in `;') *)
+      head := lines[i] ;
+      he := i ;
+      WHILE he < mb AND NOT Text.EndsWith (Text.TrimRight (lines[he]), '=') AND
+            NOT Text.EndsWith (Text.TrimRight (lines[he]), ';') DO
+        he := he + 1 ;
+        head := head + ' ' + lines[he]
+      END ;
+      IF Text.EndsWith (Text.TrimRight (lines[he]), '=') THEN
+        b := he + 1 ;
+        WHILE b < mb AND NOT Text.Eq (Text.TrimRight (lines[b]), 'BEGIN') DO b := b + 1 END ;
+        en := b ;
+        WHILE en < mb AND NOT Text.StartsWith (lines[en], 'END ') DO en := en + 1 END ;
+        k := Text.FindChar (head, ' ') ;
+        open := Text.FindChar (head, '(') ;
+        proc := Text.Trim (SLICE (head, k, Text.BLen (head) - k)) ;
+        IF open > k THEN proc := Text.Trim (SLICE (head, k, open - k)) END ;
+        (* the parameters: kept from the procedure's first statement *)
+        IF open >= 0 THEN
+          close := Text.LastChar (head, ')') ;
+          IF close > open THEN
+            groups := Text.Split (SLICE (head, open + 1, close - open - 1), ';') ;
+            FOR g := 0 TO LEN (groups) - 1 DO
+              names := Group (groups[g], ty) ;
+              IF Wanted (ty) THEN
+                FOR n := 0 TO LEN (names) - 1 DO
+                  Keeps (seed, lines, names[n], ty, proc, pd, b, pr)
+                END
+              END
+            END
+          END
+        END ;
+        (* the locals: kept after the first assignment to them *)
+        FOR j := he + 1 TO b - 1 DO
+          IF Text.Contains (lines[j], ':') AND NOT Text.Contains (lines[j], '(*') THEN
+            names := Group (lines[j], ty) ;
+            IF Wanted (ty) THEN
+              FOR n := 0 TO LEN (names) - 1 DO
+                k := b + 1 ;
+                WHILE k < en AND NOT Text.StartsWith (Text.Trim (lines[k]), names[n] + ' :=') DO
+                  k := k + 1
+                END ;
+                IF k < en THEN Keeps (seed, lines, names[n], ty, proc, pd, k, pr) END
+              END
+            END
+          END
+        END ;
+        i := en
+      END
+    END ;
+    i := i + 1
+  END
+EXCEPT
+| IndexError : Io.WriteLine ('retain: IndexError in ' + seed)
+END Retain ;
+
+PROCEDURE Mutate (RO seed: STR) RAISES ValueRange =
+VAR
+  src, before, after : STR ;
+  lines : SLICE OF STR ;
+  i, w, at, from : I64 ;
+  d : PTR DynStr.DString IN pool ;
+BEGIN
+  src := Io.ReadFile (seed) ;
+  lines := Text.Split (src, 0AC) ;
+  (* every line deleted, one at a time *)
+  FOR i := 0 TO LEN (lines) - 1 DO
+    IF NOT Blank (lines[i]) THEN
+      d := DynStr.New (pool) ;
+      FOR w := 0 TO LEN (lines) - 1 DO
+        IF w # i THEN
+          DynStr.Append (d, lines[w]) ;
+          IF w < LEN (lines) - 1 THEN DynStr.AppendChar (d, 0AC) END
+        END
+      END ;
+      Try (DynStr.View (d), seed, 'line ' + Fmt.I64Str (i + 1) + ' deleted')
+    END
+  END ;
+  (* Drop every RAISES clause, one at a time, up to the `=' or `;' that
+     ends the heading.  The hole this program was written after would
+     have needed exactly this to be found. *)
+  from := 0 ;
+  LOOP
+    IF from >= Text.BLen (src) THEN EXIT END ;
+    at := Text.Find (SLICE (src, from, Text.BLen (src) - from), ' RAISES ') ;
+    IF at < 0 THEN EXIT END ;
+    at := at + from ;
+    i := at + 8 ;
+    WHILE i < Text.BLen (src) AND NOT Text.BIs (src, i, '=') AND NOT Text.BIs (src, i, ';') DO i := i + 1 END ;
+    before := SLICE (src, 0, at) ;
+    after := SLICE (src, i, Text.BLen (src) - i) ;
+    Try (before + ' ' + after, seed, 'RAISES clause dropped at ' + Fmt.I64Str (at)) ;
+    from := at + 1
+  END ;
+  (* a local or parameter kept where it outlives its procedure *)
+  IF Text.BLen (emit) > 0 THEN Retain (seed, lines) END ;
+  (* every occurrence of each word dropped, one at a time *)
+  FOR w := 0 TO LEN (Words) - 1 DO
+    from := 0 ;
+    LOOP
+      IF from >= Text.BLen (src) THEN EXIT END ;
+      at := Text.Find (SLICE (src, from, Text.BLen (src) - from), Words[w]) ;
+      IF at < 0 THEN EXIT END ;
+      at := at + from ;
+      (* a word, not the tail of one: `RO ' in `MONITOR ' is not RO *)
+      IF at = 0 OR NOT Text.AllAlnum (SLICE (src, at - 1, 1)) THEN
+        before := SLICE (src, 0, at) ;
+        after := SLICE (src, at + Text.BLen (Words[w]), Text.BLen (src) - at - Text.BLen (Words[w])) ;
+        Try (before + after, seed, Words[w] + 'dropped at ' + Fmt.I64Str (at))
+      END ;
+      from := at + 1
+    END
+  END
+EXCEPT
+| Io.IOError (m) : Io.WriteLine ('cannot read ' + seed + ': ' + m)
+END Mutate ;
+
+VAR
+  seeds : SLICE OF STR ;
+  k : I64 ;
+
+BEGIN
+  fpc := System.Value ('--fpc', '') ;
+  m9 := System.Value ('--m9', '') ;
+  out := System.Value ('--out', '/tmp/checkfuzz') ;
+  emit := System.Value ('--emit', '') ;
+  every := Io.ParseI64 (System.Value ('--every', '1')) ;
+  IF every < 1 THEN every := 1 END ;
+  seeds := System.Positional (pool) ;
+  IF (Text.BLen (emit) = 0 AND (Text.BLen (fpc) = 0 OR Text.BLen (m9) = 0)) OR LEN (seeds) = 0 THEN
+    Io.WriteLine ('CheckFuzz --fpc=SEMDUMP --m9=SEMDUMP_M9 [--out=DIR] SEED.m9 ...') ;
+    Io.WriteLine ('CheckFuzz --emit=DIR SEED.m9 ...') ;
+    Io.Halt (2)
+  END ;
+  IF Text.BLen (emit) > 0 THEN
+    FOR k := 0 TO LEN (seeds) - 1 DO Mutate (seeds[k]) END ;
+    Io.WriteLine ('checkfuzz: ' + Fmt.I64Str (nKept) + ' of ' + Fmt.I64Str (nMut) +
+                  ' mutants of ' + Fmt.I64Str (LEN (seeds)) + ' seeds written to ' + emit) ;
+    Io.Halt (0)
+  END ;
+  Io.MkDirs (out) ;
+  FOR k := 0 TO LEN (seeds) - 1 DO Mutate (seeds[k]) END ;
+  Io.WriteLine ('checkfuzz: ' + Fmt.I64Str (LEN (seeds)) + ' seeds, ' +
+                Fmt.I64Str (nMut) + ' mutants, ' + Fmt.I64Str (nDiv) +
+                ' on which the checkers say different things, ' +
+                Fmt.I64Str (nSet) + ' with a diagnostic only one gives, ' +
+                Fmt.I64Str (nVerdict) + ' on which one accepts what the other refuses') ;
+  IF nSet > 0 OR nVerdict > 0 THEN Io.Halt (1) END
+EXCEPT
+| ValueRange : Io.WriteLine ('checkfuzz: ValueRange') ; Io.Halt (2)
+| IndexError : Io.WriteLine ('checkfuzz: IndexError') ; Io.Halt (2)
+| Io.IOError (m) : Io.WriteLine ('checkfuzz: ' + m) ; Io.Halt (2)
+END CheckFuzz.

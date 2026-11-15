@@ -1,0 +1,12 @@
+MODULE m ;
+
+IMPORT Json, Csv ;
+
+VAR
+  n : PTR Json.Node ;
+
+BEGIN
+  n := Json.Parse ('[1, 2')
+EXCEPT
+| Csv.ParseError (what, l, c) :
+END m.

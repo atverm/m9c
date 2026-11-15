@@ -82,6 +82,8 @@ TYPE
     missing    : F32 ;        (* a real equal to this becomes NaN *)
     hasMissing : BOOL ;
     utcOffset  : F64 ;        (* seconds to subtract from a Stamp *)
+    threads    : I64 ;        (* the threads Open and Parse may use; 1
+                                 unless said otherwise.  See Parse. *)
   END ;
 
 CONST
@@ -99,7 +101,7 @@ EXCEPTION
 
 PROCEDURE Defaults () : Options ;
   (* Defaults answers comma, unquoted, one header row, no preamble, no
-     missing value, UTC.  Every one of those is a decision, so they are
+     missing value, UTC, one thread.  Every one of those is a decision, so they are
      in one place where a reader can see all of them at once.       *)
 
 PROCEDURE Open (VAR pool: POOL ; RO path: STR ; RO opt: Options)
@@ -130,35 +132,15 @@ PROCEDURE Find (t: PTR Table ; RO name: STR) : I64 ;
 
 PROCEDURE SetKind (VAR t: PTR Table ; c: I64 ; k: Kind)
   RAISES IndexError ;
-PROCEDURE SetReal (VAR t: PTR Table ; c: I64) RAISES IndexError
-  [DEPRECATED 'Csv.SetKind (t, c, Csv.Kind.Real)'] ;
-PROCEDURE SetReal64 (VAR t: PTR Table ; c: I64) RAISES IndexError
-  [DEPRECATED 'Csv.SetKind (t, c, Csv.Kind.Real64)'] ;
   (* MEASUREMENTS ARE F32 by default, and the module header says why.
-     SetReal64 is the exception that header names: "a caller needing
+     Kind.Real64 is the exception that header names: "a caller needing
      F64 measurements should say so and this grows a kind".  The
      caller that needed it is the ICOS ocean store, whose every
      measurement array is `<f8>`.  A narrowing here and a widening
      again to write would be two roundings where the file has one
-     number. *)
-PROCEDURE SetInt (VAR t: PTR Table ; c: I64) RAISES IndexError
-  [DEPRECATED 'Csv.SetKind (t, c, Csv.Kind.Int)'] ;
-PROCEDURE SetText (VAR t: PTR Table ; c: I64) RAISES IndexError
-  [DEPRECATED 'Csv.SetKind (t, c, Csv.Kind.Text)'] ;
-PROCEDURE SetSkip (VAR t: PTR Table ; c: I64) RAISES IndexError
-  [DEPRECATED 'Csv.SetKind (t, c, Csv.Kind.Skip)'] ;
-PROCEDURE SetStamp (VAR t: PTR Table ; c: I64 ; format: I64)
-  RAISES IndexError
-  [DEPRECATED 'Csv.SetKind (t, c, Csv.Kind.Stamp (format))'] ;
-  (* These setters say the same thing as SetKind without naming the
-     variant.  They date from when a caller in another module could
-     not write `Csv.Kind.Real` (the checker accepted it, the
-     generator refused it).  That gap CLOSED 2026-09-15
-     (`corpus/KindUse.m9` is the gendiff fixture that writes every
-     form).  `SetKind (t, c, Csv.Kind.Real)` works from anywhere.  The
-     setters are DEPRECATED since 0.27.0 (report par 3.9) and go in the
-     release after it; runtime/test/csv_driver.c then builds the kind
-     in C. *)
+     number.  (SetReal, SetReal64, SetInt, SetText, SetSkip and
+     SetStamp said the same as SetKind without naming the variant;
+     deprecated in 0.27.0, removed in 0.28.0.) *)
 
 PROCEDURE KindAt (t: PTR Table ; c: I64) : Kind
   RAISES IndexError ;
@@ -177,7 +159,18 @@ PROCEDURE FormatAt (t: PTR Table ; c: I64) : I64
 
 PROCEDURE Parse (VAR pool: POOL ; VAR t: PTR Table)
   RAISES ParseError, RangeError, ValueRange, IndexError ;
-  (* Parse makes one pass over the whole file. *)
+  (* Parse makes one pass over the whole file.
+
+     With opt.threads above 1 the file is cut into that many bands at
+     row ends, and each band is parsed by a thread of its own
+     (docs/csv-threads-plan.md).  The columns are the same, bit for
+     bit, as one thread gives, and so is the exception: the one of the
+     first bad row, with its line.  A band is never cut inside a
+     quoted field.
+
+     After Parse raises, the table's columns are not to be read.  One
+     thread has stored the rows before the bad one; several have
+     stored other rows too. *)
 
 PROCEDURE ColF32 (t: PTR Table ; c: I64) : SLICE OF F32
   RAISES IndexError ;
@@ -193,7 +186,7 @@ PROCEDURE TextAt (VAR pool: POOL ; t: PTR Table ; c, row: I64) : STR
      still in memory: a table of a hundred thousand rows does not want
      a hundred thousand strings nobody asked for.                   *)
 
-(* ---- the UTF twins (docs/utf8-plan.md, stage 2; Alex: twins in Csv,
+(* ---- the UTF twins (docs/utf8-plan.md, stage 2; the author: twins in Csv,
    not a second module, since the file is held as octets already).
    Name and TextAt widen one octet to one CHAR, so a header or a field
    past ASCII comes back as its UTF-8 octets read as Latin-1.  These
@@ -252,6 +245,8 @@ IMPORT Text ;
 
 IMPORT DynStr ;
 IMPORT Io ;
+IMPORT Tsk ;
+IMPORT Faults ;
 FROM ccsv IMPORT StrToF32, StrToF64, CNumber, CFieldF64 ;
 
 (* Held is a double the runtime fills through ADR (h). *)
@@ -287,7 +282,43 @@ TYPE
     scols   : SLICE OF SCol ;
     tofs, tlen : SLICE OF ICol ;  (* a Text column, row by row *)
     parsed  : BOOL ;
+    (* THE BANDS (docs/csv-threads-plan.md).  The data is cut into
+       nbands runs of equal bytes.  A band owns the rows that start
+       right after a row end inside it; band 0 owns row 0 as well.
+       Each worker writes its own band's entries below and its own
+       rows of the columns, and nothing else: that is the claim
+       [SHARABLE] makes. *)
+    nbands  : I64 ;
+    nworkers : I64 ;              (* opt.threads, at most the bands *)
+    bq      : SLICE OF I64 ;      (* quote characters in the band *)
+    be0, be1 : SLICE OF I64 ;     (* row ends, the band entered
+                                     outside quotes / inside *)
+    bf0, bf1 : SLICE OF I64 ;     (* the byte after the first of them,
+                                     or -1 *)
+    bFrom   : SLICE OF I64 ;      (* where the band's first row starts *)
+    bRow, bRowEnd : SLICE OF I64 ;  (* its rows: bRow .. bRowEnd - 1 *)
+    bErr    : SLICE OF I64 ;      (* what its parse raised, an Err* *)
+    bErrA, bErrB : SLICE OF I64 ; (* the exception's two numbers *)
+  END [SHARABLE] ;
+
+  (* Gate deals the bands out, one at a time, to whichever worker is
+     free.  There are more bands than workers: the cores of a machine
+     are not all as fast, and with one band a worker the pass took as
+     long as the slowest core's band (measured 2026-11-15: 0.14 s on
+     6 fast and 12 slow cores, however many threads above 8). *)
+  Gate = MONITOR RECORD
+    next : I64 ;
   END ;
+
+  (* Job is what a pass hands its workers: the crew, the table and
+     which pass it is.  A pass makes a Job of its own, since a crew
+     runs once. *)
+  Job = RECORD
+    crew : Tsk.Crew ;
+    t    : PTR Table ;
+    pass : I64 ;                  (* an Op* *)
+    gate : Gate ;                 (* deals the bands out *)
+  END [SHARABLE] ;
 
 CONST
 
@@ -301,6 +332,7 @@ BEGIN
   o.missing := 0.0 ;
   o.hasMissing := FALSE ;
   o.utcOffset := 0.0 ;
+  o.threads := 1 ;
   RETURN o
 END Defaults ;
 
@@ -340,7 +372,7 @@ END IsDigit ;
 
    The loop splits on quoted.  An unquoted file runs the plain loop: one
    test per byte and nothing else.  The quote test inside the one loop
-   cost the FLUXNET count 0.17 -> 0.29 s on ct121 (beb6732f, measured
+   cost the FLUXNET count 0.17 -> 0.29 s on host1 (beb6732f, measured
    2026-10-31).  The split took it back to 0.17 s. *)
 PROCEDURE CountRows (RO b: SLICE OF BYTE ; from: I64 ; quoted: BOOL)
   : I64
@@ -402,6 +434,257 @@ BEGIN
     END
   END
 END Unquote ;
+
+(* ---- THE BANDS (docs/csv-threads-plan.md) ---- *)
+
+CONST
+  BandsPerWorker = 8 ;
+  OpCount = 0 ;               (* a round's op: count the row ends *)
+  OpFill = 1 ;                (* parse the band's rows *)
+  ErrNone = 0 ;
+  ErrFields = 1 ;             (* ParseError, wrong number of fields *)
+  ErrRange = 2 ;              (* RangeError (row, col) *)
+  ErrValue = 3 ;              (* ValueRange *)
+  ErrIndex = 4 ;              (* IndexError (index, extent) *)
+
+(* BandBytes answers band k's bytes, lo .. hi - 1, of the data after
+   the header. *)
+PROCEDURE BandBytes (VAR t: PTR Table ; k: I64 ; VAR lo, hi: I64) =
+BEGIN
+  Tsk.Chunk (k, LEN (t.buf) - t.hdrEnd, t.nbands, lo, hi) ;
+  lo := lo + t.hdrEnd ;
+  hi := hi + t.hdrEnd
+END BandBytes ;
+
+(* CountBand counts band k's row ends.  A band cannot know whether it
+   starts inside a quoted field, so it counts for both answers.  The
+   serial reader's rule is one toggle a quote character, so `q' below
+   is the state of a band entered outside quotes, and its opposite
+   the state of one entered inside. *)
+PROCEDURE CountBand (VAR t: PTR Table ; k: I64) RAISES IndexError =
+VAR
+  i, lo, hi, n, e0, e1, f0, f1 : I64 ;
+  q : BOOL ;
+BEGIN
+  BandBytes (t, k, lo, hi) ;
+  n := 0 ; e0 := 0 ; e1 := 0 ; f0 := -1 ; f1 := -1 ;
+  q := FALSE ;
+  IF NOT t.opt.quoted THEN
+    FOR i := lo TO hi - 1 DO
+      IF I64 (t.buf[i]) = 10 THEN
+        e0 := e0 + 1 ;
+        IF f0 < 0 THEN f0 := i + 1 END
+      END
+    END
+  ELSE
+    FOR i := lo TO hi - 1 DO
+      IF I64 (t.buf[i]) = 34 THEN
+        q := NOT q ;
+        n := n + 1
+      ELSIF I64 (t.buf[i]) = 10 THEN
+        IF q THEN
+          e1 := e1 + 1 ;
+          IF f1 < 0 THEN f1 := i + 1 END
+        ELSE
+          e0 := e0 + 1 ;
+          IF f0 < 0 THEN f0 := i + 1 END
+        END
+      END
+    END
+  END ;
+  t.bq[k] := n ;
+  t.be0[k] := e0 ; t.be1[k] := e1 ;
+  t.bf0[k] := f0 ; t.bf1[k] := f1
+END CountBand ;
+
+PROCEDURE ParseBand (VAR t: PTR Table ; band: I64)
+  RAISES ParseError, RangeError, ValueRange, IndexError ;
+
+(* FillBand parses band k and keeps what it raised in the band's own
+   entries.  It answers FALSE when it raised.  Tsk carries no
+   exception out of a worker, so Parse raises it again from there. *)
+PROCEDURE FillBand (VAR t: PTR Table ; k: I64) : BOOL =
+BEGIN
+  BEGIN
+    ParseBand (t, k) ;
+    RETURN TRUE
+  EXCEPT
+  | ParseError (what, line, col) :
+      t.bErr[k] := ErrFields ; t.bErrA[k] := line ; t.bErrB[k] := col
+  | RangeError (row, col) :
+      t.bErr[k] := ErrRange ; t.bErrA[k] := row ; t.bErrB[k] := col
+  | ValueRange :
+      t.bErr[k] := ErrValue
+  | IndexError (ix, n) :
+      t.bErr[k] := ErrIndex ; t.bErrA[k] := ix ; t.bErrB[k] := n
+  END ;
+  RETURN FALSE
+END FillBand ;
+
+(* Take answers the next band, or -1 when all are dealt. *)
+PROCEDURE Take (VAR g: Gate ; n: I64) : I64 =
+BEGIN
+  IF g.next >= n THEN RETURN -1 END ;
+  g.next := g.next + 1 ;
+  RETURN g.next - 1
+END Take ;
+
+PROCEDURE Reset (VAR g: Gate) =
+BEGIN
+  g.next := 0
+END Reset ;
+
+(* Worker takes bands from the gate until none is left.  Tsk's own
+   chunk is not used: the round is only the start and the barrier. *)
+PROCEDURE Worker (VAR j: Job) =
+VAR
+  s : Tsk.Seat ;
+  k : I64 ;
+BEGIN
+  s := Tsk.Join (j.crew) ;
+  WHILE Tsk.Next (j.crew, s) DO
+    LOOP
+      k := Take (j.gate, j.t.nbands) ;
+      IF k < 0 THEN EXIT END ;
+      IF j.pass = OpCount THEN
+        BEGIN
+          CountBand (j.t, k)
+        EXCEPT
+        | IndexError : s.failed := TRUE
+        END
+      ELSE
+        IF NOT FillBand (j.t, k) THEN s.failed := TRUE END
+      END
+    END
+  END
+END Worker ;
+
+(* RunBands runs one pass over every band, a thread a band, and
+   answers FALSE when a band failed.  Where no thread can start, the
+   bands run here, one after another. *)
+PROCEDURE RunBands (VAR pool: POOL ; VAR t: PTR Table ; pass: I64) : BOOL =
+VAR
+  j : PTR Job IN pool ;
+  k, started : I64 ;
+  ok : BOOL ;
+BEGIN
+  j := NEW (pool, Job) ;
+  j.t := t ;
+  j.pass := pass ;
+  Reset (j.gate) ;
+  started := 0 ;
+  FOR k := 1 TO t.nworkers DO
+    BEGIN
+      THREAD (Worker, j) ;
+      started := started + 1
+    EXCEPT
+    | OutOfMemory :
+    END
+  END ;
+  ok := TRUE ;
+  IF started = 0 THEN
+    FOR k := 0 TO t.nbands - 1 DO
+      IF pass = OpCount THEN
+        BEGIN
+          CountBand (t, k)
+        EXCEPT
+        | IndexError : ok := FALSE
+        END
+      ELSIF NOT FillBand (t, k) THEN
+        ok := FALSE
+      END
+    END ;
+    RETURN ok
+  END ;
+  BEGIN
+    Tsk.Start (j.crew, started) ;
+    Tsk.For (j.crew, started, pass)
+  EXCEPT
+  | Tsk.Failed : ok := FALSE
+  | Faults.BadArg : ok := FALSE
+  END ;
+  Tsk.Stop (j.crew) ;
+  RETURN ok
+END RunBands ;
+
+(* Bands cuts the data into bands and gives each its rows.  With one
+   band it is the serial count.  With more, every band counts its row
+   ends for both quote states (CountBand), on a crew.  Then, band by
+   band in order, the parity of the quotes before a band says which
+   of its two counts is the real one.  That is the serial reader's
+   rule applied in order, so a band starts where that reader starts a
+   row, whatever the quoting. *)
+PROCEDURE Bands (VAR pool: POOL ; VAR t: PTR Table)
+  RAISES ValueRange, IndexError =
+VAR
+  k, n, size, sum, run, e, f : I64 ;
+  inside : BOOL ;
+BEGIN
+  size := LEN (t.buf) - t.hdrEnd ;
+  n := t.opt.threads ;
+  IF n > size THEN n := size END ;
+  IF n < 1 THEN n := 1 END ;
+  t.nworkers := n ;
+  (* several bands a worker, so a slow core holds no one up *)
+  IF n > 1 THEN
+    n := n * BandsPerWorker ;
+    IF n > size THEN n := size END
+  END ;
+  t.nbands := n ;
+  t.bq := NEW (pool, I64, n) ;
+  t.be0 := NEW (pool, I64, n) ;
+  t.be1 := NEW (pool, I64, n) ;
+  t.bf0 := NEW (pool, I64, n) ;
+  t.bf1 := NEW (pool, I64, n) ;
+  t.bFrom := NEW (pool, I64, n) ;
+  t.bRow := NEW (pool, I64, n) ;
+  t.bRowEnd := NEW (pool, I64, n) ;
+  t.bErr := NEW (pool, I64, n) ;
+  t.bErrA := NEW (pool, I64, n) ;
+  t.bErrB := NEW (pool, I64, n) ;
+  IF n = 1 THEN
+    t.nrows := CountRows (t.buf, t.hdrEnd, t.opt.quoted) ;
+    t.bFrom[0] := t.hdrEnd ;
+    t.bRow[0] := 0 ;
+    t.bRowEnd[0] := t.nrows ;
+    RETURN
+  END ;
+  IF NOT RunBands (pool, t, OpCount) THEN RAISE ValueRange END ;
+  (* each band's real count and first row end, kept in be0 and bf0 *)
+  sum := 0 ;
+  inside := FALSE ;
+  FOR k := 0 TO n - 1 DO
+    IF inside THEN
+      t.be0[k] := t.be1[k] ;
+      t.bf0[k] := t.bf1[k]
+    END ;
+    IF t.bq[k] MOD 2 = 1 THEN inside := NOT inside END ;
+    sum := sum + t.be0[k]
+  END ;
+  (* the last line counts even without its line feed, as in CountRows *)
+  t.nrows := sum ;
+  IF size > 0 THEN
+    IF I64 (t.buf[LEN (t.buf) - 1]) # 10 THEN t.nrows := sum + 1 END
+  END ;
+  (* row j starts after row end j: band k owns the rows after its own
+     row ends, and band 0 row 0 too *)
+  run := 0 ;
+  FOR k := 0 TO n - 1 DO
+    e := t.be0[k] ;
+    f := t.bf0[k] ;
+    IF k = 0 THEN
+      t.bRow[k] := 0 ;
+      t.bFrom[k] := t.hdrEnd
+    ELSE
+      t.bRow[k] := 1 + run ;
+      t.bFrom[k] := f
+    END ;
+    IF t.bRow[k] > t.nrows THEN t.bRow[k] := t.nrows END ;
+    run := run + e ;
+    t.bRowEnd[k] := 1 + run ;
+    IF t.bRowEnd[k] > t.nrows THEN t.bRowEnd[k] := t.nrows END
+  END
+END Bands ;
 
 PROCEDURE Open (VAR pool: POOL ; RO path: STR ; RO opt: Options)
   : PTR Table IN pool
@@ -501,7 +784,7 @@ BEGIN
     t.hdrEnd := from
   END ;
 
-  t.nrows := CountRows (t.buf, t.hdrEnd, opt.quoted) ;
+  Bands (pool, t) ;
   t.fcols := NEW (pool, FCol, t.ncols) ;
   t.dcols := NEW (pool, DCol, t.ncols) ;
   t.icols := NEW (pool, ICol, t.ncols) ;
@@ -561,38 +844,6 @@ BEGIN
   END
 END SetKind ;
 
-PROCEDURE SetReal64 (VAR t: PTR Table ; c: I64) RAISES IndexError =
-BEGIN
-  t.kinds[c] := Kind.Real64
-END SetReal64 ;
-
-PROCEDURE SetReal (VAR t: PTR Table ; c: I64) RAISES IndexError =
-BEGIN
-  t.kinds[c] := Kind.Real
-END SetReal ;
-
-PROCEDURE SetInt (VAR t: PTR Table ; c: I64) RAISES IndexError =
-BEGIN
-  t.kinds[c] := Kind.Int
-END SetInt ;
-
-PROCEDURE SetText (VAR t: PTR Table ; c: I64) RAISES IndexError =
-BEGIN
-  t.kinds[c] := Kind.Text
-END SetText ;
-
-PROCEDURE SetSkip (VAR t: PTR Table ; c: I64) RAISES IndexError =
-BEGIN
-  t.kinds[c] := Kind.Skip
-END SetSkip ;
-
-PROCEDURE SetStamp (VAR t: PTR Table ; c: I64 ; format: I64)
-  RAISES IndexError =
-BEGIN
-  t.kinds[c] := Kind.Stamp (format) ;
-  t.formats[c] := format
-END SetStamp ;
-
 (* Pow10F32 answers 10^k, for k the number of digits after the point.
    It is exact in F32 up to k = 10: 10^10 is 2^10 * 5^10, and
    5^10 = 9765625 fits in the 24-bit significand.  10^11 does not,
@@ -629,7 +880,7 @@ END Pow10F32 ;
    IsNumber's grammar accepts all of these fields too.  So Parse tries
    FastF32 first, and asks CNumber and IsNumber only when it declines.
    This order saves a second scan of each field: the FLUXNET parse went
-   from 0.99 to 0.81 s on ct121 (2026-10-31). *)
+   from 0.99 to 0.81 s on host1 (2026-10-31). *)
 PROCEDURE FastF32 (RO b: SLICE OF BYTE ; ofs: I64 ; n: I64 ; VAR r: F32)
   : BOOL
   RAISES IndexError =
@@ -829,7 +1080,18 @@ BEGIN
   RETURN Time.FromCivil (c)
 END CompactStamp ;
 
-PROCEDURE FieldStamp (VAR pool: POOL ; RO b: SLICE OF BYTE ;
+(* IsoStamp reads an RFC 3339 stamp.  Time.ParseIso wants a text, so
+   the field is copied, into a pool of this call's own: the copy is
+   gone at END.  Until 2026-11-15 it went into the caller's pool and
+   stayed, a copy a row; a pool is also nothing two threads share. *)
+PROCEDURE IsoStamp (RO b: SLICE OF BYTE ; ofs: I64 ; n: I64) : Time.Instant
+  RAISES ValueRange, IndexError =
+VAR scratch : POOL ;
+BEGIN
+  RETURN Time.ParseIso (DynStr.Chars (scratch, SLICE (b, ofs, n)))
+END IsoStamp ;
+
+PROCEDURE FieldStamp (RO b: SLICE OF BYTE ;
                       ofs: I64 ; n: I64 ; format: I64 ;
                       utcOffset: F64 ; row, col: I64) : Time.Instant
   RAISES RangeError, ValueRange, IndexError =
@@ -839,7 +1101,7 @@ BEGIN
   IF format = StampIso THEN
     (* an ISO 8601 stamp carries its own zone, so the caller's offset
        does not apply to it and is not applied *)
-    RETURN Time.ParseIso (DynStr.Chars (pool, SLICE (b, ofs, n)))
+    RETURN IsoStamp (b, ofs, n)
   END ;
   IF format = StampEpoch THEN
     t.t := F64 (FieldI64 (b, ofs, n, row, col)) ;
@@ -855,36 +1117,24 @@ BEGIN
     CompactStamp (FieldI64 (b, ofs, n, row, col), FALSE), -utcOffset)
 END FieldStamp ;
 
-PROCEDURE Parse (VAR pool: POOL ; VAR t: PTR Table)
+(* ParseBand parses the rows of one band: from where its first row
+   starts, until it has stored its last.  It is the reader's one
+   loop.  With one band it is the whole file. *)
+PROCEDURE ParseBand (VAR t: PTR Table ; band: I64)
   RAISES ParseError, RangeError, ValueRange, IndexError =
 VAR
-  i, c, row, start, len, nb, ofs, k : I64 ;
+  i, c, row, limit, start, len, nb, ofs, k : I64 ;
   f : F32 ;
   d : F64 ;
   v : SLICE OF BYTE ;
   h : Held ;
   inQuote, atEnd, known : BOOL ;
 BEGIN
-  FOR c := 0 TO t.ncols - 1 DO
-    CASE t.kinds[c] OF
-    | Real64 :
-      t.dcols[c] := NEW (pool, F64, t.nrows)
-    | Real :
-      t.fcols[c] := NEW (pool, F32, t.nrows)
-    | Int :
-      t.icols[c] := NEW (pool, I64, t.nrows)
-    | Stamp :
-      t.scols[c] := NEW (pool, Time.Instant, t.nrows)
-    | Text :
-      t.tofs[c] := NEW (pool, I64, t.nrows) ;
-      t.tlen[c] := NEW (pool, I64, t.nrows)
-    | Skip :
-    END
-  END ;
-
   nb := LEN (t.buf) ;
-  i := t.hdrEnd ;
-  row := 0 ;
+  i := t.bFrom[band] ;
+  row := t.bRow[band] ;
+  limit := t.bRowEnd[band] ;
+  IF row >= limit THEN RETURN END ;
   c := 0 ;
   start := i ;
   inQuote := FALSE ;
@@ -961,7 +1211,7 @@ BEGIN
           END
         | Stamp :
           IF len > 0 THEN
-            t.scols[c][row] := FieldStamp (pool, t.buf, ofs, len,
+            t.scols[c][row] := FieldStamp (t.buf, ofs, len,
               t.formats[c], t.opt.utcOffset, row, c)
           END
         | Text :
@@ -981,10 +1231,55 @@ BEGIN
         END ;
         row := row + 1 ;
         c := 0 ;
-        IF row >= t.nrows THEN EXIT END
+        IF row >= limit THEN EXIT END
       END
     END ;
     i := i + 1
+  END ;
+END ParseBand ;
+
+PROCEDURE Parse (VAR pool: POOL ; VAR t: PTR Table)
+  RAISES ParseError, RangeError, ValueRange, IndexError =
+VAR
+  c, k : I64 ;
+BEGIN
+  FOR c := 0 TO t.ncols - 1 DO
+    CASE t.kinds[c] OF
+    | Real64 :
+      t.dcols[c] := NEW (pool, F64, t.nrows)
+    | Real :
+      t.fcols[c] := NEW (pool, F32, t.nrows)
+    | Int :
+      t.icols[c] := NEW (pool, I64, t.nrows)
+    | Stamp :
+      t.scols[c] := NEW (pool, Time.Instant, t.nrows)
+    | Text :
+      t.tofs[c] := NEW (pool, I64, t.nrows) ;
+      t.tlen[c] := NEW (pool, I64, t.nrows)
+    | Skip :
+    END
+  END ;
+
+  IF t.nbands = 1 THEN
+    (* one thread: the whole file, and an exception as it comes *)
+    ParseBand (t, 0)
+  ELSE
+    FOR k := 0 TO t.nbands - 1 DO t.bErr[k] := ErrNone END ;
+    IF NOT RunBands (pool, t, OpFill) THEN
+      (* the first bad row is in the lowest band that failed *)
+      FOR k := 0 TO t.nbands - 1 DO
+        IF t.bErr[k] = ErrFields THEN
+          RAISE ParseError ('wrong number of fields', t.bErrA[k], t.bErrB[k])
+        ELSIF t.bErr[k] = ErrRange THEN
+          RAISE RangeError (t.bErrA[k], t.bErrB[k])
+        ELSIF t.bErr[k] = ErrValue THEN
+          RAISE ValueRange
+        ELSIF t.bErr[k] = ErrIndex THEN
+          RAISE IndexError (t.bErrA[k], t.bErrB[k])
+        END
+      END ;
+      RAISE ValueRange
+    END
   END ;
   t.parsed := TRUE
 END Parse ;

@@ -90,7 +90,7 @@ BEGIN
   i := 0 ;
   FOR cr := 0 TO 7 DO
     FOR cc := 0 TO 7 DO
-      StrCopy ('/home/claude/bench.zarr/co2/', paths[i]) ;
+      StrCopy ('/xxx/bench.zarr/co2/', paths[i]) ;
       CardToStr (cr, 0, num) ;  StrConCat (paths[i], num, paths[i]) ;
       StrConCat (paths[i], '.', paths[i]) ;
       CardToStr (cc, 0, num) ;  StrConCat (paths[i], num, paths[i]) ;

@@ -1,6 +1,6 @@
 (* EXPECT: j is the control variable of the FOR at line 23: it cannot be assigned inside the loop -- leave with EXIT, or count in a WHILE (par 2.1) *)
 MODULE m ;
-(* A FOR's control variable is written by the loop alone (par 2.1; Alex,
+(* A FOR's control variable is written by the loop alone (par 2.1; decided
    2026-10-25).  `IF j = 0 THEN j := 3 END' inside `FOR j := 0 TO 2' ran
    forever under 0.25's exit test and stopped under 0.17's: the meaning
    moved with the generator (zarrm9's 0.25 report).  Legal forms first:

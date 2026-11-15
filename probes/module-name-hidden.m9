@@ -1,12 +1,21 @@
 (* EXPECT: m.time: this procedure declares a time of its own, which hides the module's *)
-(* A module names itself (par 3 rule 5): the legal forms come first.
-   The refusal is the one name a procedure hides with its own. *)
+(* A module names itself (par 3 rule 5), and a procedure's own name
+   that hides the module's is renamed out of the way: Set is legal.
+   The refusal is the name the rename cannot follow.  In Odd, time is
+   a parameter and also a parameter of a procedure TYPE, a place where
+   an identifier is a member and not a local. *)
 MODULE m ;
 CONST K = 3 ;
 TYPE R = RECORD n : I64 END ;
 VAR time : I64 ; r : m.R ;
 PROCEDURE P () : I64 = BEGIN RETURN m.K + m.time END P ;
 PROCEDURE Set (time: I64) = BEGIN m.time := time END Set ;
+PROCEDURE Odd (time: I64) =
+VAR f : OPT PROCEDURE (time: I64) ;
+BEGIN
+  f := NONE ;
+  m.time := time
+END Odd ;
 BEGIN
   m.r.n := m.P ()
 END m.

@@ -17,7 +17,7 @@ FROM Plot IMPORT ClearFigure, AddLine, Render, RenderHeat,
                  CViridis, CCoolwarm ;
 
 CONST
-  StoreDir = '/home/claude/test.zarr/co2/' ;
+  StoreDir = '/xxx/test.zarr/co2/' ;
   MaxBuf   = 65536 ;
 
 VAR
@@ -142,15 +142,15 @@ BEGIN
   AddLine (xs, colMax,  shapeC, 1, 'column max') ;
   AddLine (xs, colMean, shapeC, 0, 'column mean') ;
   AddLine (xs, colMin,  shapeC, 2, 'column min') ;
-  Render ('/home/claude/m2/co2_columns.svg',
+  Render ('/xxx/m2/co2_columns.svg',
           'CO2 column statistics (zarr via Modula-2)',
           'column index', 'CO2 [ppm]') ;
 
-  RenderHeat ('/home/claude/m2/co2_field.svg',
+  RenderHeat ('/xxx/m2/co2_field.svg',
               'CO2 field - white block is the missing chunk (fill=NaN)',
               grid, CViridis, FALSE) ;
 
-  RenderHeat ('/home/claude/m2/co2_anomaly.svg',
+  RenderHeat ('/xxx/m2/co2_anomaly.svg',
               'CO2 anomaly vs column mean (Mat.SubRowVector)',
               anom, CCoolwarm, TRUE) ;
 

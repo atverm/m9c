@@ -1,0 +1,20 @@
+MODULE WriteThroughReturnedLiteral ;
+
+IMPORT Io ;
+
+PROCEDURE Reason (n: I64) : STR =
+BEGIN
+  IF n = 200 THEN
+    RETURN 'OK'
+  END ;
+  RETURN 'other'
+END Reason ;
+
+VAR
+  s : STR ;
+
+BEGIN
+  s := Reason (200) ;
+  s[0] := 'X' ;
+  Io.WriteLine ('reason: ' + s)
+END WriteThroughReturnedLiteral.

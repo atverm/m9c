@@ -190,7 +190,17 @@ static inline void m9_copy (void *dp, int64_t dl, const void *sp, int64_t sl,
   if (dl > 0) memmove (dp, sp, (size_t) dl * sz);
 }
 
-static inline void *m9_at (void *p, int64_t i, int64_t len,
+/* The checked accessors are inlined whatever the caller's size.  As
+   `static inline' alone they were the compiler's to place, and in a
+   large procedure gcc kept them as functions of their own: a ported
+   model's profile showed them with 18 to 26 per cent of the samples,
+   and its LU kernel took 2.69 to 2.81 s, against 2.30 s with them
+   inlined (gcc 16.2 at -O2 -flto, the same answer to the last digit;
+   2026-11-14).  Small callers were inlined already: fannkuch and
+   binary-trees do not move. */
+#define M9_ALWAYS_INLINE __attribute__ ((always_inline))
+
+static inline M9_ALWAYS_INLINE void *m9_at (void *p, int64_t i, int64_t len,
                            size_t sz, m9_state *err)
 {
   if ((uint64_t) i >= (uint64_t) len) {
@@ -225,7 +235,7 @@ static inline void *m9_at (void *p, int64_t i, int64_t len,
    matrix answered element (1,0) and raised nothing.  m9_gat answers
    the poison cell on failure, exactly as m9_at does, so a bad
    subscript neither traps nor touches data. */
-static inline void *m9_gat (void *p, size_t sz, const int64_t *n,
+static inline M9_ALWAYS_INLINE void *m9_gat (void *p, size_t sz, const int64_t *n,
                             const int64_t *s, const int64_t *idx,
                             int rank, m9_state *err)
 {
@@ -267,14 +277,14 @@ static inline void *m9_gat (void *p, size_t sz, const int64_t *n,
     return M9_POISON_CELL (sz); \
   }
 
-static inline void *m9_gat1 (void *p, size_t sz, int64_t n0, int64_t s0,
+static inline M9_ALWAYS_INLINE void *m9_gat1 (void *p, size_t sz, int64_t n0, int64_t s0,
                              int64_t i0, m9_state *err)
 {
   M9_GAT_BODY (0, i0, n0)
   return (unsigned char *) p + (uint64_t) (i0 * s0) * sz;
 }
 
-static inline void *m9_gat2 (void *p, size_t sz, int64_t n0, int64_t n1,
+static inline M9_ALWAYS_INLINE void *m9_gat2 (void *p, size_t sz, int64_t n0, int64_t n1,
                              int64_t s0, int64_t s1,
                              int64_t i0, int64_t i1, m9_state *err)
 {
@@ -283,7 +293,7 @@ static inline void *m9_gat2 (void *p, size_t sz, int64_t n0, int64_t n1,
   return (unsigned char *) p + (uint64_t) (i0 * s0 + i1 * s1) * sz;
 }
 
-static inline void *m9_gat3 (void *p, size_t sz,
+static inline M9_ALWAYS_INLINE void *m9_gat3 (void *p, size_t sz,
                              int64_t n0, int64_t n1, int64_t n2,
                              int64_t s0, int64_t s1, int64_t s2,
                              int64_t i0, int64_t i1, int64_t i2,
@@ -296,7 +306,7 @@ static inline void *m9_gat3 (void *p, size_t sz,
        + (uint64_t) (i0 * s0 + i1 * s1 + i2 * s2) * sz;
 }
 
-static inline void *m9_gat4 (void *p, size_t sz,
+static inline M9_ALWAYS_INLINE void *m9_gat4 (void *p, size_t sz,
                              int64_t n0, int64_t n1, int64_t n2, int64_t n3,
                              int64_t s0, int64_t s1, int64_t s2, int64_t s3,
                              int64_t i0, int64_t i1, int64_t i2, int64_t i3,
@@ -306,6 +316,102 @@ static inline void *m9_gat4 (void *p, size_t sz,
   M9_GAT_BODY (1, i1, n1)
   M9_GAT_BODY (2, i2, n2)
   M9_GAT_BODY (3, i3, n3)
+  return (unsigned char *) p
+       + (uint64_t) (i0 * s0 + i1 * s1 + i2 * s2 + i3 * s3) * sz;
+}
+
+/* The unchecked accessors: the address alone.  The generator names
+   them in one place, the body of a FOR whose INRANGE claim was TRUE
+   (docs/loop-check-plan.md).  There the author has said, before the
+   loop, that every subscript in it is in range, and the same loop
+   with every check stands beside it for a claim that is FALSE.  A
+   gate holds that no other generated line names them. */
+static inline M9_ALWAYS_INLINE void *m9_uat (void *p, int64_t i, size_t sz)
+{
+  return (unsigned char *) p + (uint64_t) i * sz;
+}
+
+static inline M9_ALWAYS_INLINE void *m9_ugat1 (void *p, size_t sz, int64_t s0,
+                                               int64_t i0)
+{
+  return (unsigned char *) p + (uint64_t) (i0 * s0) * sz;
+}
+
+static inline M9_ALWAYS_INLINE void *m9_ugat2 (void *p, size_t sz,
+                                               int64_t s0, int64_t s1,
+                                               int64_t i0, int64_t i1)
+{
+  return (unsigned char *) p + (uint64_t) (i0 * s0 + i1 * s1) * sz;
+}
+
+static inline M9_ALWAYS_INLINE void *m9_ugat3 (void *p, size_t sz,
+                                               int64_t s0, int64_t s1, int64_t s2,
+                                               int64_t i0, int64_t i1, int64_t i2)
+{
+  return (unsigned char *) p + (uint64_t) (i0 * s0 + i1 * s1 + i2 * s2) * sz;
+}
+
+static inline M9_ALWAYS_INLINE void *m9_ugat4 (void *p, size_t sz,
+                                               int64_t s0, int64_t s1, int64_t s2, int64_t s3,
+                                               int64_t i0, int64_t i1, int64_t i2, int64_t i3)
+{
+  return (unsigned char *) p
+       + (uint64_t) (i0 * s0 + i1 * s1 + i2 * s2 + i3 * s3) * sz;
+}
+
+/* The verifying accessors, for a program built with m9c
+   --verify-claims.  There a claimed body keeps its checks, and a
+   subscript out of range in it is not an IndexError: the claim said
+   it could not happen, so the program's text is wrong, and
+   m9_claim_false says which claim and stops.  No handler takes it. */
+void m9_claim_false (const char *proc, int32_t line, int64_t i, int64_t n);
+
+static inline M9_ALWAYS_INLINE void *m9_vat (void *p, int64_t i, int64_t len,
+                                             size_t sz, const char *proc, int32_t line)
+{
+  if ((uint64_t) i >= (uint64_t) len) m9_claim_false (proc, line, i, len);
+  return (unsigned char *) p + (uint64_t) i * sz;
+}
+
+static inline M9_ALWAYS_INLINE void *m9_vgat1 (void *p, size_t sz, int64_t n0, int64_t s0,
+                                               int64_t i0, const char *proc, int32_t line)
+{
+  if ((uint64_t) i0 >= (uint64_t) n0) m9_claim_false (proc, line, i0, n0);
+  return (unsigned char *) p + (uint64_t) (i0 * s0) * sz;
+}
+
+static inline M9_ALWAYS_INLINE void *m9_vgat2 (void *p, size_t sz, int64_t n0, int64_t n1,
+                                               int64_t s0, int64_t s1,
+                                               int64_t i0, int64_t i1,
+                                               const char *proc, int32_t line)
+{
+  if ((uint64_t) i0 >= (uint64_t) n0) m9_claim_false (proc, line, i0, n0);
+  if ((uint64_t) i1 >= (uint64_t) n1) m9_claim_false (proc, line, i1, n1);
+  return (unsigned char *) p + (uint64_t) (i0 * s0 + i1 * s1) * sz;
+}
+
+static inline M9_ALWAYS_INLINE void *m9_vgat3 (void *p, size_t sz,
+                                               int64_t n0, int64_t n1, int64_t n2,
+                                               int64_t s0, int64_t s1, int64_t s2,
+                                               int64_t i0, int64_t i1, int64_t i2,
+                                               const char *proc, int32_t line)
+{
+  if ((uint64_t) i0 >= (uint64_t) n0) m9_claim_false (proc, line, i0, n0);
+  if ((uint64_t) i1 >= (uint64_t) n1) m9_claim_false (proc, line, i1, n1);
+  if ((uint64_t) i2 >= (uint64_t) n2) m9_claim_false (proc, line, i2, n2);
+  return (unsigned char *) p + (uint64_t) (i0 * s0 + i1 * s1 + i2 * s2) * sz;
+}
+
+static inline M9_ALWAYS_INLINE void *m9_vgat4 (void *p, size_t sz,
+                                               int64_t n0, int64_t n1, int64_t n2, int64_t n3,
+                                               int64_t s0, int64_t s1, int64_t s2, int64_t s3,
+                                               int64_t i0, int64_t i1, int64_t i2, int64_t i3,
+                                               const char *proc, int32_t line)
+{
+  if ((uint64_t) i0 >= (uint64_t) n0) m9_claim_false (proc, line, i0, n0);
+  if ((uint64_t) i1 >= (uint64_t) n1) m9_claim_false (proc, line, i1, n1);
+  if ((uint64_t) i2 >= (uint64_t) n2) m9_claim_false (proc, line, i2, n2);
+  if ((uint64_t) i3 >= (uint64_t) n3) m9_claim_false (proc, line, i3, n3);
   return (unsigned char *) p
        + (uint64_t) (i0 * s0 + i1 * s1 + i2 * s2 + i3 * s3) * sz;
 }
@@ -631,7 +737,7 @@ static inline int64_t m9_i64_f64 (double v, m9_state *err)
 }
 
 /* A POINTER THAT WAS NEVER SET is caught here (2026-10-21, the
-   compiler review's C8; Alex: "runtime check everywhere").  Take a
+   compiler review's C8; the author: "runtime check everywhere").  Take a
    field of type PTR T or SHARED PTR T, not OPT, in a record that
    arrived zeroed from NEW (pool, T) or NEW (pool, T, n).  Before the
    field is assigned it holds NULL, and following it was a SIGSEGV
@@ -1411,7 +1517,7 @@ int64_t m9_repr_double (double v, void *b);  /* Python repr(float) */
 double m9_strtod (const void *s);            /* It answers the
    nearest double to a decimal.  It runs Eisel-Lemire in m9rt.c where
    it decides, and libc's strtod where it does not (m9powfive.h;
-   2026-10-25, Alex: "ok for csv Eisel Lemire").  It gives the same
+   2026-10-25, the author: "ok for csv Eisel Lemire").  It gives the same
    value as strtod on every input,
    held by parsef64_driver.c.  M9_PARSE_PORTABLE keeps to strtod.
    m9_parse_f64_hits counts the calling thread's fast answers. */
@@ -1543,7 +1649,7 @@ int64_t m9_fmt_short (double v, void *buf, int64_t cap);
 int64_t m9_utf_cpcount (m9_sl_UTF8 u);
 int64_t m9_utf_cpcount_p (const void *p, int64_t n);   /* the same over bytes */
 const char *m9_utf_fast_name (void);
-/* ---- adopt: validate in place, no copy (2026-10-25, Alex: "as long
+/* ---- adopt: validate in place, no copy (2026-10-25, the author: "as long
    as there is no deterioration") ----
    UTF (b) copies the bytes it validated, because the slice's owner
    may write them afterwards.  Sometimes the bytes are fresh and the
@@ -1561,7 +1667,7 @@ const char *m9_utf_fast_name (void);
    withdrawn before it shipped (2026-10-26). */
 int64_t m9_utf_adopt_p (const void *p, int64_t n, void *out);
 
-/* ---- large blocks kept per thread (2026-10-25, Alex's second
+/* ---- large blocks kept per thread (2026-10-25, the author's second
    follow-up) ----
    A pool block above the minimum size that a release gives back is
    kept for the thread's next carve of about its size, instead of

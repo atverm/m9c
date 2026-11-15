@@ -1,0 +1,23 @@
+MODULE m ;
+
+TYPE
+  Node = RECORD
+    n : I64 ;
+    data : SLICE OF I64 ;
+    pool : POOL
+  END ;
+
+PROCEDURE Use (OWN a: PTR Node ; b: PTR Node) : I64 =
+BEGIN
+  DISPOSE (a) ;
+  RETURN b.n
+END Use ;
+
+VAR
+  p : PTR Node ;
+  v : I64 ;
+
+BEGIN
+  p := NEW (OWN, Node) ;
+  v := Use (p, p)
+END m.

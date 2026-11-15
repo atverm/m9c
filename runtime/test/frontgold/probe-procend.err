@@ -1,0 +1,2 @@
+parseprobes/procend.m9:6:5: parse: END Q does not match PROCEDURE P
+m9c: 1 parse errors in parseprobes/procend.m9

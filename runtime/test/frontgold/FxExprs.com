@@ -1,0 +1,12 @@
+1:1-3 (* FxExprs is a front-end fixture (docs/fpc-removal-plan.md): every\n   operator, every factor and the precedence between them.  It is\n   parsed and printed, never checked. *)
+8:3-8 (* relations *)
+16:3-16 (* AND, OR, NOT: relations bind tighter than AND, AND than OR *)
+25:3-25 (* sums *)
+36:3-36 (* products *)
+47:3-47 (* IS *)
+56:3-56 (* factors: literals *)
+73:3-73 (* factors: the built-in forms *)
+89:3-89 (* factors: designators and calls *)
+108:3-108 (* parentheses *)
+113:3-113 (* all together *)
+comments=11

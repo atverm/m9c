@@ -1,0 +1,2 @@
+parseprobes/unsafeprogram.m9:1:8: parse: UNSAFE program modules are not a thing
+m9c: 1 parse errors in parseprobes/unsafeprogram.m9

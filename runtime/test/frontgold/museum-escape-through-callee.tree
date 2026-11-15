@@ -1,0 +1,22 @@
+MODULE Octets ;
+
+IMPORT DynStr ;
+
+PROCEDURE Doc (RO text: STR) : SLICE OF BYTE
+  RAISES ValueRange =
+VAR
+  scratch : POOL ;
+BEGIN
+  RETURN DynStr.Bytes (scratch, text, FALSE)
+END Doc ;
+
+VAR
+  pool : POOL ;
+  b : SLICE OF BYTE ;
+
+BEGIN
+  b := Doc ('abc')
+EXCEPT
+| ValueRange :
+    b := b
+END Octets.

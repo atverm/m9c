@@ -1,0 +1,10 @@
+MODULE m ;
+
+TYPE
+  H = SHARED PTR H ;
+
+VAR
+  h : H ;
+
+BEGIN
+END m.

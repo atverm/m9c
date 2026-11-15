@@ -171,7 +171,7 @@ bit-identical to CholeskyT's at any thread count.  On NotSPD the
 lower triangle is spoilt.  An inverse by CholeskyT and
 CholInverse holds three n x n matrices beside the input; one
 year inversion held six at once and stopped near 40 000 unknowns
-(cpflexdev, 2026-11-09).
+(a port, 2026-11-09).
 
 ### CholInverseInPlace (VAR a: PTR Matrix ; threads: I64) RAISES Faults.SizeError
 

@@ -1,0 +1,16 @@
+MODULE Use ;
+
+(* Use is pkgcache.sh's script: it imports library modules a package's
+   cache holds, and one module of its own, Beside, that no package
+   has. *)
+
+IMPORT Io, Fmt, Json, Sort, Beside ;
+
+VAR a : SLICE OF I64 ;
+
+BEGIN
+  a := NEW (I64, 3) ;
+  a[0] := 3 ; a[1] := 1 ; a[2] := 2 ;
+  Sort.I64s (a) ;
+  Io.WriteLine ('use ' + Fmt.I64Str (a[0]) + Fmt.I64Str (a[2]) + ' ' + Fmt.I64Str (Beside.Twice (21)))
+END Use.

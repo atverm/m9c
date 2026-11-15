@@ -44,7 +44,7 @@ static Ast_Node *parse_unit (const char *path, m9_state *err)
 }
 
 /* The one region judgement (docs/region-plan.md) lives in the M9
-   checker alone (Alex, 2026-10-21).  Its refusals end "(par N,
+   checker alone (decided 2026-10-21).  Its refusals end "(par N,
    regions)", and this leaves them out, so that the twins are compared
    on what both implement.  runtime/test/regions.sh holds them. */
 static int regional (m9_sl_UTF8 s)

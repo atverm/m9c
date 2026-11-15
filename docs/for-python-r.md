@@ -1,6 +1,6 @@
 # M9 for data scientists (Python and R)
 
-Oct 4, 2026 · @Alex
+Oct 4, 2026 · the author · updated 2026-11-15 for m9 0.28.0
 
 *Kept here from the Claude Docs document of the same name
 (claude.ai/artifact/TYZWb4muUp2khDXqiroLX5), exported 2026-10-05.*
@@ -23,7 +23,7 @@ M9 was designed on 2026-08-20 from bugs we actually hit while reading a zarr sto
 
 The principles behind this:
 
-- **Checks are part of the language.** There is no fast unchecked mode; a program means the same thing at every optimisation level.
+- **Checks are part of the language.** There is no fast unchecked mode; a program means the same thing at every optimisation level. In a tight loop an author may claim one `FOR`'s subscripts are in range; the claim is written in the source, listed by `m9c --review`, and a test build stops on a false one.
 - **Missing data is stated, not guessed.** The CSV reader infers nothing: you say each column's type, and a value that does not fit is an error with its row and column.
 - **Readable over short.** M9 is verbose on purpose. It is written for the person who reviews it, and more and more of it is written by an AI.
 - **Measure, don't assert.** Every numerical routine in the library is tested against numpy, scipy, polars or pandas, and every speed claim is measured twice.
@@ -39,8 +39,8 @@ Python and R are built for asking questions of data quickly. M9 is built for ans
 | Missing values | NaN, `None`, `pd.NA`, depending on the type | `NA` and `NaN`, `na.rm=` per call | NaN is missing everywhere in the library; counts say how many values were used |
 | Integer overflow | numpy wraps; Python ints grow | `NA` with a warning | Raises `Overflow` |
 | Errors | Exceptions, undeclared | Conditions, undeclared | Each procedure declares what it raises; the compiler checks it |
-| Libraries | Enormous | Enormous, especially statistics | 58 modules: arrays, statistics, linear algebra, dataframes, CSV, zarr, netCDF, GRIB, Parquet, Arrow, HTTP, plots, PNG |
-| Interactive | Jupyter, IPython | RStudio, the console | None: write, compile, run |
+| Libraries | Enormous | Enormous, especially statistics | 66 modules: arrays, statistics, linear algebra, dataframes, CSV, zarr, netCDF, GRIB, Parquet, Arrow, HTTP, plots, PNG |
+| Interactive | Jupyter, IPython | RStudio, the console | A Jupyter kernel (each cell compiled, state kept between cells); no REPL |
 | Deployment | An environment: the interpreter and the right package versions | The same | One binary that needs only libc |
 
 The same small question in each: the mean of `[1, NaN, 3]`, and the mean of three NaNs.
@@ -71,38 +71,39 @@ The M9 program (tutorial chapter 6) prints `mean = 2.000 over 2 of 3 values` and
 
 ## Where M9 shines
 
-M9 shines when a calculation has to run often, run unattended, or be trusted without re-checking it by hand. The timings below are from the project's benchmark record (`docs/bench.md`, WSL2 on 16 cores, Python 3.12 with numpy 2.5); every program's output was compared with M9's before a clock was read.
+M9 shines when a calculation has to run often, run unattended, or be trusted without re-checking it by hand. The timings below are from the project's benchmark record (`docs/bench.md`, one Apple M5 Pro on 2026-11-15, Python 3.13 with numpy 2.5); every program's output was compared with M9's before a clock was read.
 
 | Program | M9 | Python with numpy | Pure Python |
 | --- | --- | --- | --- |
-| mandelbrot (floating point) | 0.73 s, the same as C | 3.5–4.0 s | 36–42 s |
-| fannkuch (integer loops) | 1.87 s, overflow checked | — | 44–47 s |
-| binary-trees (allocation) | 0.91 s | — | 5.9 s |
-| What a user must install | a 27 KB binary and libc | CPython (~30 MB) and the right numpy | CPython |
+| mandelbrot (floating point) | 0.53 s, the same as C | 2.57 s | about 19 s |
+| fannkuch (integer loops) | 1.66 s, overflow checked | — | 31.8 s |
+| binary-trees (allocation) | 0.36 s | — | 3.34 s |
+| a 207 MB CSV file, 244 columns | 0.05 s on 18 threads, 0.60 s on one | polars 0.05 s and 0.46 s; pandas 1.75 s | — |
+| What a user must install | one binary and libc | CPython (~30 MB) and the right numpy | CPython |
 
-numpy's 3.5 s is not a fault of numpy: the vectorised form cannot stop a pixel early, so it does about twice the arithmetic. That is the general pattern: numpy is fast when a problem fits whole-array operations and slow when it needs a loop with a decision in it. M9 is fast in both cases.
+numpy's 2.6 s is not a fault of numpy: the vectorised form cannot stop a pixel early, so it does about twice the arithmetic. That is the general pattern: numpy is fast when a problem fits whole-array operations and slow when it needs a loop with a decision in it. M9 is fast in both cases.
 
 Where this matters for us:
 
 - **Loops that do not vectorise.** Particle models, iterative fits, state machines, anything with an early exit. They run at C speed in M9 without a second language (no Cython, no Numba, no Rcpp).
 - **Results you can check to the bit.** The library is held to numpy, scipy, polars and pandas by tests. `Arrays.NanSum` is compensated and agrees with Python's `math.fsum` to the last bit, which is tighter than `np.nansum`. The least-squares fit agrees with `scipy.optimize.curve_fit` to the bit and to the number of function evaluations on nine test problems.
-- **Large files in bounded memory.** The CSV reader streams; the zarr reader fetches and decompresses chunks over HTTP. A 16-million-value zarr store is read through HTTP and blosc in 3.2 s.
-- **Many small runs.** A pipeline step called thousands of times pays Python's start-up and imports every time (`import numpy` alone measured 0.17–0.27 s here). An M9 binary starts in under 10 ms.
+- **Large files.** The CSV reader parses on as many threads as you give it, every value equal to the C library's on the same bytes; the zarr reader fetches and decompresses chunks over HTTP or from disk. A 16-million-value zarr store is summed from disk in 0.11 s.
+- **Many small runs.** A pipeline step called thousands of times pays Python's start-up and imports every time (`import numpy` alone measured 0.17–0.27 s in October). An M9 binary starts in under 10 ms, and an M9 script (`m9c --run`) that has run before starts in about the same; its first run takes about a tenth of a second with the packages, which ship the library compiled.
 - **Sharing a tool.** Colleagues get one file that runs, not an environment to reproduce.
-- **Threads that are actually parallel**, with the compiler serialising calls into C libraries that are not thread-safe (netCDF, ecCodes).
+- **Threads that are actually parallel**, with the compiler serialising calls into C libraries that are not thread-safe (netCDF, ecCodes), and tasks far cheaper than threads for thousands of concurrent jobs, with channels between them.
 
 ## Where M9 fails, or is the wrong tool
 
-M9 is two months old (first commit 2026-08-20, release 0.14.0 on 2026-10-03) and deliberately narrow. For much of a data scientist's day it is the wrong tool, and we would rather say so here than have you find out.
+M9 is three months old (first commit 2026-08-20, release 0.27.1 on 2026-11-14) and deliberately narrow. For much of a data scientist's day it is the wrong tool, and we would rather say so here than have you find out.
 
-- **Exploration.** There is no REPL, no notebook, no `df.head()`. Looking at data, trying ten models before lunch and plotting as you go stays in Python or R.
+- **Exploration.** There is no REPL and no `df.head()`, and the Jupyter kernel compiles every cell. Looking at data, trying ten models before lunch and plotting as you go stays in Python or R.
 - **Breadth.** There is no scikit-learn, no PyTorch, no statsmodels, no tidyverse, no ggplot2, no Bioconductor, no xarray. What M9 has is listed under "What you gain" below. Anything else you write, port, or bind from a C library.
 - **GPU deep learning.** No GPU support, no automatic differentiation, no tensor library. Training a neural network belongs in Python. (Data-driven methods on the CPU are another matter: see the next subsection.)
 - **Plots for papers.** M9 draws line charts, scatter, heat maps, Taylor diagrams and panels as SVG or PNG. It has nothing like the range of matplotlib or ggplot2.
 - **Short one-off scripts.** Writing the types, the RAISES lists and the error handling costs time. For a calculation you will run once, it is not worth it.
 - **Verbosity.** A pandas one-liner can be fifteen lines of M9. That is the price of every step being visible.
-- **Platforms.** Linux is the platform; Windows and macOS are experimental.
-- **Maturity.** The checker still has known gaps, listed in the project's ledger (for example, a value from read-only storage copied into a local variable and written there is not yet caught). Each gap we close comes with a test that keeps it closed.
+- **Platforms.** Linux and macOS on Apple silicon; Windows is experimental.
+- **Maturity.** The checker still has known gaps, listed in the report's open problems and the project's ledger. Each gap we close comes with a test that keeps it closed.
 
 ### Interactive services: M9 behind, TypeScript in front
 
@@ -163,8 +164,9 @@ Examples of this method, from the library and its users:
 | EddyPro 6.2.1 (Fortran) | The original program | Every output file identical, 21 cases |
 | RFlux flux cleaning | R 4.5 with RFlux 3.2 | 0 of 88 × 17,537 cells differ |
 | FLEXPART atmospheric transport model (Fortran) | The Fortran original | Bit for bit, 1 to 8 threads |
+| TM5 atmospheric transport model (Fortran) | The Fortran original | Bit for bit, at about the Fortran's speed on one thread |
 
-One honest limit: "to the bit" holds on the same kind of processor. On Apple silicon the C compiler fuses multiply and add into one rounding, and the last bit can differ from x86-64. We found this with tutorial chapter 18's Taylor diagram and record it as open work rather than hide it.
+One honest limit, now closed: on Apple silicon the C compiler used to fuse a multiply and an add into one rounding, and the last bit could differ from x86-64. We found it with tutorial chapter 18's Taylor diagram. `m9c` now tells the C compiler never to fuse, so the same program gives the same bits on both.
 
 ## Gates and CI: results that do not rot
 
@@ -176,9 +178,9 @@ The compiler refuses most mistakes before any test runs; the checks catch the re
 
 | Check | Holds | Stops |
 | --- | --- | --- |
-| Tests in M9 (14 programs, over 1,000 checks) | Every library module against golden values from numpy, scipy, pandas, polars, zlib and headless Chrome | Numerical drift; a change that alters a result by one bit |
-| Oracle batteries (38) | The library against the real C libraries and Python packages, run fresh | An oracle upgrade that changes its answer, noticed instead of absorbed |
-| Museum (12) and probes (126) | Every bug ever seen stays a compile error, with its message | An old bug quietly coming back |
+| Tests in M9 (39 programs, over 4,000 checks) | Every library module against golden values from numpy, scipy, pandas, polars, zlib and headless Chrome | Numerical drift; a change that alters a result by one bit |
+| Oracle batteries (49) | The library against the real C libraries and Python packages, run fresh | An oracle upgrade that changes its answer, noticed instead of absorbed |
+| Museum (30) and probes (320) | Every bug ever seen stays a compile error, with its message | An old bug quietly coming back |
 | Tutorial (`tutdiff`, `tutrelease`) | Every example and every code block in the 19 chapters, against this tree and against the released package | Documentation that no longer runs |
 | Review pages (`reviewdiff`) | What each module allocates, trusts and leaves unchecked | Risk arriving unannounced: the diff is the review |
 

@@ -1,0 +1,14 @@
+MODULE Main ;
+
+(* Main has no claimed loop of its own.  Its review page must still
+   say that the program holds two, in Kern (run.sh). *)
+
+IMPORT Io, Fmt, Kern, Plain ;
+
+VAR a : SLICE OF I64 ;
+
+BEGIN
+  a := NEW (I64, 4) ;
+  Kern.Fill (a, Plain.Twice (3)) ;
+  Io.WriteLine (Fmt.I64Str (Kern.Sum (a)))
+END Main.

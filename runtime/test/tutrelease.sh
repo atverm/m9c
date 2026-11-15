@@ -100,7 +100,7 @@ gcc "$W/nc.c" -lnetcdf -o "$W/nc" 2>/dev/null || NETCDF_OK=0
 # must not be shown a page their compiler contradicts.  GitHub says
 # which branch; M9_TUTRELEASE_STRICT=1 says it by hand.
 #
-# A RELEASE IS THE EXCEPTION (Alex, 2026-10-31).  Its main push carries
+# A RELEASE IS THE EXCEPTION (decided 2026-10-31).  Its main push carries
 # a version newer than the latest published one, and the publish
 # follows within the hour.  Strict, main was red for exactly that
 # hour, so CI's mirror job never ran on a release, and the tag needs

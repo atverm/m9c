@@ -418,7 +418,7 @@ END Diff ;
 (* Iso rounds t to whole units of the last decimal first, then splits
    it.  So the carry reaches the minute and the hour.  It used to pad
    the second before Fmt.Fixed rounded it: 9.9995 at 3 decimals was
-   `010.000', and 59.9995 was `60.000'.  ct121's run of the httpserver
+   `010.000', and 59.9995 was `60.000'.  host1's run of the httpserver
    gate found two such lines in an access log (2026-10-31). *)
 PROCEDURE Iso (t: Instant ; decimals: I64) : STR
   RAISES ValueRange =

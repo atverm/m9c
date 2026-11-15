@@ -1,0 +1,74 @@
+MODULE SanClaim ;
+
+(* WANT: claims: slice 45 array 28 grid 66 false 3 of 3 *)
+
+(* FOR [INRANGE b] (docs/loop-check-plan.md): with the claim TRUE the
+   loop's subscripts take the unchecked accessors.  Under ASan a
+   subscript out of range in such a body is a report.  So this program
+   running clean says that each claim below covers what its loop does.
+
+   Each claim is written from the loop's own bounds, in the attribute
+   itself: the mutation gate deletes lines, and a claim on a line of
+   its own could then be TRUE for a range it was not written for.
+
+   The last loop's claim is FALSE and its range runs past the slice.
+   It raises IndexError at index 3 with three stores made. *)
+
+IMPORT Io, Fmt ;
+
+PROCEDURE Slice (RO a: SLICE OF I64 ; lo, hi: I64) : I64 =
+VAR k, s : I64 ;
+BEGIN
+  s := 0 ;
+  FOR [INRANGE lo >= 0 AND hi < LEN (a)] k := lo TO hi DO s := s + a[k] END ;
+  RETURN s
+END Slice ;
+
+PROCEDURE Arr () : I64 =
+VAR
+  a : ARRAY 8 OF I64 ;
+  k, s : I64 ;
+BEGIN
+  FOR [INRANGE TRUE] k := 0 TO 7 DO a[k] := k END ;
+  s := 0 ;
+  FOR [INRANGE TRUE] k := 0 TO 6 DO s := s + a[k + 1] END ;
+  RETURN s
+END Arr ;
+
+PROCEDURE Grid (VAR g: GRID 2 OF I64) : I64 =
+VAR i, j, s : I64 ;
+BEGIN
+  s := 0 ;
+  FOR [INRANGE LEN (g, 0) = 3 AND LEN (g, 1) = 4] i := 0 TO 2 DO
+    FOR j := 0 TO 3 DO
+      g[i, j] := i * 4 + j ;
+      s := s + g[i, j]
+    END
+  END ;
+  RETURN s
+END Grid ;
+
+VAR
+  w : SLICE OF I64 ;
+  g : GRID 2 OF I64 ;
+  i, made : I64 ;
+
+BEGIN
+  w := NEW (I64, 10) ;
+  FOR i := 0 TO 9 DO w[i] := i END ;
+  g := NEW (I64, 3, 4) ;
+  Io.Write ('claims: slice ' + Fmt.I64Str (Slice (w, 0, 9)) +
+            ' array ' + Fmt.I64Str (Arr ()) +
+            ' grid ' + Fmt.I64Str (Grid (g))) ;
+  w := NEW (I64, 3) ;
+  made := 0 ;
+  BEGIN
+    FOR [INRANGE LEN (w) > 5] i := 0 TO 5 DO
+      w[i] := 1 ;
+      made := made + 1
+    END
+  EXCEPT
+  | IndexError (ix, n) :
+      Io.WriteLine (' false ' + Fmt.I64Str (made) + ' of ' + Fmt.I64Str (ix))
+  END
+END SanClaim.

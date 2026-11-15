@@ -1,0 +1,98 @@
+MODULE Hidden ;
+
+(* Hidden is run.sh's fixture for a module's name behind a local of the
+   same name (report par 3 rule 5, docs/module-name-plan.md).  In each
+   procedure a parameter, a local, a binder or a constant has
+   the name of something the module declares, and the procedure names
+   the module's as Hidden.NAME.  Every line printed shows the two
+   apart. *)
+
+IMPORT Io, Fmt ;
+
+CONST K = 3 ;
+
+TYPE
+  R = RECORD n : I64 END ;
+  Cell = RECORD v : I64 END ;
+
+EXCEPTION Bad (code: I64) ;
+
+VAR
+  time : I64 ;
+  count : I64 ;
+  i : I64 ;
+  p : OPT PTR Cell ;
+  code : I64 ;
+  r : R ;
+
+(* a parameter hides the module's variable: the setter *)
+PROCEDURE Set (time: I64) =
+BEGIN
+  Hidden.time := time
+END Set ;
+
+(* a local hides it, and both are read and written *)
+PROCEDURE Local () : I64 =
+VAR count : I64 ;
+BEGIN
+  count := 10 ;
+  Hidden.count := Hidden.count + count ;
+  count := count + Hidden.count ;
+  RETURN count
+END Local ;
+
+(* a FOR variable declared in the procedure *)
+PROCEDURE Loop () : I64 =
+VAR i, s : I64 ;
+BEGIN
+  s := 0 ;
+  FOR i := 1 TO 4 DO
+    Hidden.i := Hidden.i + i ;
+    s := s + i
+  END ;
+  RETURN s
+END Loop ;
+
+(* an IS SOME binder *)
+PROCEDURE Bind (KEPT q: OPT PTR Cell) : I64 =
+BEGIN
+  IF q IS SOME p THEN
+    Hidden.p := q ;
+    RETURN p.v
+  END ;
+  RETURN -1
+END Bind ;
+
+(* a handler's binder *)
+PROCEDURE Handle () : I64 =
+BEGIN
+  RAISE Bad (41)
+EXCEPT
+| Bad (code) :
+    Hidden.code := code + 1 ;
+    RETURN code
+END Handle ;
+
+(* a local constant.  A TYPE declared in a procedure is not in the
+   language, so there is no local type to hide the module's. *)
+PROCEDURE Decls () : I64 =
+CONST K = 100 ;
+VAR x : R ;
+BEGIN
+  x.n := K ;
+  Hidden.r.n := x.n + Hidden.K ;
+  RETURN x.n - Hidden.K
+END Decls ;
+
+BEGIN
+  time := 1 ; count := 5 ; i := 0 ; code := 0 ;
+  Set (7) ;
+  Io.WriteLine ('time ' + Fmt.I64Str (time)) ;
+  Io.WriteLine ('local ' + Fmt.I64Str (Local ()) + ' module ' + Fmt.I64Str (count)) ;
+  Io.WriteLine ('loop ' + Fmt.I64Str (Loop ()) + ' module ' + Fmt.I64Str (i)) ;
+  p := NONE ;
+  Io.Write ('bind ' + Fmt.I64Str (Bind (NONE))) ;
+  IF p IS NONE THEN Io.WriteLine (' module none') ELSE Io.WriteLine (' module some') END ;
+  Io.WriteLine ('handler ' + Fmt.I64Str (Handle ()) + ' module ' + Fmt.I64Str (code)) ;
+  Io.WriteLine ('decls ' + Fmt.I64Str (Decls ()) + ' module ' + Fmt.I64Str (r.n))
+END Hidden.

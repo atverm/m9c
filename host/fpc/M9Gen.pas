@@ -1,5 +1,5 @@
 unit M9Gen;
-{ This unit is FROZEN since 2026-10-22 (Alex's decision on the
+{ This unit is FROZEN since 2026-10-22 (the author's decision on the
   compiler review's item 14, docs/twin-plan.md).  The generator that
   runtime/gen and every gate read is corpus/Gen.m9.  This unit stays
   as it was on that day, and nothing builds it any more.  It agreed

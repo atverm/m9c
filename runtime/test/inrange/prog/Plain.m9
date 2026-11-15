@@ -1,0 +1,17 @@
+DEFINITION MODULE Plain ;
+
+(* Plain has no claimed loop: the program's review page does not name
+   it. *)
+
+PROCEDURE Twice (x: I64) : I64 ;
+
+END Plain.
+
+IMPLEMENTATION MODULE Plain ;
+
+PROCEDURE Twice (x: I64) : I64 =
+BEGIN
+  RETURN 2 * x
+END Twice ;
+
+END Plain.

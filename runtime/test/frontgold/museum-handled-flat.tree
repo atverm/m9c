@@ -1,0 +1,17 @@
+MODULE m ;
+
+PROCEDURE Close (fd: I64) =
+VAR
+  n : I32 ;
+BEGIN
+  BEGIN
+    n := I32 (0)
+  EXCEPT
+  | ValueRange :
+  END ;
+  n := I32 (fd)
+END Close ;
+
+BEGIN
+  Close (3)
+END m.

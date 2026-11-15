@@ -116,7 +116,7 @@ int main (void)
     sl ("/openapi.json", rb[12]), 200, sl ("application/json", rb[13]),
     doc, sl ("the API, derived", rb[14]), &err);
 
-  /* Text past U+00FF, each way (Alex, 2026-10-31).  A body goes out
+  /* Text past U+00FF, each way (decided 2026-10-31).  A body goes out
      as its UTF-8 octets, and Content-Length counts them.  Each line
      of a request reads as UTF-8 when it is UTF-8, else an octet a
      character.

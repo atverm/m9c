@@ -1,0 +1,9 @@
+parseprobes/declexpected.m9:2:1: parse: END expected, found BEGIN 'BEGIN'
+parseprobes/declexpected.m9:2:1: parse: module name after END (identifier) expected, found BEGIN
+parseprobes/declexpected.m9:2:1: parse: END name does not match MODULE DeclExpected
+parseprobes/declexpected.m9:2:1: parse: . expected, found BEGIN 'BEGIN'
+parseprobes/declexpected.m9:2:1: parse: DEFINITION, IMPLEMENTATION, or MODULE expected, found BEGIN
+parseprobes/declexpected.m9:3:1: parse: DEFINITION, IMPLEMENTATION, or MODULE expected, found END
+parseprobes/declexpected.m9:3:5: parse: DEFINITION, IMPLEMENTATION, or MODULE expected, found Ident
+parseprobes/declexpected.m9:3:17: parse: DEFINITION, IMPLEMENTATION, or MODULE expected, found Dot
+m9c: 8 parse errors in parseprobes/declexpected.m9

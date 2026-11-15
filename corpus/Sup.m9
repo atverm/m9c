@@ -35,7 +35,7 @@ DEFINITION MODULE Sup ;
    supervisor has stopped.  A start is a turn of the child's loop, and
    the child builds its state afresh in it: a restart is from scratch.
 
-   TWO KINDS OF FAILURE (Alex, 2026-11-02).  A child that ends by a
+   TWO KINDS OF FAILURE (decided 2026-11-02).  A child that ends by a
    checked exception reports Failed, and the policy decides: it is
    started again, unless that makes more than maxRestarts restarts in
    windowMs, and then the supervisor stops every child and Watch
@@ -227,7 +227,7 @@ BEGIN
   b.dirty[s.id] := b.dirty[s.id] + 1 ;
   most := Or (b.set, b.dirtyMax, 3) ;
   IF b.dirty[s.id] >= most THEN
-    (* Alex, 2026-11-02: restart as dirty, and when it crashes again
+    (* Decided 2026-11-02: restart as dirty, and when it crashes again
        x times, stop the program *)
     Io.ErrLine ('m9: Sup: child ' + Fmt.I64Str (s.id) + ' crashed ' + Fmt.I64Str (b.dirty[s.id])
                 + ' times by a bug, the last by ' + why + '; the program stops') ;

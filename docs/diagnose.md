@@ -144,6 +144,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `cannot assign I32 to I64` | there is no implicit conversion between any two numeric types, widening included | I64 (x) explicitly; the conversion RAISES ValueRange, which your RAISES set must carry (par 2.1) | `implicit-widening` |
 | `cannot assign I64 to UTF (no implicit conversions, par 2.1)` | a handler of the predeclared IndexError binds (index, length : I64) since 2026-10-09, and a binder was used at another type | use the binder as an I64 -- the index and the length as the check saw them -- or convert it | `index-error-binder-typed` |
 | `r[0]: cannot index -- the type R is no array, slice, grid or string` | a subscript applied to a value that has no elements -- a record, a monitor, an enumeration or a scalar; until 2026-10-22 the checker passed it and the generator refused it as `index into a non-array unsupported yet' (par 2.2.1) | subscript the component that holds the elements (r.a[0]), or make the type an ARRAY, SLICE or GRID | `index-not-indexable` |
+| `an INRANGE claim is a BOOL, not an integer literal` | FOR [INRANGE b] is the author's claim that every subscript in the loop is in range, read once before the loop: TRUE runs the body unchecked, FALSE runs it as any loop.  So b is a BOOL | write a condition: ok := lo >= 0 AND hi < LEN (s) ; FOR [INRANGE ok] i := lo TO hi DO | `inrange-not-bool` |
 | `cannot assign an integer literal to F64` | an integer literal fits any integer type but not a float | write 0.0, 1.0E-6; a <real> literal adapts to F32 or F64 | `int-literal-to-float` |
 | `float division; integers use DIV` | / is float division | DIV for integers | `int-slash-division` |
 | `cannot assign PTR Lib.Node to I64 (no implicit conversions, par 2.1)` | an IS SOME binder on a call whose result type is another module's alias of an OPT (`Mk () : Lib.Kid') is typed in the module that declared the OPT since 2026-10-08, so what was passed over before is examined: here a pointer assigned to an integer | write what the binder is: a pointer to the declared record, read through its fields | `is-some-binder-through-alias` |
@@ -178,7 +179,9 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `use of p in the next turn of the loop, after it was moved into an OWN parameter of Eat at line 35 (par 4.2)` | a module variable moved in the module body (handed to an OWN parameter or a THREAD, DISPOSEd) is used again -- the body tracks ownership as a procedure does (par 4.2) | give it a fresh value after the move (p := NEW (OWN, T)), or move it once; a POOL allocation is lent to a thread, not moved | `module-body-use-after-move` |
 | `module Other is named and not imported: write IMPORT Other` | the same refusal; the probe holds what must stay LEGAL before it -- an implementation naming a module only its definition imports, a module naming itself, a local variable that has a module's name | IMPORT the module the last procedure names | `module-import-allowed-forms` |
 | `unknown name: Lib.Nosuch -- Lib declares no such name` | a qualified name Mod.X names a module the checker has loaded and a member it does not declare -- no procedure, type, constant, exception or exported variable X; a module NOT loaded stays soft (that is a missing import, said elsewhere) | spell the member as the module declares it (m9c --json MODULE lists them), or import the module that has it | `module-member-unknown` |
-| `m.time: this procedure declares a time of its own, which hides the module's` | a module names itself (par 3 rule 5): inside Mod, Mod.x is x.  Where the procedure declares an x of its own, the bare name is the procedure's, and the checker gives the module's variable no second name yet, since its storage judgements follow a variable by one name | rename the parameter or the local, and write the module variable bare or as Mod.x | `module-name-hidden` |
+| `cannot move the module variable own into an OWN parameter in a procedure` | inside Mod, Mod.own beside a parameter own is the module's variable in the ownership rules too: a procedure may not move a module's owned value away, however it is named | move it in the module body, or keep the owned value in a local | `module-name-behind-local-move` |
+| `m.Wrong: cannot assign BOOL to I64` | inside Mod, Mod.time beside a parameter time is the module's variable, with the module's type; the parameter's type does not make it fit | convert the value to the type of the module variable, or give the parameter that type | `module-name-behind-local-type` |
+| `m.time: this procedure declares a time of its own, which hides the module's` | a module names itself (par 3 rule 5): inside Mod, Mod.x is x.  Where the procedure declares an x of its own, Mod.x still reaches the module's (0.28.0).  The form stays refused where that x is also a member in the procedure, a parameter of a procedure type say: the checker cannot follow such a name | rename the parameter or the local, and write the module variable bare or as Mod.x | `module-name-hidden` |
 | `module Lib is named and not imported: write IMPORT Lib` | a qualified name's module is known to the compiler -- something imported imports it -- and this module does not import it; until 2026-10-02 any module in the import closure could be named, so a program's IMPORT lines did not say what it depended on (museum/named-not-imported.m9) | add the line: IMPORT Lib ;  An implementation may lean on its definition's IMPORT and the other way round.  NOT SOURCE COMPATIBLE for a program that leaned on the gap: 5 sites in 386 files (par 3) | `module-named-not-imported` |
 | `module Lib is named and not imported: write IMPORT Lib` | a borrowed slice or pointer is an argument of a variant or record CONSTRUCTOR handed to a KEPT parameter (Keep (f, Data.F64s (v, 0.0))); since 2026-10-08 the call check reads through the constructor, as it reads a record value's fields | declare KEPT on the caller's own parameter, as for a bare borrow; or construct the value from a copy | `module-shadow-by-scope` |
 | `module-level state requires STATEFUL on the definition` | a module-level VAR is state, and a module with state must say so | add [STATEFUL] to the DEFINITION MODULE, or move the state into a record the caller owns (par 6) | `module-state-without-stateful` |
@@ -322,6 +325,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `needs 3 axis arguments, not 2` | VIEW takes exactly one argument per axis of the grid: an index (drops it) or ALL (keeps it) | VIEW (g, i, ALL, ALL) for a GRID 3 | `view-axis-count` |
 | `a VIEW that keeps no axis is an index` | a VIEW with an index on every axis is a single element, not a view | subscript instead: g[i, j] | `view-keeps-nothing` |
 | `VIEW needs a GRID` | VIEW is a GRID operation; a slice has no strides to keep | SLICE (s, start, len) for a sub-slice | `view-of-a-slice` |
+| `a write through r, which holds read-only storage` | a VIEW is its grid's storage, so a view of what an RO parameter lends is read-only as the grid is (par 2.4); a view of a VAR or value grid may be written through | take the grid as VAR or by value where the procedure writes it; RO promises it does not | `view-of-ro-written` |
 | `WAIT and SIGNAL take the monitor this procedure is bound to -- its first parameter -- and no other: on another monitor there is no lock held to release (par 6)` | WAIT or SIGNAL on a monitor the procedure is not bound to: WAIT releases the lock its procedure holds, and on another monitor there is none to release | WAIT and SIGNAL on the procedure first parameter, the monitor it is bound to; to wait on another monitor, call a procedure bound to it | `wait-not-bound` |
 | `cannot write through the RO field s` | the record came in RO, so its fields are read-only too | take it as VAR if it must be written | `write-through-readonly-field` |
 | `cannot write through the RO parameter r` | RO is a read-only borrow | VAR | `write-through-readonly-record` |
@@ -2475,7 +2479,7 @@ END m.
 
 ```
 MODULE m ;
-(* A FOR's control variable is written by the loop alone (par 2.1; Alex,
+(* A FOR's control variable is written by the loop alone (par 2.1; decided
    2026-10-25).  `IF j = 0 THEN j := 3 END' inside `FOR j := 0 TO 2' ran
    forever under 0.25's exit test and stopped under 0.17's: the meaning
    moved with the generator (zarrm9's 0.25 report).  Legal forms first:
@@ -2570,7 +2574,7 @@ END m.
 MODULE m ;
 (* A FOR's control variable handed to a VAR parameter is written by the
    callee.  That write is the assignment the rule refuses (par 2.1;
-   Alex, 2026-10-25).  Legal forms come first: the variable to a value
+   decided 2026-10-25).  Legal forms come first: the variable to a value
    parameter, a copy of it to the VAR parameter. *)
 PROCEDURE Show (v: I64) : I64 =
 BEGIN
@@ -3388,6 +3392,23 @@ BEGIN
   s := 'abc' ;
   c := s[1] ;
   n := r[0]
+END m.
+```
+
+### inrange-not-bool
+
+`an INRANGE claim is a BOOL, not an integer literal`
+
+```
+(* FOR [INRANGE b] claims that the loop's subscripts are in range
+   (docs/loop-check-plan.md).  The legal form comes first. *)
+MODULE m ;
+VAR i : I64 ; s : SLICE OF I64 ; ok : BOOL ;
+BEGIN
+  s := NEW (I64, 3) ;
+  ok := LEN (s) >= 3 ;
+  FOR [INRANGE ok] i := 0 TO 2 DO s[i] := 1 END ;
+  FOR [INRANGE 3] i := 0 TO 2 DO s[i] := 1 END
 END m.
 ```
 
@@ -4306,19 +4327,73 @@ BEGIN
 END m.
 ```
 
+### module-name-behind-local-move
+
+`cannot move the module variable own into an OWN parameter in a procedure`
+
+```
+(* m.own behind a parameter own is the module's variable in the
+   ownership judgement too: a procedure may not move it away, exactly
+   as when it is written bare (par 4.2, docs/module-name-plan.md). *)
+MODULE m ;
+TYPE Cell = RECORD v : I64 END ;
+VAR own : PTR Cell ;
+PROCEDURE Eat (OWN c: PTR Cell) = BEGIN DISPOSE (c) END Eat ;
+PROCEDURE Moved (own: I64) : I64 =
+BEGIN
+  Eat (m.own) ;
+  RETURN own
+END Moved ;
+BEGIN
+  own := NEW (OWN, Cell)
+END m.
+```
+
+### module-name-behind-local-type
+
+`m.Wrong: cannot assign BOOL to I64`
+
+```
+(* m.time behind a parameter time is the module's variable, with the
+   module's type: a BOOL does not go into it.  The second error names
+   the parameter as the author wrote it, cell, though the checker
+   holds it under another name (docs/module-name-plan.md). *)
+(* EXPECT: m.Named: undeclared retention: borrowed cell reaches module state -- declare KEPT cell *)
+MODULE m ;
+TYPE Cell = RECORD v : I64 END ;
+VAR
+  time : I64 ;
+  cell : OPT PTR Cell ;
+PROCEDURE Wrong (time: BOOL) = BEGIN m.time := time END Wrong ;
+PROCEDURE Named (cell: OPT PTR Cell) = BEGIN m.cell := cell END Named ;
+BEGIN
+  time := 0 ;
+  cell := NONE
+END m.
+```
+
 ### module-name-hidden
 
 `m.time: this procedure declares a time of its own, which hides the module's`
 
 ```
-(* A module names itself (par 3 rule 5): the legal forms come first.
-   The refusal is the one name a procedure hides with its own. *)
+(* A module names itself (par 3 rule 5), and a procedure's own name
+   that hides the module's is renamed out of the way: Set is legal.
+   The refusal is the name the rename cannot follow.  In Odd, time is
+   a parameter and also a parameter of a procedure TYPE, a place where
+   an identifier is a member and not a local. *)
 MODULE m ;
 CONST K = 3 ;
 TYPE R = RECORD n : I64 END ;
 VAR time : I64 ; r : m.R ;
 PROCEDURE P () : I64 = BEGIN RETURN m.K + m.time END P ;
 PROCEDURE Set (time: I64) = BEGIN m.time := time END Set ;
+PROCEDURE Odd (time: I64) =
+VAR f : OPT PROCEDURE (time: I64) ;
+BEGIN
+  f := NONE ;
+  m.time := time
+END Odd ;
 BEGIN
   m.r.n := m.P ()
 END m.
@@ -4398,7 +4473,7 @@ MODULE m ;
 (* A procedure bound to a monitor holds its lock for the whole body, and
    the lock is not recursive.  A call to another procedure bound to the
    SAME monitor waits for ever (m9downloadstats' RespCache.LookupB
-   calling SameKey (g, ...), 2026-10-25; Alex: "yes for the bound
+   calling SameKey (g, ...), 2026-10-25; the author: "yes for the bound
    refusal").  Legal forms come first: a bound procedure calling an
    unbound helper with a field's value; a bound procedure of a monitor
    of ANOTHER TYPE (one of the same type is monitor-reaches-own-type's
@@ -7594,7 +7669,7 @@ END m.
 ```
 (* A bare type name no module declares was left soft as a possible
    missing import (decision 32) and reached the generator.  It is
-   refused since 2026-10-22 (Alex's decision on the review's F4). *)
+   refused since 2026-10-22 (the author's decision on the review's F4). *)
 MODULE m ;
 TYPE
   Pt = RECORD x : I64 END ;
@@ -8236,6 +8311,27 @@ BEGIN x := VIEW (g, i, i) END m.
 MODULE m ;
 VAR s : SLICE OF F64 ; g : GRID 1 OF F64 ;
 BEGIN g := VIEW (s, ALL) END m.
+```
+
+### view-of-ro-written
+
+`a write through r, which holds read-only storage`
+
+```
+(* A VIEW is its grid's storage.  The legal forms come first: a row of
+   a VAR grid, and of a value grid, written through a local.  Until
+   0.28.0 both were refused as this probe's last procedure is. *)
+MODULE m ;
+PROCEDURE Row (VAR a: GRID 2 OF F64 ; i: I64) =
+VAR r : GRID 1 OF F64 ;
+BEGIN r := VIEW (a, i, ALL) ; r[1] := 2.0 END Row ;
+PROCEDURE Val (a: GRID 2 OF F64) =
+VAR r : GRID 1 OF F64 ;
+BEGIN r := VIEW (a, 0, ALL) ; r[0] := 1.0 END Val ;
+PROCEDURE Lent (RO a: GRID 2 OF F64) =
+VAR r : GRID 1 OF F64 ;
+BEGIN r := VIEW (a, 0, ALL) ; r[0] := 1.0 END Lent ;
+END m.
 ```
 
 ### wait-not-bound

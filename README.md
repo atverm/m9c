@@ -23,8 +23,8 @@ repository, [m9c](https://github.com/atverm/m9c), is the compiler,
 runtime and standard library themselves -- `./build.sh` needs gcc and
 nothing else -- and its [release page](https://github.com/atverm/m9c/releases)
 carries the install packages for six Linux distributions, since
-0.8.0 an **experimental** Windows zip and, since 0.12.0, an
-**experimental** macOS Homebrew tap.
+0.8.0 an **experimental** Windows zip and, since 0.12.0, a macOS
+Homebrew tap for Apple silicon.
 
 Every feature in the report (`docs/M9-report.md`, installed with the
 package as `/usr/share/doc/m9/M9-report.md`) cites a real observed
@@ -101,7 +101,7 @@ one of the tutorial's twenty-nine examples does not work there:
 over TLS and the threaded ones — runs (measured on Windows 11,
 2026-10-18).  Report what breaks; that is what the label is for.
 
-## macOS — experimental
+## macOS (Apple silicon)
 
     brew tap atverm/m9 && brew install m9
 
@@ -115,17 +115,15 @@ through `<prefix>/gcc/bin/gcc` — the arrangement the Windows zip has
 with the gcc in its box.  `./build.sh` in a checkout works with either
 compiler.
 
-**Experimental, and here is what that means.** It is the same
-compiler: every macOS difference in the runtime and the driver is
-under `__APPLE__` or `macos` and the generated C never names a
-platform.  It is verified on one Apple-silicon Mac, where Linux is
-tested across six distributions; Intel Macs are untested.  The whole
-tutorial runs there — zarr over TLS and the threaded chapters
-included.  Two things a macOS
+It is the same compiler: every macOS difference in the runtime and
+the driver is under `__APPLE__` or `macos` and the generated C never
+names a platform.  The whole gate round runs on Apple silicon before
+changes are pushed, and so does the whole tutorial — zarr over TLS
+and the threaded chapters included.  Intel Macs are untested.  Two things a macOS
 reader meets that Linux does not: a zeroed pthread mutex is invalid
 there, so monitors are initialised on first entry, and Apple's
 `memcpy` is a macro when optimising, which the runtime header turns
-off.  Report what breaks; that is what the label is for.
+off.
 
 ## Editors
 
@@ -203,7 +201,7 @@ distribution, each built from the source tarball attached beside it.
     bench/      the same programs in M9, C, Rust, Object Pascal, Scala, Python
     runtime/    m9rt.{c,h}, the C runtime; gen/ the checked-in bootstrap C
     runtime/test/  every gate: differentials, drivers, the bootstrap
-    host/fpc/   the original Free Pascal host — now the differential oracle
+    host/fpc/   the original Free Pascal host, kept as history; no gate builds it
     reference/  the FPC and Modula-2 programs whose bugs became the museum
     man/, tools/   the manual page, the editor extension, the store generator
 
@@ -220,8 +218,13 @@ Measured, on one machine, twice; the method and the losses are in
 | stripped executable | **26 KB** | 14 KB | 382 KB | 513 KB | 9.2 MB jar | — |
 | build, one file | 0.45s | 0.15s | 0.38s | 0.09s | 3.9s | — |
 
-M9's checks cannot be switched off. **They cost about 3%** —
-measured three ways on the benchmark chosen to punish them. The same
+No flag switches M9's checks off. **They cost about 3%** in a
+program without tight index loops — measured three ways on the
+benchmark chosen to punish them. A loop that does nothing but index
+pays more: 24% in a ported model's LU kernel. There the author may
+claim the loop's range, `FOR [INRANGE ok] j := lo TO hi DO`; the
+claim is listed by `m9c --review`, held by `m9c --verify-claims`,
+and brings that kernel to within 6% of its Fortran. The same
 checks cost Object Pascal 104%, which is why `fpc` ships with them
 off, and why the museum exists.
 
@@ -233,10 +236,12 @@ plain C and has nothing to do with M9.
 
 Nothing here is asserted; it is compared against an oracle.
 
-    host/fpc/       lextest, parsetest, semtest, semprobe   (the FPC oracle)
-    runtime/test/   lexdiff, parsediff, semdiff, gendiff    (M9 vs that oracle)
-                    comdiff     both lexers record the same comments
-                    probediff   both checkers reject probes/ identically
+    runtime/test/   frontgold   the lexer, parser and printer against a
+                                record taken from the Free Pascal twin
+                    frontprop   every file parses, prints to a fixpoint
+                                and keeps its tokens
+                    semcheck    every probe refused with its message
+                    gendiff     the generator against runtime/gen
                     docdiff     docs/modules regenerates byte-identically
                     build.sh    ~100 driver checks, three byte-identical SVGs
                     m9c.sh      the compiler compiling itself, byte for byte
@@ -248,7 +253,9 @@ three plot SVGs are byte-identical to the Modula-2 originals.
 
 ## Principles, shortest form
 
-No undefined behavior. No flag-dependent semantics. Contracts —
+No undefined behavior outside what an author has claimed or marked:
+an `UNSAFE` unit, a foreign procedure, a `FOR [INRANGE b]`, each
+listed by `m9c --review`. No flag-dependent semantics. Contracts —
 types, failure modes, effects, thread-safety — live in DEFINITION
 modules, exhaustively. What cannot be checked simply is forbidden
 rather than checked cleverly. The report is the specification, and

@@ -11,8 +11,12 @@ MODULE CsvTest ;
 
 IMPORT Check ;
 IMPORT Csv ;
+IMPORT DynStr ;
+IMPORT Fmt ;
 IMPORT Io ;
 IMPORT Text ;
+
+CONST ThreadCounts = [2, 3, 7, 18] ;
 
 VAR
   t : Check.T ;
@@ -54,7 +58,213 @@ EXCEPT
 | IndexError : Check.That (t, 'no IndexError', FALSE)
 END Utfs ;
 
+(* ---- THE THREADED READER (docs/csv-threads-plan.md) ----
+   With opt.threads above 1 the file is cut into bands, a thread a
+   band.  What must hold: the table is the one a single thread reads,
+   whatever the count and wherever the cuts fall, and an exception is
+   the single thread's exception.  The documents are small, so at 2,
+   3, 7 and 18 threads a cut lands on each awkward place: inside a
+   quoted field with a line feed in it, between the two quotes of a
+   doubled quote, between a CR and its LF, in a row longer than a
+   band. *)
+
+(* Doc builds a document of five columns and n rows. *)
+PROCEDURE Doc (n: I64 ; quoted, crlf, lastEnd: BOOL ; long: I64) : UTF =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  i, k : I64 ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, 'name,count,value,small,note') ;
+  IF crlf THEN DynStr.AppendChar (d, 0DC) END ;
+  DynStr.AppendChar (d, 0AC) ;
+  FOR i := 0 TO n - 1 DO
+    IF quoted AND i MOD 3 = 0 THEN
+      (* a delimiter, a line feed and a doubled quote inside quotes *)
+      DynStr.Append (d, '"a,b') ;
+      DynStr.AppendChar (d, 0AC) ;
+      DynStr.Append (d, 'c ""q"" ') ;
+      DynStr.AppendI64 (d, i) ;
+      DynStr.Append (d, '"')
+    ELSIF quoted AND i MOD 3 = 1 THEN
+      DynStr.Append (d, '""')
+    ELSE
+      DynStr.Append (d, 't') ;
+      DynStr.AppendI64 (d, i)
+    END ;
+    DynStr.Append (d, ',') ;
+    DynStr.AppendI64 (d, i * 7 - 3) ;
+    DynStr.Append (d, ',') ;
+    IF i MOD 5 # 4 THEN
+      DynStr.AppendI64 (d, i) ;
+      DynStr.Append (d, '.25e-1')
+    END ;
+    DynStr.Append (d, ',-') ;
+    DynStr.AppendI64 (d, i) ;
+    DynStr.Append (d, '.5,') ;
+    IF i = long THEN
+      FOR k := 1 TO 400 DO DynStr.Append (d, 'x') END
+    ELSE
+      DynStr.Append (d, 'é') ;
+      DynStr.AppendI64 (d, i)
+    END ;
+    IF i < n - 1 OR lastEnd THEN
+      IF crlf THEN DynStr.AppendChar (d, 0DC) END ;
+      DynStr.AppendChar (d, 0AC)
+    END
+  END ;
+  RETURN DynStr.ViewIn (pool, d)
+END Doc ;
+
+(* Read answers everything a reader of the document learns, as one
+   text: the row count and every cell, or the exception with its
+   numbers. *)
+PROCEDURE Read (RO doc: UTF ; quoted: BOOL ; threads: I64) : UTF =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  tab : PTR Csv.Table IN pool ;
+  opt : Csv.Options ;
+  r : I64 ;
+  ints : SLICE OF I64 ;
+  vals : SLICE OF F64 ;
+  smalls : SLICE OF F32 ;
+BEGIN
+  d := DynStr.New (pool) ;
+  BEGIN
+    opt := Csv.Defaults () ;
+    opt.quoted := quoted ;
+    opt.threads := threads ;
+    tab := Csv.OpenBytes (pool, OCTETS (doc), opt) ;
+    Csv.SetKind (tab, 0, Csv.Kind.Text) ;
+    Csv.SetKind (tab, 1, Csv.Kind.Int) ;
+    Csv.SetKind (tab, 2, Csv.Kind.Real64) ;
+    Csv.SetKind (tab, 3, Csv.Kind.Real) ;
+    Csv.SetKind (tab, 4, Csv.Kind.Text) ;
+    Csv.Parse (pool, tab) ;
+    DynStr.AppendI64 (d, Csv.Rows (tab)) ;
+    DynStr.Append (d, ' rows') ;
+    ints := Csv.ColI64 (tab, 1) ;
+    vals := Csv.ColF64 (tab, 2) ;
+    smalls := Csv.ColF32 (tab, 3) ;
+    FOR r := 0 TO Csv.Rows (tab) - 1 DO
+      DynStr.Append (d, '|') ;
+      DynStr.Append (d, Csv.TextAtUtf (pool, tab, 0, r)) ;
+      DynStr.Append (d, ';') ;
+      DynStr.AppendI64 (d, ints[r]) ;
+      DynStr.Append (d, ';') ;
+      DynStr.Append (d, Fmt.Short (vals[r])) ;
+      DynStr.Append (d, ';') ;
+      DynStr.Append (d, Fmt.Short (F64 (smalls[r]))) ;
+      DynStr.Append (d, ';') ;
+      DynStr.Append (d, Csv.TextAtUtf (pool, tab, 4, r))
+    END
+  EXCEPT
+  | Csv.ParseError (w, l, c) :
+      RETURN 'ParseError ' + w + ' ' + Fmt.I64Str (l) + ' ' + Fmt.I64Str (c)
+  | Csv.RangeError (row, c) :
+      RETURN 'RangeError ' + Fmt.I64Str (row) + ' ' + Fmt.I64Str (c)
+  | ValueRange : RETURN 'ValueRange'
+  | IndexError : RETURN 'IndexError'
+  END ;
+  RETURN DynStr.ViewIn (pool, d)
+END Read ;
+
+(* Same holds one document to its single-thread reading at 2, 3, 7
+   and 18 threads. *)
+PROCEDURE Same (RO label: UTF ; RO doc: UTF ; quoted: BOOL ; RO starts: UTF) =
+VAR
+  one : UTF ;
+  k : I64 ;
+BEGIN
+  one := Read (doc, quoted, 1) ;
+  Check.That (t, label + ': one thread reads ' + starts, Text.StartsWith (one, starts)) ;
+  FOR k IN ThreadCounts DO
+    Check.That (t, label + ' at ' + Fmt.I64Str (k) + ' threads',
+                Text.Eq (Read (doc, quoted, k), one))
+  END
+END Same ;
+
+PROCEDURE Threads () =
+VAR
+  doc : UTF ;
+  d : PTR DynStr.DString IN pool ;
+BEGIN
+  Same ('plain', Doc (40, FALSE, FALSE, TRUE, -1), FALSE, '40 rows|t0;-3;0.025;-0.5;é0|') ;
+  Same ('no line feed after the last row', Doc (40, FALSE, FALSE, FALSE, -1), FALSE, '40 rows') ;
+  Same ('CRLF', Doc (40, FALSE, TRUE, TRUE, -1), FALSE, '40 rows|t0;') ;
+  Same ('quoted, line feeds and doubled quotes inside', Doc (40, TRUE, FALSE, TRUE, -1), TRUE, '40 rows|a,b') ;
+  Same ('quoted, CRLF, no last line end', Doc (41, TRUE, TRUE, FALSE, -1), TRUE, '41 rows') ;
+  Same ('quoted fields read without the option', Doc (12, TRUE, FALSE, TRUE, -1), FALSE, 'RangeError 0 1') ;
+  Same ('a row longer than a band', Doc (9, FALSE, FALSE, TRUE, 4), FALSE, '9 rows') ;
+  Same ('a quoted row longer than a band', Doc (9, TRUE, FALSE, TRUE, 3), TRUE, '9 rows') ;
+  Same ('more threads than rows', Doc (2, FALSE, FALSE, TRUE, -1), FALSE, '2 rows') ;
+  Same ('one row, no line end', Doc (1, FALSE, FALSE, FALSE, -1), FALSE, '1 rows') ;
+  Same ('no data', Doc (0, FALSE, FALSE, TRUE, -1), FALSE, '0 rows') ;
+
+  (* two short rows: the exception is the first one's, with its line *)
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, Doc (60, FALSE, FALSE, TRUE, -1)) ;
+  doc := DynStr.ViewIn (pool, d) ;
+  doc := Text.Replace (doc, ',é7' + 0AC, '' + 0AC) ;
+  doc := Text.Replace (doc, ',é50' + 0AC, '' + 0AC) ;
+  Same ('two short rows', doc, FALSE, 'ParseError wrong number of fields 9 4') ;
+
+  (* two integers that are not: the first one's row *)
+  doc := Doc (60, FALSE, FALSE, TRUE, -1) ;
+  doc := Text.Replace (doc, 't11,74,', 't11,7x,') ;
+  doc := Text.Replace (doc, 't44,305,', 't44,3o5,') ;
+  Same ('two bad integers', doc, FALSE, 'RangeError 11 1')
+END Threads ;
+
+(* A Real column is the float NEAREST the decimal, rounded once.  The
+   runtime reaches it through the nearest double where that is safe,
+   and asks strtof where the double is exactly halfway between two
+   floats (runtime/m9rt.c, m9_strtof).  These fields are the halfway
+   points and the decimals a hair to either side, where a second
+   rounding would show.  Each has more than seven digits, so Csv's own
+   exact path declines it. *)
+PROCEDURE Ties () =
+VAR
+  doc : UTF ;
+  tab : PTR Csv.Table IN pool ;
+  x : SLICE OF F32 ;
+BEGIN
+  doc := 'x' + 0AC
+       + '1.000000059604644775390625' + 0AC          (* halfway: to even, 1 *)
+       + '1.0000000596046447753906250001' + 0AC      (* a hair above: up *)
+       + '1.00000005960464477539062499' + 0AC        (* a hair below: 1 *)
+       + '16777217' + 0AC                            (* halfway: to even, 2^24 *)
+       + '16777217.0000001' + 0AC                    (* above: 2^24 + 2 *)
+       + '16777219' + 0AC                            (* halfway: to even, 2^24 + 4 *)
+       + '0.100000001490116119384765625' + 0AC       (* a float, exactly *)
+       + '3.4028235e38' + 0AC                        (* the largest float *)
+       + '7.1e-46' + 0AC                             (* above half the smallest: it *)
+       + '7.0e-46' + 0AC ;                           (* below half: zero *)
+  tab := Csv.OpenBytes (pool, OCTETS (doc), Csv.Defaults ()) ;
+  Csv.SetKind (tab, 0, Csv.Kind.Real) ;
+  Csv.Parse (pool, tab) ;
+  x := Csv.ColF32 (tab, 0) ;
+  Check.EqI64 (t, 'ten ties', Csv.Rows (tab), 10) ;
+  Check.That (t, 'halfway between 1 and the next float goes to 1', x[0] = 1.0) ;
+  Check.EqStr (t, 'a hair above goes up', Fmt.Short (F64 (x[1])), '1.0000001192092896') ;
+  Check.That (t, 'a hair below goes to 1', x[2] = 1.0) ;
+  Check.That (t, '2^24 + 1 goes to 2^24', x[3] = 16777216.0) ;
+  Check.That (t, 'a hair above it goes to 2^24 + 2', x[4] = 16777218.0) ;
+  Check.That (t, '2^24 + 3 goes to 2^24 + 4', x[5] = 16777220.0) ;
+  Check.EqStr (t, 'a float written out in full', Fmt.Short (F64 (x[6])), '0.10000000149011612') ;
+  Check.EqStr (t, 'the largest float', Fmt.Short (F64 (x[7])), '3.4028234663852886e+38') ;
+  Check.EqStr (t, 'the smallest float', Fmt.Short (F64 (x[8])), '1.401298464324817e-45') ;
+  Check.That (t, 'below half the smallest is zero', x[9] = 0.0)
+EXCEPT
+| Csv.ParseError (w, l, c) : Check.That (t, 'the ties parse: ' + w, FALSE)
+| Csv.RangeError (r, c) : Check.That (t, 'no RangeError', FALSE)
+| ValueRange : Check.That (t, 'no ValueRange', FALSE)
+| IndexError : Check.That (t, 'no IndexError', FALSE)
+END Ties ;
+
 BEGIN
   Utfs () ;
+  Threads () ;
+  Ties () ;
   Io.Halt (Check.Done (t, 'Csv'))
 END CsvTest.

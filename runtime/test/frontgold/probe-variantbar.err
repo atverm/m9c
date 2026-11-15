@@ -1,0 +1,9 @@
+parseprobes/variantbar.m9:3:3: parse: variant | expected
+parseprobes/variantbar.m9:3:3: parse: END expected, found Ident 'Nothing'
+parseprobes/variantbar.m9:3:3: parse: ; expected, found Ident 'Nothing'
+parseprobes/variantbar.m9:4:3: parse: ; expected, found END 'END'
+parseprobes/variantbar.m9:4:7: parse: module name after END (identifier) expected, found Semi
+parseprobes/variantbar.m9:4:7: parse: END name does not match MODULE VariantBar
+parseprobes/variantbar.m9:4:7: parse: . expected, found Semi ';'
+parseprobes/variantbar.m9:4:7: parse: DEFINITION, IMPLEMENTATION, or MODULE expected, found Semi
+m9c: 11 parse errors in parseprobes/variantbar.m9

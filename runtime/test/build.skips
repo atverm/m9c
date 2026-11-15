@@ -14,8 +14,8 @@
 # pyarrow, xarray and cfchecks and skips four lines, not nine.
 
 # data that is not in the repository and is not fetched
-SKIP: csv_driver (the FLUXNET battery: no /mnt/d/data/ICOSETC_SE-Htm_FLUXNET_HH_L2.csv; set $M9CSV)
-SKIP: no real GRIB at /mnt/d/data/grib/EA25120100 (set $M9GRIB)
+SKIP: csv_driver (the FLUXNET battery: no /xxx/ICOSETC_SE-Htm_FLUXNET_HH_L2.csv; set $M9CSV)
+SKIP: no real GRIB at /xxx/grib/EA25120100 (set $M9GRIB)
 SKIP live Carbon Portal checks (set M9HTTP_LIVE=1)
 
 # Python packages the job does not install: the M9-reads-theirs half

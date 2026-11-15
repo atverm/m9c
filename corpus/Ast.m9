@@ -197,6 +197,32 @@ PROCEDURE IntText (v: I64 ; VAR buf: ARRAY 24 OF CHAR) : I64 ;
      answers how many.  The smallest I64 has no positive twin and
      answers 0. *)
 
+(* A MODULE'S NAME BEHIND A LOCAL OF THE SAME NAME (2026-11-15,
+   docs/module-name-plan.md).  Inside Mod, `Mod.v' is read as the bare
+   `v' (report par 3 rule 5).  Where a procedure declares a v of its
+   own, the bare name is the procedure's.  So the procedure's v is
+   given another name first, one no identifier can spell, and the bare
+   v is then the module's there as everywhere. *)
+
+CONST HiddenSuffix = '__l' ;
+
+PROCEDURE Unhide (VAR pool: POOL ; VAR n: PTR Node ; RO me: UTF) ;
+  (* Unhide renames, in every procedure and module body under n, each
+     name the procedure declares that the same procedure also names as
+     `me.NAME': the declaration and every use become NAME__l.
+
+       pool -- the tree's, as SetAUtf takes it.
+       n    -- a unit of the module `me'.
+       me   -- the module's name.
+
+     A consistent rename of a local changes nothing a program means.
+     Unhide renames only where it knows every place the name stands: a
+     parameter, a local VAR, CONST or TYPE, a binder (IS SOME, a
+     handler's, a CASE pattern's).  A name that is also a record
+     field, an enumeration member, an exception or a variant in that
+     procedure is left alone, and the checker refuses `me.NAME' there
+     as it did before. *)
+
 END Ast.
 
 
@@ -491,5 +517,116 @@ EXCEPT
 | ValueRange : RETURN 0
 | Overflow : RETURN 0
 END IntText ;
+
+(* ---- Unhide ---- *)
+
+(* Declares asks whether `name' is declared under k: a variable,
+   parameter, binder, type, constant or exception.  It is the
+   checker's DeclaresName. *)
+PROCEDURE Declares (k: Kid ; RO name: UTF) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF k IS SOME n THEN
+    IF n.kind = NIdent OR n.kind = NIsSome OR n.kind = NTypeDecl
+       OR n.kind = NConstDecl OR n.kind = NExcDecl THEN
+      IF Text.Eq (n.au, name) THEN RETURN TRUE END
+    END ;
+    FOR i := 0 TO n.nkids - 1 DO
+      IF Declares (n.kids[i], name) THEN RETURN TRUE END
+    END
+  END ;
+  RETURN FALSE
+END Declares ;
+
+(* Renamed says whether a node of this kind holds, in au, a name the
+   rename follows. *)
+PROCEDURE Renamed (n: PTR Node) : BOOL =
+BEGIN
+  IF n.kind = NQualident THEN RETURN Text.BLen (n.bu) = 0 END ;
+  RETURN n.kind = NIdent OR n.kind = NIsSome OR n.kind = NConstDecl
+         OR n.kind = NTypeDecl OR n.kind = NDesignator OR n.kind = NFor
+END Renamed ;
+
+(* Blocked asks whether `name' stands under k anywhere the rename does
+   not follow.  `fenced' is TRUE under a record's fields, a variant, an
+   enumeration or a procedure type, where an identifier is a member
+   and not a local.  A field selection and a literal's text are not
+   names of the local. *)
+PROCEDURE Blocked (k: Kid ; RO name: UTF ; fenced: BOOL) : BOOL =
+VAR
+  i : I64 ;
+  f : BOOL ;
+BEGIN
+  IF k IS SOME n THEN
+    IF Text.Eq (n.au, name) THEN
+      IF n.kind # NSelField AND n.kind # NString AND n.kind # NChar
+         AND n.kind # NInt AND n.kind # NReal AND n.kind # NAttrib THEN
+        IF fenced OR NOT Renamed (n) THEN RETURN TRUE END
+      END
+    END ;
+    f := fenced OR n.kind = NFieldGroup OR n.kind = NVariant
+         OR n.kind = NEnumType OR n.kind = NProcType ;
+    FOR i := 0 TO n.nkids - 1 DO
+      IF Blocked (n.kids[i], name, f) THEN RETURN TRUE END
+    END
+  END ;
+  RETURN FALSE
+END Blocked ;
+
+PROCEDURE Rename (VAR pool: POOL ; VAR n: PTR Node ; RO name, to: UTF) =
+VAR i : I64 ;
+BEGIN
+  IF Renamed (n) AND Text.Eq (n.au, name) THEN SetAUtf (pool, n, to) END ;
+  FOR i := 0 TO n.nkids - 1 DO
+    IF n.kids[i] IS SOME c THEN Rename (pool, c, name, to) END
+  END
+END Rename ;
+
+(* HiddenUse answers the first name under k that is written `me.NAME'
+   while `scope' declares a NAME that the rename can follow.  It
+   answers '' when there is none.  A scope that declares `me' itself
+   has no such name: there `me.x' is a selection from its own me. *)
+PROCEDURE HiddenUse (k: Kid ; scope: Kid ; RO me: UTF) : UTF =
+VAR
+  i : I64 ;
+  v : UTF ;
+BEGIN
+  IF k IS SOME n THEN
+    IF n.kind = NDesignator AND n.nkids > 0 AND Text.Eq (n.au, me) THEN
+      IF n.kids[0] IS SOME s THEN
+        IF s.kind = NSelField THEN
+          IF Declares (scope, s.au) AND NOT Blocked (scope, s.au, FALSE) THEN
+            RETURN s.au
+          END
+        END
+      END
+    END ;
+    FOR i := 0 TO n.nkids - 1 DO
+      v := HiddenUse (n.kids[i], scope, me) ;
+      IF Text.BLen (v) > 0 THEN RETURN v END
+    END
+  END ;
+  RETURN ''
+END HiddenUse ;
+
+PROCEDURE Unhide (VAR pool: POOL ; VAR n: PTR Node ; RO me: UTF) =
+VAR
+  i : I64 ;
+  v : UTF ;
+BEGIN
+  IF n.kind = NProcDecl OR n.kind = NModBody THEN
+    IF Declares (SOME (n), me) THEN RETURN END ;
+    LOOP
+      v := HiddenUse (SOME (n), SOME (n), me) ;
+      IF Text.BLen (v) = 0 THEN EXIT END ;
+      (* after this the scope declares no v, so the loop ends *)
+      Rename (pool, n, v, v + HiddenSuffix)
+    END ;
+    RETURN
+  END ;
+  FOR i := 0 TO n.nkids - 1 DO
+    IF n.kids[i] IS SOME c THEN Unhide (pool, c, me) END
+  END
+END Unhide ;
 
 END Ast.

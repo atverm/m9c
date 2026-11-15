@@ -1,0 +1,4 @@
+1:1-1 (* EXPECT-ERROR: module Words is named and not imported *)
+2:1-13 (* This is a dependency nobody wrote down.  It was observed 2026-10-02:\n   the test of Frame called Text.Keep and had no IMPORT Text.  It\n   compiled, and it ran.  The test library it did import, Check, imports\n   Text, so the checker had Text loaded and every lookup found it.  The\n   program's IMPORT lines said it depended on five modules.  It depended\n   on six, and the sixth would have gone the day Check stopped needing\n   Text, as a failure in a file nobody had touched.  The report had the\n   grammar of IMPORT and no rule; 5 sites in 386 files leaned on the\n   gap, one of them an example in the tutorial.\n\n   Here `Report' stands for the test, `Tally' for Check and `Words' for\n   Text. *)
+26:39-26 (* through Tally's import, not ours *)
+comments=3

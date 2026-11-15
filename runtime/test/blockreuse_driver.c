@@ -168,7 +168,7 @@ int main (void)
   }
 
   /* The program that starts the threads decides what they keep
-     (Alex, 2026-10-31; System.KeepAtMost and ReleaseKept). */
+     (decided 2026-10-31; System.KeepAtMost and ReleaseKept). */
   m9_release_kept ();
   ok ("m9_release_kept leaves nothing kept", m9_block_reuse_held () == 0);
   m9_keep_at_most (0);

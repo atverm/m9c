@@ -276,9 +276,15 @@ END StrStore ;
 
 BEGIN
   gold := Check.GoldPath ('ZarrStore.gold') ;
-  Co2Store () ;
-  ObsStore () ;
-  Refusals () ;
+  IF Io.Exists (Co2 + '/.zarray') THEN
+    Co2Store () ;
+    ObsStore () ;
+    Refusals ()
+  ELSE
+    (* The tutorial is a repository of its own.  A tree without it
+       still reads the two string stores below. *)
+    Io.WriteLine ('  ZarrStoreTest: SKIP the tutorial stores -- no ' + Co2 + ' in this tree')
+  END ;
   StrStore ('runtime/test/zarrvlen/names.zarr') ;
   StrStore ('runtime/test/zarrvlen/names-raw.zarr') ;
   Io.Halt (Check.Done (t, 'ZarrStore'))

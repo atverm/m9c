@@ -67,7 +67,7 @@ CONST
 
 PROCEDURE SetStrUtf (on: BOOL) ;
   (* THE SWITCH, REHEARSED (docs/utf8-stage4-plan.md, 4d behind a flag;
-     Alex, 2026-10-24): with SetStrUtf (TRUE) before CheckFile, STR
+     decided 2026-10-24): with SetStrUtf (TRUE) before CheckFile, STR
      names the UTF type.  A subscript or a LEN of one is refused as a
      UTF's is, and STR (u) and UTF (s) are identities.  The twins
      collapse too: a procedure X whose module declares XUtf is not
@@ -113,7 +113,7 @@ PROCEDURE ThreadWrite (i: I64) : UTF ;
   (* These list the THREADs whose target WRITES a variable of a
      STATEFUL module that is not a monitor (report par 6), for `m9c
      --review'.  A write by what the target calls counts too, when
-     the checker can follow it.  This is not a refusal (Alex,
+     the checker can follow it.  This is not a refusal (decided
      2026-10-11).  The one such site measured, the zarr proxy's
      reaper, is correct because the thread is joined before its
      counter is read, and no checker sees a join.  So it is listed,
@@ -642,7 +642,9 @@ BEGIN
   DynStr.Append (d, ': ') ;
   (* The message spells the type UTF names as UTF.  SLICE OF <u8> is
      nothing a program can write (docs/utf8-plan.md). *)
-  DynStr.Append (d, Text.Replace (msg, UtfTy, 'UTF')) ;
+  (* A local that Ast.Unhide renamed is named as the author wrote
+     it. *)
+  DynStr.Append (d, Text.Replace (Text.Replace (msg, UtfTy, 'UTF'), Ast.HiddenSuffix, '')) ;
   PushErr (list, n, DynStr.ViewIn (pool, d))   (* in the pool: the list is module state *)
 END Diag ;
 
@@ -1311,7 +1313,7 @@ BEGIN
                             ' is raised and handled; a value of its fields is a RECORD'))
         ELSIF Text.BLen (n.bu) = 0 AND TypeNowhere (n.au) THEN
           (* decision 32 left this soft, as a possible missing import;
-             Alex decided 2026-10-22 to refuse it *)
+             the author decided 2026-10-22 to refuse it *)
           ErrN (n, ctx, S3 ('unknown type: ', n.au,
             S3 (' -- no module declares it; declare it, or write the module it is in (Mod.',
                 n.au, ') and IMPORT that module')))
@@ -1969,7 +1971,7 @@ BEGIN
 END CollectUnit ;
 
 (* NanWalk handles NaN, the predeclared quiet NaN (report par 2.1;
-   Alex 2026-10-05).  A bare designator NaN becomes the real literal
+   decided 2026-10-05).  A bare designator NaN becomes the real literal
    whose text is C's NAN, so it is typed, adapts to F32 and is emitted
    as a literal is.  This runs once per file, before anything reads
    it, here and in both generators (Gen.NanWalk): the generator also
@@ -2273,7 +2275,7 @@ END IsUtfNode ;
    a UTF. *)
 (* StrConstDesig is TRUE for a designator naming a CONST whose value
    is a string literal: this module's bare name, or an imported Mod.C.
-   Such a designator adapts as the literal does (Alex, 2026-10-23,
+   Such a designator adapts as the literal does (decided 2026-10-23,
    decision 66: Sem's own ModeVar = 'v' and UtfTy met the rule in its
    port).  It is defined after IsConstHere. *)
 PROCEDURE StrConstDesig (k: Ast.Kid) : BOOL ;
@@ -2286,7 +2288,7 @@ BEGIN
     END
   END ;
   (* After the switch a literal also adapts to a SLICE OF CHAR, as it
-     did before (Alex, 2026-10-31).  Gen emits it as CHARs there.  A
+     did before (decided 2026-10-31).  Gen emits it as CHARs there.  A
      CONST does not adapt: Gen holds it as octets. *)
   IF NOT strOld AND Text.Eq (dst, 'SLICE OF CHAR') THEN
     IF k IS SOME e THEN
@@ -2296,7 +2298,7 @@ BEGIN
   RETURN src
 END AdaptLit ;
 
-(* UtfName recognises the UTF builtins (docs/utf8-plan.md, U2; Alex:
+(* UtfName recognises the UTF builtins (docs/utf8-plan.md, U2; the author:
    "conversions + view").  UTF (s) encodes a STR, UTF (b) validates
    and copies a SLICE OF BYTE, STR (u) decodes, OCTETS (u) views the
    octets read-only.  A call of one goes by its callee's bare name and
@@ -2362,7 +2364,7 @@ BEGIN
   RETURN FALSE
 END IsStringLit ;
 
-(* UtfInPool answers the pool UTF (pool, x) places a UTF in (Alex,
+(* UtfInPool answers the pool UTF (pool, x) places a UTF in (decided
    2026-10-23): the name of the first argument.  It answers '' for any
    other call. *)
 PROCEDURE UtfInPool (e: PTR Ast.Node) : UTF =
@@ -2630,7 +2632,7 @@ END BoundQual ;
    CONSTs (bare in the module the type was written in, canonCtx, else
    this one, or Mod.N), under + - * DIV MOD, unary minus and
    parentheses.  Two array types with counts of one value are one type
-   (Alex, 2026-10-30, a port's report M8: ARRAY N OF F64 with N = 3
+   (decided 2026-10-30, a port's report M8: ARRAY N OF F64 with N = 3
    was refused where ARRAY 3 OF F64 was expected). *)
 PROCEDURE CountValue (k: Ast.Kid ; RO KEPT m: UTF ; depth: I64 ; VAR v: I64) : BOOL =
 VAR
@@ -6319,7 +6321,7 @@ BEGIN
 END LitOut ;
 
 (* ---- a procedure fits a procedure type that lets it raise MORE than
-   it does (report par 2.2.3; Alex's decision of 2026-10-02).  The
+   it does (report par 2.2.3; the author's decision of 2026-10-02).  The
    fit was to the letter, RAISES included, and so a function that
    cannot raise had to SAY `RAISES ValueRange' to be handed to
    Numeric, and Check needed two types where one would do.  A
@@ -9673,7 +9675,7 @@ BEGIN
     RETURN name
   END ;
   IF Text.Eq (name, 'COPY') THEN
-    (* COPY (to, from): a block copy (docs/blockcopy-plan.md, Alex
+    (* COPY (to, from): a block copy (docs/blockcopy-plan.md, the author
        2026-10-22) *)
     Arity (site, ctx, name, 2, nargs) ;
     IF nargs = 2 THEN CheckCopy (site, ctx, aTy[0], aTy[1], aNode[0]) END ;
@@ -10122,7 +10124,7 @@ BEGIN
   END ;
   (* This handles a RECORD AGGREGATE: Row (200, 'OK'), or Mod.Row
      (...) for an imported type.  It takes every field, in declaration
-     order, each held to its field's type (report par 2.2.4, Alex
+     order, each held to its field's type (report par 2.2.4, the author
      2026-10-05: positional, in a CONST and in statements). *)
   IF RecordNamed (name, om, t) IS SOME rn THEN
     IF rn.kids[0] IS SOME rbase THEN
@@ -10261,7 +10263,7 @@ END KeptPool ;
    handed on as the callee's first argument) waits for a lock this
    procedure holds, for ever.  m9downloadstats' RespCache.LookupB
    calling SameKey (g, ...) hung on its first cached lookup, sampled
-   in pthread_mutex_lock (2026-10-25; Alex: "yes for the bound
+   in pthread_mutex_lock (2026-10-25; the author: "yes for the bound
    refusal"). *)
 (* MonIdOf answers the monitor TYPE a procedure is bound to (its first
    parameter's, resolved through pointers) as the type node's id, -1
@@ -10455,7 +10457,7 @@ BEGIN
 END SameMonitorCall ;
 
 (* A FOR's control variable is written by the loop alone (par 2.1;
-   Alex, 2026-10-25: "refuse").  ForVarWrite refuses it assigned bare,
+   decided 2026-10-25: "refuse").  ForVarWrite refuses it assigned bare,
    or handed to a VAR or OWN parameter, inside a FOR over it.  `IF j =
    0 THEN j := 3 END' in `FOR j := 0 TO 2' ran on forever under 0.25's
    exit test and stopped under 0.17's.  The meaning moved with the
@@ -11247,7 +11249,7 @@ BEGIN
   RETURN mods[m].procs[pi]
 END LookupProc ;
 
-(* TWINS BY TYPE for UTF (docs/utf8-plan.md, U3; Alex, 2026-10-23:
+(* TWINS BY TYPE for UTF (docs/utf8-plan.md, U3; decided 2026-10-23:
    dispatch by type).  A call with a UTF argument is the module's
    XxxUtf when it declares one: decision 13's width rule with the
    suffix Utf.  So a module moves to UTF by its declarations, not its
@@ -12295,7 +12297,7 @@ BEGIN
   RETURN twText[i]
 END ThreadWrite ;
 
-(* ---- par 6: SHARABLE (2026-10-11; Alex: "an attribute on the job
+(* ---- par 6: SHARABLE (2026-10-11; the author: "an attribute on the job
    type").  Both threads hold what a THREAD is handed and not MOVED: a
    pool pointer, a VAR parameter's, a module variable's.  That is
    sound for a MONITOR, whose lock is the point.  It is sound for a
@@ -12970,6 +12972,7 @@ BEGIN
         b := DaCopy (st) ;
         e2 := DaSeq (s.kids[1], b)
     | Ast.NFor :
+        IF s.nkids > 4 THEN DaExpr (s.kids[4], st) END ;   (* the INRANGE claim, read before the loop *)
         DaExpr (s.kids[0], st) ;
         DaExpr (s.kids[1], st) ;
         b := DaCopy (st) ;
@@ -13670,6 +13673,7 @@ BEGIN
         LoopCarry (pre, npre, st.kids[1], ctx) ;
         loopsOpen := loopsOpen - 1 ; finSinceLoop := sv
     | Ast.NFor :
+        IF st.nkids > 4 THEN CheckClaim (st.kids[4], ctx) END ;
         CheckForBounds (st, ctx) ;
         (* A FOR inside a FOR over the SAME control variable clobbers
            the outer count.  This is Pascal's rule that a control
@@ -13899,6 +13903,22 @@ BEGIN
     END
   END
 END CheckCond ;
+
+(* CheckClaim holds a FOR's INRANGE claim to BOOL.  The claim is the
+   author's statement that every subscript in the loop is in range
+   (docs/loop-check-plan.md).  It is read once, before the loop, so
+   its calls' RAISES count as the bounds' do. *)
+PROCEDURE CheckClaim (k: Ast.Kid ; RO ctx: UTF) =
+VAR t : UTF ;
+BEGIN
+  t := ExprType (k, ctx) ;
+  WalkQuiet (k, ctx) ;
+  IF Text.BLen (t) > 0 AND NOT Text.Eq (t, 'BOOL') THEN
+    IF k IS SOME c THEN
+      ErrN (c, ctx, Cat ('an INRANGE claim is a BOOL, not ', TyName (t)))
+    END
+  END
+END CheckClaim ;
 
 (* CheckForVar holds that THE LOOP VARIABLE IS A VARIABLE: declared,
    of a type its bounds can count in, and of that type inside the
@@ -14397,7 +14417,7 @@ BEGIN
 END EndsSeq ;
 
 (* ---- THE ONE REGION JUDGEMENT, in shadow (docs/region-plan.md, step
-   3; 2026-10-21, Alex: in this checker only, flow-sensitive).  It runs
+   3; 2026-10-21, the author: in this checker only, flow-sensitive).  It runs
    only when SetRegions (TRUE) was called (m9c does so under
    M9_REGIONS=1), after the procedure's ordinary walk.  It refuses
    nothing, and what it finds goes to its own list (RegionAt).  So it
@@ -15141,7 +15161,7 @@ BEGIN
   IF Text.Eq (m, ModeModule) THEN RETURN RgPow (RgFrModule) END ;
   IF Text.Eq (m, ModeLocal) THEN RETURN RgPow (RgFrPool) END ;
   (* A pool parameter declared KEPT outlives module state: the caller
-     promises it (decision (d) of the plan, Alex: "refuse both").  The
+     promises it (decision (d) of the plan, the author: "refuse both").  The
      caller's pool kept in module state, bare or through a field, is
      refused unless the pool says it may be. *)
   IF KeptHas (nm) THEN RETURN RgPow (RgFrModule) END ;
@@ -15649,6 +15669,22 @@ BEGIN
   END ;
   IF OctetsArg (e) IS SOME roa THEN
     RETURN RgAdd (RgExpr (SOME (roa), st), RgRo)
+  END ;
+  (* VIEW (g, i, ALL) is its grid's storage, as SLICE is its slice's.
+     It is a call by name and had no arm here, so it took the default
+     below, read-only: `r := VIEW (a, i, ALL) ; r[j] := x' was refused
+     as a write into read-only storage, for a VAR grid too (a ported
+     model's row views, 2026-11-14). *)
+  IF e.kids[0] IS SOME vd THEN
+    IF vd.kind = Ast.NDesignator AND vd.nkids = 0 AND Text.Eq (vd.au, 'VIEW') AND
+       ScopeFind ('VIEW') < 0 THEN
+      IF e.kids[1] IS SOME val THEN
+        IF val.nkids > 0 THEN
+          FOR i := 1 TO val.nkids - 1 DO x0 := RgExpr (val.kids[i], st) END ;
+          RETURN RgExpr (val.kids[0], st)
+        END
+      END
+    END
   END ;
   (* UTF (pool, x): where NEW (pool, ...) would put it *)
   IF Text.BLen (UtfInPool (e)) > 0 THEN
@@ -17019,6 +17055,7 @@ BEGIN
     | Ast.NWhile :
         RgLoopCond (s.kids[0], s.kids[1], st)
     | Ast.NFor :
+        IF s.nkids > 4 THEN v := RgExpr (s.kids[4], st) END ;
         v := RgExpr (s.kids[0], st) ;
         v := RgExpr (s.kids[1], st) ;
         RgLoop (s.kids[3], st)
@@ -19103,6 +19140,7 @@ BEGIN
     | Ast.NWhile :
         OlLoop (s.kids[0], s.kids[1], st)
     | Ast.NFor :
+        IF s.nkids > 4 THEN v := OlExpr (s.kids[4], st) END ;
         v := OlExpr (s.kids[0], st) ;
         v := OlExpr (s.kids[1], st) ;
         OlLoop (NONE, s.kids[3], st)
@@ -19442,7 +19480,7 @@ END RaisedDrop ;
 
 (* IsUnchecked is TRUE for the four that are always possible.  A
    declaration of them would put them on every signature and so
-   distinguish nothing.  Poisoned joined them on 2026-11-02 (Alex): a
+   distinguish nothing.  Poisoned joined them on 2026-11-02 (the author): a
    call into a monitor that a bug left half updated, stage 5 of
    docs/task-plan.md.  It can only follow a bug, so it is one. *)
 PROCEDURE IsUnchecked (RO nm: UTF) : BOOL =
@@ -19806,7 +19844,7 @@ BEGIN
 END CallsAdd ;
 
 (* ---- A MODULE IS NAMED ONLY WHERE IT IS IMPORTED (report par 3,
-   rule 5; Alex's decision of 2026-10-02).  The checker is handed the
+   rule 5; the author's decision of 2026-10-02).  The checker is handed the
    whole import closure, and every lookup asks FindMod, which knows
    all of it.  So `Text.Keep' compiled in a program that imported only
    Check, because Check imports Text.  Nobody could read what a module
@@ -20076,7 +20114,7 @@ END ImportWalk ;
 
 (* ---- AN IMPORTED VARIABLE IS ONE NAME (decision 28, 2026-10-04).
    A definition's VARs are the module's exports, read and written by
-   an importer as Mod.v (Modula-2's rule; Alex: "rw").  Every
+   an importer as Mod.v (Modula-2's rule; the author: "rw").  Every
    procedure that walks a designator from its root (typing, RO, the
    frame and escape rules, the pool root) would have to learn that a
    root can be two names.  Instead the designator Mod.v... is
@@ -20854,6 +20892,9 @@ BEGIN
         END
       END ;
       CheckImports (root, u) ;
+      (* a local that hides a module name the procedure also writes
+         as `Mod.v' is renamed first (docs/module-name-plan.md) *)
+      Ast.Unhide (pool, u, u.au) ;
       SelfWalk (u, root, u.au, NONE) ;
       ExportWalk (u, root, u.au, NONE) ;
       CheckDeclaredOnce (u) ;

@@ -1,14 +1,14 @@
-REVIEW Frame -- 113 procedures with a body, 75 of them functions; 66 headings in a DEFINITION
+REVIEW Frame -- 103 procedures with a body, 65 of them functions; 56 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              75
-  assignments                                   615
-  arguments                                    1239
-  RETURN values                                 102
+  functions answering on every path              65
+  assignments                                   614
+  arguments                                    1237
+  RETURN values                                  85
   operands of a comparison or an operator       409
   CASE labels                                     0
   THREAD arguments                                0
-  CASE over variants, proved total               37
+  CASE over variants, proved total               36
 
 CAN TRAP AT RUN TIME -- a byte cut a character can straddle
   text compared through a byte cut                0
@@ -24,6 +24,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   SHARED (x)                                      0
   THREAD                                          0
   TASK                                            0
+  INRANGE claims                                  0
   [SHARABLE] records                              0
   module variables                                0
 
@@ -37,7 +38,7 @@ TRUSTED -- outside what the checker can see
     of them filling a descriptor ([FRESH])        0
 
 COUNTED -- how much there was to check
-  CASE statements                                37
+  CASE statements                                36
   RAISE statements                              155
   handlers                                       24
   NEW in the frame                               20

@@ -1,0 +1,2 @@
+parseprobes/nul-in-source.m9:5:1: parse: lex: unexpected character 0x00
+m9c: 1 parse errors in parseprobes/nul-in-source.m9

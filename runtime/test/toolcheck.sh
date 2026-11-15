@@ -15,9 +15,12 @@ SKIP=$(pwd)/toolcheck.skip
 fail=0
 n=0
 # Every skip entry must still exist, so the list cannot outlive what it
-# excuses.
+# excuses.  The public tree does not carry every file the list names
+# (it has no tools/release): there an entry that is absent is not an
+# error.
 for p in $(grep -v '^#' "$SKIP" | awk 'NF { print $1 }'); do
-  [ -e "$ROOT/$p" ] || { echo "toolcheck: FAIL -- toolcheck.skip names $p, which is gone"; fail=1; }
+  [ -e "$ROOT/$p" ] || [ ! -d "$ROOT/tools/release" ] ||
+    { echo "toolcheck: FAIL -- toolcheck.skip names $p, which is gone"; fail=1; }
 done
 for f in $(cd "$ROOT" && git ls-files 'tools/*.m9' 'examples/*.m9'); do
   grep -q '^MODULE ' "$ROOT/$f" || continue
@@ -37,7 +40,7 @@ done
 rm -f /tmp/toolcheck.$$
 
 # Two release programs also run here, because a clean check did not
-# hold them.  Both stopped the 0.26.0 cut on zoefii, after CI was green.
+# hold them.  Both stopped the 0.26.0 cut on host2, after CI was green.
 W=$(mktemp -d)
 export M9RUNTIME="$ROOT/runtime" M9LIBRARY="$ROOT/corpus"
 # MkTutor writes the tutorial site the Windows zip carries.  Its scan

@@ -1,12 +1,12 @@
-REVIEW Review -- 23 procedures with a body, 12 of them functions; 2 headings in a DEFINITION
+REVIEW Review -- 26 procedures with a body, 14 of them functions; 4 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              12
-  assignments                                   104
-  arguments                                     443
-  RETURN values                                  44
-  operands of a comparison or an operator       133
-  CASE labels                                    15
+  functions answering on every path              14
+  assignments                                   108
+  arguments                                     469
+  RETURN values                                  48
+  operands of a comparison or an operator       139
+  CASE labels                                    16
   THREAD arguments                                0
   CASE over variants, proved total                0
 
@@ -15,7 +15,7 @@ CAN TRAP AT RUN TIME -- a byte cut a character can straddle
 
 DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
-  local pools                                     1   Page.scratch
+  local pools                                     2   ClaimsRow.scratch, Page.scratch
   pool parameters                                 0
   KEPT parameters                                 0
   HEAP named                                      0
@@ -24,6 +24,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   SHARED (x)                                      0
   THREAD                                          0
   TASK                                            0
+  INRANGE claims                                  0
   [SHARABLE] records                              0
   module variables                                0
 

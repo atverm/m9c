@@ -1,6 +1,6 @@
 # JsonUtf
 
-JsonUtf is Json over UTF text (docs/utf8-plan.md, stage 2; Alex,
+JsonUtf is Json over UTF text (docs/utf8-plan.md, stage 2; decided
 2026-10-23: "create the modules and test them, add UTF to the
 module name, swap the names when STR becomes UTF").  It has the
 same tree, the same API and the same contracts as Json.  Read

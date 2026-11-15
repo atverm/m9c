@@ -350,7 +350,11 @@ CONST
     'attribute-text-not-deprecated',
     'const-attribute-not-deprecated',
     'array-to-var-slice',
-    'module-name-hidden'
+    'module-name-hidden',
+    'view-of-ro-written',
+    'inrange-not-bool',
+    'module-name-behind-local-type',
+    'module-name-behind-local-move'
   ] ;
   Cause = [
     'ADR takes the address of a value, which is the one thing the memory rules cannot check',
@@ -668,7 +672,11 @@ CONST
     'only [DEPRECATED] carries a text (par 3.9); every other attribute is a bare name, and a text on it would be read by nothing',
     "a CONST takes one attribute, [DEPRECATED 'text'], written before its = (par 3.9); [PURE] and the others say something about a procedure or a record",
     'an array lends itself as a slice of all its elements, but a VAR slice parameter may be given a new slice, which an array cannot hold (par 4.1); until 0.27.1 the array went through as the slice and the callee wrote the wrong memory',
-    "a module names itself (par 3 rule 5): inside Mod, Mod.x is x.  Where the procedure declares an x of its own, the bare name is the procedure's, and the checker gives the module's variable no second name yet, since its storage judgements follow a variable by one name"
+    "a module names itself (par 3 rule 5): inside Mod, Mod.x is x.  Where the procedure declares an x of its own, Mod.x still reaches the module's (0.28.0).  The form stays refused where that x is also a member in the procedure, a parameter of a procedure type say: the checker cannot follow such a name",
+    "a VIEW is its grid's storage, so a view of what an RO parameter lends is read-only as the grid is (par 2.4); a view of a VAR or value grid may be written through",
+    "FOR [INRANGE b] is the author's claim that every subscript in the loop is in range, read once before the loop: TRUE runs the body unchecked, FALSE runs it as any loop.  So b is a BOOL",
+    "inside Mod, Mod.time beside a parameter time is the module's variable, with the module's type; the parameter's type does not make it fit",
+    "inside Mod, Mod.own beside a parameter own is the module's variable in the ownership rules too: a procedure may not move a module's owned value away, however it is named"
   ] ;
   Fix = [
     'put the procedure in an UNSAFE module, or pass a SLICE/VAR instead of an address (par 7)',
@@ -986,7 +994,11 @@ CONST
     'drop the text, or write the note as a comment beside the heading',
     "drop the attribute, or write [DEPRECATED 'what to write instead']",
     'drop VAR from the parameter: a value SLICE OF parameter writes the elements, and RO reads them',
-    'rename the parameter or the local, and write the module variable bare or as Mod.x'
+    'rename the parameter or the local, and write the module variable bare or as Mod.x',
+    'take the grid as VAR or by value where the procedure writes it; RO promises it does not',
+    'write a condition: ok := lo >= 0 AND hi < LEN (s) ; FOR [INRANGE ok] i := lo TO hi DO',
+    'convert the value to the type of the module variable, or give the parameter that type',
+    'move it in the module body, or keep the owned value in a local'
   ] ;
 
 VAR

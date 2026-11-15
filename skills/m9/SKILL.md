@@ -97,7 +97,7 @@ is in `docs/diagnose.md` with its probe):
 inside an expression (a module-level CONST table, or NEW and fill);
 a `NEW` of an unnamed nested slice type needs a TYPE name first.
 
-**Comments, in .m9 and everywhere else** (Alex, 2026-10-30): start
+**Comments, in .m9 and everywhere else** (decided 2026-10-30): start
 every comment sentence with a plain subject and verb; never a clause as
 the subject ("Whether...", "That...", "What... is..."); two short
 sentences rather than one nested one.  Bad: `(* Whether the lock is
@@ -126,8 +126,7 @@ server).  Record the `$!` of every background process you start and
 kill that; for a server, `fuser -k <port>/tcp` kills exactly the
 process holding the port and nothing else.
 
-**A helper script is an M9 script, not a Python one** (Alex,
-2026-10-04).  When a project needs a tool -- cut a fixture, convert a
+**A helper script is an M9 script, not a Python one** (decided 2026-10-04).  When a project needs a tool -- cut a fixture, convert a
 file, regenerate a table -- write it as an M9 program whose first
 line is `#!/usr/bin/env -S m9c --run`, mark it executable, and run it
 by name: `m9c --run` (0.15 on) compiles it into a cache the first

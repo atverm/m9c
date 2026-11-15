@@ -1,0 +1,2 @@
+parseprobes/missingsemi.m9:6:3: parse: ; or end of statement list expected, found Ident
+m9c: 1 parse errors in parseprobes/missingsemi.m9

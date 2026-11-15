@@ -9,13 +9,17 @@
 # part that says what M9's own choices cost.
 set -e
 cd "$(dirname "$0")"
+# GNU time, for -f.  macOS has it as gtime (Homebrew's gnu-time), and
+# GNU stat comes first on PATH there (coreutils' gnubin).
+TIME=${TIME:-/usr/bin/time}
+command -v gtime > /dev/null 2>&1 && TIME=$(command -v gtime)
 R=../runtime
-OUT=/tmp/m9bench
+OUT=/tmp/m9-bench-out
 DEPTH=${1:-18}
 mkdir -p "$OUT"
 
-CARGO=${CARGO:-$HOME/.cargo/bin/cargo}
-RUSTC=${RUSTC:-$HOME/.cargo/bin/rustc}
+CARGO=${CARGO:-$(command -v cargo || echo "$HOME/.cargo/bin/cargo")}
+RUSTC=${RUSTC:-$(command -v rustc || echo "$HOME/.cargo/bin/rustc")}
 
 echo "building ..."
 ( cd "$OUT" && "$(cd ../../runtime/test >/dev/null 2>&1 && pwd || echo ../runtime/test)/m9c" \
@@ -95,14 +99,14 @@ best () {                       # best of three, after a warm-up
   "$@" "$DEPTH" >/dev/null
   b=999
   for _ in 1 2 3; do
-    s=$( { /usr/bin/time -f %e "$@" "$DEPTH" >/dev/null ; } 2>&1 )
+    s=$( { "$TIME" -f %e "$@" "$DEPTH" >/dev/null ; } 2>&1 )
     b=$(echo "$s $b" | awk '{print ($1<$2)?$1:$2}')
   done
   echo "$b"
 }
 
 once () {                       # one run, for columns measured in
-  s=$( { /usr/bin/time -f %e "$@" >/dev/null ; } 2>&1 )   # tens of
+  s=$( { "$TIME" -f %e "$@" >/dev/null ; } 2>&1 )   # tens of
   echo "$s"                                               # seconds
 }
 
@@ -163,7 +167,7 @@ cmp -s "$OUT/fkref.txt" "$OUT/fk_py.txt" || { echo "DIVERGES: python"; exit 1; }
 
 bestn () { "$@" "$FN" >/dev/null; b=999
   for _ in 1 2 3; do
-    s=$( { /usr/bin/time -f %e "$@" "$FN" >/dev/null ; } 2>&1 )
+    s=$( { "$TIME" -f %e "$@" "$FN" >/dev/null ; } 2>&1 )
     b=$(echo "$s $b" | awk '{print ($1<$2)?$1:$2}')
   done; echo "$b"; }
 

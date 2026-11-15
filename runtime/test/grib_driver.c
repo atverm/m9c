@@ -195,7 +195,7 @@ int main (void)
      file is not on this machine. */
   {
     const char *real = getenv ("M9GRIB");
-    if (real == NULL) real = "/mnt/d/data/grib/EA25120100";
+    if (real == NULL) real = "/xxx/grib/EA25120100";
     if (access (real, R_OK) != 0)
       printf ("SKIP: no real GRIB at %s (set $M9GRIB)\n", real);
     else

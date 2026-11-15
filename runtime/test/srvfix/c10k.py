@@ -29,7 +29,7 @@ if soft < want:
 
 # The backlog is a task server's: with 128, Linux dropped SYNs while a
 # fresh server made its first stacks, and each drop cost the client a
-# second (ct121, 2026-11-02: 10,000 answers in 73 s, 0.5 s with 4096).
+# second (host1, 2026-11-02: 10,000 answers in 73 s, 0.5 s with 4096).
 p = subprocess.Popen([BIN, f"--port={PORT}", "--tasks", f"--maxopen={N + 16}",
                       "--workers=8", "--idle=120000", "--perconn=1000", "--backlog=4096"],
                      stdout=subprocess.PIPE, stderr=subprocess.STDOUT)

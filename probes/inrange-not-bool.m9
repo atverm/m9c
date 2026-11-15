@@ -1,0 +1,11 @@
+(* EXPECT: an INRANGE claim is a BOOL, not an integer literal *)
+(* FOR [INRANGE b] claims that the loop's subscripts are in range
+   (docs/loop-check-plan.md).  The legal form comes first. *)
+MODULE m ;
+VAR i : I64 ; s : SLICE OF I64 ; ok : BOOL ;
+BEGIN
+  s := NEW (I64, 3) ;
+  ok := LEN (s) >= 3 ;
+  FOR [INRANGE ok] i := 0 TO 2 DO s[i] := 1 END ;
+  FOR [INRANGE 3] i := 0 TO 2 DO s[i] := 1 END
+END m.

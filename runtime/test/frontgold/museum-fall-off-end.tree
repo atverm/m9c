@@ -1,0 +1,12 @@
+MODULE m ;
+
+PROCEDURE Weight (v: F64) : F64 =
+BEGIN
+  IF v > 10.0 THEN
+    RETURN 3.0
+  ELSIF v > 1.0 THEN
+    RETURN 2.0
+  END
+END Weight ;
+
+END m.

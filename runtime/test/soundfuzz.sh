@@ -38,7 +38,7 @@
 # mutants); M9_SOUNDFUZZ_TIMES=1 adds the slowest mutants and the seconds
 # by verdict.
 #
-# THE VERDICT CACHE (Alex, 2026-10-31: no work whose inputs did not
+# THE VERDICT CACHE (decided 2026-10-31: no work whose inputs did not
 # change).  A mutant's verdict is a function of its text, of the source
 # of every module its seed imports, and of the compiler, the runtime and
 # sancc.  So a refused or clean verdict is kept under that key in
@@ -82,8 +82,8 @@ if [ "$1" = --one ]; then
   st=0
   # A corpus test runs from the repository root, as m9test runs it.
   case "$b" in
-    *Test.m9) ( cd "$ROOT" && $TMO "$M9C" --run "$f" < /dev/null ) > "$d/run.out" 2>&1 || st=$? ;;
-    *) ( cd "$d" && $TMO "$M9C" -I "$HERE/genforms" -I "$HERE/sanitize" --run "$b" < /dev/null ) \
+    *Test.m9) ( cd "$ROOT" && $TMO "$M9C" --verify-claims --run "$f" < /dev/null ) > "$d/run.out" 2>&1 || st=$? ;;
+    *) ( cd "$d" && $TMO "$M9C" --verify-claims -I "$HERE/genforms" -I "$HERE/sanitize" --run "$b" < /dev/null ) \
          > "$d/run.out" 2>&1 || st=$? ;;
   esac
   if grep -q -e 'ERROR: AddressSanitizer' -e 'runtime error:' "$d/run.out"; then
@@ -91,11 +91,16 @@ if [ "$1" = --one ]; then
   elif [ "$st" = 124 ]; then
     echo "timeout: $what" > "$d/verdict"
   elif [ "$st" = 134 ] && grep -q -e '^m9: unhandled .* in a thread' -e '^m9: every task waits' \
-         -e '^m9: task stack overflow in ' "$d/run.out"; then
+         -e '^m9: task stack overflow in ' -e '^m9: the INRANGE claim at line ' "$d/run.out"; then
     # A stop by name: the runtime aborts on purpose, after naming the
     # exception that left a thread or task, a deadlock of tasks, or a
     # task's stack overflow.  That is the language working, as an
     # exit is (SupTest with a handler deleted, 2026-11-02).
+    # And a FOR's INRANGE claim that a mutation made false: the
+    # mutants are built with --verify-claims, where a claimed body
+    # keeps its checks and a false claim stops by name.  Without it
+    # such a mutant reads out of range, on its author's word and not
+    # by a hole in the checker (docs/loop-check-plan.md).
     echo "clean" > "$d/verdict"
     [ -n "$key" ] && { cp "$d/verdict" "$SFCACHE/$key.$$" && mv "$SFCACHE/$key.$$" "$SFCACHE/$key"; }
   elif [ "$st" -gt 128 ]; then
@@ -117,8 +122,8 @@ if [ "$1" = --warm ]; then
   f=$3; o="$W/warm/$2-$(basename "$f" .m9)"
   st=0
   case $2 in
-    seed) ( cd "$(dirname "$f")" && $WTMO "$M9C" -v --run "$(basename "$f")" < /dev/null ) > "$o.out" 2>&1 || st=$? ;;
-    *) ( cd "$ROOT" && $WTMO "$M9C" -v --run "$f" < /dev/null ) > "$o.out" 2>&1 || st=$? ;;
+    seed) ( cd "$(dirname "$f")" && $WTMO "$M9C" --verify-claims -v --run "$(basename "$f")" < /dev/null ) > "$o.out" 2>&1 || st=$? ;;
+    *) ( cd "$ROOT" && $WTMO "$M9C" --verify-claims -v --run "$f" < /dev/null ) > "$o.out" 2>&1 || st=$? ;;
   esac
   echo "$st" > "$o.st"
   # The seed's closure key: the source of every module its build

@@ -1,0 +1,5 @@
+UNSAFE DEFINITION MODULE FOR 'C' bad ;
+
+PROCEDURE F = 'f' (x: F64) : F64 ;
+
+END bad.

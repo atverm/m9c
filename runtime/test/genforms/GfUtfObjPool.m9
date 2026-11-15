@@ -4,7 +4,7 @@ MODULE GfUtfObjPool ;
 
 (* UTF (f, s) with f a VAR pointer parameter: the copy lives in the
    OBJECT's hidden pool, where NEW (f, T) allocates (rule 2 of
-   docs/pool-elision-plan.md; Alex, 2026-10-24: "ok with UTF(f,s)"),
+   docs/pool-elision-plan.md; decided 2026-10-24: "ok with UTF(f,s)"),
    so a procedure that keeps a caller's string in an object it was
    lent needs no pool name -- Http.KeepStr, Json.CopyStrTo and
    Frame.Copy under the switch.  The strings kept here are built by

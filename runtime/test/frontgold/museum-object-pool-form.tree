@@ -1,0 +1,32 @@
+MODULE Hold ;
+
+TYPE
+  Node = RECORD
+    name : STR
+  END ;
+
+VAR
+  pool : POOL ;
+  root : PTR Node ;
+
+PROCEDURE SetName (VAR n: PTR Node ; RO s: STR) =
+VAR
+  c : STR ;
+BEGIN
+  c := NEW (n, CHAR, LEN (s)) ;
+  COPY (c, s) ;
+  n.name := c
+END SetName ;
+
+PROCEDURE Build (RO s: STR) =
+VAR
+  n : PTR Node ;
+BEGIN
+  n := NEW (pool, Node) ;
+  SetName (n, s) ;
+  root := n
+END Build ;
+
+BEGIN
+  Build ('hello')
+END Hold.

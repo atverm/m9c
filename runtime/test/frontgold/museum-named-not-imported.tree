@@ -1,0 +1,27 @@
+DEFINITION MODULE Words ;
+
+PROCEDURE Count (RO s: STR) : I64 ;
+
+END Words.
+
+
+DEFINITION MODULE Tally ;
+
+IMPORT Words ;
+
+PROCEDURE Add (RO s: STR) : I64 ;
+
+END Tally.
+
+
+MODULE Report ;
+
+IMPORT Tally ;
+
+VAR
+  n : I64 ;
+
+BEGIN
+  n := Tally.Add ('one two') ;
+  n := n + Words.Count ('three')
+END Report.

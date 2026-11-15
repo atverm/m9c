@@ -1,0 +1,23 @@
+3:1 MODULE MODULE
+3:8 Ident m
+3:10 Semi ;
+4:1 VAR VAR
+4:5 Ident x
+4:7 Colon :
+4:9 Ident F64
+4:13 Semi ;
+4:15 Ident i
+4:17 Colon :
+4:19 Ident I64
+4:23 Semi ;
+5:1 BEGIN BEGIN
+5:7 Ident i
+5:9 Assign :=
+5:12 Ident I64
+5:16 LParen (
+5:17 Ident x
+5:18 RParen )
+5:20 END END
+5:24 Ident m
+5:25 Dot .
+6:1 EOF 

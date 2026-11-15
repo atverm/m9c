@@ -67,6 +67,10 @@ PROCEDURE ErrModAt (i: I64) : UTF ;
      name (2026-10-29). *)
 
 PROCEDURE SetIrCheck (on: BOOL) ;
+PROCEDURE SetVerifyClaims (on: BOOL) ;
+  (* SetVerifyClaims makes the body of a FOR whose INRANGE claim is
+     TRUE keep its subscript checks, and stop the program on one that
+     fails (m9c --verify-claims, docs/loop-check-plan.md). *)
 PROCEDURE SetStrUtf (on: BOOL) ;
   (* SetStrUtf rehearses the switch (Sem.SetStrUtf).  STR is
      m9_sl_UTF8, a literal and a string CONST are octets, and STR (u)
@@ -227,6 +231,15 @@ VAR
   isProgram : BOOL ;       (* MODULE m -- emit a main () *)
   mainBody : Ast.Kid ;     (* its block *)
   inMain : BOOL ;          (* emitting it: err->res is &m9mframe there *)
+  unchk : I64 ;            (* > 0 in the body of a FOR whose INRANGE claim
+                              held: subscripts take the unchecked
+                              accessors *)
+  claimDone : I64 ;        (* the claimed FOR whose two bodies are being
+                              emitted, by node id; -1 when none *)
+  vclaims : BOOL ;         (* --verify-claims: a claimed body keeps its
+                              checks and stops on a false claim *)
+  claimLine : I64 ;        (* the line of the claim whose body is being
+                              emitted, for the verifying accessors *)
   strNode : Ast.Kid ;      (* the STR that STR names *)
   utfNode : Ast.Kid ;      (* the SLICE OF <u8> that UTF names *)
 
@@ -811,6 +824,7 @@ VAR
 BEGIN
   IF inited THEN RETURN END ;
   inited := TRUE ;
+  unchk := 0 ; claimDone := -1 ; claimLine := 0 ;
   ch := Ast.NewNode (gpool, Ast.NQualident, 0, 0) ;
   Ast.SetA (gpool, ch, 'CHAR') ;
   sn := Ast.NewNode (gpool, Ast.NSliceType, 0, 0) ;
@@ -2922,7 +2936,7 @@ END NanWalk ;
    gets a check at its head, M9_YCHK, where the monitor thread can ask
    the task to yield: a load of one global flag and a branch, the
    slow call only when the flag is set.  Not every loop gets one.
-   Rule y8, measured on five programs and chosen by Alex on
+   Rule y8, measured on five programs and chosen by the author on
    2026-11-02, checks
 
      the outermost loop of a nest: a loop that holds a loop, and is
@@ -3302,7 +3316,7 @@ BEGIN
 END ImportsMod ;
 
 (* CycleForwards serves TWO DEFINITIONS THAT IMPORT EACH OTHER
-   (allowed; Alex, 2026-10-22: types do not change at run time, so a
+   (allowed; decided 2026-10-22: types do not change at run time, so a
    copy works).  The C compiler reads one header first, and that
    header includes the other.  The other's own include of the first
    is then skipped by its guard.  So the second sees none of the
@@ -3835,6 +3849,30 @@ END OriginPool ;
    that leaves on the error.  Decision 46's call-selection uses the
    same shape.  A field of an element, or an inline array's subscript,
    stays inside the cell and needs none. *)
+(* IxC answers a subscript's C.  In the body of a FOR whose INRANGE
+   claim held, the I64 sums, differences and products written in the
+   subscript are plain arithmetic: the claim says the index is in
+   range, which an overflowed sum is not.  They are computed unsigned,
+   so the C has no undefined overflow whatever the claim was worth.
+   Anything else in the subscript, a call's argument too, is emitted
+   as everywhere. *)
+PROCEDURE IxC (k: Ast.Kid) : UTF =
+BEGIN
+  IF unchk > 0 THEN
+    IF k IS SOME e THEN
+      IF e.kind = Ast.NParen THEN RETURN S3 ('(', IxC (e.kids[0]), ')') END ;
+      IF e.kind = Ast.NBin AND
+         (Text.Eq (e.au, '+') OR Text.Eq (e.au, '-') OR Text.Eq (e.au, '*')) AND
+         Text.Eq (TagOfExpr (k), 'I64') AND
+         Text.Eq (TagOfExpr (e.kids[0]), 'I64') AND Text.Eq (TagOfExpr (e.kids[1]), 'I64') THEN
+        RETURN S7 ('((int64_t) ((uint64_t) (', IxC (e.kids[0]), ') ', e.au,
+                   ' (uint64_t) (', IxC (e.kids[1]), ')))')
+      END
+    END
+  END ;
+  RETURN EX (k, '')
+END IxC ;
+
 PROCEDURE AtGuard (RO res: UTF ; tnd: Ast.Kid) : UTF =
 BEGIN
   RETURN S7 ('({ ', TyC (tnd), ' m9g = (', res, '); if (err->exc) ',
@@ -3978,11 +4016,51 @@ BEGIN
             dg := DynStr.New (gpool) ;
             FOR jj := 0 TO sel.nkids - 1 DO
               IF jj > 0 THEN DynStr.Append (dg, ', ') END ;
-              DynStr.Append (dg, EX (sel.kids[jj], ''))
+              DynStr.Append (dg, IxC (sel.kids[jj]))
             END ;
             cnt := ArrCount2 (r.kids[0]) ;
             rk := sel.nkids ;
-            IF rk >= 1 AND rk <= 4 THEN
+            IF unchk > 0 AND rk >= 1 AND rk <= 4 THEN
+              (* the claimed body: the strides and the indices, no
+                 extents and no error slot *)
+              dns := DynStr.New (gpool) ;
+              DynStr.Append (dns, '(*(') ;
+              DynStr.Append (dns, ec) ;
+              IF vclaims THEN
+                DynStr.Append (dns, ' *) m9_vgat')
+              ELSE
+                DynStr.Append (dns, ' *) m9_ugat')
+              END ;
+              DynStr.Append (dns, ItoA (rk)) ;
+              DynStr.Append (dns, ' (') ;
+              DynStr.Append (dns, base) ;
+              DynStr.Append (dns, '.p, sizeof (') ;
+              DynStr.Append (dns, ec) ;
+              DynStr.Append (dns, '), ') ;
+              IF vclaims THEN
+                FOR jj := 0 TO rk - 1 DO
+                  DynStr.Append (dns, base) ;
+                  DynStr.Append (dns, '.n[') ;
+                  DynStr.Append (dns, ItoA (jj)) ;
+                  DynStr.Append (dns, '], ')
+                END
+              END ;
+              FOR jj := 0 TO rk - 1 DO
+                DynStr.Append (dns, base) ;
+                DynStr.Append (dns, '.s[') ;
+                DynStr.Append (dns, ItoA (jj)) ;
+                DynStr.Append (dns, '], ')
+              END ;
+              DynStr.Append (dns, DynStr.ViewIn (gpool, dg)) ;
+              IF vclaims THEN
+                DynStr.Append (dns, ', m9pn, ') ;
+                DynStr.Append (dns, ItoA (claimLine)) ;
+                DynStr.Append (dns, '))')
+              ELSE
+                DynStr.Append (dns, '))')
+              END ;
+              res := DynStr.ViewIn (gpool, dns)
+            ELSIF rk >= 1 AND rk <= 4 THEN
               (* ranks 1..4 go to the written-out form: extents and
                  strides by value, no index array, no loop over the
                  rank.  The port's kernel went 2.60x -> 1.29x, with
@@ -4019,17 +4097,25 @@ BEGIN
                 S9 ('.n, ', base, '.s, (int64_t[]){', DynStr.ViewIn (gpool, dg),
                     '}, ', cnt, ', err))', '', ''))
             END ;
-            pendAt := TRUE ;
+            pendAt := NOT (unchk > 0 AND rk >= 1 AND rk <= 4) ;
             tnd := Checked (sel, InMod (r.kids[1], tmod))
           ELSE
-          ix := EX (sel.kids[0], '') ;
+          ix := IxC (sel.kids[0]) ;
           IF r.kind = Ast.NSliceType THEN
             IF pendAt THEN res := AtGuard (res, tnd) ; pendAt := FALSE END ;
             base := res ;
             ec := TyC (r.kids[0]) ;
-            res := S9 ('(*(', ec, ' *) m9_at (', base, '.p, ', ix,
-              ', ', base, S5 ('.len, sizeof (', ec, '), err))', '', '')) ;
-            pendAt := TRUE ;
+            IF unchk > 0 AND vclaims THEN
+              res := S9 ('(*(', ec, ' *) m9_vat (', base, '.p, ', ix,
+                ', ', base, S5 ('.len, sizeof (', ec, '), m9pn, ', ItoA (claimLine), '))'))
+            ELSIF unchk > 0 THEN
+              res := S9 ('(*(', ec, ' *) m9_uat (', base, '.p, ', ix,
+                ', sizeof (', ec, ')))')
+            ELSE
+              res := S9 ('(*(', ec, ' *) m9_at (', base, '.p, ', ix,
+                ', ', base, S5 ('.len, sizeof (', ec, '), err))', '', '')) ;
+              pendAt := TRUE
+            END ;
             tnd := Checked (sel, InMod (r.kids[0], tmod))
           ELSIF r.kind = Ast.NArrayType THEN
             base := res ;
@@ -4052,6 +4138,15 @@ BEGIN
             END ;
             IF enumIx THEN
               res := S5 ('(', base, '.v[(', ix, ').tag])') ;
+              tnd := Checked (sel, InMod (r.kids[1], tmod))
+            ELSIF unchk > 0 AND vclaims THEN
+              cnt := ArrCount2 (r.kids[0]) ;
+              res := S9 ('(*(', ec, ' *) m9_vat (', base, '.v, ', ix,
+                ', INT64_C(', cnt, S5 ('), sizeof (', ec, '), m9pn, ', ItoA (claimLine), '))')) ;
+              tnd := Checked (sel, InMod (r.kids[1], tmod))
+            ELSIF unchk > 0 THEN
+              res := S9 ('(*(', ec, ' *) m9_uat (', base, '.v, ', ix,
+                ', sizeof (', ec, ')))') ;
               tnd := Checked (sel, InMod (r.kids[1], tmod))
             ELSE
               cnt := ArrCount2 (r.kids[0]) ;
@@ -5382,6 +5477,11 @@ BEGIN
   RETURN FindProcN (S2 (nm, 'Utf')) >= 0
 END Collapsed ;
 
+PROCEDURE SetVerifyClaims (on: BOOL) =
+BEGIN
+  vclaims := on
+END SetVerifyClaims ;
+
 PROCEDURE SetIrCheck (on: BOOL) =
 BEGIN
   MInit (irReach) ;
@@ -5725,7 +5825,7 @@ BEGIN
         Text.Eq (name, 'OCTETS')) THEN
       RETURN UtfBuiltinC (name, al.kids[0], tag, 'err->res')
     END ;
-    (* UTF (pool, x) does the same, into pool (Alex, 2026-10-23). *)
+    (* UTF (pool, x) does the same, into pool (decided 2026-10-23). *)
     IF nargs = 2 AND FindProcN (name) < 0 AND ScopeFind (name) < 0 AND
        Text.Eq (name, 'UTF') THEN
       e1 := '' ;
@@ -6037,7 +6137,7 @@ BEGIN
       END
     END
   END ;
-  (* TWINS BY TYPE serve UTF (docs/utf8-plan.md, U3; Alex,
+  (* TWINS BY TYPE serve UTF (docs/utf8-plan.md, U3; decided
      2026-10-23).  `Text.Eq (u, v)' with a UTF argument is `Text.EqUtf
      (u, v)' when the module declares it.  That is the checker's rule
      (Sem.UtfTwin), so the two ends agree on which procedure the call
@@ -6957,7 +7057,7 @@ PROCEDURE EmitStmt (k: Ast.Kid ; ind: I64) =
 VAR
   savedXit, mk : UTF ;
   l, r, tg, w, cnd, stp, bname, thrPool : UTF ;
-  j, j2, savedScope, sv, sf, thrPi, h0, kh, nh : I64 ;
+  j, j2, savedScope, sv, sf, thrPi, h0, kh, nh, svClaim, svLine, svLow : I64 ;
   hc : SLICE OF I64 ;
   vtN, vd, sop : Ast.Kid ;
   thrWants, lRaise, shared, rel, thrRef, rs : BOOL ;
@@ -7232,6 +7332,49 @@ BEGIN
         inSwitch := sv ; finDepth := sf ;
         Line (KPbuf, ind, '}')
     | Ast.NFor :
+        (* FOR [INRANGE b]: the claim is read once, before the loop.
+           TRUE runs the loop with its subscripts unchecked, FALSE the
+           loop as it is without a claim, so a program means the same
+           either way (docs/loop-check-plan.md).  The loop is emitted
+           twice by coming here again, with this node marked done. *)
+        IF st.nkids > 4 AND claimDone # st.id THEN
+          w := NewTmp () ;
+          Line (KPbuf, ind, S3 ('{ bool ', w, 'cl = false;')) ;
+          mk := CondMark (st.kids[4], ind + 1) ;
+          h0 := Lower (st.kids[4], ind + 1) ;
+          cnd := EX (st.kids[4], '') ;
+          rs := LeftRaises (st.kids[4]) ;
+          Line (KPbuf, ind + 1, S4 (w, 'cl = ', cnd, ';')) ;
+          IF rs THEN
+            Line (KPbuf, ind + 1, S3 ('if (err->exc) ', ExcGo (raiseLbl), ';'))
+          END ;
+          IF Text.BLen (mk) > 0 THEN
+            Line (KPbuf, ind + 1, S3 ('m9_pool_release (err->res, ', mk, ');'))
+          END ;
+          FOR kh := 1 TO h0 DO Line (KPbuf, ind + 1, '}') END ;
+          svClaim := claimDone ;
+          claimDone := st.id ;
+          svLine := claimLine ;
+          claimLine := st.line ;
+          Line (KPbuf, ind + 1, S3 ('if (', w, 'cl) {')) ;
+          (* The body's argument temporaries are named by node
+             (lowered).  The second emission makes its own, so the
+             first one's names are cut back: a call in the FALSE loop
+             named a temporary the TRUE loop had declared. *)
+          svLow := lowered.n ;
+          unchk := unchk + 1 ;
+          EmitStmt (k, ind + 2) ;
+          unchk := unchk - 1 ;
+          lowered.n := svLow ;
+          claimLine := svLine ;
+          Line (KPbuf, ind + 1, '} else {') ;
+          EmitStmt (k, ind + 2) ;
+          lowered.n := svLow ;
+          Line (KPbuf, ind + 1, '}') ;
+          claimDone := svClaim ;
+          Line (KPbuf, ind, '}') ;
+          RETURN
+        END ;
         (* FOR over an enumeration walks its tags: the variable is a
            struct, so the loop runs on `.tag' -- c.tag = lo.tag;
            c.tag <= hi.tag; c.tag++ (docs/enum-plan.md, part 2) *)
@@ -8767,9 +8910,17 @@ PROCEDURE SelfWalks () =
 VAR i : I64 ;
 BEGIN
   FOR i := 0 TO ngps - 1 DO
-    IF gps[i].node IS SOME pn THEN SelfWalk (pn, NONE) END
+    IF gps[i].node IS SOME pn THEN
+      (* the checker's rename of a hiding local, for a run without it;
+         after the checker it finds nothing left to rename *)
+      Ast.Unhide (gpool, pn, modName) ;
+      SelfWalk (pn, NONE)
+    END
   END ;
-  IF mainBody IS SOME mb THEN SelfWalk (mb, NONE) END
+  IF mainBody IS SOME mb THEN
+    Ast.Unhide (gpool, mb, modName) ;
+    SelfWalk (mb, NONE)
+  END
 END SelfWalks ;
 
 PROCEDURE ExportWalks () =
@@ -8849,9 +9000,17 @@ BEGIN
      rebuilds a module whose header was generated the other way (a
      plain Fmt.h in the build directory was taken as current, maillists
      2026-10-25); without the flag the line is as it always was *)
-  IF NOT strOld THEN
+  (* --verify-claims is said there too, for the same reason: an
+     object built without it has claimed bodies that do not check *)
+  IF NOT strOld AND vclaims THEN
+    Line (KHdr, 0, S3 ('/* generated by M9Gen from ', fm,
+      '.m9 with --utf-str --verify-claims -- do not edit */'))
+  ELSIF NOT strOld THEN
     Line (KHdr, 0, S3 ('/* generated by M9Gen from ', fm,
       '.m9 with --utf-str -- do not edit */'))
+  ELSIF vclaims THEN
+    Line (KHdr, 0, S3 ('/* generated by M9Gen from ', fm,
+      '.m9 with --verify-claims -- do not edit */'))
   ELSE
     Line (KHdr, 0, S3 ('/* generated by M9Gen from ', fm,
       '.m9 -- do not edit */'))

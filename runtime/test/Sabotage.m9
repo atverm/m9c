@@ -73,7 +73,7 @@ MODULE Sabotage ;
    exception until the end (srvfix, 2026-10-31: a missing fuser).
 
    Not run by CI.  The full lists take long, so they run on a Linux
-   box.  This is a helper, so it is in M9 (Alex, 2026-10-04). *)
+   box.  This is a helper, so it is in M9 (decided 2026-10-04). *)
 
 IMPORT Fmt ;
 IMPORT Io ;

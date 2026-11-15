@@ -89,6 +89,19 @@ PROCEDURE Page (root: PTR Ast.Node ; RO modName: UTF ;
      there was to check.  A section with nothing in it still prints its
      zeroes: an absent line and a zero are different claims.         *)
 
+PROCEDURE IsProgram (root: PTR Ast.Node) : BOOL ;
+  (* IsProgram says whether the file holds a program module: the unit
+     a reviewer is handed when the question is the whole program. *)
+
+PROCEDURE ClaimsRow (root: PTR Ast.Node ; RO modName: UTF) : UTF ;
+  (* ClaimsRow answers one row for a module a program imports: its
+     name, the count of its FOR [INRANGE b] claims and their lines, as
+     the page's own INRANGE row is laid out.  It answers '' for a
+     module with no claim.  `m9c --review` of a program prints these
+     under the page: a claim is the author's word that subscripts are
+     in range, and the program is as sound as every such word in it,
+     in whatever module it stands. *)
+
 END Review.
 
 
@@ -107,7 +120,7 @@ TYPE
     fallOff : I64 ;
     modPools, localPools, poolParams : I64 ;
     kept, heap, newOwn, newPool, newFrame : I64 ;
-    dispose, shared, thread, task : I64 ;
+    dispose, shared, thread, task, claims : I64 ;
     modVars, sharable : I64 ;
     unsafeUnits, statefulUnits : I64 ;
     foreign, serial, reentrant : I64 ;
@@ -402,6 +415,14 @@ BEGIN
           c.thread := c.thread + 1 ;
           Site (log, 'T', n.line, proc)
         END
+    | Ast.NFor :
+        (* FOR [INRANGE b]: the author's claim that the loop's
+           subscripts are in range.  The checker cannot prove it, so
+           it is a person's decision, read with its line. *)
+        IF n.nkids > 4 THEN
+          c.claims := c.claims + 1 ;
+          Site (log, 'I', n.line, proc)
+        END
     | Ast.NNewExpr :
         IF n.kids[0] IS SOME p THEN
           IF Text.Eq (p.au, 'OWN') THEN
@@ -684,6 +705,49 @@ BEGIN
   DynStr.AppendChar (d, 0AC)
 END StatRow ;
 
+PROCEDURE Zero (VAR c: Counts) =
+BEGIN
+  c.procs := 0 ; c.funcs := 0 ; c.exported := 0 ; c.fallOff := 0 ;
+  c.modPools := 0 ; c.localPools := 0 ; c.poolParams := 0 ;
+  c.cuts := 0 ;
+  c.kept := 0 ; c.heap := 0 ; c.newOwn := 0 ; c.newPool := 0 ;
+  c.newFrame := 0 ; c.dispose := 0 ; c.shared := 0 ; c.thread := 0 ; c.task := 0 ; c.claims := 0 ;
+  c.modVars := 0 ; c.sharable := 0 ; c.unsafeUnits := 0 ; c.statefulUnits := 0 ;
+  c.foreign := 0 ; c.serial := 0 ; c.reentrant := 0 ;
+  c.cases := 0 ; c.raises := 0 ; c.handlers := 0 ;
+  c.defs := 0 ; c.impls := 0 ; c.progs := 0
+END Zero ;
+
+PROCEDURE IsProgram (root: PTR Ast.Node) : BOOL =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO root.nkids - 1 DO
+    IF root.kids[i] IS SOME u THEN
+      IF u.kind = Ast.NProgram THEN RETURN TRUE END
+    END
+  END ;
+  RETURN FALSE
+END IsProgram ;
+
+PROCEDURE ClaimsRow (root: PTR Ast.Node ; RO modName: UTF) : UTF =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+  log : PTR DynStr.DString IN scratch ;
+  c : Counts ;
+  i : I64 ;
+BEGIN
+  Zero (c) ;
+  d := DynStr.New (scratch) ;
+  log := DynStr.New (scratch) ;
+  FOR i := 0 TO root.nkids - 1 DO
+    IF root.kids[i] IS SOME u THEN Unit (c, log, root, u) END
+  END ;
+  IF c.claims = 0 THEN RETURN '' END ;
+  Row (d, Text.Split (DynStr.View (log), 0AC), modName, c.claims, 'I') ;
+  RETURN DynStr.View (d)
+END ClaimsRow ;
+
 PROCEDURE Page (root: PTR Ast.Node ; RO modName: UTF ;
                 checked: BOOL ; RO stats: SLICE OF Stat ;
                 RO writes: SLICE OF UTF ; RO stale: SLICE OF UTF ;
@@ -697,15 +761,7 @@ VAR
   lines, wl, sl : SLICE OF UTF ;
   i, nd : I64 ;
 BEGIN
-  c.procs := 0 ; c.funcs := 0 ; c.exported := 0 ; c.fallOff := 0 ;
-  c.modPools := 0 ; c.localPools := 0 ; c.poolParams := 0 ;
-  c.cuts := 0 ;
-  c.kept := 0 ; c.heap := 0 ; c.newOwn := 0 ; c.newPool := 0 ;
-  c.newFrame := 0 ; c.dispose := 0 ; c.shared := 0 ; c.thread := 0 ; c.task := 0 ;
-  c.modVars := 0 ; c.sharable := 0 ; c.unsafeUnits := 0 ; c.statefulUnits := 0 ;
-  c.foreign := 0 ; c.serial := 0 ; c.reentrant := 0 ;
-  c.cases := 0 ; c.raises := 0 ; c.handlers := 0 ;
-  c.defs := 0 ; c.impls := 0 ; c.progs := 0 ;
+  Zero (c) ;
   d := DynStr.New (scratch) ;
   log := DynStr.New (scratch) ;
   FOR i := 0 TO root.nkids - 1 DO
@@ -756,6 +812,7 @@ BEGIN
   Row (d, lines, 'SHARED (x)', c.shared, 'S') ;
   Row (d, lines, 'THREAD', c.thread, 'T') ;
   Row (d, lines, 'TASK', c.task, 'G') ;
+  Row (d, lines, 'INRANGE claims', c.claims, 'I') ;
   Row (d, lines, '[SHARABLE] records', c.sharable, 'R') ;
   Row (d, lines, 'module variables', c.modVars, 'V') ;
 

@@ -1,0 +1,27 @@
+DEFINITION MODULE Kern ;
+
+(* Kern is a module with two claimed loops, for run.sh's check that
+   the review page of a program lists the claims of what it imports. *)
+
+PROCEDURE Sum (RO a: SLICE OF I64) : I64 ;
+PROCEDURE Fill (VAR a: SLICE OF I64 ; v: I64) ;
+
+END Kern.
+
+IMPLEMENTATION MODULE Kern ;
+
+PROCEDURE Sum (RO a: SLICE OF I64) : I64 =
+VAR k, s : I64 ;
+BEGIN
+  s := 0 ;
+  FOR [INRANGE TRUE] k := 0 TO LEN (a) - 1 DO s := s + a[k] END ;
+  RETURN s
+END Sum ;
+
+PROCEDURE Fill (VAR a: SLICE OF I64 ; v: I64) =
+VAR k : I64 ;
+BEGIN
+  FOR [INRANGE LEN (a) > 0] k := 0 TO LEN (a) - 1 DO a[k] := v END
+END Fill ;
+
+END Kern.

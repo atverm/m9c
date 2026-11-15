@@ -7,6 +7,13 @@
 #
 #   ./build.sh              build into ./out
 #   ./build.sh DESTDIR      also install under DESTDIR (packaging)
+#   ./build.sh --fill-cache DESTDIR
+#                           fill DESTDIR/usr/lib/m9/cache with the
+#                           library compiled, with the m9c installed
+#                           there (docs/run-cache-plan.md).  It is a
+#                           step of its own because the cache's stamp
+#                           names the m9c binary: a packager that
+#                           strips m9c runs this after the strip.
 #
 # The bootstrap question, stated plainly: this builds m9c from the C
 # in runtime/gen, which is checked in.  That C was produced by m9c
@@ -18,6 +25,33 @@ set -e
 cd "$(dirname "$0")"
 
 CC=${CC:-cc}
+# THE PACKAGE'S CACHE.  The installed m9c compiles every module of the
+# library, as a script's first run would, into the directory it looks
+# in beside the sources.  Both forms: the objects --run links and the
+# shared objects --cell loads.  The C compiler is the one a user's m9c
+# calls when CC is unset, so the keys match theirs; the runtime's
+# headers come from this tree, the same file the package installs.
+if [ "${1:-}" = --fill-cache ]; then
+  D=${2:?--fill-cache wants DESTDIR}
+  # every module installed: the library, as LIBRARY below names it
+  LIB=$(cd "$D/usr/lib/m9" && ls ./*.m9 | sed 's#^./##; s#[.]m9$##')
+  F=$(mktemp -d)
+  {
+    echo "MODULE FillAll ;"
+    echo "(* every module of the library, for m9c --fill-cache *)"
+    for m in $LIB; do echo "IMPORT $m ;"; done
+    echo "BEGIN"
+    echo "END FillAll."
+  } > "$F/FillAll.m9"
+  for form in --run --cell; do
+    env -u CC M9LIBRARY="$D/usr/lib/m9" M9RUNTIME="$(pwd)/runtime" \
+      "$D/usr/bin/m9c" --fill-cache "$D/usr/lib/m9/cache" $form "$F/FillAll.m9"
+  done
+  rm -rf "$F"
+  find "$D/usr/lib/m9/cache" -type d -exec chmod 755 {} +
+  find "$D/usr/lib/m9/cache" -type f -exec chmod 644 {} +
+  exit 0
+fi
 # A packager's flags are HONOURED, all three of them.  dpkg-buildpackage
 # and rpmbuild export CFLAGS, CPPFLAGS and LDFLAGS (hardening lives in
 # CPPFLAGS' -D_FORTIFY_SOURCE and LDFLAGS' -z now).  lintian flagged m9c
@@ -143,7 +177,7 @@ install -m 644 man/m9c.1         "$DESTDIR/usr/share/man/man1/m9c.1"
 # The report, pools.md and the VS Code extension are in the private
 # development tree and the release tarball, NOT in the public
 # atverm/m9c (corpus, host/fpc, runtime, the man page and the module
-# reference only; Alex, 2026-08-30).  An install from that tree says
+# reference only; decided 2026-08-30).  An install from that tree says
 # what it is not installing instead of failing on the first of them.
 for d in docs/M9-report.md docs/pools.md docs/bench.md; do
   if [ -f "$d" ]; then install -m 644 "$d" "$DESTDIR/usr/share/doc/m9/$(basename "$d")"

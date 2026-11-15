@@ -1,0 +1,20 @@
+7:1 MODULE MODULE
+7:8 Ident m
+7:10 Semi ;
+8:1 TYPE TYPE
+8:6 Ident H
+8:8 Eq =
+8:10 SHARED SHARED
+8:17 PTR PTR
+8:21 Ident H
+8:23 Semi ;
+9:1 VAR VAR
+9:5 Ident h
+9:7 Colon :
+9:9 Ident H
+9:11 Semi ;
+10:1 BEGIN BEGIN
+11:1 END END
+11:5 Ident m
+11:6 Dot .
+12:1 EOF 

@@ -3,7 +3,7 @@ MODULE GfUnsetField ;
 (* WANT: unset: followed -1 0, element -1 0, copied -1 0, set 7 *)
 
 (* A PTR field of a record that arrived zeroed holds nothing until it is
-   set (2026-10-21, the compiler review's C8; Alex: "runtime check
+   set (2026-10-21, the compiler review's C8; the author: "runtime check
    everywhere").  Following it -- `p.next.n' -- was a SIGSEGV with no
    handler run; copying it out (`q := p.next') let the NULL travel on to
    fail where nothing tests.  Both raise IndexError now, with the payload

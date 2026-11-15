@@ -82,11 +82,11 @@ var i : I64
 } BrokeF.
 BRF
 
-# The version the server announces is gated against debian/changelog,
+# The version the server announces is gated against the release version (lib/version.sh),
 # exactly as m9c --version is in m9c.sh.  0.4.1 shipped an m9lsp that
 # said 0.4.0, because Lsp.m9's Version is a second hand-bumped
 # constant and nothing compared it to anything.
-CLV=$(cd "$SRC/.." && sh tools/release/version.sh)
+CLV=$(sh "$SRC/../runtime/test/lib/version.sh")
 M9LSP_M9C=$W/m9c M9LIBRARY="$SRC" M9CACHE="$W/cache" M9_CLV="$CLV" python3 - "$W" <<'PY'
 import json, subprocess, sys, os
 

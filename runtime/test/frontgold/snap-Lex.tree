@@ -1,0 +1,1079 @@
+STATEFUL DEFINITION MODULE Lex ;
+
+TYPE
+  Token = RECORD
+    kind, line, col : I64 ;
+    text : UTF ;
+  END ;
+  Lexer = RECORD
+    src : UTF ;
+    pos, line, col : I64 ;
+  END ;
+  Comment = RECORD
+    line, col, endLine : I64 ;
+    text : UTF ;
+  END ;
+
+PROCEDURE Init (VAR lx: Lexer ; RO src: STR) ;
+
+PROCEDURE InitUtf (VAR lx: Lexer ; RO src: UTF) ;
+
+PROCEDURE Next (VAR lx: Lexer ; VAR t: Token) ;
+
+PROCEDURE KindName (k: I64) : STR ;
+
+PROCEDURE IsKeyword (RO w: STR) : BOOL ;
+
+PROCEDURE Collect (on: BOOL) ;
+
+PROCEDURE ComCount () : I64 ;
+
+PROCEDURE ComAt (i: I64) : Comment
+  RAISES IndexError ;
+
+END Lex.
+
+
+UNSAFE IMPLEMENTATION MODULE Lex ;
+
+IMPORT DynStr ;
+
+IMPORT Text ;
+
+CONST
+  KEOF = 0 ;
+  KError = 1 ;
+  KIdent = 2 ;
+  KInt = 3 ;
+  KReal = 4 ;
+  KChar = 5 ;
+  KStr = 6 ;
+  KwFirst = 7 ;
+  KwLast = 69 ;
+  OpFirst = 200 ;
+  KAssign = 200 ;
+  KEq = 201 ;
+  KNeq = 202 ;
+  KLt = 203 ;
+  KLe = 204 ;
+  KGt = 205 ;
+  KGe = 206 ;
+  KPlus = 207 ;
+  KMinus = 208 ;
+  KStar = 209 ;
+  KSlash = 210 ;
+  KPlusW = 211 ;
+  KMinusW = 212 ;
+  KStarW = 213 ;
+  KLParen = 214 ;
+  KRParen = 215 ;
+  KLBrack = 216 ;
+  KRBrack = 217 ;
+  KComma = 218 ;
+  KSemi = 219 ;
+  KColon = 220 ;
+  KDot = 221 ;
+  KDotDot = 222 ;
+  KBar = 223 ;
+  KCaret = 224 ;
+  HexMsg = '0123456789abcdef' ;
+  HexUp = '0123456789ABCDEF' ;
+  Ascii = [
+    0C,
+    1C,
+    2C,
+    3C,
+    4C,
+    5C,
+    6C,
+    7C,
+    8C,
+    9C,
+    0AC,
+    0BC,
+    0CC,
+    0DC,
+    0EC,
+    0FC,
+    10C,
+    11C,
+    12C,
+    13C,
+    14C,
+    15C,
+    16C,
+    17C,
+    18C,
+    19C,
+    1AC,
+    1BC,
+    1CC,
+    1DC,
+    1EC,
+    1FC,
+    20C,
+    21C,
+    22C,
+    23C,
+    24C,
+    25C,
+    26C,
+    27C,
+    28C,
+    29C,
+    2AC,
+    2BC,
+    2CC,
+    2DC,
+    2EC,
+    2FC,
+    30C,
+    31C,
+    32C,
+    33C,
+    34C,
+    35C,
+    36C,
+    37C,
+    38C,
+    39C,
+    3AC,
+    3BC,
+    3CC,
+    3DC,
+    3EC,
+    3FC,
+    40C,
+    41C,
+    42C,
+    43C,
+    44C,
+    45C,
+    46C,
+    47C,
+    48C,
+    49C,
+    4AC,
+    4BC,
+    4CC,
+    4DC,
+    4EC,
+    4FC,
+    50C,
+    51C,
+    52C,
+    53C,
+    54C,
+    55C,
+    56C,
+    57C,
+    58C,
+    59C,
+    5AC,
+    5BC,
+    5CC,
+    5DC,
+    5EC,
+    5FC,
+    60C,
+    61C,
+    62C,
+    63C,
+    64C,
+    65C,
+    66C,
+    67C,
+    68C,
+    69C,
+    6AC,
+    6BC,
+    6CC,
+    6DC,
+    6EC,
+    6FC,
+    70C,
+    71C,
+    72C,
+    73C,
+    74C,
+    75C,
+    76C,
+    77C,
+    78C,
+    79C,
+    7AC,
+    7BC,
+    7CC,
+    7DC,
+    7EC,
+    7FC
+  ] ;
+
+VAR
+  comOn : BOOL ;
+  coms : SLICE OF Comment ;
+  ncom : I64 ;
+
+PROCEDURE Collect (on: BOOL) =
+BEGIN
+  comOn := on ;
+  IF on THEN
+    ncom := 0
+  END
+END Collect ;
+
+PROCEDURE ComCount () : I64 =
+BEGIN
+  RETURN ncom
+END ComCount ;
+
+PROCEDURE ComAt (i: I64) : Comment
+  RAISES IndexError =
+BEGIN
+  IF i < 0 OR i >= ncom THEN
+    RAISE IndexError (i, ncom)
+  END ;
+  RETURN coms[i]
+END ComAt ;
+
+PROCEDURE Note (line, col, endLine: I64 ; RO text: UTF) =
+VAR
+  nc : SLICE OF Comment ;
+  i : I64 ;
+BEGIN
+  IF ncom = LEN (coms) THEN
+    IF LEN (coms) = 0 THEN
+      nc := NEW (HEAP, Comment, 64)
+    ELSE
+      nc := NEW (HEAP, Comment, 2 * LEN (coms))
+    END ;
+    FOR i := 0 TO ncom - 1 DO
+      nc[i] := coms[i]
+    END ;
+    coms := nc
+  END ;
+  coms[ncom].line := line ;
+  coms[ncom].col := col ;
+  coms[ncom].endLine := endLine ;
+  coms[ncom].text := UTF (HEAP, text) ;
+  ncom := ncom + 1
+END Note ;
+
+PROCEDURE KwName (i: I64) : STR =
+BEGIN
+  CASE i OF
+  | 7 :
+      RETURN 'AND'
+  | 8 :
+      RETURN 'ARRAY'
+  | 9 :
+      RETURN 'BEGIN'
+  | 10 :
+      RETURN 'BY'
+  | 11 :
+      RETURN 'CASE'
+  | 12 :
+      RETURN 'CONST'
+  | 13 :
+      RETURN 'DEFINITION'
+  | 14 :
+      RETURN 'DISPOSE'
+  | 15 :
+      RETURN 'DIV'
+  | 16 :
+      RETURN 'DO'
+  | 17 :
+      RETURN 'ELSE'
+  | 18 :
+      RETURN 'ELSIF'
+  | 19 :
+      RETURN 'END'
+  | 20 :
+      RETURN 'EXCEPT'
+  | 21 :
+      RETURN 'EXCEPTION'
+  | 22 :
+      RETURN 'EXIT'
+  | 23 :
+      RETURN 'FALSE'
+  | 24 :
+      RETURN 'FINALLY'
+  | 25 :
+      RETURN 'FOR'
+  | 26 :
+      RETURN 'FROM'
+  | 27 :
+      RETURN 'IF'
+  | 28 :
+      RETURN 'IMPLEMENTATION'
+  | 29 :
+      RETURN 'IMPORT'
+  | 30 :
+      RETURN 'IN'
+  | 31 :
+      RETURN 'IS'
+  | 32 :
+      RETURN 'LOOP'
+  | 33 :
+      RETURN 'MOD'
+  | 34 :
+      RETURN 'MODULE'
+  | 35 :
+      RETURN 'MONITOR'
+  | 36 :
+      RETURN 'NEW'
+  | 37 :
+      RETURN 'NONE'
+  | 38 :
+      RETURN 'NOT'
+  | 39 :
+      RETURN 'OF'
+  | 40 :
+      RETURN 'OPT'
+  | 41 :
+      RETURN 'OR'
+  | 42 :
+      RETURN 'OWN'
+  | 43 :
+      RETURN 'POOL'
+  | 44 :
+      RETURN 'PROCEDURE'
+  | 45 :
+      RETURN 'PTR'
+  | 46 :
+      RETURN 'RAISE'
+  | 47 :
+      RETURN 'RAISES'
+  | 48 :
+      RETURN 'RECORD'
+  | 49 :
+      RETURN 'RETURN'
+  | 50 :
+      RETURN 'SHARED'
+  | 51 :
+      RETURN 'SIGNAL'
+  | 52 :
+      RETURN 'SLICE'
+  | 53 :
+      RETURN 'SOME'
+  | 54 :
+      RETURN 'STATEFUL'
+  | 55 :
+      RETURN 'THEN'
+  | 56 :
+      RETURN 'THREAD'
+  | 57 :
+      RETURN 'TO'
+  | 58 :
+      RETURN 'TRANSFER'
+  | 59 :
+      RETURN 'TRUE'
+  | 60 :
+      RETURN 'TYPE'
+  | 61 :
+      RETURN 'UNSAFE'
+  | 62 :
+      RETURN 'VAR'
+  | 63 :
+      RETURN 'WAIT'
+  | 64 :
+      RETURN 'WHILE'
+  | 65 :
+      RETURN 'RO'
+  | 66 :
+      RETURN 'GRID'
+  | 67 :
+      RETURN 'KEPT'
+  | 68 :
+      RETURN 'LINK'
+  | 69 :
+      RETURN 'TASK'
+  ELSE
+      RETURN '?'
+  END
+END KwName ;
+
+PROCEDURE KindName (k: I64) : STR =
+BEGIN
+  IF k >= KwFirst THEN
+    IF k <= KwLast THEN
+      RETURN KwName (k)
+    END
+  END ;
+  CASE k OF
+  | 0 :
+      RETURN 'EOF'
+  | 1 :
+      RETURN 'Error'
+  | 2 :
+      RETURN 'Ident'
+  | 3 :
+      RETURN 'IntLit'
+  | 4 :
+      RETURN 'RealLit'
+  | 5 :
+      RETURN 'CharLit'
+  | 6 :
+      RETURN 'StrLit'
+  | KAssign :
+      RETURN 'Assign'
+  | KEq :
+      RETURN 'Eq'
+  | KNeq :
+      RETURN 'Neq'
+  | KLt :
+      RETURN 'Lt'
+  | KLe :
+      RETURN 'Le'
+  | KGt :
+      RETURN 'Gt'
+  | KGe :
+      RETURN 'Ge'
+  | KPlus :
+      RETURN 'Plus'
+  | KMinus :
+      RETURN 'Minus'
+  | KStar :
+      RETURN 'Star'
+  | KSlash :
+      RETURN 'Slash'
+  | KPlusW :
+      RETURN 'PlusWrap'
+  | KMinusW :
+      RETURN 'MinusWrap'
+  | KStarW :
+      RETURN 'StarWrap'
+  | KLParen :
+      RETURN 'LParen'
+  | KRParen :
+      RETURN 'RParen'
+  | KLBrack :
+      RETURN 'LBrack'
+  | KRBrack :
+      RETURN 'RBrack'
+  | KComma :
+      RETURN 'Comma'
+  | KSemi :
+      RETURN 'Semi'
+  | KColon :
+      RETURN 'Colon'
+  | KDot :
+      RETURN 'Dot'
+  | KDotDot :
+      RETURN 'DotDot'
+  | KBar :
+      RETURN 'Bar'
+  | KCaret :
+      RETURN 'Caret'
+  ELSE
+      RETURN '?'
+  END
+END KindName ;
+
+PROCEDURE IsKeyword (RO w: STR) : BOOL =
+VAR
+  i : I64 ;
+BEGIN
+  FOR i := KwFirst TO KwLast DO
+    IF Text.Eq (w, KwName (i)) THEN
+      RETURN TRUE
+    END
+  END ;
+  RETURN FALSE
+END IsKeyword ;
+
+PROCEDURE At (RO u: UTF ; i: I64) : CHAR =
+VAR
+  b : I64 ;
+BEGIN
+  b := I64 (Text.BAt (u, i)) ;
+  IF b < 128 THEN
+    RETURN Ascii[b]
+  END ;
+  RETURN 0C
+END At ;
+
+PROCEDURE SpellsKw (RO u: UTF ; RO s: STR) : BOOL =
+VAR
+  i : I64 ;
+BEGIN
+  IF Text.BLen (u) # Text.BLen (s) THEN
+    RETURN FALSE
+  END ;
+  FOR i := 0 TO Text.BLen (s) - 1 DO
+    IF At (u, i) # Text.BChar (s, i) THEN
+      RETURN FALSE
+    END
+  END ;
+  RETURN TRUE
+END SpellsKw ;
+
+PROCEDURE Lookup (RO s: UTF) : I64 =
+VAR
+  i : I64 ;
+BEGIN
+  FOR i := KwFirst TO KwLast DO
+    IF SpellsKw (s, KwName (i)) THEN
+      RETURN i
+    END
+  END ;
+  RETURN KIdent
+END Lookup ;
+
+PROCEDURE Init (VAR lx: Lexer ; RO src: STR) =
+BEGIN
+  InitUtf (lx, UTF (lx, src))
+END Init ;
+
+PROCEDURE InitUtf (VAR lx: Lexer ; RO src: UTF) =
+VAR
+  at : I64 ;
+BEGIN
+  lx.src := src ;
+  lx.pos := 0 ;
+  lx.line := 1 ;
+  lx.col := 1 ;
+  IF Text.BLen (src) >= 3 THEN
+    at := 0 ;
+    IF Text.NextCp (src, at) = 0FEFFC THEN
+      lx.pos := at
+    END
+  END ;
+  IF Text.BLen (src) >= lx.pos + 2 THEN
+    IF At (src, lx.pos) = '#' AND At (src, lx.pos + 1) = '!' THEN
+      WHILE lx.pos < Text.BLen (src) AND At (src, lx.pos) # 0AC DO
+        lx.pos := lx.pos + 1
+      END
+    END
+  END
+END InitUtf ;
+
+PROCEDURE Peek (VAR lx: Lexer ; ahead: I64) : CHAR =
+VAR
+  at, k, b : I64 ;
+  c : CHAR ;
+BEGIN
+  at := lx.pos ;
+  k := ahead ;
+  LOOP
+    IF at >= Text.BLen (lx.src) THEN
+      RETURN 0C
+    END ;
+    b := I64 (Text.BAt (lx.src, at)) ;
+    IF b < 128 THEN
+      c := Ascii[b] ;
+      at := at + 1
+    ELSE
+      c := Text.NextCp (lx.src, at)
+    END ;
+    IF k = 0 THEN
+      RETURN c
+    END ;
+    k := k - 1
+  END
+END Peek ;
+
+PROCEDURE Advance (VAR lx: Lexer) =
+VAR
+  c : CHAR ;
+BEGIN
+  IF Peek (lx, 0) = 0AC OR (Peek (lx, 0) = 0DC AND Peek (lx, 1) # 0AC) THEN
+    lx.line := lx.line + 1 ;
+    lx.col := 1
+  ELSE
+    lx.col := lx.col + 1
+  END ;
+  IF lx.pos < Text.BLen (lx.src) AND I64 (Text.BAt (lx.src, lx.pos)) >= 128 THEN
+    c := Text.NextCp (lx.src, lx.pos)
+  ELSE
+    lx.pos := lx.pos + 1
+  END
+END Advance ;
+
+PROCEDURE IsLetter (c: CHAR) : BOOL =
+BEGIN
+  RETURN (c >= 'A' AND c <= 'Z') OR (c >= 'a' AND c <= 'z')
+END IsLetter ;
+
+PROCEDURE IsDigit (c: CHAR) : BOOL =
+BEGIN
+  RETURN c >= '0' AND c <= '9'
+END IsDigit ;
+
+PROCEDURE IsHexAny (c: CHAR) : BOOL =
+BEGIN
+  RETURN IsDigit (c) OR (c >= 'A' AND c <= 'F') OR (c >= 'a' AND c <= 'f')
+END IsHexAny ;
+
+PROCEDURE IsHexUp (c: CHAR) : BOOL =
+BEGIN
+  RETURN IsDigit (c) OR (c >= 'A' AND c <= 'F')
+END IsHexUp ;
+
+PROCEDURE Skip (VAR lx: Lexer ; VAR bad: BOOL ; VAR eline, ecol: I64) =
+VAR
+  depth, cstart : I64 ;
+  c : CHAR ;
+BEGIN
+  bad := FALSE ;
+  LOOP
+    c := Peek (lx, 0) ;
+    WHILE c = ' ' OR c = 09C OR c = 0DC OR c = 0AC DO
+      Advance (lx) ;
+      c := Peek (lx, 0)
+    END ;
+    IF Peek (lx, 0) = '(' AND Peek (lx, 1) = '*' THEN
+      eline := lx.line ;
+      ecol := lx.col ;
+      cstart := lx.pos ;
+      depth := 0 ;
+      LOOP
+        IF Peek (lx, 0) = '(' AND Peek (lx, 1) = '*' THEN
+          depth := depth + 1 ;
+          Advance (lx) ;
+          Advance (lx)
+        ELSIF Peek (lx, 0) = '*' AND Peek (lx, 1) = ')' THEN
+          depth := depth - 1 ;
+          Advance (lx) ;
+          Advance (lx) ;
+          IF depth = 0 THEN
+            IF comOn THEN
+              Note (eline, ecol, lx.line, SLICE (lx.src, cstart, lx.pos - cstart))
+            END ;
+            EXIT
+          END
+        ELSIF Peek (lx, 0) = 0C THEN
+          bad := TRUE ;
+          RETURN
+        ELSE
+          Advance (lx)
+        END
+      END
+    ELSE
+      RETURN
+    END
+  END
+END Skip ;
+
+PROCEDURE Mk (VAR t: Token ; kind: I64 ; RO text: UTF ; line, col: I64) =
+BEGIN
+  t.kind := kind ;
+  t.text := text ;
+  t.line := line ;
+  t.col := col
+END Mk ;
+
+PROCEDURE Punct (VAR lx: Lexer ; VAR t: Token ; c: CHAR ; ln, cl: I64) : BOOL =
+BEGIN
+  IF c = ':' THEN
+    Advance (lx) ;
+    IF Peek (lx, 0) = '=' THEN
+      Advance (lx) ;
+      Mk (t, KAssign, ':=', ln, cl)
+    ELSE
+      Mk (t, KColon, ':', ln, cl)
+    END ;
+    RETURN TRUE
+  ELSIF c = '.' THEN
+    Advance (lx) ;
+    IF Peek (lx, 0) = '.' THEN
+      Advance (lx) ;
+      Mk (t, KDotDot, '..', ln, cl)
+    ELSE
+      Mk (t, KDot, '.', ln, cl)
+    END ;
+    RETURN TRUE
+  ELSIF c = '<' THEN
+    Advance (lx) ;
+    IF Peek (lx, 0) = '=' THEN
+      Advance (lx) ;
+      Mk (t, KLe, '<=', ln, cl)
+    ELSE
+      Mk (t, KLt, '<', ln, cl)
+    END ;
+    RETURN TRUE
+  ELSIF c = '>' THEN
+    Advance (lx) ;
+    IF Peek (lx, 0) = '=' THEN
+      Advance (lx) ;
+      Mk (t, KGe, '>=', ln, cl)
+    ELSE
+      Mk (t, KGt, '>', ln, cl)
+    END ;
+    RETURN TRUE
+  ELSIF c = '+' THEN
+    Advance (lx) ;
+    IF Peek (lx, 0) = '%' THEN
+      Advance (lx) ;
+      Mk (t, KPlusW, '+%', ln, cl)
+    ELSE
+      Mk (t, KPlus, '+', ln, cl)
+    END ;
+    RETURN TRUE
+  ELSIF c = '-' THEN
+    Advance (lx) ;
+    IF Peek (lx, 0) = '%' THEN
+      Advance (lx) ;
+      Mk (t, KMinusW, '-%', ln, cl)
+    ELSE
+      Mk (t, KMinus, '-', ln, cl)
+    END ;
+    RETURN TRUE
+  ELSIF c = '*' THEN
+    Advance (lx) ;
+    IF Peek (lx, 0) = '%' THEN
+      Advance (lx) ;
+      Mk (t, KStarW, '*%', ln, cl)
+    ELSE
+      Mk (t, KStar, '*', ln, cl)
+    END ;
+    RETURN TRUE
+  ELSIF c = '=' THEN
+    Advance (lx) ;
+    Mk (t, KEq, '=', ln, cl) ;
+    RETURN TRUE
+  ELSIF c = '#' THEN
+    Advance (lx) ;
+    Mk (t, KNeq, '#', ln, cl) ;
+    RETURN TRUE
+  ELSIF c = '/' THEN
+    Advance (lx) ;
+    Mk (t, KSlash, '/', ln, cl) ;
+    RETURN TRUE
+  ELSIF c = '(' THEN
+    Advance (lx) ;
+    Mk (t, KLParen, '(', ln, cl) ;
+    RETURN TRUE
+  ELSIF c = ')' THEN
+    Advance (lx) ;
+    Mk (t, KRParen, ')', ln, cl) ;
+    RETURN TRUE
+  ELSIF c = '[' THEN
+    Advance (lx) ;
+    Mk (t, KLBrack, '[', ln, cl) ;
+    RETURN TRUE
+  ELSIF c = ']' THEN
+    Advance (lx) ;
+    Mk (t, KRBrack, ']', ln, cl) ;
+    RETURN TRUE
+  ELSIF c = ',' THEN
+    Advance (lx) ;
+    Mk (t, KComma, ',', ln, cl) ;
+    RETURN TRUE
+  ELSIF c = ';' THEN
+    Advance (lx) ;
+    Mk (t, KSemi, ';', ln, cl) ;
+    RETURN TRUE
+  ELSIF c = '|' THEN
+    Advance (lx) ;
+    Mk (t, KBar, '|', ln, cl) ;
+    RETURN TRUE
+  ELSIF c = '^' THEN
+    Advance (lx) ;
+    Mk (t, KCaret, '^', ln, cl) ;
+    RETURN TRUE
+  END ;
+  RETURN FALSE
+END Punct ;
+
+CONST
+  U64Top = '18446744073709551615' ;
+  F64Top = '179769313486231580793728971405303415079934132710037826936173778980444968292764750946649017977587207096330286416692887910946555547851940402630657488671505820681908902000708383676273854845817711531764475730270069855571366959622842914819860834936475292719074168444365510704342711559699508093042880177904174497792' ;
+
+PROCEDURE Significant (RO run: UTF ; from: I64) : I64 =
+VAR
+  i : I64 ;
+BEGIN
+  i := from ;
+  WHILE i < Text.BLen (run) - 1 AND At (run, i) = '0' DO
+    i := i + 1
+  END ;
+  RETURN i
+END Significant ;
+
+PROCEDURE IntPast64 (RO run: UTF) : BOOL =
+VAR
+  i, n, k : I64 ;
+BEGIN
+  i := Significant (run, 0) ;
+  n := Text.BLen (run) - i ;
+  IF n # Text.BLen (U64Top) THEN
+    RETURN n > Text.BLen (U64Top)
+  END ;
+  FOR k := 0 TO n - 1 DO
+    IF At (run, i + k) # Text.BChar (U64Top, k) THEN
+      RETURN At (run, i + k) > Text.BChar (U64Top, k)
+    END
+  END ;
+  RETURN FALSE
+END IntPast64 ;
+
+PROCEDURE RealTooBig (RO run: UTF) : BOOL =
+VAR
+  i, m, e, nInt, lead, n, j : I64 ;
+  neg : BOOL ;
+BEGIN
+  m := 0 ;
+  WHILE m < Text.BLen (run) AND At (run, m) # 'e' AND At (run, m) # 'E' DO
+    m := m + 1
+  END ;
+  nInt := 0 ;
+  WHILE nInt < m AND At (run, nInt) # '.' DO
+    nInt := nInt + 1
+  END ;
+  e := 0 ;
+  IF m < Text.BLen (run) THEN
+    i := m + 1 ;
+    neg := FALSE ;
+    IF At (run, i) = '+' THEN
+      i := i + 1
+    ELSIF At (run, i) = '-' THEN
+      neg := TRUE ;
+      i := i + 1
+    END ;
+    WHILE i < Text.BLen (run) DO
+      IF e < 100000 THEN
+        e := e * 10 + (ORD (At (run, i)) - 48)
+      END ;
+      i := i + 1
+    END ;
+    IF neg THEN
+      e := -e
+    END
+  END ;
+  lead := 0 ;
+  i := 0 ;
+  WHILE i < m AND (At (run, i) = '0' OR At (run, i) = '.') DO
+    IF At (run, i) = '0' THEN
+      lead := lead + 1
+    END ;
+    i := i + 1
+  END ;
+  IF i = m THEN
+    RETURN FALSE
+  END ;
+  n := nInt - lead + e ;
+  IF n # Text.BLen (F64Top) THEN
+    RETURN n > Text.BLen (F64Top)
+  END ;
+  j := 0 ;
+  WHILE i < m DO
+    IF At (run, i) # '.' THEN
+      IF j = Text.BLen (F64Top) THEN
+        RETURN TRUE
+      END ;
+      IF At (run, i) # Text.BChar (F64Top, j) THEN
+        RETURN At (run, i) > Text.BChar (F64Top, j)
+      END ;
+      j := j + 1
+    END ;
+    i := i + 1
+  END ;
+  WHILE j < Text.BLen (F64Top) DO
+    IF NOT Text.BIs (F64Top, j, '0') THEN
+      RETURN FALSE
+    END ;
+    j := j + 1
+  END ;
+  RETURN TRUE
+END RealTooBig ;
+
+PROCEDURE Number (VAR lx: Lexer ; VAR t: Token ; ln, cl, start: I64) =
+VAR
+  hasHexLetter, isReal : BOOL ;
+  run : UTF ;
+  i, cv, d : I64 ;
+  c : CHAR ;
+BEGIN
+  IF Peek (lx, 0) = '0' AND Peek (lx, 1) = 'x' THEN
+    Advance (lx) ;
+    Advance (lx) ;
+    IF NOT IsHexAny (Peek (lx, 0)) THEN
+      Mk (t, KError, 'hex literal needs digits after 0x', ln, cl) ;
+      RETURN
+    END ;
+    WHILE IsHexAny (Peek (lx, 0)) DO
+      Advance (lx)
+    END ;
+    IF IsLetter (Peek (lx, 0)) THEN
+      Mk (t, KError, 'letter may not immediately follow a numeric literal', ln, cl) ;
+      RETURN
+    END ;
+    run := SLICE (lx.src, start + 2, lx.pos - start - 2) ;
+    IF Text.BLen (run) - Significant (run, 0) > 16 THEN
+      Mk (t, KError, 'hex literal beyond 64 bits', ln, cl) ;
+      RETURN
+    END ;
+    Mk (t, KInt, SLICE (lx.src, start, lx.pos - start), ln, cl) ;
+    RETURN
+  END ;
+  hasHexLetter := FALSE ;
+  c := Peek (lx, 0) ;
+  WHILE IsHexUp (c) DO
+    IF NOT IsDigit (c) THEN
+      hasHexLetter := TRUE
+    END ;
+    Advance (lx) ;
+    c := Peek (lx, 0)
+  END ;
+  run := SLICE (lx.src, start, lx.pos - start) ;
+  IF hasHexLetter THEN
+    IF At (run, Text.BLen (run) - 1) # 'C' THEN
+      Mk (t, KError, 'malformed numeric literal; forms are 10, 0x1F, 1.5, 1.5e-3, 0AC', ln, cl) ;
+      RETURN
+    END ;
+    IF IsLetter (Peek (lx, 0)) THEN
+      Mk (t, KError, 'letter may not immediately follow a numeric literal', ln, cl) ;
+      RETURN
+    END ;
+    cv := 0 ;
+    FOR i := 0 TO Text.BLen (run) - 2 DO
+      c := At (run, i) ;
+      IF IsDigit (c) THEN
+        d := ORD (c) - 48
+      ELSE
+        d := ORD (c) - 55
+      END ;
+      cv := cv * 16 + d ;
+      IF cv > 1114111 THEN
+        Mk (t, KError, 'char literal beyond Unicode scalar range (max 10FFFFC)', ln, cl) ;
+        RETURN
+      END
+    END ;
+    IF cv >= 55296 THEN
+      IF cv <= 57343 THEN
+        Mk (t, KError, 'char literal is a surrogate code point, not a scalar', ln, cl) ;
+        RETURN
+      END
+    END ;
+    Mk (t, KChar, run, ln, cl) ;
+    RETURN
+  END ;
+  isReal := FALSE ;
+  IF Peek (lx, 0) = '.' AND Peek (lx, 1) # '.' THEN
+    isReal := TRUE ;
+    Advance (lx) ;
+    IF NOT IsDigit (Peek (lx, 0)) THEN
+      Mk (t, KError, 'digit required after decimal point', ln, cl) ;
+      RETURN
+    END ;
+    WHILE IsDigit (Peek (lx, 0)) DO
+      Advance (lx)
+    END ;
+    IF Peek (lx, 0) = 'e' OR Peek (lx, 0) = 'E' THEN
+      Advance (lx) ;
+      IF Peek (lx, 0) = '+' OR Peek (lx, 0) = '-' THEN
+        Advance (lx)
+      END ;
+      IF NOT IsDigit (Peek (lx, 0)) THEN
+        Mk (t, KError, 'digit required in exponent', ln, cl) ;
+        RETURN
+      END ;
+      WHILE IsDigit (Peek (lx, 0)) DO
+        Advance (lx)
+      END
+    END
+  END ;
+  IF IsLetter (Peek (lx, 0)) THEN
+    Mk (t, KError, 'letter may not immediately follow a numeric literal (char literal ends in C: 0AC; exponent needs a decimal point: 1.0e5)', ln, cl) ;
+    RETURN
+  END ;
+  run := SLICE (lx.src, start, lx.pos - start) ;
+  IF isReal THEN
+    IF RealTooBig (run) THEN
+      Mk (t, KError, 'real literal beyond F64 (it would be an infinity)', ln, cl)
+    ELSE
+      Mk (t, KReal, run, ln, cl)
+    END
+  ELSIF IntPast64 (run) THEN
+    Mk (t, KError, 'integer literal beyond 64 bits (the largest is 18446744073709551615, a U64; above MAX (I64) a literal is a U64)', ln, cl)
+  ELSE
+    Mk (t, KInt, run, ln, cl)
+  END
+END Number ;
+
+PROCEDURE Next (VAR lx: Lexer ; VAR t: Token) =
+VAR
+  bad : BOOL ;
+  ln, cl, start, n, nd, p, k : I64 ;
+  c, q : CHAR ;
+  msg : UTF ;
+BEGIN
+  Skip (lx, bad, ln, cl) ;
+  IF bad THEN
+    Mk (t, KError, 'unterminated comment (opened here)', ln, cl) ;
+    RETURN
+  END ;
+  ln := lx.line ;
+  cl := lx.col ;
+  start := lx.pos ;
+  c := Peek (lx, 0) ;
+  IF c = 0C THEN
+    IF lx.pos < Text.BLen (lx.src) THEN
+      Advance (lx) ;
+      Mk (t, KError, 'unexpected character 0x00', ln, cl) ;
+      RETURN
+    END ;
+    Mk (t, KEOF, '', ln, cl) ;
+    RETURN
+  END ;
+  IF IsLetter (c) THEN
+    WHILE IsLetter (Peek (lx, 0)) OR IsDigit (Peek (lx, 0)) DO
+      Advance (lx)
+    END ;
+    Mk (t, KIdent, SLICE (lx.src, start, lx.pos - start), ln, cl) ;
+    t.kind := Lookup (t.text) ;
+    IF Peek (lx, 0) = '_' THEN
+      Mk (t, KError, 'underscore is not part of an identifier in M9', lx.line, lx.col)
+    END ;
+    RETURN
+  END ;
+  IF IsDigit (c) THEN
+    Number (lx, t, ln, cl, start) ;
+    RETURN
+  END ;
+  IF c = "'" OR c = '"' THEN
+    q := c ;
+    Advance (lx) ;
+    start := lx.pos ;
+    WHILE Peek (lx, 0) # q AND Peek (lx, 0) # 0C AND Peek (lx, 0) # 0AC DO
+      Advance (lx)
+    END ;
+    IF Peek (lx, 0) # q THEN
+      Mk (t, KError, 'unterminated string', ln, cl) ;
+      RETURN
+    END ;
+    Mk (t, KStr, SLICE (lx.src, start, lx.pos - start), ln, cl) ;
+    Advance (lx) ;
+    RETURN
+  END ;
+  IF Punct (lx, t, c, ln, cl) THEN
+    RETURN
+  END ;
+  Advance (lx) ;
+  n := ORD (Text.NextCp (lx.src, start)) ;
+  IF n < 128 THEN
+    msg := 'unexpected character 0x' ;
+    msg := msg + Text.BChar (HexMsg, (n DIV 16) MOD 16) + Text.BChar (HexMsg, n MOD 16)
+  ELSE
+    msg := 'unexpected character U+' ;
+    nd := 4 ;
+    IF n >= 65536 THEN
+      nd := 5
+    END ;
+    IF n >= 1048576 THEN
+      nd := 6
+    END ;
+    p := 1 ;
+    FOR k := 2 TO nd DO
+      p := p * 16
+    END ;
+    WHILE p > 0 DO
+      msg := msg + Text.BChar (HexUp, (n DIV p) MOD 16) ;
+      p := p DIV 16
+    END
+  END ;
+  Mk (t, KError, msg, ln, cl)
+END Next ;
+
+END Lex.

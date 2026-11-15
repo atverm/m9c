@@ -1,0 +1,2 @@
+parseprobes/type-too-deep.m9:8:907: parse: a type nested deeper than 100 levels: give a part a TYPE name of its own
+m9c: 1 parse errors in parseprobes/type-too-deep.m9

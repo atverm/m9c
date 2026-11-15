@@ -1,0 +1,19 @@
+MODULE m ;
+
+IMPORT Json, Csv ;
+
+TYPE
+  Reader = PROCEDURE (RO src: STR) : PTR Json.Node RAISES Csv.ParseError ;
+
+PROCEDURE Run (f: Reader) =
+VAR
+  n : PTR Json.Node ;
+BEGIN
+  n := f ('[1, 2')
+EXCEPT
+| Csv.ParseError (what, l, c) :
+END Run ;
+
+BEGIN
+  Run (Json.Parse)
+END m.

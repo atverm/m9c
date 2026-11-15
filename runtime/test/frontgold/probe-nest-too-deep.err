@@ -1,0 +1,2 @@
+parseprobes/nest-too-deep.m9:11:1007: parse: nesting deeper than 1000 levels: the expression, statement or type here is too deep to compile -- give a part a name of its own, a local, a procedure or a TYPE
+m9c: 1 parse errors in parseprobes/nest-too-deep.m9

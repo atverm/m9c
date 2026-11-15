@@ -209,7 +209,7 @@ static _Thread_local m9_pool_block *m9_block_cache = NULL;
 static _Thread_local int m9_block_cached = 0;
 
 /* LARGE BLOCKS ARE KEPT PER THREAD across statement releases
-   (2026-10-25, Alex's second follow-up; m9rt.h).  The cache above
+   (2026-10-25, the author's second follow-up; m9rt.h).  The cache above
    keeps minimum-size blocks only.  So a 64 MB carve (a file read, a
    frame's columns) was a fresh malloc every time.  On glibc that is a
    fresh mmap the kernel zeroes page by page on first touch.  Measured
@@ -234,7 +234,7 @@ static _Thread_local int m9_block_cached = 0;
    m9c's flags; the M4 did not move).  Out of line it reads as before,
    1,810-1,900 against 1,871-1,877 k rows/s.
 
-   THE PROGRAM THAT STARTS THE THREADS DECIDES (Alex, 2026-10-31).  A
+   THE PROGRAM THAT STARTS THE THREADS DECIDES (decided 2026-10-31).  A
    server's workers never return, so they held their kept blocks for
    the life of the process: zpd, 32 workers, 7.33 GB after a load test
    against 5.43 GB without reuse, at the same speed.  m9_big_limit is the
@@ -1034,7 +1034,7 @@ int64_t m9_utf_find (const void *h0, int64_t hn, const void *n0, int64_t nn,
 }
 
 
-/* ---- the radix sorts (m9rt.h; 2026-10-25, Alex: "then sort") ----
+/* ---- the radix sorts (m9rt.h; 2026-10-25, the author: "then sort") ----
    These are LSD radix sorts: eight passes of eight bits over a
    sortable key, stable.  A pass is skipped when every key shares its
    byte, and an insertion sort runs under 64 elements.  An F64's key
@@ -2454,8 +2454,43 @@ void m9_closelog (void) { m9_log_ident[0] = '\0'; }
 void m9_closelog (void) { closelog (); }
 #endif
 
+/* m9_strtof answers the float nearest a decimal, as strtof does.
+   It rounds twice where that is safe: the decimal to its nearest
+   double (Eisel-Lemire, above), the double to its nearest float.
+   Two roundings differ from one only when a point halfway between
+   two floats lies between the decimal and its double.  Such a point
+   is itself a double, and no double lies between a decimal and its
+   nearest double.  So the two differ only when the double IS a
+   halfway point; then the decimal's own digits decide, and strtof
+   reads them.
+
+   It exists for threads (2026-11-15): on macOS strtof takes a lock
+   on the locale at every call.  A CSV read by several threads spent
+   most of its time waiting there, on the one field in a hundred that
+   Csv's own exact path declines. */
 double m9_strtof (const void *s)
 {
+  double d;
+  if (!m9_parse_portable () && m9_parse_f64_fast ((const char *) s, &d)) {
+    float f = (float) d;
+    if (f - f == 0.0f) {                      /* finite */
+      float g;
+      uint32_t u;
+      double lo, hi;
+      if ((double) f == d) return d;
+      /* g is the float on the other side of d: one step from f, by its
+         bits.  No library call: m9rt.c links without libm in places. */
+      memcpy (&u, &f, 4);
+      if ((double) f < d) u = (u >> 31) ? ((u << 1) == 0 ? 1u : u - 1) : u + 1;
+      else                u = (u >> 31) ? u + 1 : (u == 0 ? 0x80000001u : u - 1);
+      memcpy (&g, &u, 4);
+      /* The two differences are exact: each pair is within a factor
+         of two. */
+      if ((double) f < d) { lo = d - (double) f; hi = (double) g - d; }
+      else                { lo = (double) f - d; hi = d - (double) g; }
+      if (g - g == 0.0f && lo != hi) return (double) f;
+    }
+  }
   return (double) strtof ((const char *) s, NULL);
 }
 
@@ -2824,7 +2859,7 @@ const char *m9_crc_fast_name (void) { return "aarch64 crc32"; }
    bits a step, then reduced to 32 bits with Barrett's constants.  The
    raw state is XORed into the first four bytes, and the tail under 16
    bytes goes through the tables.  Measured on the Xeon: slicing 2,390
-   MB/s, this 11,750, zlib's 4,740 (2026-10-25, Alex: "And why did we
+   MB/s, this 11,750, zlib's 4,740 (2026-10-25, the author: "And why did we
    not take PCLMULQDQ?"). */
 static int m9_crc_pclmul_here (void)
 {
@@ -3063,6 +3098,20 @@ void m9_thread_died_at (const m9_state *err)
   abort ();
 }
 
+/* m9_claim_false stops a program built with --verify-claims whose
+   INRANGE claim was TRUE for a loop that indexed out of range.  The
+   claim is the author's statement in the program's text, so this is
+   no exception: no handler takes it, and the message names the claim
+   by its procedure and line. */
+void m9_claim_false (const char *proc, int32_t line, int64_t i, int64_t n)
+{
+  fflush (stdout);
+  fprintf (stderr, "m9: the INRANGE claim at line %d of %s was false: index %lld, extent %lld\n",
+           (int) line, proc ? proc : "?", (long long) i, (long long) n);
+  fflush (stderr);
+  abort ();
+}
+
 void m9_thread_died (const char *name)
 {
   fflush (stdout);
@@ -3247,7 +3296,7 @@ void m9_mon_make (m9_mon *m)
 /* A task spins this many times for a held monitor before it parks.
    A crew woken by one SIGNAL enters its monitor one by one.  With 64
    spins, most of 20 entrants parked, and each leave woke the next one
-   into a busy carrier's runnext (Tsk.For on ct121, 2026-11-06). */
+   into a busy carrier's runnext (Tsk.For on host1, 2026-11-06). */
 #define M9_MON_SPINS 512
 #define M9_STEAL_MAX 32
 
@@ -3743,7 +3792,7 @@ static void m9_rq_push (m9_carrier *c, m9_task *t)
   t->home = c;
   /* Read t before it is queued.  Once the lock drops, another carrier
      may take t, run it to its end and free it (ThreadSanitizer on
-     Herd, ct121, 2026-11-02: this line read t->stk after the unlock). */
+     Herd, host1, 2026-11-02: this line read t->stk after the unlock). */
   movable = t->stk != NULL && !__atomic_load_n (&t->pinned, __ATOMIC_RELAXED);
   m9_lock_rt (&c->mu);
   if (c->rqt) c->rqt->next = t; else __atomic_store_n (&c->rq, t, __ATOMIC_RELEASE);
@@ -3809,7 +3858,7 @@ static m9_task *m9_rq_pop (m9_carrier *c)
    3 us without a switch.  A carrier that put a task in its runnext
    usually runs it within a microsecond, when the running task parks.
    A thief that took it at once moved every round trip of a
-   ping-pong to another carrier: on ct121's 32 carriers, with the
+   ping-pong to another carrier: on host1's 32 carriers, with the
    host busy, a Chan round trip took 7.2 us against 0.11 us on one
    carrier (2026-11-02).  Go's thief sleeps 3 us before it takes a
    running P's runnext, for the same reason. */
@@ -3932,7 +3981,7 @@ static int m9_all_quiet (void)
 /* A carrier sleeps until a task is queued on it or another wakes it
    to steal.  The wait has no timeout since 2026-11-03: a timeout of
    5 ms woke 32 idle carriers 6,400 times a second, half a core on
-   ct121 for a program doing nothing.  What the timeout covered is
+   host1 for a program doing nothing.  What the timeout covered is
    covered where it can happen: the scheduler looks once more before
    it sleeps, the monitor thread wakes an idle carrier for tasks queued
    behind a busy one, and it runs the deadlock test while all is
@@ -4887,7 +4936,7 @@ void m9_mon_signal_tasks (m9_mon *m)
      just finished the last round, so they are often still spinning,
      and no kernel wake is needed.  m9_deal started at the next carrier
      in turn, which usually slept: a Tsk.For round of 20 tasks cost
-     150 us on ct121's 32 carriers, against 60 us with M9_CARRIERS=20
+     150 us on host1's 32 carriers, against 60 us with M9_CARRIERS=20
      (2026-11-06).  A herd larger than the carriers is still dealt:
      sent home one lock at a time, 1,000 senders made ChanStress time
      out in 15 of 20 runs. */
@@ -5022,7 +5071,7 @@ int m9_cores (void)
   long n = sysconf (_SC_NPROCESSORS_ONLN);
 #if defined (__linux__)
   /* A CONTAINER SEES THE HOST'S CPUS ONLINE but may run on fewer.
-     Docker inside ct121's 32 reported 128, and a task server started
+     Docker inside host1's 32 reported 128, and a task server started
      128 carriers there: 10,000 connections took 11.5 s against 1.6 s
      (2026-11-02).  So the count is also held to the CPUs this
      process may run on (its affinity mask, which a cpuset sets), and

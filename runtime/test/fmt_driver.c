@@ -235,7 +235,7 @@ int main (void)
   ok ("FixedPad width 0 is just Fixed", strcmp (buf, "1") == 0);
   ok ("FixedPad raised nothing", err.exc == NULL);
 
-  /* the shape Alex asked for, spelled out */
+  /* the shape the author asked for, spelled out */
   to_c (Fmt_Sci (3.14e-5, 2, &err), buf, sizeof buf);
   ok ("Sci 3.14e-5", strcmp (buf, "3.14e-5") == 0);
   to_c (Fmt_Sci (314000.0, 2, &err), buf, sizeof buf);

@@ -18,7 +18,7 @@ dot-stuffing matters, the message text itself, is stuffed anyway (RFC
 5321 par 4.5.2).
 
 Text goes out as its UTF-8 octets, and a reply reads as UTF-8 when
-it is UTF-8, else one character per octet (Alex, 2026-10-31).  The
+it is UTF-8, else one character per octet (decided 2026-10-31).  The
 body and a non-ASCII subject go base64, so they stay ASCII.  An
 address or an attachment name beyond ASCII goes as raw UTF-8 (RFC
 6532), and that needs SMTPUTF8 (RFC 6531).  Smtp decides once per

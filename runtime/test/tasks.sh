@@ -59,7 +59,7 @@ grep -q '^PASS:' "$OUT/driver.log" || fail "the runtime driver"
 
 # tcpshim's task path: an echo server in tasks and 1,000 client tasks,
 # all connections open at once, and SO_RCVTIMEO honoured.  1,000 is
-# what macOS's listen backlog (128) lets through; ct121 holds 10,000.
+# what macOS's listen backlog (128) lets through; host1 holds 10,000.
 gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../tcpshim.c tcptask_driver.c -lm -o "$OUT/tcptask_test"
 timeout 120 "$OUT/tcptask_test" 1000 > "$OUT/tcptask.log" 2>&1 || true

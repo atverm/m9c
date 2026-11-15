@@ -1,0 +1,23 @@
+MODULE Table ;
+
+VAR
+  data, col : SLICE OF F64 ;
+  total : F64 ;
+
+PROCEDURE Column (c: I64) : SLICE OF F64
+  RAISES IndexError =
+BEGIN
+  RETURN SLICE (data, c * 10, 10)
+END Column ;
+
+PROCEDURE Column (c: I64) : SLICE OF F64
+  RAISES IndexError =
+BEGIN
+  RETURN SLICE (data, c * 10, 1)
+END Column ;
+
+BEGIN
+  data := NEW (F64, 100) ;
+  col := Column (3) ;
+  total := col[9]
+END Table.

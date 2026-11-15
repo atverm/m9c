@@ -35,7 +35,7 @@ set -u
 R=$(cd "$(dirname "$0")/../.." && pwd)
 TC=${M9WINTOOLCHAIN:-}
 
-# WINE IS RETIRED AS A WINDOWS (Alex, 2026-10-19: "skip the wine part
+# WINE IS RETIRED AS A WINDOWS (decided 2026-10-19: "skip the wine part
 # and move to the UTM Win11").  tools/release/win/vmsmoke.sh installs
 # the zip, compiles with it and runs its tutor on Windows 11, and the
 # release receipt carries its smoke line.  M9WINE=1 runs this gate
@@ -193,7 +193,7 @@ if [ "$rc" = 0 ] && [ -s "$Z/bin/m9tutor.exe" ]; then
     && ok "and compiles and runs a cell from the page" \
     || { bad "POST /run"; head -5 "$W/run.txt"; }
   # THE CHAPTERS THAT NEEDED A LIBRARY.  Every one of these failed on
-  # a real Windows machine while this gate was green (Alex,
+  # a real Windows machine while this gate was green (decided
   # 2026-09-06).  The gate ran one hand-written hello and never an
   # example, so it never linked TLS, blosc or netCDF and never read
   # Io.Arg.  Four separate bugs hid behind that.
@@ -207,7 +207,7 @@ if [ "$rc" = 0 ] && [ -s "$Z/bin/m9tutor.exe" ]; then
   }
   # C3Use imports a module that is not an example: the tutorial's own
   # Temps.  The zip shipped the corpus library and not this, so the
-  # chapter answered `m9c: cannot find module Temps' (Alex,
+  # chapter answered `m9c: cannot find module Temps' (decided
   # 2026-09-07).  It is also the check that the REFUSAL is tidy.  A
   # cell's reply carries the compiler's diagnostic and not its
   # `N errors in cell.m9' summary.
@@ -244,14 +244,14 @@ if [ "$rc" = 0 ] && [ -s "$Z/bin/m9tutor.exe" ]; then
   [ "$(head -1 "$W/r-C8Zarr.txt" | tr -d '\r')" = "exit 0" ] \
     && ok "C8Zarr reads the store this server hosts" \
     || { bad "C8Zarr"; head -4 "$W/r-C8Zarr.txt"; }
-  # netCDF is bundled at Alex's word: 41 DLLs and 30 MB, hdf5, curl,
+  # netCDF is bundled at the author's word: 41 DLLs and 30 MB, hdf5, curl,
   # libxml2, libzip and the AWS SDK included, because MSYS2 builds
   # netCDF against its DAP/S3 half.  The chapter must RUN.
   # A FIGURE MUST BE CLICKABLE.  The chapters write to absolute POSIX
   # /tmp paths.  The POSIX tutor binds a private /tmp into its sandbox
   # and this one cannot.  So /out looked only in the work folder and NO
   # figure was ever offered, while tutor.port, which the cell did not
-  # write, was (Alex, 2026-09-07).
+  # write, was (decided 2026-09-07).
   cell C9Plot
   f=$(grep -o '/out/[A-Za-z0-9._-]*' "$W/r-C9Plot.txt" | head -1)
   if [ -n "$f" ]; then
@@ -348,7 +348,7 @@ fi
 # This is the branch a reader takes, and the gate did not take it.
 # The runs above answer n to the tutorial, so `cmd /c start ...` was
 # never exercised here, and a quoting bug reached a real Windows
-# machine (Alex: 'Cannot find \"M9 tutorial\"').  wine reproduces it
+# machine (the author: 'Cannot find \"M9 tutorial\"').  wine reproduces it
 # exactly: the broken spelling dies with ShellExecuteEx failed:
 # Invalid name.  So there was never a reason not to check it.  A gate
 # that tests the branch it can reach instead of the branch the user
@@ -358,7 +358,7 @@ fi
 # machine already has something on 8080.  So the default run is the one
 # that exercises the search, and the gate reads the answer back rather
 # than asserting it.  (A reader whose 8080 was taken saw the window
-# flash and go; Alex, 2026-09-07.)
+# flash and go; decided 2026-09-07.)
 printf 'n\nn\nY\n' > "$W/tut.txt"
 ( cd "$Z" && wine cmd /c install.bat -y < "$W/tut.txt" ) \
   > "$W/third.log" 2>&1

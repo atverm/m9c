@@ -1,0 +1,5 @@
+parseprobes/notequal.m9:6:9: parse: expression expected, found Gt
+parseprobes/notequal.m9:6:11: parse: THEN expected, found IntLit '2'
+parseprobes/notequal.m9:6:11: parse: statement expected, found IntLit
+parseprobes/notequal.m9:6:13: parse: ; or end of statement list expected, found THEN
+m9c: 4 parse errors in parseprobes/notequal.m9

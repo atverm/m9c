@@ -1,0 +1,17 @@
+DEFINITION MODULE Beside ;
+
+(* Beside is a module beside the script, not in the library: it is
+   compiled into the user's cache whatever the package ships. *)
+
+PROCEDURE Twice (x: I64) : I64 ;
+
+END Beside.
+
+IMPLEMENTATION MODULE Beside ;
+
+PROCEDURE Twice (x: I64) : I64 =
+BEGIN
+  RETURN 2 * x
+END Twice ;
+
+END Beside.

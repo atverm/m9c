@@ -1,0 +1,3 @@
+1:1-1 (* EXPECT-ERROR: cannot write through t, which holds a string literal *)
+2:1-11 (* This is the copy of read-only storage.  Par 2.4's rule of\n   2026-10-01 is built at the CALL: `Up ('abc')` with `s[0] := 'X'`\n   inside is refused.  The checker said so itself: "what it does not\n   follow is the copy".  A measure the same day left it standing: `t\n   := 'abc' ; t[0] := 'X'` passed both checkers, compiled, and died\n   with SIGSEGV writing into the program's read-only data.  A checked\n   language that segfaults is the museum's first exhibit\n   (write-through-literal.m9).  This is its second door, closed\n   2026-10-08: a name given read-only storage holds it for the whole\n   procedure. *)
+comments=2

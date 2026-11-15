@@ -1,0 +1,15 @@
+MODULE m ;
+
+EXCEPTION
+  Error (op, detail: STR ; status: I64) ;
+
+PROCEDURE Attr (n: I64)
+  RAISES Error =
+BEGIN
+  IF n # 1 THEN
+    RAISE Error ('an NC_STRING attribute of more than one element')
+  END
+END Attr ;
+
+BEGIN
+END m.

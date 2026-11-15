@@ -22,7 +22,7 @@ DEFINITION MODULE Zip ;
    `Read` continues from where the last one stopped, and that is the
    whole contract.  It is also all a row cursor needs.
 
-   THE INFLATE IS WRITTEN HERE, IN M9 (2026-10-02; Alex's decision).
+   THE INFLATE IS WRITTEN HERE, IN M9 (2026-10-02; the author's decision).
    Until then the stream went to zlib through a shim, and so a
    program that read a member needed zlib on its own link line: the
    compiler supplies the runtime and no other library.  Now a

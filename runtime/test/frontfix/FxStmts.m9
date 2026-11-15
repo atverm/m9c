@@ -1,0 +1,126 @@
+(* FxStmts is a front-end fixture (docs/fpc-removal-plan.md): every
+   form of a statement, a block and a handler.  It is parsed and
+   printed, never checked.  A FOR with a claim is not here while the
+   Pascal parser reads this file; FxClaim holds it. *)
+
+MODULE FxStmts ;
+
+PROCEDURE Statements (VAR g: Gate ; s: SLICE OF I64) : I64 =
+VAR i, n : I64 ;
+BEGIN
+  (* assignment *)
+  n := 0 ;
+  r.f := 1 ;
+  a[i] := 2 ;
+  a[i, j].f[k] := 3 ;
+
+  (* calls *)
+  Bare ;
+  Empty () ;
+  One (n) ;
+  Many (n, i + 1, 'text') ;
+  Mod.Proc (n) ;
+  r.handler (n) ;
+
+  (* IF *)
+  IF n = 0 THEN n := 1 END ;
+  IF n = 0 THEN n := 1 ELSE n := 2 END ;
+  IF n = 0 THEN
+    n := 1
+  ELSIF n = 1 THEN
+    n := 2
+  ELSIF n = 2 THEN
+    n := 3
+  ELSE
+    n := 4
+  END ;
+  IF p IS SOME q THEN n := q.n END ;
+  IF n = 0 THEN END ;
+
+  (* loops *)
+  WHILE n < 10 DO n := n + 1 END ;
+  WHILE p IS SOME q DO p := q.next END ;
+  FOR i := 0 TO 9 DO n := n + i END ;
+  FOR i := 9 TO 0 BY -1 DO n := n + i END ;
+  FOR i := lo TO hi - 1 BY Step * 2 DO END ;
+  FOR x IN s DO n := n + x END ;
+  FOR x IN r.items DO n := n + x END ;
+  LOOP
+    IF n > 100 THEN EXIT END ;
+    n := n * 2
+  END ;
+
+  (* CASE *)
+  CASE n OF
+  | 0 : n := 1
+  | 1, 2, 3 : n := 2
+  | 4 .. 9 : n := 3
+  | 10 .. 19, 30, 40 .. 49 : n := 4
+  ELSE n := 5
+  END ;
+  CASE v OF
+  | Nothing : n := 0
+  | Num (x) : n := 1
+  | Pair (a, b, t) : n := 2
+  END ;
+  CASE c OF
+  | 'a' : n := 1
+  | 0AC : n := 2
+  ELSE
+  END ;
+
+  (* the rest *)
+  RAISE Plain ;
+  RAISE Carry (n) ;
+  RAISE Mod.Wide (n, 'text', 1.5) ;
+  DISPOSE (p) ;
+  DISPOSE (r.p) ;
+  THREAD (Worker, arg) ;
+  TASK (Worker, arg) ;
+  WAIT (g) ;
+  SIGNAL (g) ;
+  TRANSFER (from, to) ;
+
+  (* blocks *)
+  BEGIN
+    n := 1
+  END ;
+  BEGIN
+    n := 1
+  EXCEPT
+  | Plain : n := 2
+  END ;
+  BEGIN
+    n := 1
+  EXCEPT
+  | Plain : n := 2
+  | Carry (code) : n := code
+  | Plain, Mod.Other : n := 3
+  | Wide (code, 'text', 0) : n := 4
+  | Io.IOError (m) :
+  FINALLY
+    n := 0
+  END ;
+  BEGIN
+    n := 1
+  FINALLY
+    n := 0
+  END ;
+
+  RETURN n
+EXCEPT
+| Plain : RETURN 0
+FINALLY
+  Done ()
+END Statements ;
+
+PROCEDURE Proper () =
+BEGIN
+  RETURN
+END Proper ;
+
+BEGIN
+  n := Statements (g, s)
+EXCEPT
+| Plain : n := 0
+END FxStmts.

@@ -98,7 +98,7 @@ _(documented with the group below)_
 ### Defaults () : Options
 
 Defaults answers comma, unquoted, one header row, no preamble, no
-missing value, UTC.  Every one of those is a decision, so they are
+missing value, UTC, one thread.  Every one of those is a decision, so they are
 in one place where a reader can see all of them at once.
 
 ### Open (VAR pool: POOL ; RO path: STR ; RO opt: Options) : PTR Table IN pool RAISES ParseError, ValueRange, Io.IOError
@@ -138,57 +138,15 @@ _(undocumented)_
 
 ### SetKind (VAR t: PTR Table ; c: I64 ; k: Kind) RAISES IndexError
 
-_(documented with the group below)_
-
-### SetReal (VAR t: PTR Table ; c: I64) RAISES IndexError
-
-**Deprecated** (report par 3.9): write `Csv.SetKind (t, c, Csv.Kind.Real)` instead.  The name goes in the next release.
-
-_(documented with the group below)_
-
-### SetReal64 (VAR t: PTR Table ; c: I64) RAISES IndexError
-
-**Deprecated** (report par 3.9): write `Csv.SetKind (t, c, Csv.Kind.Real64)` instead.  The name goes in the next release.
-
 MEASUREMENTS ARE F32 by default, and the module header says why.
-SetReal64 is the exception that header names: "a caller needing
+Kind.Real64 is the exception that header names: "a caller needing
 F64 measurements should say so and this grows a kind".  The
 caller that needed it is the ICOS ocean store, whose every
 measurement array is `<f8>`.  A narrowing here and a widening
 again to write would be two roundings where the file has one
-number.
-
-### SetInt (VAR t: PTR Table ; c: I64) RAISES IndexError
-
-**Deprecated** (report par 3.9): write `Csv.SetKind (t, c, Csv.Kind.Int)` instead.  The name goes in the next release.
-
-_(documented with the group below)_
-
-### SetText (VAR t: PTR Table ; c: I64) RAISES IndexError
-
-**Deprecated** (report par 3.9): write `Csv.SetKind (t, c, Csv.Kind.Text)` instead.  The name goes in the next release.
-
-_(documented with the group below)_
-
-### SetSkip (VAR t: PTR Table ; c: I64) RAISES IndexError
-
-**Deprecated** (report par 3.9): write `Csv.SetKind (t, c, Csv.Kind.Skip)` instead.  The name goes in the next release.
-
-_(documented with the group below)_
-
-### SetStamp (VAR t: PTR Table ; c: I64 ; format: I64) RAISES IndexError
-
-**Deprecated** (report par 3.9): write `Csv.SetKind (t, c, Csv.Kind.Stamp (format))` instead.  The name goes in the next release.
-
-These setters say the same thing as SetKind without naming the
-variant.  They date from when a caller in another module could
-not write `Csv.Kind.Real` (the checker accepted it, the
-generator refused it).  That gap CLOSED 2026-09-15
-(`corpus/KindUse.m9` is the gendiff fixture that writes every
-form).  `SetKind (t, c, Csv.Kind.Real)` works from anywhere.  The
-setters are DEPRECATED since 0.27.0 (report par 3.9) and go in the
-release after it; runtime/test/csv_driver.c then builds the kind
-in C.
+number.  (SetReal, SetReal64, SetInt, SetText, SetSkip and
+SetStamp said the same as SetKind without naming the variant;
+deprecated in 0.27.0, removed in 0.28.0.)
 
 ### KindAt (t: PTR Table ; c: I64) : Kind RAISES IndexError
 
@@ -211,6 +169,17 @@ codes it used to answer against are gone.
 ### Parse (VAR pool: POOL ; VAR t: PTR Table) RAISES ParseError, RangeError, ValueRange, IndexError
 
 Parse makes one pass over the whole file.
+
+With opt.threads above 1 the file is cut into that many bands at
+row ends, and each band is parsed by a thread of its own
+(docs/csv-threads-plan.md).  The columns are the same, bit for
+bit, as one thread gives, and so is the exception: the one of the
+first bad row, with its line.  A band is never cut inside a
+quoted field.
+
+After Parse raises, the table's columns are not to be read.  One
+thread has stored the rows before the bad one; several have
+stored other rows too.
 
 ### ColF32 (t: PTR Table ; c: I64) : SLICE OF F32 RAISES IndexError
 

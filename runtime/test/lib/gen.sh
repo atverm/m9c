@@ -47,7 +47,7 @@ done
 if [ -f "$GENSTAMP" ] && [ "$(cat "$GENSTAMP")" = "$(gen_inputs) $(gen_output | tr '\n' ' ')" ]; then
   rmdir "$GENLOCK"
 else
-# THE M9 GENERATOR MAKES IT (Alex, 2026-10-22: M9Gen.pas frozen,
+# THE M9 GENERATOR MAKES IT (decided 2026-10-22: M9Gen.pas frozen,
 # docs/twin-plan.md).  It is built from the runtime/gen there is: the
 # one checked in, or HEAD's when the directory is gone.  It runs over
 # every module until what it writes is what it was built from.  That is

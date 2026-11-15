@@ -66,7 +66,7 @@ def bench_store(root):
     assert n == 15800721, n
     # np.nansum is a PAIRWISE reduction whose grouping changed between
     # numpy versions: 6324247734.661942 (the driver's recorded golden,
-    # numpy of 2026-08-21) and ...661961 (numpy 1.26.4 on zoefii) are
+    # numpy of 2026-08-21) and ...661961 (numpy 1.26.4 on host2) are
     # both this array.  The correctly rounded sum is unique, so THAT is
     # what is pinned; nansum is held to it within the order tolerance
     # the bench driver already documents.

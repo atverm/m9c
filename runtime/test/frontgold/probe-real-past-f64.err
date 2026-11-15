@@ -1,0 +1,3 @@
+parseprobes/real-past-f64.m9:10:8: parse: lex: real literal beyond F64 (it would be an infinity)
+parseprobes/real-past-f64.m9:11:1: parse: expression expected, found END
+m9c: 2 parse errors in parseprobes/real-past-f64.m9

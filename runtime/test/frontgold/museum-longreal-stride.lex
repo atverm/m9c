@@ -1,0 +1,23 @@
+3:1 UNSAFE UNSAFE
+3:8 DEFINITION DEFINITION
+3:19 MODULE MODULE
+3:26 FOR FOR
+3:30 StrLit C
+3:34 Ident bad
+3:38 Semi ;
+4:1 PROCEDURE PROCEDURE
+4:11 Ident F
+4:13 Eq =
+4:15 StrLit f
+4:19 LParen (
+4:20 Ident x
+4:21 Colon :
+4:23 Ident F64
+4:26 RParen )
+4:28 Colon :
+4:30 Ident F64
+4:34 Semi ;
+5:1 END END
+5:5 Ident bad
+5:8 Dot .
+6:1 EOF 

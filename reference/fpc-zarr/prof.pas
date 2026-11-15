@@ -6,7 +6,7 @@ var
   t0: QWord; r, c: Int64; v, Sum: Double;
   Chunk: TBytes; i: Int64;
 begin
-  S := TZarrStore.Create('/home/claude/bench.zarr');
+  S := TZarrStore.Create('/xxx/bench.zarr');
   A := S.OpenArray('co2');
 
   // 1M calls, all inside ONE chunk => pure API overhead, cache always hits

@@ -1,0 +1,23 @@
+MODULE m ;
+
+IMPORT cblosc ;
+
+PROCEDURE Worker (arg: I64) =
+VAR
+  s : C.ConstPtr ;
+  d : C.MutPtr ;
+  n : C.SizeT ;
+BEGIN
+  cblosc.Decompress (s, d, n)
+END Worker ;
+
+BEGIN
+  THREAD (Worker, 0)
+END m.
+
+
+UNSAFE DEFINITION MODULE FOR 'C' cblosc ;
+
+PROCEDURE Decompress = 'blosc_decompress' (s: C.ConstPtr ; d: C.MutPtr ; n: C.SizeT) ;
+
+END cblosc.

@@ -408,7 +408,9 @@ The checker never diagnoses a type it could not determine, so each of
 those rows also says how many sites it PASSED OVER for that reason,
 with the first lines they stand on: a program that compiles has not
 had those compared at all. A row whose count is zero is still
-printed: an absent line and a zero are different claims. Nothing is
+printed: an absent line and a zero are different claims. The page
+of a program ends with the INRANGE claims of every module it imports,
+a row for each module that has one. Nothing is
 printed for a program the checker or the generator refuses, and
 nothing is written. It cannot be combined with
 .BR \-c ,
@@ -492,6 +494,22 @@ Keep the generated C after
 .B \-c
 or
 .BR \-o .
+Without this the C is removed once the object exists. The
+.I header
+is kept by everything except
+.BR \-o :
+under
+.B \-c
+it is the module's interface and the next module's generated C
+includes it, and for
+.B \-\-ar
+and
+.B \-\-so
+it is how anybody calls the library at all.
+With
+.B \-\-make
+it keeps the C of every module that is compiled in that run; a module
+that was up to date is not compiled, so its C is not written.
 .TP
 .B \-\-no\-unsafe
 Refuse a program whose closure declares an
@@ -506,18 +524,37 @@ foreign units pass; the point is that untrusted code gets the
 checked language and nothing underneath it, so an operating-system
 sandbox around the compiled program is a second wall rather than
 the only one.
-Without this the C is removed once the object exists. The
-.I header
-is kept by everything except
-.BR \-o :
-under
-.B \-c
-it is the module's interface and the next module's generated C
-includes it, and for
-.B \-\-ar
-and
-.B \-\-so
-it is how anybody calls the library at all.
+.TP
+.BI \-\-fill\-cache " DIR"
+With
+.B \-\-run
+or
+.BR \-\-cell :
+compile the modules FILE.m9 imports into DIR and run nothing.  DIR is
+a cache a package ships beside the library's sources (a directory
+.I cache
+there), so that a script's first run compiles no library module.
+.B m9c
+looks for a module in the user's cache, then in that one, and compiles
+into the user's when neither has it.  The package's cache is never
+written at run time.  Its keys hold the version, the C compiler's
+name and the sources, so it can be unpacked anywhere; a file
+.I stamp
+in it names the m9c binary that filled it, and no other uses it.
+.TP
+.B \-\-verify\-claims
+Keep the subscript checks in the body of a
+.B FOR [INRANGE b]
+whose claim was TRUE.  Without this option such a body is not
+checked: the author has said that its subscripts are in range.  With
+it, a subscript out of range there stops the program and names the
+claim: `m9: the INRANGE claim at line N of Mod.Proc was false: index
+I, extent N'.  It is not an exception and no handler takes it: the
+claim is a statement in the program's text, and it was wrong.  Build
+tests this way.  Every module of the program is compiled the same
+way;
+.B \-\-make
+rebuilds one that was compiled the other way.
 .TP
 .BR \-v ", " \-\-verbose
 Print the command handed to the C compiler, on standard error, before
@@ -1093,13 +1130,18 @@ m9c \-c corpus/Json.m9 \-\- \-O2 \-iquote runtime \-iquote .
 .
 .SH NOTES
 Checks are semantics in M9, not flags. Bounds and overflow checking
-are part of what a program means and cannot be switched off; the
-measured cost is a few per cent \(em provided the inliner budget
+are part of what a program means, and no option switches them off;
+the measured cost is a few per cent in a program without tight index
+loops \(em provided the inliner budget
 .B m9c
 supplies (see
 .BR "SUPPLIED FLAGS" ):
 under the compiler's default budget the checks' real price was the
 inlining they suppressed, not the tests themselves.
+A FOR may carry the author's claim that its subscripts are in range,
+.BR "FOR [INRANGE b]" ;
+see
+.BR \-\-verify\-claims .
 .
 .SH SEE ALSO
 .BR cc (1),

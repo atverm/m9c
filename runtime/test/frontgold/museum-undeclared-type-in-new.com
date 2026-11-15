@@ -1,0 +1,3 @@
+1:1-1 (* EXPECT-ERROR: unknown type: AttrsKids *)
+2:1-10 (* A type that nobody declares is named in a NEW.  It was observed\n   2026-10-07 writing Xml: `NEW (pool, AttrsKids, 64)' names a type\n   never declared, a typo for the slice type meant.  It passed the\n   checker, which says nothing about a type it cannot find (softness: a\n   bare name found nowhere might be a missing import).  It surfaced only\n   as the GENERATOR's `unknown name', without the M9 line.  Softness is\n   for what the checker cannot know.  A bare type name is not an import:\n   it is declared in this module or nowhere, and nowhere is a typo, said\n   at the NEW. *)
+comments=2

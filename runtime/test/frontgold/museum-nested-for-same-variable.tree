@@ -1,0 +1,23 @@
+MODULE NestedFor ;
+
+IMPORT Io ;
+
+VAR
+  graph : SLICE OF I64 ;
+  j, seen : I64 ;
+
+BEGIN
+  graph := NEW (I64, 5) ;
+  seen := 0 ;
+  FOR j := 0 TO LEN (graph) - 1 DO
+    seen := seen + 1 ;
+    FOR j := 0 TO LEN (graph) - 1 DO
+      graph[j] := j
+    END
+  END ;
+  Io.WriteI64 (seen) ;
+  Io.WriteLine ('')
+EXCEPT
+| IndexError :
+    Io.WriteLine ('IndexError')
+END NestedFor.

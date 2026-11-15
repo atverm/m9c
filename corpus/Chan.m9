@@ -7,7 +7,7 @@ DEFINITION MODULE Chan ;
    carrier runs other tasks.  A THREAD waits in its own way, so a
    channel joins THREADs and TASKs alike.
 
-   A channel carries I64s (Alex, 2026-11-02: "I64 + index").  M9 has
+   A channel carries I64s (decided 2026-11-02: "I64 + index").  M9 has
    no generics, so one element type is chosen, and the index is the
    one that carries anything.  A bigger message stays in the
    program's own [SHARABLE] table, and the channel carries its index:

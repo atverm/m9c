@@ -18,7 +18,7 @@ DEFINITION MODULE NbShow ;
    reads back to the same double.  A cut-down display says what it
    left out: a list over 20 values shows the first and last 10 and
    how many more, a grid likewise by rows and columns, a frame over
-   60 rows its first and last 5 (pandas' rule, Alex 2026-10-05).  And
+   60 rows its first and last 5 (pandas' rule, decided 2026-10-05).  And
    a missing value in a frame is `null`, never a number. *)
 
 IMPORT Frame ;

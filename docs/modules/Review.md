@@ -75,3 +75,18 @@ KEPT, HEAP, owned allocation, THREAD, TASK and module variable),
 what is TRUSTED (UNSAFE units, foreign procedures), and what
 there was to check.  A section with nothing in it still prints its
 zeroes: an absent line and a zero are different claims.
+
+### IsProgram (root: PTR Ast.Node) : BOOL
+
+IsProgram says whether the file holds a program module: the unit
+a reviewer is handed when the question is the whole program.
+
+### ClaimsRow (root: PTR Ast.Node ; RO modName: UTF) : UTF
+
+ClaimsRow answers one row for a module a program imports: its
+name, the count of its FOR [INRANGE b] claims and their lines, as
+the page's own INRANGE row is laid out.  It answers '' for a
+module with no claim.  `m9c --review` of a program prints these
+under the page: a claim is the author's word that subscripts are
+in range, and the program is as sound as every such word in it,
+in whatever module it stands.

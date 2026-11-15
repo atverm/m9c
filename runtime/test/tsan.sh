@@ -28,7 +28,7 @@ owed () { grep -v '^#' "$OWED" 2>/dev/null | awk 'NF { print $1 }' | grep -qx "$
 TMO=; command -v timeout > /dev/null 2>&1 && TMO="timeout 300"
 
 CCT="$HERE/lib/tsancc"
-# Linux with a high mmap randomisation (vm.mmap_rnd_bits 32, zoefii's
+# Linux with a high mmap randomisation (vm.mmap_rnd_bits 32, host2's
 # kernel 7.0) is a layout gcc 13's TSan cannot map: "FATAL: unexpected
 # memory mapping" before main.  The runs go without ASLR there, through
 # setarch -R.  A container permits that only with seccomp unconfined,
@@ -47,6 +47,21 @@ fi
 $NOASLR sh -c '"$1" > "$2" 2>&1' sh "$W/control" "$W/control.out" 2> /dev/null
 grep -q 'WARNING: ThreadSanitizer' "$W/control.out" ||
   { echo "tsan: FAIL -- the control race was not reported"; head -5 "$W/control.out"; exit 1; }
+# The second control: a wait on a condition variable, no M9, must run
+# clean.  Where this toolchain's TSan cannot run one (tsan/
+# tsan_condwait.c says where), no threaded program can be judged here,
+# and the gate says so and skips.  On CI it must run.
+"$CCT" "$HERE/tsan/tsan_condwait.c" -o "$W/condwait" -lpthread > "$W/condwait.build" 2>&1 ||
+  { echo "tsan: FAIL -- the condition-variable control did not build:"; head -3 "$W/condwait.build"; exit 1; }
+st=0
+$NOASLR sh -c '"$1" > "$2" 2>&1' sh "$W/condwait" "$W/condwait.out" 2> /dev/null || st=$?
+if [ $st != 0 ] || ! grep -q '^condwait ok$' "$W/condwait.out"; then
+  if [ -n "${GITHUB_ACTIONS:-}" ]; then
+    echo "tsan: FAIL -- this ThreadSanitizer cannot run a pthread_cond_wait (exit $st), on CI"; exit 1
+  fi
+  echo "tsan: SKIP -- this toolchain's ThreadSanitizer kills a plain pthread_cond_wait (exit $st), so no threaded program can be judged here"
+  exit 0
+fi
 
 fail=0 ; n=0
 # Each spec is PROGRAM DIR: the file, and the directory it is run from.
@@ -56,6 +71,7 @@ for spec in "thrtest.m9 $HERE" "IoPar.m9 $HERE" "ExecPar.m9 $HERE" \
             "docs/tutorial/examples/C16Hash.m9 $ROOT/docs/tutorial/examples" \
             "docs/tutorial/examples/C16Mat.m9 $ROOT/docs/tutorial/examples" \
             "corpus/MatTest.m9 $ROOT" "corpus/TskTest.m9 $ROOT" "corpus/SupTest.m9 $ROOT" \
+            "corpus/CsvTest.m9 $ROOT" \
             "taskfix/Mixed.m9 $HERE" "taskfix/Herd.m9 $HERE" \
             "examples/traffic/Traffic.m9 $ROOT/examples/traffic"; do
   set -- $spec
@@ -82,7 +98,7 @@ for spec in "thrtest.m9 $HERE" "IoPar.m9 $HERE" "ExecPar.m9 $HERE" \
     echo "tsan: FAIL $name: a data race reported:"
     # The whole first report, both accesses and where the memory came
     # from: 16 lines showed the free and hid the access it raced with
-    # (Herd on ct121, 2026-11-02).
+    # (Herd on host1, 2026-11-02).
     cat "$W/$name.1" "$W/$name.2" | awk '/WARNING: ThreadSanitizer/ {on = 1} on {print} /^SUMMARY: ThreadSanitizer/ && on {exit}' |
       grep -v '^    #[1-9][0-9]' | head -80 | sed 's/^/    /'
     fail=$((fail + 1))

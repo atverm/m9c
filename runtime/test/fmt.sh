@@ -8,7 +8,7 @@
 #
 # The gate holds these: every corpus, bench and museum file formats
 # without refusal; formatting is IDEMPOTENT byte for byte; every
-# comment survives (counted by the same comdump comdiff trusts); a file
+# comment survives (counted by comdump_m9, the M9 lexer's record); a file
 # that does not parse is refused with the parser's own positions;
 # --check answers both ways; -w rewrites once and then never again.
 set -e
@@ -27,19 +27,15 @@ gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label \
   { echo "fmt: FAIL building m9fmt:"; tail -5 "$W/build.log"; exit 1; }
 FMT="$W/m9fmt"
 
-# comdump counts the comments.  The gate builds it fresh where fpc
-# exists, and a failed build is a FAILURE.  Until 2026-10-22 it was
-# `|| true', and a comdump left by an earlier build was then used as
-# if it were this tree's (the compiler review's tier 3).  Only without
-# fpc is the count skipped, and the gate says so.
-CD=../../host/fpc/comdump
-if command -v fpc > /dev/null 2>&1; then
-  rm -f "$CD"
-  ( cd ../../host/fpc && fpc -O2 comdump.pas > "$W/comdump.log" 2>&1 ) ||
-    { echo "fmt: FAIL building comdump:"; tail -5 "$W/comdump.log"; exit 1; }
-else
-  echo "fmt: SKIP comment counting (no fpc for comdump)"; CD=
-fi
+# comdump_m9 counts the comments: the M9 lexer's record of them, built
+# here from runtime/gen.  Until 2026-11-15 the count came from the
+# Pascal lexer's comdump and was skipped where fpc was missing
+# (docs/fpc-removal-plan.md, step 3).  frontgold holds this record to
+# the one taken from the Pascal lexer, on the fixed set.
+CD="$W/comdump"
+gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
+    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Text.c ../gen/Lex.c comdump_m9.c \
+    -o "$CD" || { echo "fmt: FAIL building comdump_m9"; exit 1; }
 
 files=0; div=0
 for f in ../../corpus/*.m9 ../../bench/*.m9 ../../museum/*.m9; do

@@ -68,6 +68,8 @@ to reduce, so the list is meant to shrink.
 3. **No undefined behavior. No behavior controlled by compiler
    flags.** Checks are semantics. A release compiler may *prove* a
    check unnecessary and elide it; it may never merely disable it.
+   An author may claim one loop's range in the source (`FOR [INRANGE
+   b]`, §2.1); the claim is listed, and a build can hold it.
    *(Observed failure: `gm2 -O2` without `-fsoft-check-all` executed
    `a[42]` on `ARRAY [0..9]`, printed "unreachable", and continued.)*
 4. **Programs are read more often than written, and in the current
@@ -282,6 +284,24 @@ EXIT leaves it as it leaves any loop.  *(Measured before building: of
 cp-kernel's 210 loops `FOR i := 0 TO LEN (s) - 1`, 151 use `i` only
 as `s[i]`; of this repository's 498, 161.  Each is two names and an
 index check where one name says it.)*
+**A `FOR` may carry a claim that its subscripts are in range** (since
+0.28.0): `FOR [INRANGE b] v := lo TO hi DO`, with `b` a BOOL
+expression read once, before the loop starts.  When `b` is
+TRUE the body's subscripts on slices, arrays and grids, and the
+arithmetic written inside them, are not checked, in the statements
+nested in the body too.  When `b` is FALSE the loop is the one a `FOR`
+without a claim is, and raises where that one does.  A procedure the
+body calls keeps its checks, and so does everything that is not a
+subscript.  Only a counted `FOR` takes a claim: its range is fixed
+before it starts.  A claim that is TRUE while a subscript is out of
+range is the program's error and its behavior is not defined;
+`m9c --verify-claims` builds a program that keeps the checks in
+claimed loops and stops, naming the claim's line, when one fails.
+`m9c --review` lists every claim and `--no-unsafe` refuses them.
+*(Measured before building: a ported model's LU kernel spent 24 per
+cent of its time in the checks of three subscripts; probes
+`inrange-not-bool`, `runtime/test/inrange/`,
+`runtime/test/sanitize/SanClaim.m9`.)*
 **`NaN` is predeclared**: the quiet NaN, an identifier and not a
 keyword (the `STR` precedent), typed as a real literal so it is an F64
 or an F32 where one is wanted, with the bits `7ff8000000000000` that C's
@@ -371,7 +391,7 @@ stored as its UTF-8 octets; so is a `CONST` naming a string literal
 literal under a name.  A literal also adapts to a `SLICE OF CHAR`
 where one is wanted -- an argument, an assignment, a RETURN -- as a
 numeric literal adapts to a width, and is then stored as its code
-points (Alex, 2026-10-31); a `CONST` does not, being held as octets.  A UTF has **no subscript and
+points (decided 2026-10-31); a `CONST` does not, being held as octets.  A UTF has **no subscript and
 no `LEN`**: UTF-8 has no O(1) i-th character, so each operation names
 its unit and its cost -- `Text.BLen`/`BAt` for bytes, `CpCount`/`CpAt`
 and `FOR c IN u` for characters -- and the checker refuses `u[i]` and
@@ -477,7 +497,7 @@ a temporary, which is NOT what a forward loop does on overlapping
 ranges: an LZ77 match shorter than its distance reads what it just
 wrote and keeps its loop.  It is one length compare and a `memmove`;
 it pays on LONG copies, and a short one is faster as the loop
-(measured, `docs/blockcopy-plan.md`). *(2026-10-22, Alex's decision on
+(measured, `docs/blockcopy-plan.md`). *(2026-10-22, the author's decision on
 the owed ledger.)*
 
 ### 2.2.2 Enumerations — a closed set of names, checked as one
@@ -655,7 +675,7 @@ byte for byte what it was, and generating its two largest modules
 takes 5% less time than with the chains (it took 4.5% more until
 `Text.IndexOf` compared lengths before calling the comparison).
 
-**A record value is written `Row (200, 'OK')`** (2026-10-05, Alex:
+**A record value is written `Row (200, 'OK')`** (2026-10-05, the author:
 positional, in a `CONST` and in statements) — the record type's name,
 then every field in declaration order, each held to its field's type
 and named by position when it is not (`field 1 of Row: cannot give
@@ -1320,10 +1340,15 @@ Rules:
    itself freely: inside `Clock`, `Clock.time`, `Clock.K`,
    `Clock.Set (x)` and `Clock.Stamp` are `time`, `K`, `Set (x)` and
    `Stamp` (built in 0.27.1; until then the checker passed such a name
-   over untyped and only an exception built). One form is refused: a
-   name the procedure declares itself hides the module's, and
-   `Clock.time` beside a parameter `time` does not reach past it yet
-   (probe `module-name-hidden`); rename the parameter. A variable,
+   over untyped and only an exception built). It reaches past a name
+   the procedure declares itself: beside a parameter `time`,
+   `Clock.time` is the module's and `time` the parameter, so a setter
+   is `Clock.time := time` (since 0.28.0; the checker gives the
+   procedure's name another spelling first, so each variable still has
+   one name in every judgement). One form stays refused: a name that
+   is also a member in that procedure, a parameter of a procedure
+   type say, where the rename cannot follow it (probe
+   `module-name-hidden`); rename the parameter. A variable,
    parameter, type or constant
    declared in the procedure, or at the module's own level, is that
    name and not a module's; a binder is, inside the statements it
@@ -1351,7 +1376,7 @@ Rules:
    the other's record by value in both directions -- no order of
    declarations has both complete -- nor, in one direction, unless the
    module holding the field is compiled second; parameters, answers and
-   pointers are free.  *(2026-10-22, Alex's decision on the compiler
+   pointers are free.  *(2026-10-22, the author's decision on the compiler
    review's F6 item: not refused.  Until then a clean `--make` failed on
    the partner's missing header, a second run passed on the leftovers,
    and a partner's type in a prototype was `unknown type name'.)*
@@ -1461,7 +1486,8 @@ Rules:
    other attribute carries a text. A deprecated name is removed in
    the release after the one that marked it. *(Since 2026-11-05, for
    the cross-module variant workarounds of `Csv`, `Frame` and `Plot`,
-   whose gap closed on 2026-09-15. Probes
+   whose gap closed on 2026-09-15; the example's names were marked in
+   0.27.0 and removed in 0.28.0. Probes
    `deprecated-not-in-definition`, `deprecated-without-text`,
    `attribute-text-not-deprecated`, `const-attribute-not-deprecated`.)*
 
@@ -1789,7 +1815,7 @@ PTR T` -- not `OPT` -- in a record that arrived zeroed holds nothing
 until it is set, and following it, or copying it out of the field or
 the element, raises `IndexError` with the payload (-1, 0), which a
 handler tells from a subscript by the -1.  *(Since 2026-10-21, the
-compiler review's C8, Alex: "runtime check everywhere" -- an initial
+compiler review's C8, the author: "runtime check everywhere" -- an initial
 value at the NEW was weighed and measured at 21 single and 6 many
 allocations to rewrite.  Until then it was a SIGSEGV with no handler
 run; `runtime/test/genforms/GfUnsetField.m9`.)*  The same holds for a
@@ -2132,7 +2158,7 @@ program by name at run time; it does not hang.  A per-thread list of
 held monitors is checked at each entry.
 
 **A monitor a bug left is poisoned** (since 2026-11-02; stage 5 of
-docs/task-plan.md, Alex's rules).  A bound procedure can fail half way
+docs/task-plan.md, the author's rules).  A bound procedure can fail half way
 through its update, with the shared state half moved.  When
 `IndexError`, `Overflow`, `OutOfMemory` or `Poisoned` leaves a bound
 procedure, its monitor is marked, and every later call into it raises
@@ -2501,7 +2527,7 @@ features:
    | `SET` and `IN` | a word-set over a small enumeration | a membership test over an **enumeration** with more alternatives than an `OR` chain carries comfortably. *Counted 2026-10-01, and the count is zero:* of 72 membership tests of three or more alternatives in 208 files (this repository and two applications), 29 are over strings, 19 over characters, 18 over named integer codes (median 4 alternatives, at most 7), 6 over integer literals, and **none over an enumeration** -- there are four enumeration types in those trees and no program asks which of several members a value is. The string lists, the largest class and the only long ones (one of 96), are a constant table and `Text.OneOf` (§2.2.4), and the compiler's own eight went that way the same day. *Was:* "a second hand-rolled membership table", which counted tables of any kind and so read as met eleven times over; the 89-member one would not have fitted a machine word in any case |
    | ~~`Bits.And/Or/Xor/Shl/Shr`~~ | **built 2026-09-27** as `corpus/Bits.m9`, a library module and not a language change: And, Or, Xor, Not, Shl, Shr (logical), Test, Count, bound to `static inline` C operators in the runtime header so the generator needed nothing. Two things moved from the pre-registration. It is on **I64** read as its two's-complement pattern, not unsigned: every caller in the corpus held its bits in an I64 (a generator state, a flag column, the bytes of a little-endian integer), and U64 is the type the generator serves worst, so an unsigned-only module would have cost two checked conversions per call for no safety. And the trigger was not a hash map but bit work in the applications built on the corpus, which is the demand the table exists to record. Shift counts are checked: outside 0..63 is `ValueRange` by name, where C says undefined | *was:* the first program that needs bit manipulation |
    | ~~Procedure types~~ | **built 2026-09-27** (§2.2.3): named, structural, top-level procedures as values, `OPT` for a variable or field, calls through a value checked against the type and raising its `RAISES`.  The trigger -- "a second program whose operations cannot be enumerated; defunctionalisation has produced something better twice" -- had been met four times over when the review of that day counted: a route table, a push interface, a record the loop drives, a reverse-communication MINPACK, each recorded by its author as the absence of this feature | *was:* CLAUDE.md's pre-registration; this table never carried the row |
-   | An **aggregate constructor** | `[a, b, c]`, and a record value `Row (200, 'OK')`, usable as a CONST | **BUILT** (§2.2.4): the array half 2026-10-01 -- a `CONST` whose value is `[ e1, ..., en ]` of literals is a constant table -- and the record half 2026-10-05, decided by Alex without waiting for the trigger: `Row (200, 'OK')`, positional, as a `CONST`, a table element and a value in statements. *Trigger, as it was:* something needs to **enumerate** a mapping the program also uses -- the routes-as-data precedent, where `OpenApi` derives the document from the router rather than being maintained beside it |
+   | An **aggregate constructor** | `[a, b, c]`, and a record value `Row (200, 'OK')`, usable as a CONST | **BUILT** (§2.2.4): the array half 2026-10-01 -- a `CONST` whose value is `[ e1, ..., en ]` of literals is a constant table -- and the record half 2026-10-05, decided by the author without waiting for the trigger: `Row (200, 'OK')`, positional, as a `CONST`, a table element and a value in statements. *Trigger, as it was:* something needs to **enumerate** a mapping the program also uses -- the routes-as-data precedent, where `OpenApi` derives the document from the router rather than being maintained beside it |
    | A typed `CONST` | `CONST Pi : F32 = 3.14159...` | a program must reproduce a foreign constant bit for bit and cannot |
    | **Pool elision** | `NEW (T)` with no pool lands in the frame and its arena is ADOPTED by the caller's at exit when the result points into it; a `VAR` pointer parameter carries its object's pool implicitly; `HEAP`, a program's pool and an object-held cache stay named (`docs/pool-elision-plan.md`) | *met 2026-09-30; rules 1 and 2 BUILT the same day (stages 1 to 3 of the plan), the corpus moving module by module -- Text, Json, Dict, ApiSpec so far:* the parameter carried no signal -- 98% of allocating corpus procedures take one, and across the four trees (corpus, zarr proxy, FLEXPART, flexinv) between 1% and 10% of the 18,600 pool mentions name a lifetime that is not a frame |
 
@@ -2621,8 +2647,9 @@ If          = "IF" Expr "THEN" StmtSeq
               { "ELSIF" Expr "THEN" StmtSeq }
               [ "ELSE" StmtSeq ] "END" .
 While       = "WHILE" Expr "DO" StmtSeq "END" .
-For         = "FOR" ident ( ":=" Expr "TO" Expr [ "BY" ConstExpr ]
-                          | "IN" Designator )
+For         = "FOR" [ "[" "INRANGE" Expr "]" ] ident
+                ( ":=" Expr "TO" Expr [ "BY" ConstExpr ]
+                | "IN" Designator )
               "DO" StmtSeq "END" .
 Loop        = "LOOP" StmtSeq "END" .
 Case        = "CASE" Expr "OF" CaseArm { CaseArm }
@@ -2789,7 +2816,13 @@ overflow builtins; `DIV`/`MOD` guard zero and MIN/-1; indexing and
 float-to-int tests finiteness first (`Trunc(NaN)` is `ValueRange`,
 never INT64_MIN). Each failed check raises through the same slot ABI.
 There is no flag to turn any of this off; that flag is the museum's
-origin story. CASE over a CASE RECORD switches on the tag and traps
+origin story. One loop at a time, an author may say that its
+subscripts are in range: `FOR [INRANGE b]`. The claim is a BOOL read
+before the loop. TRUE runs the body with its subscripts unchecked,
+FALSE runs the loop as any FOR, so a program means the same whatever
+b is. A claim is not a flag: it stands in the source, on one loop,
+`--review` lists it, `--no-unsafe` refuses it, and `--verify-claims`
+builds a program in which a false one stops by its line. CASE over a CASE RECORD switches on the tag and traps
 on an impossible one — the checker proved totality, and the emitted
 trap is the proof's receipt, not its replacement.
 

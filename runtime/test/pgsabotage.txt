@@ -35,7 +35,7 @@
 @end
 
 # "F64Cell by Fmt.ParseF64 alone" is gone (2026-10-31): it stayed green on
-# ct121 because ParseF64 rounds as strtod does, so F64Cell now uses
+# host1 because ParseF64 rounds as strtod does, so F64Cell now uses
 # ParseF64 alone.  FmtTest holds the rounding.
 
 @name the offset's sign ignored

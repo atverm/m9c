@@ -1,0 +1,15 @@
+MODULE m ;
+
+PROCEDURE Up (s: SLICE OF CHAR)
+  RAISES IndexError =
+BEGIN
+  s[0] := 'X'
+END Up ;
+
+PROCEDURE F ()
+  RAISES IndexError =
+BEGIN
+  Up ('abc')
+END F ;
+
+END m.

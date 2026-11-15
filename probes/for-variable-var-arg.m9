@@ -2,7 +2,7 @@
 MODULE m ;
 (* A FOR's control variable handed to a VAR parameter is written by the
    callee.  That write is the assignment the rule refuses (par 2.1;
-   Alex, 2026-10-25).  Legal forms come first: the variable to a value
+   decided 2026-10-25).  Legal forms come first: the variable to a value
    parameter, a copy of it to the VAR parameter. *)
 PROCEDURE Show (v: I64) : I64 =
 BEGIN

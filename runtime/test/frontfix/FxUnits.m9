@@ -1,0 +1,55 @@
+(* FxUnits is a front-end fixture (docs/fpc-removal-plan.md): every
+   form of a unit and of an import, in one source file.  It is parsed
+   and printed, never checked: the names need not resolve. *)
+
+DEFINITION MODULE FxPlain ;
+
+IMPORT Io ;
+IMPORT Text, Fmt, Math ;
+FROM Seq IMPORT Strs ;
+FROM Sort IMPORT F64s, I64s, ArgStr ;
+
+  (* An indented comment belongs to the declaration above it. *)
+
+(* A flush-left comment is a heading. *)
+
+END FxPlain.
+
+STATEFUL DEFINITION MODULE FxState ;
+VAR count : I64 ;
+END FxState.
+
+UNSAFE DEFINITION MODULE FOR "C" fxc ;
+PROCEDURE Sin = "sin" (x: C.double) : C.double [REENTRANT] ;
+END fxc.
+
+UNSAFE DEFINITION MODULE FOR "C" fxlinked LINK "netcdf" ;
+PROCEDURE Open = "nc_open" (path: C.string ; mode: C.int) : C.int [SERIAL] ;
+END fxlinked.
+
+UNSAFE DEFINITION MODULE FOR "C" fxmany LINK "blosc", "-lz", "shim.c" ;
+END fxmany.
+
+UNSAFE STATEFUL DEFINITION MODULE FxBoth ;
+VAR raw : PTR U8 ;
+END FxBoth.
+
+IMPLEMENTATION MODULE FxPlain ;
+IMPORT Io ;
+END FxPlain.
+
+IMPLEMENTATION MODULE FxState ;
+BEGIN
+  count := 0
+END FxState.
+
+UNSAFE IMPLEMENTATION MODULE FxBoth ;
+FROM fxc IMPORT Sin ;
+BEGIN
+END FxBoth.
+
+MODULE FxUnits ;
+IMPORT Io ;
+BEGIN
+  Io.WriteLine ('units')
+END FxUnits.

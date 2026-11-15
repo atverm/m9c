@@ -189,8 +189,6 @@ void Plot_AddBars (m9_sl_F64 at, m9_sl_F64 v, int64_t colorIdx, m9_sl_UTF8 label
 void Plot_SetBarStyle (int64_t dir, int64_t mode, int64_t place, bool filled, double width, m9_state *err);
 void Plot_SetBarErrors (int64_t series, m9_sl_F64 err_, m9_state *err);
 void Plot_SetBarColor (int64_t series, m9_sl_UTF8 hex, m9_state *err);
-Plot_Cmap Plot_Viridis (m9_state *err);
-Plot_Cmap Plot_Coolwarm (m9_state *err);
 m9_sl_UTF8 Plot_CmapHex (Plot_Cmap cmap, double t, m9_state *err);
 void Plot_SetLineColor (int64_t series, m9_sl_UTF8 hex, m9_state *err);
 void Plot_SetLogX (bool on, m9_state *err);

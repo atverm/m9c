@@ -133,7 +133,7 @@ PROCEDURE NBytes (t: PTR Table) : I64 ;
      the last time this was written.                                 *)
 
 (* ---- READING a stream (2026-10-30; zarrm9's mcpd reads zpd's
-   `format=arrow' answers, Alex: "pyarrow readers as well") ----
+   `format=arrow' answers, the author: "pyarrow readers as well") ----
 
    A stream may hold any number of record batches after the schema,
    each read when Next is asked, uncompressed or ZSTD (the

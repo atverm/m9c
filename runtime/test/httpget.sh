@@ -232,7 +232,7 @@ ck "a chunked response to a POST takes the same decoder" \
    "0123456789abcdefghijklmnopqrstuvwxyz" \
    "$($R POST "$U/chunked-reflect" '0123456789abcdefghijklmnopqrstuvwxyz' | tail -1)"
 
-# One check covers m9flexdev's two wishes (2026-09-27).  meta.icos-cp.eu
+# One check covers a port's two wishes (2026-09-27).  meta.icos-cp.eu
 # answers a SPARQL POST chunked, and the answer is UTF-8 that a parser
 # reads, not a printable rendering that turned Křešín into dots.
 ck "a chunked POST answer arrives decoded from UTF-8, chunk boundaries inside a character" \

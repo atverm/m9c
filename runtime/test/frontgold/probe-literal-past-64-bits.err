@@ -1,0 +1,3 @@
+parseprobes/literal-past-64-bits.m9:8:8: parse: lex: integer literal beyond 64 bits (the largest is 18446744073709551615, a U64; above MAX (I64) a literal is a U64)
+parseprobes/literal-past-64-bits.m9:9:1: parse: expression expected, found END
+m9c: 2 parse errors in parseprobes/literal-past-64-bits.m9

@@ -2,7 +2,7 @@ MODULE TimeTest ;
 
 (* TimeTest tests Time's nanosecond instant and Http's IMF-fixdate in
    M9 against java.time itself (runtime/test/gold/Time.gold, written
-   by tools/TimeGold.java with OpenJDK 25 on zoefii).  It holds
+   by tools/TimeGold.java with OpenJDK 25 on host2).  It holds
    ParseNanos against OffsetDateTime.parse with ISO_OFFSET_DATE_TIME
    on 434 strings, the refusals included.  It holds IsoNanos against
    Instant.toString and FormatDate against an IMF-fixdate pattern on

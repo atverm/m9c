@@ -1,0 +1,3 @@
+1:1-1 (* EXPECT-ERROR: unhandled RAISES ValueRange from I32 conversion *)
+2:1-10 (* The checker's handled set was flat over a procedure: an exception\n   caught ANYWHERE in it was counted caught EVERYWHERE.  The compiler\n   review observed it 2026-10-21 (C6).  HttpServer.Serve1, a thread\n   root's callee that "raises nothing", converted fd with C.Int in a\n   FINALLY outside its handlers.  Syslog.Open's ValueRange handler\n   converted options and facility again.  RdfTest read a file whose\n   ValueRange only a LATER block caught.  Each compiled; each could\n   leave its procedure with an exception its heading denied.  This piece\n   uses I32, the same checked narrowing as C.Int. *)
+comments=2

@@ -1126,6 +1126,7 @@ END IsStmtEndK ;
 
 PROCEDURE PStatement0 (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR n, d, e : PTR Ast.Node ;
+  claim : Ast.Kid ;
 BEGIN
   IF p.cur.kind = TkIdent THEN
     d := PDesignator (pool, p) ;
@@ -1184,10 +1185,26 @@ BEGIN
   ELSIF p.cur.kind = TkFOR THEN
     n := Nn (pool, p, Ast.NFor) ;
     Bump (p) ;
+    (* FOR [INRANGE b] v := lo TO hi: the author claims the loop's
+       subscripts are in range (2026-11-15, docs/loop-check-plan.md).
+       The claim stands after FOR, since after `hi' a bracket is a
+       subscript.  It is the node's fifth child. *)
+    claim := NONE ;
+    IF p.cur.kind = TkLBrack THEN
+      Bump (p) ;
+      IF NOT Text.Eq (TakeIdent (p, 'INRANGE'), 'INRANGE') THEN
+        Rerr (p, 'a FOR takes one attribute: [INRANGE b]')
+      END ;
+      claim := SOME (PExpr (pool, p)) ;
+      Expect (p, TkRBrack)
+    END ;
     Ast.SetA (pool, n, TakeIdent (p, 'loop variable')) ;
     (* FOR x IN s DO ... END, over a slice's or an array's elements
        (2026-10-11) *)
     IF p.cur.kind = TkIN THEN
+      IF claim IS SOME cl THEN
+        Rerr (p, 'INRANGE stands on FOR v := lo TO hi, whose range is fixed before it starts, not on FOR IN')
+      END ;
       n.kind := Ast.NForIn ;
       Bump (p) ;
       Ast.Add (pool, n, SOME (PExpr (pool, p))) ;
@@ -1209,6 +1226,7 @@ BEGIN
     Expect (p, TkDO) ;
     Ast.Add (pool, n, SOME (PStmtSeq (pool, p, SEnd))) ;
     Expect (p, TkEND) ;
+    IF claim IS SOME cl2 THEN Ast.Add (pool, n, claim) END ;
     RETURN n
   ELSIF p.cur.kind = TkLOOP THEN
     n := Nn (pool, p, Ast.NLoop) ;

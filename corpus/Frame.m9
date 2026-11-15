@@ -185,26 +185,13 @@ PROCEDURE WriteCsv (f: PTR Fr ; RO path: STR)
 
 (* ---- the cross-module face of the variants ----
 
-   These are integer kind codes and typed accessors, written when a
-   caller in another module could not CASE over Frame.Data or
-   Frame.Conv (the generators could not type a cross-module variant
-   selector).  That gap closed 2026-09-15 (`corpus/KindUse.m9`).  The
-   kind codes and KindOf are DEPRECATED since 0.27.0 (report par 3.9)
-   and go in the release after it: CASE over a column's Data says the
-   same.  The typed accessors below stay. *)
+   These are typed accessors, written when a caller in another module
+   could not CASE over Frame.Data (the generators could not type a
+   cross-module variant selector).  That gap closed 2026-09-15
+   (`corpus/KindUse.m9`).  The integer kind codes and KindOf beside
+   them were deprecated in 0.27.0 and removed in 0.28.0: CASE over a
+   column's Data says the same. *)
 
-CONST
-  KindF64 [DEPRECATED 'Frame.Data.F64s, by CASE over Frame.GetCol (f, name).data'] = 0 ;
-  KindF32 [DEPRECATED 'Frame.Data.F32s, by CASE over Frame.GetCol (f, name).data'] = 1 ;
-  KindI64 [DEPRECATED 'Frame.Data.I64s, by CASE over Frame.GetCol (f, name).data'] = 2 ;
-  KindI32 [DEPRECATED 'Frame.Data.I32s, by CASE over Frame.GetCol (f, name).data'] = 3 ;
-  KindI16 [DEPRECATED 'Frame.Data.I16s, by CASE over Frame.GetCol (f, name).data'] = 4 ;
-  KindByte [DEPRECATED 'Frame.Data.Bytes, by CASE over Frame.GetCol (f, name).data'] = 5 ;
-  KindStr [DEPRECATED 'Frame.Data.Strs, by CASE over Frame.GetCol (f, name).data'] = 6 ;
-  KindBool [DEPRECATED 'Frame.Data.Bools, by CASE over Frame.GetCol (f, name).data'] = 7 ;
-
-PROCEDURE KindOf (f: PTR Fr ; RO name: STR) : I64 RAISES Unknown
-  [DEPRECATED 'CASE Frame.GetCol (f, name).data OF | Frame.Data.F64s (v, m) : ...'] ;
 PROCEDURE ColI32 (f: PTR Fr ; RO name: STR) : RO SLICE OF I32
   RAISES Unknown, WrongType ;
 PROCEDURE ColI16 (f: PTR Fr ; RO name: STR) : RO SLICE OF I16
@@ -291,22 +278,6 @@ PROCEDURE TsTime (ts: PTR Ts) : RO SLICE OF I64 ;
 PROCEDURE TsRes (ts: PTR Ts) : I64 ;
 PROCEDURE TsConv (ts: PTR Ts) : Conv ;
 PROCEDURE TsDescr (ts: PTR Ts) : STR ;
-
-(* These are the six reducers and three conventions as functions,
-   written when a caller in another module could not spell
-   Frame.How.Mean (the cross-module payload-less constructor gap,
-   closed 2026-09-15).  They are DEPRECATED since 0.27.0 (report par
-   3.9) and go in the release after it; runtime/test/frame_driver.c
-   then builds them in C. *)
-PROCEDURE HowMean () : How [DEPRECATED 'Frame.How.Mean'] ;
-PROCEDURE HowSum () : How [DEPRECATED 'Frame.How.Sum'] ;
-PROCEDURE HowLo () : How [DEPRECATED 'Frame.How.Lo'] ;
-PROCEDURE HowHi () : How [DEPRECATED 'Frame.How.Hi'] ;
-PROCEDURE HowFirst () : How [DEPRECATED 'Frame.How.First'] ;
-PROCEDURE HowLast () : How [DEPRECATED 'Frame.How.Last'] ;
-PROCEDURE ConvStart () : Conv [DEPRECATED 'Frame.Conv.AtStart'] ;
-PROCEDURE ConvEnd () : Conv [DEPRECATED 'Frame.Conv.AtEnd'] ;
-PROCEDURE ConvMid () : Conv [DEPRECATED 'Frame.Conv.AtMid'] ;
 
 PROCEDURE Average (VAR pool: POOL ; KEPT ts: PTR Ts ; toRes: I64 ;
                    how: SLICE OF How ; minCount: I64)
@@ -1002,16 +973,6 @@ PROCEDURE TsDescr (ts: PTR Ts) : STR =
 BEGIN
   RETURN ts.descr
 END TsDescr ;
-
-PROCEDURE HowMean () : How = BEGIN RETURN How.Mean END HowMean ;
-PROCEDURE HowSum () : How = BEGIN RETURN How.Sum END HowSum ;
-PROCEDURE HowLo () : How = BEGIN RETURN How.Lo END HowLo ;
-PROCEDURE HowHi () : How = BEGIN RETURN How.Hi END HowHi ;
-PROCEDURE HowFirst () : How = BEGIN RETURN How.First END HowFirst ;
-PROCEDURE HowLast () : How = BEGIN RETURN How.Last END HowLast ;
-PROCEDURE ConvStart () : Conv = BEGIN RETURN Conv.AtStart END ConvStart ;
-PROCEDURE ConvEnd () : Conv = BEGIN RETURN Conv.AtEnd END ConvEnd ;
-PROCEDURE ConvMid () : Conv = BEGIN RETURN Conv.AtMid END ConvMid ;
 
 PROCEDURE FloorDiv (a, b: I64) : I64 =
   (* FloorDiv is floor division for a possibly negative numerator: DIV
@@ -2146,22 +2107,6 @@ BEGIN
   | Strs : RAISE WrongType (name)
   END
 END ColBools ;
-
-PROCEDURE KindOf (f: PTR Fr ; RO name: STR) : I64 RAISES Unknown =
-VAR c : Col ;
-BEGIN
-  c := GetCol (f, name) ;
-  CASE c.data OF
-  | F64s : RETURN KindF64
-  | F32s : RETURN KindF32
-  | I64s : RETURN KindI64
-  | I32s : RETURN KindI32
-  | I16s : RETURN KindI16
-  | Bytes : RETURN KindByte
-  | Strs : RETURN KindStr
-  | Bools : RETURN KindBool
-  END
-END KindOf ;
 
 PROCEDURE ColI32 (f: PTR Fr ; RO name: STR) : RO SLICE OF I32
   RAISES Unknown, WrongType =

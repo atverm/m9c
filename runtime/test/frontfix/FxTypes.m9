@@ -1,0 +1,72 @@
+(* FxTypes is a front-end fixture (docs/fpc-removal-plan.md): every
+   form of a type.  It is parsed and printed, never checked. *)
+
+MODULE FxTypes ;
+
+CONST N = 8 ;
+
+TYPE
+  Named = I64 ;
+  Qual = Text.Line ;
+
+  Arr = ARRAY 8 OF I64 ;
+  ArrN = ARRAY N * 2 OF F64 ;
+  ArrArr = ARRAY 3 OF ARRAY 4 OF U8 ;
+
+  Grid1 = GRID 1 OF F64 ;
+  Grid4 = GRID 4 OF F32 ;
+
+  Slice = SLICE OF I64 ;
+  SliceSlice = SLICE OF SLICE OF STR ;
+
+  Empty = RECORD END ;
+  Rec = RECORD
+    a : I64 ;
+    b, c : F64 ;
+    d : SLICE OF STR
+  END ;
+  RecSemi = RECORD a : I64 ; END ;
+  Sub = RECORD (Rec) e : BOOL END ;
+  SubQual = RECORD (Text.Line) e : BOOL END ;
+  Marked = RECORD a : I64 END [SHARABLE] ;
+
+  Variant = CASE RECORD
+    | Nothing
+    | Num : n : F64
+    | Pair : a, b : I64 ; t : STR
+  END ;
+
+  Gate = MONITOR RECORD
+    open : BOOL ;
+    waiting : I64
+  END ;
+
+  Ptr = PTR Rec ;
+  PtrIn = PTR Rec IN pool ;
+  PtrInField = PTR Rec IN owner.pool ;
+  Opt = OPT PTR Rec ;
+  OptProc = OPT PROCEDURE () ;
+  Shared = SHARED PTR Rec ;
+
+  Enum = (Red, Green, Blue) ;
+  EnumOne = (Only) ;
+
+  ProcNone = PROCEDURE () ;
+  ProcArgs = PROCEDURE (a: I64 ; b: F64) ;
+  ProcLists = PROCEDURE (a, b: I64 ; x, y: F64) ;
+  ProcModes = PROCEDURE (VAR a: I64 ; RO s: STR ; OWN p: PTR Rec ; RO KEPT t: STR) ;
+  ProcResult = PROCEDURE (a: I64) : I64 ;
+  ProcRo = PROCEDURE (a: I64) : RO STR ;
+  ProcRaises = PROCEDURE (RO s: STR) : I64 RAISES ValueRange, Io.IOError ;
+
+  Nest = SLICE OF RECORD
+    k : ARRAY 2 OF OPT PTR Rec ;
+    f : PROCEDURE (n: I64) : BOOL
+  END ;
+
+VAR
+  inline : RECORD x, y : F64 END ;
+  table : ARRAY 4 OF SLICE OF PTR Rec ;
+
+BEGIN
+END FxTypes.

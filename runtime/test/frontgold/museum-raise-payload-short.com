@@ -1,0 +1,3 @@
+1:1-1 (* EXPECT-ERROR: Error expects 3 argument(s), got 1 *)
+2:1-9 (* A RAISE gave fewer values than its EXCEPTION declares.  It was\n   observed 2026-10-09 in the shipped library: NetCDF.GetAttText raised\n   `Error ('an NC_STRING attribute of more than one element')' where\n   Error is (op, detail, status).  The sentence landed in `op', and a\n   handler reading `detail' or `status' read nothing anybody wrote.  It\n   compiled because nothing held a RAISE's payload to the declaration.\n   The typed tree's measurement found it, since it saw payload values\n   with no recorded type. *)
+comments=2

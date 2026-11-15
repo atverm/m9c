@@ -1,0 +1,17 @@
+(* EXPECT: m.Wrong: cannot assign BOOL to I64 *)
+(* m.time behind a parameter time is the module's variable, with the
+   module's type: a BOOL does not go into it.  The second error names
+   the parameter as the author wrote it, cell, though the checker
+   holds it under another name (docs/module-name-plan.md). *)
+(* EXPECT: m.Named: undeclared retention: borrowed cell reaches module state -- declare KEPT cell *)
+MODULE m ;
+TYPE Cell = RECORD v : I64 END ;
+VAR
+  time : I64 ;
+  cell : OPT PTR Cell ;
+PROCEDURE Wrong (time: BOOL) = BEGIN m.time := time END Wrong ;
+PROCEDURE Named (cell: OPT PTR Cell) = BEGIN m.cell := cell END Named ;
+BEGIN
+  time := 0 ;
+  cell := NONE
+END m.

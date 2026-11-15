@@ -1,0 +1,25 @@
+MODULE Hold ;
+
+TYPE
+  Buf = RECORD
+    s : STR
+  END ;
+
+VAR
+  kept : UTF ;
+  box : Buf ;
+
+PROCEDURE View (RO d: Buf) : UTF =
+BEGIN
+  RETURN UTF (d.s)
+END View ;
+
+PROCEDURE Keep (RO d: Buf) =
+BEGIN
+  kept := View (d)
+END Keep ;
+
+BEGIN
+  box.s := 'x' ;
+  Keep (box)
+END Hold.

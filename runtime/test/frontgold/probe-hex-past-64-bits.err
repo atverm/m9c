@@ -1,0 +1,3 @@
+parseprobes/hex-past-64-bits.m9:7:8: parse: lex: hex literal beyond 64 bits
+parseprobes/hex-past-64-bits.m9:8:1: parse: expression expected, found END
+m9c: 2 parse errors in parseprobes/hex-past-64-bits.m9

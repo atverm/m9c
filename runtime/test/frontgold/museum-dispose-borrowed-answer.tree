@@ -1,0 +1,25 @@
+MODULE m ;
+
+TYPE
+  Node = RECORD
+    n : I64
+  END ;
+
+PROCEDURE Id (a: PTR Node) : PTR Node =
+BEGIN
+  RETURN a
+END Id ;
+
+PROCEDURE Twice () =
+VAR
+  p, r : PTR Node ;
+BEGIN
+  p := NEW (OWN, Node) ;
+  r := Id (p) ;
+  DISPOSE (r) ;
+  DISPOSE (p)
+END Twice ;
+
+BEGIN
+  Twice ()
+END m.

@@ -1,6 +1,6 @@
 MODULE Poison ;
 
-(* A MONITOR A BUG LEFT IS POISONED (stage 5 of docs/task-plan.md; Alex,
+(* A MONITOR A BUG LEFT IS POISONED (stage 5 of docs/task-plan.md; decided
    2026-11-02: Poisoned is unchecked).
 
    Bad moves money between two accounts and fails half way, with an

@@ -1,6 +1,6 @@
 # M9 for Scala programmers
 
-Oct 4, 2026 · @Alex
+Oct 4, 2026 · the author · updated 2026-11-15 for m9 0.28.0
 
 *Kept here from the Claude Docs document of the same name
 (claude.ai/artifact/QzJ1q7QpKuXQoRVrKKGNDS), exported 2026-10-05.*
@@ -25,7 +25,7 @@ Each of these is kept as a program in the `museum/` directory that the compiler 
 
 The principles that follow from this:
 
-- **Checks are semantics.** A program means the same thing at every optimisation level. There is no `-unchecked` mode.
+- **Checks are semantics.** A program means the same thing at every optimisation level. There is no `-unchecked` mode. One loop at a time, an author may claim that a `FOR`'s subscripts are in range (`FOR [INRANGE ok] i := lo TO hi DO`): the claim stands in the source, `m9c --review` lists it, and `m9c --verify-claims` builds a program in which a false one stops by its line.
 - **Errors are values.** A failure is an exception the signature declares, or a value the caller must inspect. Nothing halts the process behind your back.
 - **Readable like a bank statement.** M9 is verbose on purpose. It is designed for the reviewer, not for the person typing it, because the person typing it is increasingly an AI.
 - **The specification is normative.** `docs/M9-report.md` is the language. When implementing it shows the report is wrong, the report is changed in the same commit as the compiler.
@@ -47,47 +47,48 @@ Scala and M9 want the same thing, programs that are wrong at compile time rather
 | Generics | Full: type parameters, higher-kinded types, type classes, givens | None. Where a procedure exists for F64 and F32 it is written twice; we count these twins and they are rare |
 | Closures | First-class functions that capture | Procedure values without capture; extra data travels as an explicit parameter |
 | Type inference | Extensive | None: every variable's type is written |
-| Concurrency | Threads, futures, cats-effect, ZIO, actors | Threads and monitors; a monitor's fields are reachable only through its lock |
+| Concurrency | Threads, futures, cats-effect, ZIO, actors | Threads and monitors, and `TASK`s: tasks far cheaper than a thread, scheduled on the cores, with channels (`Chan`), a parallel loop (`Tsk.For`) and supervision (`Sup`); a monitor's fields are reachable only through its lock |
 | Calling C | JNI/Panama, or Scala Native | Direct; each foreign procedure says if it is `[SERIAL]` or `[REENTRANT]` and the compiler serialises the first |
-| Ecosystem | Maven Central, Spark, Akka, http4s and much more | A 58-module standard library in one repository, each module tested against an outside oracle |
-| Grammar size | Large; several ways to say most things | 73 productions, a ceiling of 100; one way to say most things |
+| Ecosystem | Maven Central, Spark, Akka, http4s and much more | A 66-module standard library in one repository, each module tested against an outside oracle |
+| Grammar size | Large; several ways to say most things | 74 productions, a ceiling of 100; one way to say most things |
 
 The short version: Scala lets you say more with less code. M9 makes you say everything, and in return a reader can see from the text alone what a procedure may raise, what it allocates, who frees it, and which calls are serialised.
 
 ## Where M9 shines
 
-M9 is strongest where a program must be small, start instantly, give the same answer every time, and be audited line by line. These numbers are from `docs/bench.md`: one machine (WSL2, 16 cores), Scala 3.8 on OpenJDK 25, each output diffed against M9's before any clock was read.
+M9 is strongest where a program must be small, start instantly, give the same answer every time, and be audited line by line. These numbers are from `docs/bench.md`, measured on 2026-11-15 on one Apple M5 Pro (m9c 0.28.0, gcc 16 and Apple clang 21, Scala 3.9 on OpenJDK 27), each output diffed against M9's before any clock was read.
 
 | Measure | M9 | Scala 3 | Note |
 | --- | --- | --- | --- |
-| mandelbrot, run | 0.73 s | 0.93 s (0.81 s compute) | M9 equals C here; Scala is close, and the difference is JVM start-up |
-| fannkuch, run | 1.87 s (gcc), 1.58 s (clang) | 1.68–1.94 s | M9 checks bounds and overflow; Scala checks bounds and lets integers wrap |
-| Build one file from clean | 0.45 s (`m9c` 0.03 s + cc) | 3.86 s warm, 29.5 s cold |  |
-| What you ship (mandelbrot, stripped) | 26,840 bytes, needs libc | 9,184,888-byte jar, needs a ~300 MB JVM |  |
+| mandelbrot, run | 0.53 s | 0.55 s (0.48 s compute) | M9 equals C here; the difference is JVM start-up |
+| fannkuch, run | 1.66 s (gcc), 1.47 s (clang) | 1.50 s | M9 checks bounds and overflow; Scala checks bounds and lets integers wrap. M9 with every check runs as fast as C with none under gcc |
+| binary-trees, run | 0.36 s | 0.33 s | short-lived allocations; see below |
+| What you ship (mandelbrot, stripped) | 325 KB, needs libc | 9.2 MB jar, needs a ~300 MB JVM |  |
 
 Where that matters in practice:
 
 - **Command-line tools and batch steps.** No JVM start-up, a binary of tens of kilobytes, and a native C call with no wrapper layer. A pipeline step that runs ten thousand times pays the start-up ten thousand times.
 - **Numerical work against a reference.** Our library is held to numpy, scipy, polars and pyarrow by tests, to the bit where the algorithm allows it. The sums in `Arrays` are compensated and agree with Python's `math.fsum` to the last bit, which is tighter than numpy's own `nansum`.
 - **Binding C libraries safely.** netCDF, ecCodes and blosc are not thread-safe. In M9 that is written on each binding, and the compiler puts the lock in. We measured an 85% loss of updates with an unprotected binding and none with `[SERIAL]`.
-- **Ports of scientific Fortran and C.** The FLEXPART atmospheric transport model runs in M9 bit for bit against the original on 1 to 8 threads. With link-time optimisation its kernel runs in 0.0086 s, faster than the gfortran original; without LTO it took 0.0135 s.
-- **Review.** `m9c --review` prints, for any module, what the compiler proved, what a person decided (named pools, kept parameters), what is trusted (foreign code) and what it could not check. Across the library 41,656 type comparisons were examined and 422 (1.0%) passed over; the page lists those by line.
+- **Ports of scientific Fortran and C.** The FLEXPART atmospheric transport model runs in M9 bit for bit against the original on 1 to 8 threads. The TM5 transport model runs bit for bit against its Fortran too, at about its speed: 91 s of processor time for one model hour on one thread against 88 s for gfortran, with sixteen `INRANGE` claims in its kernels.
+- **Data files.** The CSV reader parses a 207 MB, 244-column file in 0.05 s on 18 threads, the same as polars, and in 0.60 s on one, every one of its 34 million fields equal to `strtof` on the same bytes.
+- **Review.** `m9c --review` prints, for any module, what the compiler proved, what a person decided (named pools, kept parameters, `INRANGE` claims), what is trusted (foreign code) and what it could not check, with the lines. For a program it also lists the claims of every module it imports.
 - **A small surface for AI to write.** One way to say most things, no inference, no implicits. An AI writes M9 that compiles or is refused with a line and column, and a reviewer sees everything that happens in the text.
 
 ## Where M9 fails, or is the wrong tool
 
-M9 is young (first commit 2026-08-20, release 0.14.0 on 2026-10-03), has one main user, and has gaps we know about and keep in a written ledger. If any of these is central to your project, use Scala.
+M9 is young (first commit 2026-08-20, release 0.27.1 on 2026-11-14), has one main user, and has gaps we know about and keep in a written ledger. If any of these is central to your project, use Scala.
 
-- **Allocation-heavy code.** On binary-trees, a benchmark of short-lived allocations, Scala took 0.42 s and M9 0.91 s. A generational collector allocates by bumping a pointer and sweeps young garbage almost for free; M9's arenas zero every allocation and free at scope exit. The JVM wins this one clearly.
+- **Allocation-heavy code.** On binary-trees, a benchmark of short-lived allocations, Scala took 0.33 s and M9 0.36 s. A generational collector allocates by bumping a pointer and sweeps young garbage almost for free; M9's arenas zero every allocation and free at scope exit. The gap was 0.42 s against 0.91 s in October; Rust's arena crate is still more than twice as fast as either.
 - **Abstraction.** No generics, no type classes, no closures that capture, no higher-kinded types. A library that is generic over its element type, a parser combinator library, or an effect system cannot be written in M9 the way it is in Scala.
-- **Ecosystem.** There is no Spark, no Kafka client, no JDBC, no Akka, no package repository. If it is not in our 58 modules or in a C library you can bind, you write it.
+- **Ecosystem.** There is no Spark, no Kafka client, no JDBC, no Akka, no package repository. If it is not in our 66 modules or in a C library you can bind, you write it.
 - **Distributed and streaming data.** Spark and Flink have no M9 counterpart. M9 reads zarr, netCDF, GRIB, Parquet and CSV on one machine, with threads.
-- **Long-running services with complex state.** M9 has a serial HTTP server and HTTP/TLS clients. It has no async runtime and no supervision trees.
-- **Interactive work.** There is no REPL and no notebook. Exploration stays in Python or a Scala worksheet; M9 is where the result becomes a tool.
-- **Windows and macOS** are experimental; Linux is the platform.
+- **Long-running services with complex state.** M9 has an HTTP server on a pool of worker threads or tasks, HTTP/TLS clients, tasks with channels, and supervision of tasks that crash. It has no async/await and no actor library, and it is far younger than any of the JVM's.
+- **Interactive work.** There is no REPL. There is a Jupyter kernel (each cell compiled, state kept between cells), but exploration still belongs in Python or a Scala worksheet; M9 is where the result becomes a tool.
+- **Linux and macOS on Apple silicon** are the platforms; Windows is experimental.
 - **Verbosity.** A Scala one-liner over a collection is often ten lines of M9. That is the price of reading everything in the text, and some people will not want to pay it.
 
-And the checker itself still has holes, listed in the project's ledger. Examples today: read-only storage copied into a local and written there is not followed; a handler's binder is untyped; a pool pointer handed to a thread is not checked. Each closed hole has so far come with a museum piece and a probe so it cannot reopen.
+And the checker itself still has holes, listed in the report's open problems and the project's ledger. Each closed hole has so far come with a museum piece or a probe, so it cannot reopen.
 
 ### Interactive services: M9 behind, TypeScript in front
 
@@ -110,7 +111,7 @@ The effort is about the same as with Scala. `m9curve`, our CO2 curve-fitting ser
 | Binaries of tens of kilobytes that start in milliseconds and need only libc | Maven Central, Spark, Akka and the whole JVM ecosystem |
 | Direct C calls, with thread safety stated and enforced | A REPL, worksheets and IDE refactoring at IntelliJ's level (there is a language server and a VS Code extension) |
 | A language small enough to read completely, and for an AI to write without guessing | Hiring: nobody arrives knowing M9 |
-| Results held to numpy, scipy and polars by tests, so a port can be checked | Maturity: a two-month-old language with known gaps |
+| Results held to numpy, scipy and polars by tests, so a port can be checked | Maturity: a three-month-old language with known gaps |
 
 A Scala programmer will find most of M9 familiar in spirit: types that rule things out, sum types with exhaustive matching, `Option` as `OPT`. What will feel strange is the absence of abstraction and the presence of memory: you decide where data lives, and the compiler holds you to it.
 
@@ -130,11 +131,11 @@ Porting follows from these. To port a program, we first make the original produc
 
 The largest ports are the eddy-covariance flux chain. ONEFlux (FLUXNET's pipeline: C, Python 2 and a compiled MATLAB step) is one M9 program whose every step writes files identical to the original's, including the MDS gap filling and the flux partitioning with its nonlinear fits; on two site-years it runs in 7 min 48 s against 2 h 34 min for the reference, 20 times faster. EddyPro 6.2.1 (Fortran) gives identical output on 21 test cases; one thread should be about as fast as the original (not yet measured), and unlike the original the port runs periods in parallel, 81 s to 27 s on 8 threads, and the ETC's R flux cleaning (RFlux) agrees with R on 88 columns × 17,537 half hours. Data-driven methods like these, and classical machine learning such as k-nearest neighbours or random forests, are ordinary CPU code and port the same way; GPU training is not something M9 does.
 
-The compiler itself was built this way. It was first written in Free Pascal, then rewritten in M9; the two versions are still kept and are compared on every change: same tokens, same parse tree, the same error messages at the same line and column for 126 refused programs, byte-identical generated C. The M9 compiler compiles itself and reaches a fixed point: stage 3 equals stage 2 equals stage 1.
+The compiler itself was built this way. It was first written in Free Pascal, then rewritten in M9, and for three months the two were compared on every change: the same tokens, the same parse tree, the same messages at the same line and column, byte-identical generated C. The Pascal version is now history: the M9 compiler's front end is held to a record taken from it, and to properties every file must keep (it parses, prints to a fixed point, keeps its tokens). The M9 compiler compiles itself and reaches a fixed point: stage 3 equals stage 2 equals stage 1.
 
 ## Gates and CI: keeping the contract, preventing rot
 
-A gate is a script that compares the software with something it must agree with and goes red when it does not. There are 34 of them under `runtime/test/`, plus 14 test programs in M9 with over a thousand checks, and every push to `develop` runs them all on GitHub Actions. Only a green `main` is mirrored to the public repositories.
+A gate is a script that compares the software with something it must agree with and goes red when it does not. There are 39 of them in the round under `runtime/test/`, plus 39 test programs in M9 with over 4,000 checks, and every push to `develop` runs them on GitHub Actions; the same round runs on a Mac. Only a green `main` is mirrored to the public repositories.
 
 *(The original document has a diagram here: the path of a change, with two loops back to the author.)*
 
@@ -144,8 +145,8 @@ What the gates hold, and the kind of rot each one stops:
 
 | Gate family | Holds | Stops |
 | --- | --- | --- |
-| Museum (12 programs) and 126 probes | Every bug ever seen is refused, with its exact message, line and column | A checker change quietly re-admitting an old bug |
-| Twin compilers (lexdiff, parsediff, semdiff, gendiff) | The Pascal and the M9 compiler agree token for token and byte for byte | One implementation drifting from the other, or from the report |
+| Museum (30 programs) and 320 probes | Every bug ever seen is refused, with its exact message, line and column | A checker change quietly re-admitting an old bug |
+| Front end and generator (frontgold, frontprop, gendiff) | The lexer and parser against a record and against properties every file keeps; the generated C against the checked-in C | A change to the front end or the generator that nobody reviewed |
 | Bootstrap | The compiler compiles itself to a fixed point | A generator change that only shows up when the compiler is rebuilt |
 | `m9test` and the oracle batteries | Every library module against its golden values from numpy, scipy, polars, zlib, Chrome | Numerical drift, and an upgrade of an oracle that changes its answer |
 | `reviewdiff` | The recorded `--review` page of every module | A new pool, foreign call or unchecked site arriving unannounced: the diff IS the review |
@@ -163,6 +164,7 @@ The rules that keep the gates honest:
 ## Where to start
 
 - **The tutorial**, with a compiler in the browser: [tutorial.modula9.net](https://tutorial.modula9.net). Chapters 0 to 18, from a first program to a Taylor diagram and a regression.
+- **The `.m9f` notation**: the same language with braces and C-like spelling, converted to and from `.m9` without loss, for readers who find the keywords long.
 - **The compiler and library**: [github.com/atverm/m9c](https://github.com/atverm/m9c), packages for Debian, Ubuntu, Fedora, Rocky and Arch, a Homebrew tap and an experimental Windows zip on its release page.
 - **The language report** (`docs/M9-report.md` in m9c) is the normative definition, and the module reference beside it in `docs/modules/`, generated from the sources, says what each library procedure does.
 - **A good first project** is a command-line tool you now run on the JVM many times a day, or a numerical step whose result you can compare with the program you have. Keep the old one as the oracle.

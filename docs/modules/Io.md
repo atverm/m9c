@@ -2,7 +2,7 @@
 
 Io is the narrowest useful boundary to the outside: standard
 output, command-line arguments, whole files.  TEXT crosses the
-CHAR/octet line as UTF-8 (since 2026-10-09, Alex: "flip
+CHAR/octet line as UTF-8 (since 2026-10-09, the author: "flip
 readfile/writefile to utf8").  A file read as text is decoded
 STRICTLY: one that is not UTF-8 raises ValueRange rather than
 reading as something it is not.  A file written as text takes

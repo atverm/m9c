@@ -1,6 +1,6 @@
 #!/bin/sh
 # semcheck holds the M9 checker to the rules the Pascal twin's harnesses
-# held, now that the twin is frozen (Alex, 2026-10-31, before m9's
+# held, now that the twin is frozen (decided 2026-10-31, before m9's
 # UTF-8 switch).  It reads the M9 checker WHOLE, the region judgement
 # included, through semdump_m9 --all.
 #

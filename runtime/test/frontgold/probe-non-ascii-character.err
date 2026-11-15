@@ -1,0 +1,3 @@
+parseprobes/non-ascii-character.m9:4:10: parse: lex: unexpected character U+2713
+parseprobes/non-ascii-character.m9:4:12: parse: ; or end of statement list expected, found IntLit
+m9c: 2 parse errors in parseprobes/non-ascii-character.m9

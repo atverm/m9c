@@ -92,7 +92,7 @@ static int64_t rcv_ms (int fd)
    another carrier, and the compiler takes errno's address for a
    constant within a function (glibc declares __errno_location
    const).  A read of errno after a park then read the old carrier's,
-   and a timeout came back as ENOENT about one run in three (ct121,
+   and a timeout came back as ENOENT about one run in three (host1,
    2026-11-02).  So on a task's path errno is read and set only inside
    these calls, which are never inlined. */
 #if defined (__clang__)

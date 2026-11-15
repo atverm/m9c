@@ -1,5 +1,5 @@
 unit M9Sem;
-{ M9Sem is FROZEN since 2026-10-31 (Alex, before m9's UTF-8 switch).
+{ M9Sem is FROZEN since 2026-10-31 (decided before m9's UTF-8 switch).
   No gate builds it against Sem.m9 any more: runtime/test/semcheck.sh
   holds the M9 checker to the rules semtest, semprobe and ownledger
   held this one to.  It stays as the history of the checker.
@@ -2645,7 +2645,7 @@ begin
 end;
 
 { a FOR's control variable is written by the loop alone.  Mirrors
-  Sem.ForVarWrite (Alex, 2026-10-25) }
+  Sem.ForVarWrite (decided 2026-10-25) }
 procedure TSem.ForVarWrite (d: TNode; const ctx: string; byRef: Boolean);
 var j : Integer;
 begin
@@ -3007,7 +3007,7 @@ begin
         if (t.b = '') and ExcNotType (t.a) then
           ErrN (t, ctx, t.a + ' is an EXCEPTION, not a type -- an exception' +
             ' is raised and handled; a value of its fields is a RECORD')
-        { decision 32 left this soft; Alex decided 2026-10-22 to refuse it }
+        { decision 32 left this soft; the author decided 2026-10-22 to refuse it }
         else if (t.b = '') and TypeNowhere (t.a) then
           ErrN (t, ctx, 'unknown type: ' + t.a +
             ' -- no module declares it; declare it, or write the module it is in (Mod.' +
@@ -3986,7 +3986,7 @@ end;
 
 { Sem.CountValue answers the value of an array count: literals,
   CONSTs (bare in m, else this module; or Mod.N), + - * DIV MOD, unary
-  minus, parentheses (Alex, 2026-10-30, report M8). }
+  minus, parentheses (decided 2026-10-30, report M8). }
 {$PUSH}{$Q+}  { an overflowing count has no value, as in Sem (Overflow) }
 function TSem.CountValue (e: TNode; const m: string; depth: Integer; var v: Int64): Boolean;
 var a, b : Int64; i, j : Integer; mi : TModuleInfo; ch : Boolean;
@@ -7111,7 +7111,7 @@ var
     end;
     if name = 'COPY' then
     begin
-      { a block copy (docs/blockcopy-plan.md, Alex 2026-10-22) }
+      { a block copy (docs/blockcopy-plan.md, decided 2026-10-22) }
       Arity (2);
       if nargs = 2 then CopyCheck (aTy[0], aTy[1], aNode[0]);
       Exit ('<void>');

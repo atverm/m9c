@@ -125,7 +125,7 @@ IMPORT Text ;
    runtime's radix sorts (csort, at the end of this file; m9rt.h).
    The merge sorts below are the portable twin.  The module takes them
    where the runtime declines: no memory, or M9_SORT_PORTABLE in the
-   environment.  The gates run both ways.  Alex, 2026-10-25: "then
+   environment.  The gates run both ways.  Decided 2026-10-25: "then
    sort".  A million F64s went 125 -> 52 ms on the Xeon, the argsort
    156 -> 53. *)
 
@@ -264,7 +264,7 @@ END SortArgStrs ;
    runtime's argsort (CArgUtf) does it by a byte compare: UTF-8's byte
    order is code-point order.  The merge sort above is its portable
    twin.  It runs where the runtime declines: no memory, or
-   M9_SORT_PORTABLE.  Alex, 2026-10-31: the fast path owed after the
+   M9_SORT_PORTABLE.  Decided 2026-10-31: the fast path owed after the
    UTF switch. *)
 PROCEDURE OrderStrs (RO v: SLICE OF STR ; VAR idx: SLICE OF I64) =
 VAR

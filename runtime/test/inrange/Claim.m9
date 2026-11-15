@@ -1,0 +1,211 @@
+MODULE Claim ;
+
+(* Claim is run.sh's fixture for FOR [INRANGE b] (docs/loop-check-plan.md).
+
+   A claim never changes what a program does.  Every procedure here
+   runs its loops twice, once with the claim TRUE and once with it
+   FALSE, and the two answers must be equal.  With the claim TRUE the
+   body's subscripts take the unchecked accessors; with it FALSE the
+   loop is the one a FOR without a claim is.
+
+   Fill's second call makes a claim FALSE on a range that runs past
+   the slice.  The loop raises IndexError at index 5, with the stores
+   before it made.  A design that tested the range before the loop and
+   raised there would leave v[4] at its old value. *)
+
+IMPORT Io, Fmt ;
+
+EXCEPTION Refused ;
+
+PROCEDURE Fill (VAR a: SLICE OF F64 ; lo, hi: I64) =
+VAR
+  j : I64 ;
+  ok : BOOL ;
+BEGIN
+  ok := lo >= 0 AND hi < LEN (a) ;
+  FOR [INRANGE ok] j := lo TO hi DO
+    a[j] := F64 (j)
+  END ;
+  FOR [INRANGE lo = 0] j := hi TO lo BY -1 DO
+    a[j] := a[j] + 1.0
+  END
+END Fill ;
+
+(* Sums walks a slice with the index written as a sum, a difference
+   and a product, forwards by two and backwards. *)
+PROCEDURE Sums (RO a: SLICE OF I64 ; ok: BOOL) : I64 =
+VAR
+  k, s, n, half : I64 ;
+BEGIN
+  n := LEN (a) ;
+  half := n DIV 2 ;
+  s := 0 ;
+  FOR [INRANGE ok] k := 0 TO half - 1 DO
+    s := s + a[k + half] - a[(half - 1) - k] + a[k * 2]
+  END ;
+  FOR [INRANGE ok] k := 0 TO n - 1 BY 2 DO s := s + 3 * a[k] END ;
+  FOR [INRANGE ok] k := n - 1 TO 0 BY -1 DO s := s + a[k] * k END ;
+  (* an empty range runs nothing, claimed or not *)
+  FOR [INRANGE ok] k := 5 TO 4 DO s := s + a[k + 1000] END ;
+  RETURN s
+END Sums ;
+
+(* Arr indexes an ARRAY, whose count is in its type. *)
+PROCEDURE Arr (ok: BOOL) : I64 =
+VAR
+  a : ARRAY 8 OF I64 ;
+  k, s : I64 ;
+BEGIN
+  FOR [INRANGE ok] k := 0 TO 7 DO a[k] := k * k END ;
+  s := 0 ;
+  FOR [INRANGE ok] k := 1 TO 7 DO s := s + a[k] - a[k - 1] END ;
+  RETURN s
+END Arr ;
+
+(* Grids fills and sums grids of one to four axes.  The claim stands
+   on the outer loop: it covers the loops nested in it. *)
+PROCEDURE Grids (ok: BOOL) : F64 =
+VAR
+  g1 : GRID 1 OF F64 ;
+  g2 : GRID 2 OF F64 ;
+  g3 : GRID 3 OF F64 ;
+  g4 : GRID 4 OF F64 ;
+  flat : SLICE OF F64 ;
+  i, j, k, l : I64 ;
+  s : F64 ;
+BEGIN
+  flat := NEW (F64, 5) ;
+  g1 := GRID (flat, 5) ;
+  g2 := NEW (F64, 3, 4) ;
+  g3 := NEW (F64, 2, 3, 4) ;
+  g4 := NEW (F64, 2, 2, 3, 2) ;
+  s := 0.0 ;
+  FOR [INRANGE ok] i := 0 TO 4 DO g1[i] := F64 (i) ; s := s + g1[i] END ;
+  FOR [INRANGE ok] i := 0 TO 2 DO
+    FOR j := 0 TO 3 DO
+      g2[i, j] := F64 (10 * i + j) ;
+      s := s + g2[i, j]
+    END
+  END ;
+  FOR [INRANGE ok] i := 0 TO 1 DO
+    FOR j := 0 TO 2 DO
+      FOR k := 0 TO 3 DO
+        g3[i, j, k] := F64 (100 * i + 10 * j + k) ;
+        s := s + g3[i, j, k]
+      END
+    END
+  END ;
+  FOR i := 0 TO 1 DO
+    FOR j := 0 TO 1 DO
+      FOR k := 0 TO 2 DO
+        FOR [INRANGE ok] l := 0 TO 1 DO
+          g4[i, j, k, l] := F64 (i + j + k + l) ;
+          s := s + g4[i, j, k, l] * 0.5
+        END
+      END
+    END
+  END ;
+  RETURN s
+END Grids ;
+
+(* Calls hands a subscripted value to a procedure, alone and inside
+   an expression.  The argument is held in a temporary ahead of the
+   call, and each of the loop's two copies needs its own: the second
+   copy once named the first one's (a ported model's report,
+   2026-11-15). *)
+PROCEDURE Abs (x: F64) : F64 =
+BEGIN
+  IF x < 0.0 THEN RETURN -x END ;
+  RETURN x
+END Abs ;
+
+PROCEDURE Max (x, y: F64) : F64 =
+BEGIN
+  IF x > y THEN RETURN x END ;
+  RETURN y
+END Max ;
+
+PROCEDURE Calls (RO a: SLICE OF F64 ; ok: BOOL) : F64 =
+VAR
+  k : I64 ;
+  s : F64 ;
+BEGIN
+  s := 0.0 ;
+  FOR [INRANGE ok] k := 1 TO LEN (a) - 1 DO
+    s := s + Abs (a[k]) ;
+    s := s + Max (0.0, 1.0 - a[k - 1] / (a[k - 1] + a[k] + 2.0)) ;
+    s := s + Max (Abs (a[k - 1]), Abs (a[k]))
+  END ;
+  RETURN s
+END Calls ;
+
+(* Asked answers its argument and counts its calls: a claim is read
+   once, before the loop, however many times the loop turns. *)
+VAR asked : I64 ;
+
+PROCEDURE Asked (b: BOOL) : BOOL RAISES Refused =
+BEGIN
+  asked := asked + 1 ;
+  IF asked > 2 THEN RAISE Refused END ;
+  RETURN b
+END Asked ;
+
+PROCEDURE Once (RO a: SLICE OF I64) : I64 RAISES Refused =
+VAR k, s : I64 ;
+BEGIN
+  s := 0 ;
+  FOR [INRANGE Asked (TRUE)] k := 0 TO LEN (a) - 1 DO s := s + a[k] END ;
+  FOR [INRANGE Asked (FALSE)] k := 0 TO LEN (a) - 1 DO s := s + a[k] END ;
+  (* the third claim raises: the loop does not start *)
+  FOR [INRANGE Asked (TRUE)] k := 0 TO LEN (a) - 1 DO s := s + 1000000 END ;
+  RETURN s
+END Once ;
+
+VAR
+  v : SLICE OF F64 ;
+  w : SLICE OF I64 ;
+  i, n : I64 ;
+
+BEGIN
+  v := NEW (F64, 5) ;
+  Fill (v, 0, 4) ;
+  Io.WriteLine (Fmt.Short (v[0]) + ' ' + Fmt.Short (v[4])) ;
+
+  w := NEW (I64, 10) ;
+  FOR i := 0 TO 9 DO w[i] := i * 7 - 11 END ;
+  IF Sums (w, TRUE) = Sums (w, FALSE) THEN
+    Io.WriteLine ('slice sums agree: ' + Fmt.I64Str (Sums (w, TRUE)))
+  ELSE
+    Io.WriteLine ('slice sums DIFFER')
+  END ;
+  IF Arr (TRUE) = Arr (FALSE) THEN
+    Io.WriteLine ('array sums agree: ' + Fmt.I64Str (Arr (TRUE)))
+  ELSE
+    Io.WriteLine ('array sums DIFFER')
+  END ;
+  IF Grids (TRUE) = Grids (FALSE) THEN
+    Io.WriteLine ('grid sums agree: ' + Fmt.Short (Grids (TRUE)))
+  ELSE
+    Io.WriteLine ('grid sums DIFFER')
+  END ;
+
+  FOR i := 0 TO 4 DO v[i] := F64 (i) - 2.0 END ;
+  IF Calls (v, TRUE) = Calls (v, FALSE) THEN
+    Io.WriteLine ('call sums agree: ' + Fmt.Short (Calls (v, TRUE)))
+  ELSE
+    Io.WriteLine ('call sums DIFFER')
+  END ;
+  Fill (v, 0, 4) ;
+
+  asked := 0 ;
+  BEGIN
+    n := Once (w)
+  EXCEPT
+  | Refused : Io.WriteLine ('the third claim raised; claims read: ' + Fmt.I64Str (asked))
+  END ;
+
+  Fill (v, 2, 7)
+EXCEPT
+| IndexError (ix, len) : Io.WriteLine ('IndexError ' + Fmt.I64Str (ix) + ' of ' + Fmt.I64Str (len) + ', v[4] = ' + Fmt.Short (v[4]))
+| ValueRange : Io.WriteLine ('ValueRange')
+END Claim.

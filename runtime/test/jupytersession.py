@@ -9,7 +9,7 @@ not the session's end; an interrupted program leaves the session
 alive; a state cell run again is a new GENERATION -- its new values
 are what later cells see -- and every state cell importing it runs
 again after it, so nothing computed from the old one survives
-(phase 2; Alex: "rerun dependents"); a program cell that read the old
+(phase 2; the author: "rerun dependents"); a program cell that read the old
 state is named with its cell number, to be run again; a cell holding
 only an expression shows its value, a frame as an HTML table.
 

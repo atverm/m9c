@@ -1,0 +1,15 @@
+(* EXPECT: a write through r, which holds read-only storage *)
+(* A VIEW is its grid's storage.  The legal forms come first: a row of
+   a VAR grid, and of a value grid, written through a local.  Until
+   0.28.0 both were refused as this probe's last procedure is. *)
+MODULE m ;
+PROCEDURE Row (VAR a: GRID 2 OF F64 ; i: I64) =
+VAR r : GRID 1 OF F64 ;
+BEGIN r := VIEW (a, i, ALL) ; r[1] := 2.0 END Row ;
+PROCEDURE Val (a: GRID 2 OF F64) =
+VAR r : GRID 1 OF F64 ;
+BEGIN r := VIEW (a, 0, ALL) ; r[0] := 1.0 END Val ;
+PROCEDURE Lent (RO a: GRID 2 OF F64) =
+VAR r : GRID 1 OF F64 ;
+BEGIN r := VIEW (a, 0, ALL) ; r[0] := 1.0 END Lent ;
+END m.

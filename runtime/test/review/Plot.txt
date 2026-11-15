@@ -1,10 +1,10 @@
-REVIEW Plot -- 75 procedures with a body, 34 of them functions; 21 headings in a DEFINITION
+REVIEW Plot -- 73 procedures with a body, 32 of them functions; 19 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              34
+  functions answering on every path              32
   assignments                                   492
   arguments                                    1907
-  RETURN values                                  71
+  RETURN values                                  69
   operands of a comparison or an operator       873
   CASE labels                                    23
   THREAD arguments                                0
@@ -24,6 +24,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   SHARED (x)                                      0
   THREAD                                          0
   TASK                                            0
+  INRANGE claims                                  0
   [SHARABLE] records                              0
   module variables                               29   heatLo, heatHi, heatFixed, serX, serY, serN, +23 more
 

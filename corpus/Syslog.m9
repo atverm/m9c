@@ -29,7 +29,7 @@ DEFINITION MODULE Syslog ;
    It NEVER RAISES, for the same reason Logger does not: a logger that
    propagates failure turns a diagnostic into a second fault,
    usually while handling the first.  The ident and the message go
-   out as their UTF-8 octets (Alex, 2026-10-31), so every text has a
+   out as their UTF-8 octets (decided 2026-10-31), so every text has a
    spelling on this wire.  A message longer than the limit is
    truncated, not refused, and the cut falls between characters.
 

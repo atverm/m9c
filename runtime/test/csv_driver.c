@@ -18,7 +18,7 @@
 #include <unistd.h>
 #include "Csv.h"
 
-#define DEFAULT_PATH "/mnt/d/data/ICOSETC_SE-Htm_FLUXNET_HH_L2.csv"
+#define DEFAULT_PATH "/xxx/ICOSETC_SE-Htm_FLUXNET_HH_L2.csv"
 #define SITE_UTC_OFFSET 3600.0     /* SE-Htm: local standard is UTC+1 */
 
 static int checks = 0, failed = 0;
@@ -93,8 +93,8 @@ int main (void)
     o = Csv_Defaults (&e);
     w = Csv_Open (&pool, S (FX), &o, &e);
     ok ("f64 fixture opens", !e.exc && Csv_Rows (w, &e) == 3);
-    Csv_SetReal64 (&w, &pool,0, &e);
-    Csv_SetReal64 (&w, &pool,1, &e);
+    Csv_SetKind (&w, &pool, 0, (Csv_Kind){ .tag = Csv_Kind_Real64 }, &e);
+    Csv_SetKind (&w, &pool, 1, (Csv_Kind){ .tag = Csv_Kind_Real64 }, &e);
     Csv_Parse (&pool, &w, &pool, &e);
     ok ("f64 fixture parses", !e.exc);
     d = Csv_ColF64 (w, 0, &e);
@@ -109,7 +109,7 @@ int main (void)
     /* The SAME file through the float32 kind cannot tell them apart,
        which is what makes the new kind worth having. */
     w = Csv_Open (&pool, S (FX), &o, &e);
-    Csv_SetReal (&w, &pool,1, &e);
+    Csv_SetKind (&w, &pool, 1, (Csv_Kind){ .tag = Csv_Kind_Real }, &e);
     Csv_Parse (&pool, &w, &pool, &e);
     f = Csv_ColF32 (w, 1, &e);
     ok ("float32 collapses them, as the header says it would",
@@ -132,7 +132,7 @@ int main (void)
       memset (raw, 'X', sizeof raw);
       ok ("and names its columns after the source is gone",
           strcmp (C (Csv_NameUtf (&pool, w, 1, &e), buf, sizeof buf), "b") == 0);
-      Csv_SetReal64 (&w, &pool,0, &e);
+      Csv_SetKind (&w, &pool, 0, (Csv_Kind){ .tag = Csv_Kind_Real64 }, &e);
       Csv_Parse (&pool, &w, &pool, &e);
       d = Csv_ColF64 (w, 0, &e);
       ok ("and parses the same values", !e.exc && d.len == 3
@@ -161,8 +161,8 @@ int main (void)
     o.quoted = true;
     w = Csv_Open (&pool, S (FX), &o, &e);
     ok ("a quoted newline is not a row", !e.exc && Csv_Rows (w, &e) == 2);
-    Csv_SetInt (&w, &pool,0, &e);
-    Csv_SetText (&w, &pool,1, &e);
+    Csv_SetKind (&w, &pool, 0, (Csv_Kind){ .tag = Csv_Kind_Int }, &e);
+    Csv_SetKind (&w, &pool, 1, (Csv_Kind){ .tag = Csv_Kind_Text }, &e);
     Csv_Parse (&pool, &w, &pool, &e);
     ok ("and the table parses", !e.exc);
     ok ("the field keeps its newline and undoubles its quotes",
@@ -211,7 +211,7 @@ int main (void)
     fclose (g);
     o = Csv_Defaults (&e);
     w = Csv_Open (&pool, S (FX), &o, &e);
-    Csv_SetReal64 (&w, &pool,0, &e);
+    Csv_SetKind (&w, &pool, 0, (Csv_Kind){ .tag = Csv_Kind_Real64 }, &e);
     Csv_Parse (&pool, &w, &pool, &e);
     ok ("text fixture parses", !e.exc && Csv_Rows (w, &e) == 11);
     d = Csv_ColF64 (w, 0, &e);
@@ -231,7 +231,7 @@ int main (void)
     /* The same rule holds on the float32 kind, which shares the
      test. */
     w = Csv_Open (&pool, S (FX), &o, &e);
-    Csv_SetReal (&w, &pool,0, &e);
+    Csv_SetKind (&w, &pool, 0, (Csv_Kind){ .tag = Csv_Kind_Real }, &e);
     Csv_Parse (&pool, &w, &pool, &e);
     f = Csv_ColF32 (w, 0, &e);
     ok ("and the float32 kind refuses the same field",
@@ -260,6 +260,10 @@ int main (void)
   opt.missing = -9999.0f;
   opt.hasMissing = true;
   opt.utcOffset = SITE_UTC_OFFSET;
+  /* M9CSV_THREADS sets the reader's threads for this file, for the
+     benchmark (docs/csv-threads-plan.md).  Every check below holds
+     at any count. */
+  if (getenv ("M9CSV_THREADS")) opt.threads = atoll (getenv ("M9CSV_THREADS"));
 
   clock_gettime (CLOCK_MONOTONIC, &t0);
   t = Csv_Open (&pool, S (path), &opt, &e);
@@ -284,12 +288,12 @@ int main (void)
      API: the variant for a C caller, the setter for an M9 one. */
   Csv_SetKind (&t, &pool,ts_start,
                (Csv_Kind){ Csv_Kind_Stamp, { { Csv_StampYmdHm } } }, &e);
-  Csv_SetStamp (&t, &pool,ts_end, Csv_StampYmdHm, &e);
+  Csv_SetKind (&t, &pool, ts_end, (Csv_Kind){ Csv_Kind_Stamp, { { Csv_StampYmdHm } } }, &e);
   /* Every other column is a measurement, and that has to be SAID.
      Open leaves a column Skip until a setter names its kind, so the
      242 of them are declared here, one by one. */
   for (int64_t c = 0; c < Csv_Cols (t, &e); c++)
-    if (c != ts_start && c != ts_end) Csv_SetReal (&t, &pool,c, &e);
+    if (c != ts_start && c != ts_end) Csv_SetKind (&t, &pool, c, (Csv_Kind){ .tag = Csv_Kind_Real }, &e);
   ok ("the column kinds are accepted", !e.exc);
 
   clock_gettime (CLOCK_MONOTONIC, &t0);

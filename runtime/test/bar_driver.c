@@ -1,4 +1,4 @@
-/* bar_driver tests Plot's bar charts, every option Alex asked for.
+/* bar_driver tests Plot's bar charts, every option the author asked for.
    It also tests the one property that matters for a plotting library
    nobody can eyeball in CI: the SVG says what the numbers say.
 

@@ -8,8 +8,8 @@ docs/task-plan.md).  A crew of TASKs costs no OS thread a worker,
 and its workers park between rounds.  Chan holds the channel.
 
 The loop is the per-core shape of the plan's boids table (7.8x
-serial at 10,000 birds on the Mac, 9.1x on ct121).  A program no
-longer writes its two monitors by hand.  Alex decided it on
+serial at 10,000 birds on the Mac, 9.1x on host1).  A program no
+longer writes its two monitors by hand.  The author decided it on
 2026-11-01: "Par.For as a library module now, built on THREADs".
 He named the module Tsk the same day.  Par was taken: the
 LPJ-GUESS port has a module of that name, its parameters.
@@ -87,7 +87,7 @@ system refuses a thread; the crew is then smaller, and the chunks
 are cut for its size.  A worker that joins before Start waits in
 Next as any other: its chunk is cut when a round opens.  Until
 2026-11-01 Start came first, and a program that started fewer
-workers than it named waited for ever (Alex: "why not start them
+workers than it named waited for ever (the author: "why not start them
 automatically in Start?"; the rules above say why not, and this
 order removes the hang).
 

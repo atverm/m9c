@@ -189,7 +189,7 @@ END Closing ;
 
 PROCEDURE Utf (RO q: HttpServer.Request) : HttpServer.Response =
   (* Utf answers a body and a header with characters past U+00FF.
-     Both go out as their UTF-8 octets (Alex, 2026-10-31). *)
+     Both go out as their UTF-8 octets (decided 2026-10-31). *)
 BEGIN
   RETURN HttpServer.WithHeader (
            HttpServer.Reply (200, 'text/plain; charset=utf-8',

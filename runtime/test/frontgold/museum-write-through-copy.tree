@@ -1,0 +1,20 @@
+MODULE Copy ;
+
+IMPORT Io ;
+
+PROCEDURE Shout () : STR
+  RAISES IndexError =
+VAR
+  t : STR ;
+BEGIN
+  t := 'abc' ;
+  t[0] := 'A' ;
+  RETURN t
+END Shout ;
+
+BEGIN
+  Io.WriteLine (Shout ())
+EXCEPT
+| IndexError :
+    Io.WriteLine ('index')
+END Copy.

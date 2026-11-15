@@ -121,7 +121,7 @@ static void body_ident_retention (void)
   Syslog_Close (&e);
 }
 
-/* Text goes out as its UTF-8 octets (Alex, 2026-10-31).  The ident
+/* Text goes out as its UTF-8 octets (decided 2026-10-31).  The ident
    holds a Latin-1 letter and the message one past 255, which the old
    one-octet-per-character path refused. */
 static void body_utf8 (void)

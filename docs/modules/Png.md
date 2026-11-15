@@ -1,6 +1,6 @@
 # Png
 
-Png writes PNG files in M9 (2026-10-02; Alex: "encoder for
+Png writes PNG files in M9 (2026-10-02; the author: "encoder for
 rasterizing svg to png").  This is the ENCODER: pixels in, the
 bytes of a .png file out.  It writes eight bits a channel, red
 green blue, no transparency and no palette: what a figure on white

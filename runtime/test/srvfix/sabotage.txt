@@ -292,7 +292,7 @@ IF w.s.cfg.gzipMin > 0 AND
 @new
 @end
 
-# Text past Latin-1 (Alex, 2026-10-31) goes out as UTF-8 octets and is
+# Text past Latin-1 (decided 2026-10-31) goes out as UTF-8 octets and is
 # judged line by line on the way in.
 @name a head written one octet per character
 @old
@@ -418,7 +418,7 @@ END Stop ;
 
 # Since the UTF-8 switch an error line leaves in ONE fwrite, which the C
 # library locks itself, so removing M9_LOCK alone broke nothing and this
-# entry stayed green (ct121, 2026-10-31).  It now breaks the property
+# entry stayed green (host1, 2026-10-31).  It now breaks the property
 # where it lives: the line goes out an octet at a time, unlocked.
 @name stderr not locked for a whole line
 @file runtime/m9rt.c

@@ -70,6 +70,7 @@ VAR
   verbose   : BOOL ;      (* -v : show the command handed to cc  *)
   doVersion : BOOL ;      (* --version, or a bare -v with no file *)
   utfStr    : BOOL ;      (* --utf-str : STR is the UTF type, the switch rehearsed *)
+  vclaims   : BOOL ;      (* --verify-claims : a claimed FOR keeps its checks *)
   noUnsafe  : BOOL ;      (* --no-unsafe : refuse UNSAFE and
                              FOR "C" units outside the trusted
                              library directories *)
@@ -150,7 +151,19 @@ VAR
      its own text and the text of everything it imports, however far
      down.  It is never a modification time.  See RunKeys. *)
   srcNames, srcHashes : SLICE OF UTF ;
+  srcDirs   : SLICE OF UTF ;  (* where each source was read from *)
   nsrc      : I64 ;
+  (* THE PACKAGE'S CACHE (docs/run-cache-plan.md).  A package ships
+     the library's modules compiled, in `cache' beside their sources.
+     A module is looked for in the user's cache, then there, and is
+     compiled into the user's when neither has it.  The package's keys
+     hold what travels: not this binary's time, not the runtime's
+     directory.  The cache names the compiler that filled it in its
+     `stamp', and only that compiler uses it. *)
+  fillDir   : UTF ;       (* --fill-cache DIR: fill a package cache *)
+  modDirs   : SLICE OF UTF ;  (* parallel to order[]: where each module
+                                 is, or is to be, cached *)
+  selfStamp : UTF ;       (* this binary's stamp, read once *)
   keys      : SLICE OF UTF ;  (* parallel to order[]: each module's key *)
   ident     : UTF ;       (* this compiler, its C compiler and runtime *)
   cacheRoot : UTF ;
@@ -202,7 +215,7 @@ VAR
   nedge : I64 ;
   visiting : SLICE OF UTF ;
   (* importCycle says the import graph has a cycle: two definitions
-     importing each other, allowed (Alex, 2026-10-22).  Every header
+     importing each other, allowed (decided 2026-10-22).  Every header
      of the build is then written before any module of it is
      compiled. *)
   importCycle : BOOL ;
@@ -241,7 +254,7 @@ CONST
      compiler is the one artifact that cannot read its own package
      version, and a generated file would drag the build system into
      the bootstrap. *)
-  Version = '0.27.1' ;
+  Version = '0.28.0' ;
   (* StdInclude is where its runtime lives, which --help quotes so
      that the example a user copies out of it actually compiles. *)
   StdInclude = '/usr/include/m9' ;
@@ -671,12 +684,12 @@ END Aliased ;
 
    A module may be written in the .m9f notation (corpus/M9f.m9).  m9c
    then writes NAME.m9 from NAME.m9f beside it and compiles the .m9.
-   The .m9 stays the text that is committed and reviewed (Alex,
+   The .m9 stays the text that is committed and reviewed (decided
    2026-11-01).  m9c writes it when there is no NAME.m9, or when the
    .m9f is as new as it or newer.  Lines do not move, so a
    diagnostic's line in the .m9 is its line in the .m9f.
 
-   m9c never overwrites a .m9 it did not write (Alex, 2026-11-03).
+   m9c never overwrites a .m9 it did not write (decided 2026-11-03).
    Each text it writes leaves an empty file under the cache's m9f
    directory, named by the text's Hash.  A NAME.m9 whose hash has no
    such file was edited by hand, so m9c refuses and names both files.
@@ -1333,7 +1346,7 @@ END RtBase ;
    this compiler's, /usr for /usr/bin/m9c.  It takes NO system path
    besides: a relocated m9c reaching /usr/share/m9/runtime would
    compile ANOTHER install's runtime under its own header (the m9c
-   gate's case (c) built so on zoefii once the 0.15.0 package was
+   gate's case (c) built so on host2 once the 0.15.0 package was
    installed, 2026-10-05).  Only --cell does this: an ordinary link
    takes the archive, and sources beside the header would have it
    compile m9rt.c on every link.  Until 2026-10-05 an installed m9c
@@ -1469,7 +1482,7 @@ END MacFlags ;
    digits on the MacBook: Plot.RenderTaylor's tick coordinates
    differed in the fourth digit (51 fmadd in C18Taylor) and tutdiff
    failed there.
-   Alex, 2026-10-05: the flag, not a stated difference.  On baseline
+   Decided 2026-10-05: the flag, not a stated difference.  On baseline
    x86-64 it changes no instruction (measured: identical objects). *)
 (* On x86-64 it adds -mno-mmx.  gcc 13 moved a 64-bit zero through
    an MMX register, with no emms after it, in two handlers of a server
@@ -1824,7 +1837,8 @@ BEGIN
   first := Io.ReadFileUtf (h) ;
   nl := Text.FindChar (first, 0AC) ;
   IF nl >= 0 THEN first := SLICE (first, 0, nl) END ;
-  RETURN Text.Contains (first, ' with --utf-str ') = utfStr
+  RETURN (Text.Contains (first, ' with --utf-str ') = utfStr) AND
+         (Text.Contains (first, '--verify-claims') = vclaims)
 EXCEPT
 | Io.IOError, ValueRange : RETURN TRUE
 END SameMode ;
@@ -1861,6 +1875,7 @@ BEGIN
   Word ('--out-dir') ;
   IF Text.BLen (outDir) > 0 THEN Word (outDir) ELSE Word ('.') END ;
   IF utfStr THEN Word ('--utf-str') END ;
+  IF vclaims THEN Word ('--verify-claims') END ;
   FOR i := 0 TO ndirs - 1 DO Word (Cat ('-I', dirs[i])) END ;
   Word (path) ;
   IF verbose THEN Diag ('m9c: header ', name, '') END ;
@@ -1883,8 +1898,13 @@ BEGIN
   NewCommand () ;
   Word ('-c') ;
   IF debug THEN Word ('-g') END ;
+  (* -k is for the whole program.  It was not passed on, so `-k --make'
+     kept the main module's C and no other (a port wanted every
+     module's C for other flags, 2026-11-14). *)
+  IF keepC THEN Word ('-k') END ;
   IF doPic THEN Word ('--pic') END ;
   IF utfStr THEN Word ('--utf-str') END ;   (* the dependency is compiled the same way *)
+  IF vclaims THEN Word ('--verify-claims') END ;
   FOR i := 0 TO ndirs - 1 DO Word (Cat ('-I', dirs[i])) END ;
   Word (path) ;
   IF ccFrom > 0 THEN
@@ -2342,8 +2362,9 @@ BEGIN
   Io.WriteLine ('  Exact-width types only (I64, F64, U8 ...), and no') ;
   Io.WriteLine ('  implicit conversion between any two of them.') ;
   Io.WriteLine ('  Bounds and overflow checks are SEMANTICS, not flags:') ;
-  Io.WriteLine ('  there is no switch to turn them off, and they cost') ;
-  Io.WriteLine ('  about 3% -- measured, on this compiler, twice.') ;
+  Io.WriteLine ('  no option turns them off, and they cost about 3% in') ;
+  Io.WriteLine ('  a program without tight index loops.  FOR [INRANGE b]') ;
+  Io.WriteLine ("  claims one loop's range; --verify-claims holds it.") ;
   Io.WriteLine ('  No NIL.  OPT plus IS SOME, so a pointer that might') ;
   Io.WriteLine ('  be absent cannot be read without asking.') ;
   Io.WriteLine ('  Every exception a procedure can raise is in its') ;
@@ -2451,6 +2472,11 @@ BEGIN
   Io.WriteLine ('                   everywhere but $M9LIBRARY and the') ;
   Io.WriteLine ('                   installed library -- the language') ;
   Io.WriteLine ('                   wall for running untrusted code') ;
+  Io.WriteLine ('  --verify-claims  keep the checks in a FOR [INRANGE b];') ;
+  Io.WriteLine ('                   stop on a claim that was false') ;
+  Io.WriteLine ('  --fill-cache DIR with --run or --cell: compile the') ;
+  Io.WriteLine ('                   modules FILE.m9 imports into DIR, a') ;
+  Io.WriteLine ('                   cache a package ships; run nothing') ;
   Io.WriteLine ('  -v, --verbose    show the command handed to the') ;
   Io.WriteLine ('                   C compiler; a bare -v with no') ;
   Io.WriteLine ('                   file prints the version instead') ;
@@ -2649,6 +2675,11 @@ BEGIN
       keepC := TRUE
     ELSIF Text.Eq (a, '--no-unsafe') THEN
       noUnsafe := TRUE
+    ELSIF Text.Eq (a, '--verify-claims') THEN
+      (* set as it is read, as --utf-str is: --run and --cell compile
+         the closure in-process *)
+      vclaims := TRUE ;
+      Gen.SetVerifyClaims (TRUE)
     ELSIF Text.Eq (a, '--utf-str') THEN
       (* It is set the moment it is read: --run and --cell leave the
          option loop before the validation below, and compile the
@@ -2718,6 +2749,14 @@ BEGIN
       doRun := TRUE ;
       runAt := i + 1 ;
       RETURN
+    ELSIF Text.Eq (a, '--fill-cache') THEN
+      IF i + 1 >= Io.ArgCount () THEN
+        Io.ErrLine ('m9c: --fill-cache wants a directory') ;
+        failed := TRUE ;
+        RETURN
+      END ;
+      fillDir := Io.ArgUtf (pool, i + 1) ;
+      i := i + 1
     ELSIF Text.Eq (a, '--prefix') THEN
       IF i + 1 >= Io.ArgCount () OR EqAt (Io.ArgUtf (pool, i + 1)) < 1 THEN
         Io.ErrLine ('m9c: --prefix wants MODULE=NAME') ;
@@ -2812,7 +2851,8 @@ BEGIN
     END ;
     IF Text.Eq (a, '-o') OR Text.Eq (a, '-I') OR
        Text.Eq (a, '--ar') OR Text.Eq (a, '--so') OR
-       Text.Eq (a, '--out-dir') OR Text.Eq (a, '--prefix') THEN
+       Text.Eq (a, '--out-dir') OR Text.Eq (a, '--prefix') OR
+       Text.Eq (a, '--fill-cache') THEN
       i := i + 1
     ELSIF Text.Eq (a, '-c') OR Text.Eq (a, '-k') OR
           Text.Eq (a, '--keep-c') OR Text.Eq (a, '-v') OR
@@ -2823,6 +2863,7 @@ BEGIN
           Text.Eq (a, '--make') OR
           Text.Eq (a, '--show') OR Text.Eq (a, '--type-of') OR
           Text.Eq (a, '--no-unsafe') OR Text.Eq (a, '--utf-str') OR
+          Text.Eq (a, '--verify-claims') OR
           IsDashI (a) THEN
       i := i
     ELSE
@@ -2912,22 +2953,37 @@ END Hash ;
 (* Remember records a module's source, hashed as it is parsed:
    ParseText calls this for every file the closure reads, the main one
    included. *)
-PROCEDURE Remember (RO name: UTF ; RO src: UTF) =
+PROCEDURE Remember (RO name: UTF ; RO KEPT dir: UTF ; RO src: UTF) =
 VAR
-  nn, nh : SLICE OF UTF ;
+  nn, nh, nd : SLICE OF UTF ;
   i : I64 ;
 BEGIN
   IF nsrc = LEN (srcNames) THEN
     nn := NEW (pool, UTF, 2 * LEN (srcNames) + 16) ;
     nh := NEW (pool, UTF, 2 * LEN (srcNames) + 16) ;
-    FOR i := 0 TO nsrc - 1 DO nn[i] := srcNames[i] ; nh[i] := srcHashes[i] END ;
+    nd := NEW (pool, UTF, 2 * LEN (srcNames) + 16) ;
+    FOR i := 0 TO nsrc - 1 DO
+      nn[i] := srcNames[i] ; nh[i] := srcHashes[i] ; nd[i] := srcDirs[i]
+    END ;
     srcNames := nn ;
-    srcHashes := nh
+    srcHashes := nh ;
+    srcDirs := nd
   END ;
+  srcDirs[nsrc] := dir ;
   srcNames[nsrc] := Suffix (name, '') ;
   srcHashes[nsrc] := Hash (src) ;
   nsrc := nsrc + 1
 END Remember ;
+
+(* SrcDir answers the directory a module's source was read from. *)
+PROCEDURE SrcDir (RO name: UTF) : UTF =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO nsrc - 1 DO
+    IF Text.Eq (srcNames[i], name) THEN RETURN srcDirs[i] END
+  END ;
+  RETURN ''
+END SrcDir ;
 
 PROCEDURE SrcHash (RO name: UTF) : UTF =
 VAR i : I64 ;
@@ -2994,6 +3050,7 @@ END ClosureKey ;
 PROCEDURE CacheRoot () : UTF RAISES ValueRange =
 VAR v : UTF ;
 BEGIN
+  IF Text.BLen (fillDir) > 0 THEN RETURN fillDir END ;
   v := Io.EnvUtf (pool, 'M9CACHE') ;
   IF Text.BLen (v) > 0 THEN RETURN v END ;
   IF windows THEN
@@ -3030,6 +3087,74 @@ BEGIN
   Io.MkDir (path)
 END MkDirs ;
 
+(* PkgIdent answers this compiler as the key of a package's cache:
+   what is the same on the machine that fills it and the one that
+   uses it.  The version, the C compiler's name and the flags' shape;
+   not the binary's time and not the runtime's directory.  The stamp
+   in the cache says which binary filled it (SelfStamp). *)
+PROCEDURE PkgIdent () : UTF RAISES ValueRange =
+VAR d : PTR DynStr.DString IN pool ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, 'package ') ;
+  DynStr.Append (d, Version) ;
+  DynStr.AppendChar (d, ' ') ;
+  DynStr.Append (d, CcName ()) ;
+  DynStr.Append (d, ' sections') ;
+  IF utfStr THEN DynStr.Append (d, ' utf-str') END ;
+  IF vclaims THEN DynStr.Append (d, ' verify-claims') END ;
+  RETURN DynStr.ViewIn (pool, d)
+END PkgIdent ;
+
+(* SelfStamp answers what tells this m9c binary from another: its
+   size and a hash of its octets.  It is read once, and only when a
+   package's cache is filled or looked into. *)
+PROCEDURE SelfStamp () : UTF =
+VAR
+  b : SLICE OF BYTE ;
+  d : PTR DynStr.DString IN pool ;
+  i, x, y : I64 ;
+BEGIN
+  IF Text.BLen (selfStamp) > 0 THEN RETURN selfStamp END ;
+  selfStamp := '?' ;
+  BEGIN
+    b := Io.ReadFileBytes (pool, System.ExecutableUtf (pool)) ;
+    x := 7 ;
+    y := 11 ;
+    FOR i := 0 TO LEN (b) - 1 DO
+      x := (x * 131 + I64 (b[i])) MOD 36028797018963913 ;
+      y := (y * 257 + I64 (b[i])) MOD 18014398509481951
+    END ;
+    d := DynStr.New (pool) ;
+    DynStr.Append (d, 'm9c ') ;
+    DynStr.Append (d, Version) ;
+    DynStr.AppendChar (d, ' ') ;
+    DynStr.AppendI64 (d, LEN (b)) ;
+    DynStr.AppendChar (d, ' ') ;
+    DynStr.AppendI64 (d, x) ;
+    DynStr.AppendChar (d, 'x') ;
+    DynStr.AppendI64 (d, y) ;
+    selfStamp := DynStr.ViewIn (pool, d)
+  EXCEPT
+  | Io.IOError (p) : selfStamp := '?'
+  | ValueRange : selfStamp := '?'
+  | IndexError : selfStamp := '?'
+  END ;
+  RETURN selfStamp
+END SelfStamp ;
+
+(* PkgValid asks whether dir is a package cache this binary filled. *)
+PROCEDURE PkgValid (RO dir: UTF) : BOOL =
+VAR
+  found : BOOL ;
+  st : UTF ;
+BEGIN
+  st := TryRead (Join (dir, 'stamp'), found) ;
+  IF NOT found THEN RETURN FALSE END ;
+  IF Text.Eq (SelfStamp (), '?') THEN RETURN FALSE END ;
+  RETURN Text.Eq (Text.TrimUtf (st), SelfStamp ())
+END PkgValid ;
+
 (* Ident answers this compiler as a cache key: its version and its
    binary's time, so a rebuilt m9c in a source tree is a new key
    without a version bump, and the C compiler and runtime it would
@@ -3039,6 +3164,7 @@ VAR
   d : PTR DynStr.DString IN pool ;
   self : UTF ;
 BEGIN
+  IF Text.BLen (fillDir) > 0 THEN RETURN PkgIdent () END ;
   self := System.ExecutableUtf (pool) ;
   d := DynStr.New (pool) ;
   DynStr.Append (d, Version) ;
@@ -3054,12 +3180,18 @@ BEGIN
   DynStr.Append (d, ' sections') ;
   (* the rehearsed switch compiles every module another way *)
   IF utfStr THEN DynStr.Append (d, ' utf-str') END ;
+  (* and so does the verifying build: a claimed body that checks *)
+  IF vclaims THEN DynStr.Append (d, ' verify-claims') END ;
   RETURN DynStr.ViewIn (pool, d)
 END Ident ;
 
 (* ModDir answers where module order[i] is cached. *)
 PROCEDURE ModDir (i: I64) : UTF RAISES IndexError =
 BEGIN
+  (* RunKeys has settled where each module is *)
+  IF i < LEN (modDirs) THEN
+    IF Text.BLen (modDirs[i]) > 0 THEN RETURN modDirs[i] END
+  END ;
   (* --cell's objects are position independent and live apart *)
   IF doCell THEN
     RETURN Join (Join (cacheRoot, 'modpic'), Cat (order[i], Cat ('-', keys[i])))
@@ -3161,6 +3293,7 @@ PROCEDURE RunKeys () RAISES ValueRange, IndexError, Io.IOError =
 VAR
   i : I64 ;
   d : PTR DynStr.DString IN pool ;
+  sub, obj, pdir, pk, mine : UTF ;
 BEGIN
   cacheRoot := CacheRoot () ;
   IF Text.BLen (cacheRoot) = 0 THEN
@@ -3171,6 +3304,28 @@ BEGIN
   ident := Ident () ;
   keys := NEW (pool, UTF, norder + 1) ;
   FOR i := 0 TO norder - 1 DO keys[i] := ClosureKey (order[i]) END ;
+  (* Where each module is: the user's cache, else the package's cache
+     beside the module's source, else the user's cache, to be built.
+     The package's key is computed only for a module the user's cache
+     does not have. *)
+  modDirs := NEW (pool, UTF, norder + 1) ;
+  IF doCell THEN sub := 'modpic' ELSE sub := 'mod' END ;
+  FOR i := 0 TO norder - 1 DO
+    modDirs[i] := Join (Join (cacheRoot, sub), Cat (order[i], Cat ('-', keys[i]))) ;
+    IF doCell THEN obj := Cat ('lib', Suffix (order[i], '.so')) ELSE obj := Suffix (order[i], '.o') END ;
+    IF Text.BLen (fillDir) = 0 AND NOT Text.Eq (order[i], modName) AND
+       NOT Io.Exists (Join (modDirs[i], obj)) THEN
+      pdir := Join (SrcDir (order[i]), 'cache') ;
+      IF PkgValid (pdir) THEN
+        mine := ident ;
+        ident := PkgIdent () ;
+        pk := ClosureKey (order[i]) ;
+        ident := mine ;
+        pdir := Join (Join (pdir, sub), Cat (order[i], Cat ('-', pk))) ;
+        IF Io.Exists (Join (pdir, obj)) THEN modDirs[i] := Text.Keep (pool, pdir) END
+      END
+    END
+  END ;
   d := DynStr.New (pool) ;
   DynStr.Append (d, 'tmp/') ;
   DynStr.AppendI64 (d, System.ProcessId ()) ;
@@ -3196,7 +3351,7 @@ BEGIN
        are there too: a changed m9session.c is a new runtime key, and a
        cell built before it named a host nobody had built
        (2026-10-04). *)
-    IF Io.Exists (cellPath) AND
+    IF Text.BLen (fillDir) = 0 AND Io.Exists (cellPath) AND
        Io.Exists (Join (RtCacheDir (RtDir ()), 'm9session')) AND
        Io.Exists (Join (RtCacheDir (RtDir ()), 'libm9rt.so')) THEN
       CellReport () ;
@@ -3204,7 +3359,7 @@ BEGIN
     END ;
     RETURN
   END ;
-  IF Io.Exists (binPath) THEN Launch () END
+  IF Text.BLen (fillDir) = 0 AND Io.Exists (binPath) THEN Launch () END
 END RunKeys ;
 
 (* CacheModule puts one module of the closure into the cache.  THIS
@@ -3246,6 +3401,7 @@ BEGIN
   Word (work) ;
   IF noUnsafe THEN Word ('--no-unsafe') END ;
   IF utfStr THEN Word ('--utf-str') END ;   (* the module is generated the same way *)
+  IF vclaims THEN Word ('--verify-claims') END ;
   FOR j := 0 TO npfxSpec - 1 DO
     Word ('--prefix') ;
     Word (pfxSpec[j])
@@ -3518,6 +3674,21 @@ BEGIN
   END
 END CellReport ;
 
+(* Filled ends a --fill-cache run: the modules are in the cache, so
+   the stamp is written and the driver's own C goes.  Nothing is
+   linked and nothing runs. *)
+PROCEDURE Filled (RO name: UTF) : BOOL RAISES ValueRange, Io.IOError =
+BEGIN
+  IF Text.Eq (SelfStamp (), '?') THEN
+    Io.ErrLine ('m9c: --fill-cache could not read its own binary for the stamp') ;
+    RETURN FALSE
+  END ;
+  Io.WriteFile (Join (fillDir, 'stamp'), SelfStamp () + 0AC) ;
+  Drop (Join (work, Suffix (name, '.c'))) ;
+  Drop (Join (work, Suffix (name, '.h'))) ;
+  RETURN TRUE
+END Filled ;
+
 (* CellBuild builds the cell: every module of its closure as a shared
    object, the runtime and the host, then the cell itself.  A state
    cell goes where a module of its key would be (modpic/NAME-KEY/,
@@ -3542,6 +3713,7 @@ BEGIN
       IF NOT CacheModule (i, rt) THEN RETURN FALSE END
     END
   END ;
+  IF Text.BLen (fillDir) > 0 THEN RETURN Filled (name) END ;
   rtObjs := CacheRuntime (rt, ok) ;
   IF NOT ok OR Text.BLen (rtObjs) = 0 THEN
     Io.ErrLine ('m9c: --cell needs the runtime sources beside m9rt.h') ;
@@ -3584,6 +3756,26 @@ BEGIN
   RETURN TRUE
 END CellBuild ;
 
+(* FillReport says what a --fill-cache run left, and removes the empty
+   scratch directory above this run's. *)
+PROCEDURE FillReport () RAISES ValueRange, IndexError =
+VAR
+  i, n : I64 ;
+  d : PTR DynStr.DString IN pool ;
+BEGIN
+  n := 0 ;
+  FOR i := 0 TO norder - 1 DO
+    IF NOT Text.Eq (order[i], modName) THEN n := n + 1 END
+  END ;
+  IF Io.Remove (Join (fillDir, 'tmp')) THEN END ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, 'm9c: ') ;
+  DynStr.AppendI64 (d, n) ;
+  DynStr.Append (d, ' modules in ') ;
+  DynStr.Append (d, fillDir) ;
+  Io.WriteLine (DynStr.ViewIn (pool, d))
+END FillReport ;
+
 (* RunBuild builds the program: every module of the closure into the
    cache, then the program's own C, compiled and linked against them,
    and renamed to its key.  The caller has just written that C into
@@ -3606,6 +3798,7 @@ BEGIN
       IF NOT CacheModule (i, rt) THEN RETURN FALSE END
     END
   END ;
+  IF Text.BLen (fillDir) > 0 THEN RETURN Filled (name) END ;
   rtObjs := CacheRuntime (rt, ok) ;
   IF NOT ok THEN RETURN FALSE END ;
   tmp := Join (work, name) ;
@@ -3718,6 +3911,7 @@ VAR
   tw, sc, ss, ad, dp : SLICE OF UTF ;
   d : PTR DynStr.DString IN pool ;
   i, j, n : I64 ;
+  pg, rows : UTF ;
 BEGIN
   n := Sem.StatKinds ;
   st := NEW (pool, Review.Stat, n) ;
@@ -3747,7 +3941,24 @@ BEGIN
   FOR i := 0 TO LEN (ad) - 1 DO ad[i] := Sem.AdrSite (i) END ;
   dp := NEW (pool, UTF, Sem.NoteCount ()) ;
   FOR i := 0 TO LEN (dp) - 1 DO dp[i] := Sem.NoteAt (i) END ;
-  RETURN Review.Page (root, name, TRUE, st, tw, sc, ss, ad, dp)
+  pg := Review.Page (root, name, TRUE, st, tw, sc, ss, ad, dp) ;
+  (* A program's page is about the program.  The claims of the modules
+     it imports are a person's word about the same program, so they
+     are listed under it: a ported model's main unit said `INRANGE
+     claims 0' while eleven stood in its kernels (2026-11-15). *)
+  IF Review.IsProgram (root) THEN
+    d := DynStr.New (pool) ;
+    FOR i := 0 TO ndeps - 1 DO
+      IF depRoots[i] IS SOME dr THEN
+        DynStr.Append (d, Review.ClaimsRow (dr, depNames[i]))
+      END
+    END ;
+    rows := DynStr.ViewIn (pool, d) ;
+    IF Text.BLen (rows) > 0 THEN
+      pg := pg + 0AC + "IN THE MODULES IT IMPORTS -- INRANGE claims, each a person's word; read each" + 0AC + rows
+    END
+  END ;
+  RETURN pg
 END ReviewText ;
 
 PROCEDURE ParseText (RO src: UTF ; RO path: UTF) : Ast.Kid
@@ -3793,7 +4004,7 @@ BEGIN
     failed := TRUE ;
     RETURN NONE
   END ;
-  Remember (BaseName (path), src) ;
+  Remember (BaseName (path), Text.Keep (pool, DirOf (path)), src) ;
   RETURN SOME (root)
 END ParseText ;
 
@@ -3883,12 +4094,30 @@ END Keep ;
    (m9lsp, m9edit) accept only positioned lines, so a cell with a
    foreign unit came back rejected with ZERO findings.  Diag.Parse
    reads this line now, and a pointer at the unit beats a name.     *)
+(* ScanClaims refuses a FOR [INRANGE b] under --no-unsafe.  The claim
+   lets the loop's subscripts go unchecked, on the author's word.  A
+   program compiled for a stranger gets no such word. *)
+PROCEDURE ScanClaims (n: PTR Ast.Node ; RO path: UTF) RAISES ValueRange =
+VAR i : I64 ;
+BEGIN
+  IF n.kind = Ast.NFor AND n.nkids > 4 THEN
+    Diag2 (Cat (Shown (path), ':'), n.line, ShownCol (path, n.line, n.col),
+           ': no-unsafe: an INRANGE claim on the FOR over ', n.au) ;
+    nunsafe := nunsafe + 1 ;
+    failed := TRUE
+  END ;
+  FOR i := 0 TO n.nkids - 1 DO
+    IF n.kids[i] IS SOME c THEN ScanClaims (c, path) END
+  END
+END ScanClaims ;
+
 PROCEDURE ScanUnsafe (root: PTR Ast.Node ; RO path: UTF ;
                       trusted: BOOL) RAISES ValueRange =
 VAR i : I64 ;
 BEGIN
   IF NOT noUnsafe THEN RETURN END ;
   IF trusted THEN RETURN END ;
+  ScanClaims (root, path) ;
   FOR i := 0 TO root.nkids - 1 DO
     IF root.kids[i] IS SOME u THEN
       IF Text.BLen (u.bu) > 0 THEN
@@ -4112,7 +4341,7 @@ END Holds ;
    FILE:LINE:COL: shape the parser's and every tool's: `X.m9:12:14:
    X.F: MSG'.  The
    checker's own text stays as it is -- the twins compare it (semdiff,
-   probediff) -- and only what m9c prints carries the file (Alex,
+   probediff) -- and only what m9c prints carries the file (decided
    2026-10-22, the review's tier 3: checker messages had no file) *)
 PROCEDURE Located (RO path: UTF ; RO m: UTF) : UTF =
 VAR i, j : I64 ;
@@ -4331,7 +4560,7 @@ VAR
 
 BEGIN
   (* STR is the UTF-8 type (the switch, docs/utf8-stage4-plan.md 4d;
-     Alex, 2026-10-31: in 0.26.0).  --utf-str is accepted and changes
+     decided 2026-10-31: in 0.26.0).  --utf-str is accepted and changes
      nothing now. *)
   utfStr := TRUE ;
     (* Locate runs first, because --help and every default below ask
@@ -4375,6 +4604,10 @@ BEGIN
     (* --run builds where its cache says and runs what it built: an
        object, a library, a document or a kept C file named on the
        same line would be a second answer to "what is the output" *)
+    IF Text.BLen (fillDir) > 0 AND NOT (doRun OR doCell) THEN
+      Io.ErrLine ('m9c: --fill-cache goes with --run or --cell: it compiles what FILE.m9 imports') ;
+      Io.Halt (1)
+    END ;
     IF (doRun OR doCell) AND (doCompile OR doLink OR Text.BLen (lib) > 0 OR doDoc OR
                   doCheck OR doMake OR debug OR keepC OR ccFrom > 0 OR
                   Text.BLen (outDir) > 0) THEN
@@ -4663,7 +4896,7 @@ BEGIN
         IF doRun OR doCell THEN
           MkDirs (work) ;
           MkDirs (Join (cacheRoot, 'mod')) ;
-          MkDirs (Join (cacheRoot, 'bin'))
+          IF Text.BLen (fillDir) = 0 THEN MkDirs (Join (cacheRoot, 'bin')) END
         END ;
         Io.WriteFile (Join (outDir, Suffix (name, '.h')), Gen.HText ()) ;
         Io.WriteFile (Join (outDir, Suffix (name, '.c')), Gen.CText ()) ;
@@ -4685,13 +4918,25 @@ BEGIN
           IF NOT Io.Remove (work) AND built THEN
             Diag ('m9c: could not remove ', work, '')
           END ;
-          IF built THEN Launch () ELSE failed := TRUE END
+          IF NOT built THEN
+            failed := TRUE
+          ELSIF Text.BLen (fillDir) > 0 THEN
+            FillReport ()
+          ELSE
+            Launch ()
+          END
         ELSIF doCell THEN
           built := CellBuild (name) ;
           IF NOT Io.Remove (work) AND built THEN
             Diag ('m9c: could not remove ', work, '')
           END ;
-          IF built THEN CellReport () ELSE failed := TRUE END
+          IF NOT built THEN
+            failed := TRUE
+          ELSIF Text.BLen (fillDir) > 0 THEN
+            FillReport ()
+          ELSE
+            CellReport ()
+          END
         ELSIF doCompile THEN
           IF Compile (name) THEN
             (* the C was a by-product and the object exists, so it

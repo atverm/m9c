@@ -13,7 +13,7 @@ var
   v, Sum: Double;
   N: Int64;
 begin
-  Store := TZarrStore.Create('/home/claude/test.zarr');
+  Store := TZarrStore.Create('/xxx/test.zarr');
   try
     CO2 := Store.OpenArray('co2');
     WriteLn(Format('co2: shape (%d,%d)  chunks (%d,%d)  dtype f%d',

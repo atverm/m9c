@@ -117,7 +117,7 @@ VAR
   i, len  : CARDINAL ;
   ok      : BOOLEAN ;
 BEGIN
-  sources[0] := NewFileSource ('/home/claude/test.zarr/co2/') ;
+  sources[0] := NewFileSource ('/xxx/test.zarr/co2/') ;
   sources[1] := NewHttpSource ('127.0.0.1', 8123, '/test.zarr/co2/') ;
 
   FOR i := 0 TO 1 DO

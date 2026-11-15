@@ -119,18 +119,6 @@ colour: '#cc3311', 'darkgreen'.  It is written into the document
 verbatim, so it is the caller's business that it is a colour;
 an empty string restores the palette entry.
 
-### Viridis () : Cmap
-
-**Deprecated** (report par 3.9): write `Plot.Cmap.Viridis` instead.  The name goes in the next release.
-
-_(documented with the group below)_
-
-### Coolwarm () : Cmap
-
-**Deprecated** (report par 3.9): write `Plot.Cmap.Coolwarm` instead.  The name goes in the next release.
-
-_(documented with the group below)_
-
 ### CmapHex (cmap: Cmap ; t: F64) : STR RAISES ValueRange
 
 CmapHex answers the colour at t in 0 .. 1 of a colour map, as
@@ -145,7 +133,7 @@ line series' palette entry with an SVG colour ('black',
 '#cc3311').  The colour is written into the document verbatim, so
 it is the caller's business that it is a colour; an empty string
 restores the C0..C3 entry.  It was added because the palette has
-no black and a measured series wants one (Alex, 2026-09-01).
+no black and a measured series wants one (decided 2026-09-01).
 
 ### SetLogX (on: BOOL)
 

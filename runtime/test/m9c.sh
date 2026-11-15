@@ -241,7 +241,7 @@ if [ -f Hello.c ] || [ -f Hello.h ]; then
 fi
 [ "$(./hello)" = "hello, world
 1" ] || { echo "FAIL: the linked program printed the wrong thing"; exit 1; }
-[ "$(./hello Alex)" = "hello, Alex
+[ "$(./hello Ada)" = "hello, Ada
 1" ] || { echo "FAIL: arguments did not reach the linked program"; exit 1; }
 
 # A MODULE BODY IS INITIALISATION, AND IT RUNS.  InitState sets its
@@ -960,7 +960,7 @@ echo "m9c: a header guard is one identifier per file, whatever the file is calle
 # shipped a first build whose receipt said the previous version,
 # because M9c.m9's Version constant is bumped by hand.  The receipt
 # caught it both times; this catches it before a VM ever boots.
-CLV=$(cd "$SRC/.." && sh tools/release/version.sh)
+CLV=$(sh "$SRC/../runtime/test/lib/version.sh")
 BV=$("$M9C" --version | sed 's/^m9c //')
 [ "$BV" = "$CLV" ] || {
   echo "FAIL: m9c --version says $BV but debian/changelog says $CLV";

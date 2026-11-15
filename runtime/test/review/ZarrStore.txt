@@ -24,6 +24,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   SHARED (x)                                      1   Open
   THREAD                                          0
   TASK                                            0
+  INRANGE claims                                  0
   [SHARABLE] records                              0
   module variables                                0
 

@@ -84,7 +84,7 @@ _(documented with the group below)_
 ### SetStrUtf (on: BOOL)
 
 THE SWITCH, REHEARSED (docs/utf8-stage4-plan.md, 4d behind a flag;
-Alex, 2026-10-24): with SetStrUtf (TRUE) before CheckFile, STR
+decided 2026-10-24): with SetStrUtf (TRUE) before CheckFile, STR
 names the UTF type.  A subscript or a LEN of one is refused as a
 UTF's is, and STR (u) and UTF (s) are identities.  The twins
 collapse too: a procedure X whose module declares XUtf is not
@@ -155,7 +155,7 @@ _(documented with the group below)_
 These list the THREADs whose target WRITES a variable of a
 STATEFUL module that is not a monitor (report par 6), for `m9c
 --review'.  A write by what the target calls counts too, when
-the checker can follow it.  This is not a refusal (Alex,
+the checker can follow it.  This is not a refusal (decided
 2026-10-11).  The one such site measured, the zarr proxy's
 reaper, is correct because the thread is joined before its
 counter is read, and no checker sees a join.  So it is listed,

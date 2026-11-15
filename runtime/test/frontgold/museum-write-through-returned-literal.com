@@ -1,0 +1,3 @@
+1:1-1 (* EXPECT-ERROR: which may be read-only storage *)
+2:1-10 (* This was observed 2026-10-10 looking at the owed item "a view\n   answered without RO is not followed".  Reason answers a STR, and one\n   of its answers is a string LITERAL: static, read-only data.  Nothing\n   in the result type said so, the checker accepted the write, and the\n   program died with SIGBUS on the MacBook (exit 138).  Text.Trim, which\n   answers a slice of its RO argument, wrote into a literal the same\n   way.  The checker now reads a callee's RETURNs.  An answer that may\n   be a literal, a CONST or a view of an RO parameter is read-only\n   storage at the call. *)
+comments=2

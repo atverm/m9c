@@ -142,7 +142,7 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 # -O2 because the speed line it prints is the operation as a program
 # links it; the checks hold at any -O.  Sabotaged (a table entry
 # flipped) it fails 2,979 of them.  zlib is in every gate machine's
-# toolchain (CI: zlib1g-dev; macOS: the system's; zoefii: zlib1g-dev).
+# toolchain (CI: zlib1g-dev; macOS: the system's; host2: zlib1g-dev).
 b_crc () {
 gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c crc_driver.c -lz -lm -o crc_test
@@ -253,7 +253,7 @@ b_frame () {
 if [ -f /usr/include/netcdf.h ]; then
   gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
       -iquote .. -iquote ../gen ../m9rt.c ../gen/Faults.c ../fmtshim.c ../gen/Frame.c \
-      ../gen/Csv.c ../gen/DynStr.c ../gen/Io.c ../gen/Math.c \
+      ../gen/Csv.c ../gen/Tsk.c ../gen/System.c ../gen/DynStr.c ../gen/Io.c ../gen/Math.c \
       ../gen/Fmt.c ../gen/Time.c ../gen/Text.c ../gen/NetCDF.c ../gen/Sort.c ../gen/Stats.c ../gen/Bits.c \
       frame_driver.c -lnetcdf -lm -o frame_test
   ./frame_test
@@ -317,6 +317,7 @@ b_csv () {
 gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label \
     -Wno-unused-parameter -iquote .. -iquote ../gen ../m9rt.c \
     ../gen/Text.c ../gen/DynStr.c ../gen/Io.c ../gen/Fmt.c ../gen/Time.c ../gen/Csv.c \
+    ../gen/Tsk.c ../gen/System.c ../gen/Faults.c \
     csv_driver.c -lm -o csv_test
 ./csv_test
 }
@@ -364,7 +365,7 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../gen/Text.c ../gen/Faults.c ../gen/DynStr.c ../gen/Arrow.c \
     arrow_driver.c -l:libzstd.so.1 -lm -o arrow_test
 # The driver asks `python3' for pyarrow.  Where the suite names another
-# Python that has it ($COLUMNAR_PY: zoefii's miniconda), that one is
+# Python that has it ($COLUMNAR_PY: host2's miniconda), that one is
 # the python3 the driver sees.  So pyarrow reads the zstd streams back
 # there too; they were read only on the Mac (2026-10-11).
 if [ -n "${COLUMNAR_PY:-}" ] && [ -x "$COLUMNAR_PY" ]; then

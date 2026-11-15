@@ -1,0 +1,2 @@
+parseprobes/endname.m9:5:10: parse: END name does not match MODULE EndName
+m9c: 1 parse errors in parseprobes/endname.m9

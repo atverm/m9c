@@ -59,11 +59,11 @@ int main (void)
   Csv_Table *t = Csv_Open (&pool, S ("frame_sample.csv"), &o, &e);
   ok ("csv opens", e.exc == NULL && t);
   if (e.exc) { printf ("exc %s\n", e.exc->name); return 1; }
-  Csv_SetStamp (&t, &pool, 0, 0 /* StampYmdHm */, &e);
-  Csv_SetReal (&t, &pool, 1, &e);
-  Csv_SetReal (&t, &pool, 2, &e);
-  Csv_SetInt (&t, &pool, 3, &e);
-  Csv_SetText (&t, &pool, 4, &e);
+  Csv_SetKind (&t, &pool, 0, (Csv_Kind){ Csv_Kind_Stamp, { { 0 /* StampYmdHm */ } } }, &e);
+  Csv_SetKind (&t, &pool, 1, (Csv_Kind){ .tag = Csv_Kind_Real }, &e);
+  Csv_SetKind (&t, &pool, 2, (Csv_Kind){ .tag = Csv_Kind_Real }, &e);
+  Csv_SetKind (&t, &pool, 3, (Csv_Kind){ .tag = Csv_Kind_Int }, &e);
+  Csv_SetKind (&t, &pool, 4, (Csv_Kind){ .tag = Csv_Kind_Text }, &e);
   Csv_Parse (&pool, &t, &pool, &e);
   ok ("csv parses", e.exc == NULL);
   if (e.exc) { printf ("exc %s\n", e.exc->name); return 1; }
@@ -97,16 +97,16 @@ int main (void)
 
   /* the timeseries frame */
   m9_sl_I64 tm = Frame_ColI64 (fr, S ("TIMESTAMP"), &e);
-  Frame_Conv conv = Frame_ConvStart (&e);
+  Frame_Conv conv = (Frame_Conv){ Frame_Conv_AtStart };
   Frame_Ts *ts = Frame_NewTs (&pool, fr, tm, 1800, conv,
                               S ("frame sample"), &e);
   ok ("NewTs accepts the gapped axis", e.exc == NULL && ts);
 
   /* Take the hourly average, with polars group_by_dynamic as the
      oracle. */
-  Frame_How hows[5] = { Frame_HowFirst (&e), Frame_HowMean (&e),
-                        Frame_HowMean (&e), Frame_HowLo (&e),
-                        Frame_HowFirst (&e) };
+  Frame_How hows[5] = { (Frame_How){ Frame_How_First }, (Frame_How){ Frame_How_Mean },
+                        (Frame_How){ Frame_How_Mean }, (Frame_How){ Frame_How_Lo },
+                        (Frame_How){ Frame_How_First } };
   m9_sl_Frame_How hsl = { hows, 5 };
   Frame_Ts *hr = Frame_Average (&pool, ts, 3600, hsl, 1, &e);
   ok ("Average runs", e.exc == NULL && hr);
@@ -159,11 +159,11 @@ int main (void)
     Csv_Options o2 = Csv_Defaults (&e);
     o2.quoted = true;
     Csv_Table *t2 = Csv_Open (&pool, S ("/tmp/frame_rt.csv"), &o2, &e);
-    Csv_SetInt (&t2, &pool, 0, &e);       /* TIMESTAMP went out as epoch */
-    Csv_SetReal (&t2, &pool, 1, &e);
-    Csv_SetReal (&t2, &pool, 2, &e);
-    Csv_SetInt (&t2, &pool, 3, &e);
-    Csv_SetText (&t2, &pool, 4, &e);
+    Csv_SetKind (&t2, &pool, 0, (Csv_Kind){ .tag = Csv_Kind_Int }, &e);       /* TIMESTAMP went out as epoch */
+    Csv_SetKind (&t2, &pool, 1, (Csv_Kind){ .tag = Csv_Kind_Real }, &e);
+    Csv_SetKind (&t2, &pool, 2, (Csv_Kind){ .tag = Csv_Kind_Real }, &e);
+    Csv_SetKind (&t2, &pool, 3, (Csv_Kind){ .tag = Csv_Kind_Int }, &e);
+    Csv_SetKind (&t2, &pool, 4, (Csv_Kind){ .tag = Csv_Kind_Text }, &e);
     Csv_Parse (&pool, &t2, &pool, &e);
     Frame_Fr *fr2 = Frame_FromCsv (&pool, t2, &e);
     ok ("round trip parses", e.exc == NULL && fr2);
@@ -205,9 +205,9 @@ int main (void)
     Frame_Average (&pool, ts, 5000, hsl, 1, &e2);
     ok ("a non-multiple resolution refuses", e2.exc == &Faults_BadArg);
     e2.exc = NULL;
-    Frame_How bads[5] = { Frame_HowMean (&e2), Frame_HowMean (&e2),
-                          Frame_HowMean (&e2), Frame_HowLo (&e2),
-                          Frame_HowMean (&e2) };  /* mean of TEXT */
+    Frame_How bads[5] = { (Frame_How){ Frame_How_Mean }, (Frame_How){ Frame_How_Mean },
+                          (Frame_How){ Frame_How_Mean }, (Frame_How){ Frame_How_Lo },
+                          (Frame_How){ Frame_How_Mean } };  /* mean of TEXT */
     m9_sl_Frame_How bsl = { bads, 5 };
     Frame_Average (&pool, ts, 3600, bsl, 1, &e2);
     ok ("a mean of text refuses", e2.exc == &Frame_WrongType);
@@ -228,9 +228,9 @@ int main (void)
     m9_sl_BOOL got = Frame_ColBools (fr, S ("DAY"), &e);
     ok ("and reads back", e.exc == NULL && got.p[2] && !got.p[0]);
     /* hourly Hi = ANY over the window */
-    Frame_How hows6[6] = { Frame_HowFirst (&e), Frame_HowMean (&e),
-                           Frame_HowMean (&e), Frame_HowLo (&e),
-                           Frame_HowFirst (&e), Frame_HowHi (&e) };
+    Frame_How hows6[6] = { (Frame_How){ Frame_How_First }, (Frame_How){ Frame_How_Mean },
+                           (Frame_How){ Frame_How_Mean }, (Frame_How){ Frame_How_Lo },
+                           (Frame_How){ Frame_How_First }, (Frame_How){ Frame_How_Hi } };
     m9_sl_Frame_How h6 = { hows6, 6 };
     Frame_Ts *hb = Frame_Average (&pool, ts, 3600, h6, 1, &e);
     ok ("Average carries booleans", e.exc == NULL);

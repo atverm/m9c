@@ -518,3 +518,25 @@ it.
 IntText writes v's decimal digits WITHOUT the sign into buf and
 answers how many.  The smallest I64 has no positive twin and
 answers 0.
+
+### CONST HiddenSuffix
+
+_(documented with the group below)_
+
+### Unhide (VAR pool: POOL ; VAR n: PTR Node ; RO me: UTF)
+
+Unhide renames, in every procedure and module body under n, each
+name the procedure declares that the same procedure also names as
+`me.NAME': the declaration and every use become NAME__l.
+
+  pool -- the tree's, as SetAUtf takes it.
+  n    -- a unit of the module `me'.
+  me   -- the module's name.
+
+A consistent rename of a local changes nothing a program means.
+Unhide renames only where it knows every place the name stands: a
+parameter, a local VAR, CONST or TYPE, a binder (IS SOME, a
+handler's, a CASE pattern's).  A name that is also a record
+field, an enumeration member, an exception or a variant in that
+procedure is left alone, and the checker refuses `me.NAME' there
+as it did before.

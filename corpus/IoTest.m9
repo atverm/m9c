@@ -1,6 +1,6 @@
 MODULE IoTest ;
 
-(* Io's text files are UTF-8 (2026-10-09, Alex: "flip readfile/
+(* Io's text files are UTF-8 (2026-10-09, the author: "flip readfile/
    writefile to utf8"): WriteFile and AppendFile encode every Unicode
    scalar, ReadFile decodes strictly, and the *Bytes forms move
    octets.  cp-kernel found this on 0.18.0, when WriteFile of a string

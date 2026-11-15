@@ -97,7 +97,7 @@ counts, as DynStr's does.
 
 Wire answers the UTF-8 octets of u, copied into pool, with a NUL
 after them when zeroTerm asks.  It is what text becomes on a
-socket, in a file name or at the C boundary (Alex, 2026-10-31).
+socket, in a file name or at the C boundary (decided 2026-10-31).
 Every character has its octets, so nothing is refused.
 
 ### Decoded (VAR pool: POOL ; RO b: SLICE OF BYTE) : UTF RAISES ValueRange

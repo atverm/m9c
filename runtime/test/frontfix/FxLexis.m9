@@ -1,0 +1,69 @@
+(* FxLexis is a front-end fixture (docs/fpc-removal-plan.md): the
+   lexer's forms.  It is lexed, parsed and printed, never checked. *)
+
+MODULE FxLexis ;
+
+(* A comment (* nests (* to any depth *) and *) closes where it opened. *)
+
+(* A comment may hold 'quotes', "both kinds", and characters past
+   ASCII: é, ₂, 日本, ✓. *)
+
+(**) (* *) (***)
+
+CONST
+  Zero = 0 ;
+  Ten = 10 ;
+  Big = 9223372036854775807 ;
+  Hex = 0x1F ;
+  HexUp = 0xABCDEF ;
+  HexLow = 0xabcdef ;
+  HexMax = 0xFFFFFFFFFFFFFFFF ;
+  Real = 1.5 ;
+  RealZero = 0.0 ;
+  RealExp = 1.5e3 ;
+  RealNeg = 1.5e-3 ;
+  RealPos = 1.5e+3 ;
+  RealUp = 1.5E10 ;
+  RealLong = 3.141592653589793 ;
+  CharNul = 0C ;
+  CharLf = 0AC ;
+  CharA = 41C ;
+  CharSub = 2082C ;
+  CharMax = 10FFFFC ;
+  CharHi = 0D7FFC ;
+  Empty = '' ;
+  EmptyD = "" ;
+  Single = 'single' ;
+  Double = "double" ;
+  Mixed = 'he said "yes"' ;
+  MixedD = "it's" ;
+  Spaces = '  two  spaces  ' ;
+  Signs = '(* not a comment *)' ;
+  Past = 'déjà CO₂ 日本 ✓' ;
+  Astral = '𝄞' ;
+
+VAR
+  a, Ab, aB, a1, A1b2 : I64 ;
+  lowercase, UPPER, MixedCase : I64 ;
+  begin, end, Module : I64 ;
+
+BEGIN
+  a:=1;a:=a+1;a:=a-1;a:=a*2;
+  a := a +% 1 ; a := a -% 1 ; a := a *% 2 ;
+  IF a = 1 THEN END ;
+  IF a # 1 THEN END ;
+  IF a < 1 THEN END ;
+  IF a <= 1 THEN END ;
+  IF a > 1 THEN END ;
+  IF a >= 1 THEN END ;
+  CASE a OF
+  | 1..2 : a := 0
+  | 3 .. 4 : a := 0
+  ELSE
+  END ;
+  a := Ab(* a comment between tokens *)+aB ;
+  a := x.y.z ;
+  a := t[1][2] ;
+  f := 1.5+2.5 ;
+  f := a / 2.0
+END FxLexis.

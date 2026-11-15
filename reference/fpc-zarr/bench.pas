@@ -7,7 +7,7 @@ var
   r, c, cr, cc: Int64; v: Double;
   Chunk: TBytes; P: PDouble; i, ChunkElems: Int64;
 begin
-  S := TZarrStore.Create('/home/claude/bench.zarr');
+  S := TZarrStore.Create('/xxx/bench.zarr');
   A := S.OpenArray('co2');
 
   { --- A: element-wise via GetDouble (safe API, per-element checks) --- }

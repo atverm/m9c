@@ -3,9 +3,9 @@ REVIEW Print -- 30 procedures with a body, 9 of them functions; 13 headings in a
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path               9
   assignments                                    11
-  arguments                                     958
+  arguments                                     964
   RETURN values                                   6
-  operands of a comparison or an operator       109
+  operands of a comparison or an operator       110
   CASE labels                                    57
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -24,6 +24,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   SHARED (x)                                      0
   THREAD                                          0
   TASK                                            0
+  INRANGE claims                                  0
   [SHARABLE] records                              0
   module variables                                0
 

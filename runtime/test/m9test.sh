@@ -20,7 +20,7 @@
 # Errors are values: every test runs, every failure is named, and
 # the exit status says whether there was one.
 #
-# THE TESTS BUILD AND RUN IN PARALLEL (2026-10-21; Alex: "make the
+# THE TESTS BUILD AND RUN IN PARALLEL (2026-10-21; the author: "make the
 # m9test gate ... work in parallel").  Each one builds its program and
 # its closure in a directory of its own, so they are independent.  Run
 # one by one, they took 230 s on the MacBook.  The script calls itself
@@ -83,9 +83,9 @@ foreign_of () {
 build_test () {
   extra=$(foreign_of "$2")
   if [ -z "$extra" ]; then
-    "$M9C" --make -o "$2" "$1"
+    "$M9C" --make --verify-claims -o "$2" "$1"
   else
-    "$M9C" --make -c -k "$1" &&
+    "$M9C" --make --verify-claims -c -k "$1" &&
     gcc -O2 -flto --param max-inline-insns-auto=200 ./*.o \
         "$RT/m9rt.c" "$RT/tcpshim.c" "$RT/tlsshim.c" "$RT/fmtshim.c" \
         -iquote "$RT" $extra $ASNEEDED -lssl -lcrypto -lm -o "$2"

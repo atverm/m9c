@@ -1,0 +1,2 @@
+parseprobes/trailing-module.m9:7:1: parse: a second program module: a file may have only one
+m9c: 1 parse errors in parseprobes/trailing-module.m9

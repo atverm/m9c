@@ -1,0 +1,115 @@
+(* FxExprs is a front-end fixture (docs/fpc-removal-plan.md): every
+   operator, every factor and the precedence between them.  It is
+   parsed and printed, never checked. *)
+
+MODULE FxExprs ;
+
+BEGIN
+  (* relations *)
+  b := x = y ;
+  b := x # y ;
+  b := x < y ;
+  b := x <= y ;
+  b := x > y ;
+  b := x >= y ;
+
+  (* AND, OR, NOT: relations bind tighter than AND, AND than OR *)
+  b := p AND q ;
+  b := p OR q ;
+  b := NOT p ;
+  b := NOT NOT p ;
+  b := x < y AND y < z OR p AND NOT q ;
+  b := (p OR q) AND (x = y OR NOT (x < z)) ;
+  b := p OR q OR r AND s AND t ;
+
+  (* sums *)
+  n := x + y ;
+  n := x - y ;
+  n := x +% y ;
+  n := x -% y ;
+  n := -x ;
+  n := +x ;
+  n := -x + y - z ;
+  n := x - (y - z) ;
+  n := -(x + y) ;
+
+  (* products *)
+  n := x * y ;
+  n := x / y ;
+  n := x *% y ;
+  n := x DIV y ;
+  n := x MOD y ;
+  n := x + y * z - w DIV v MOD u ;
+  n := (x + y) * (z - w) ;
+  n := x * (y + z) * w ;
+  n := x *% y +% z -% w ;
+
+  (* IS *)
+  b := p IS SOME ;
+  b := p IS NONE ;
+  b := r IS Sub ;
+  b := r IS Mod.Sub ;
+  b := r.next IS SOME ;
+  IF p IS SOME q THEN END ;
+  IF x < y AND p IS SOME THEN END ;
+
+  (* factors: literals *)
+  n := 10 ;
+  n := 0x1F ;
+  f := 1.5 ;
+  f := 1.5e-3 ;
+  f := 2.0E10 ;
+  c := 0AC ;
+  c := 2082C ;
+  s := 'single' ;
+  s := "double" ;
+  s := "it's" ;
+  s := 'say "so"' ;
+  s := '' ;
+  b := TRUE ;
+  b := FALSE ;
+  p := NONE ;
+
+  (* factors: the built-in forms *)
+  p := SOME (q) ;
+  h := SHARED (q) ;
+  p := NEW (Rec) ;
+  p := NEW (I64, 10) ;
+  p := NEW (pool, Rec) ;
+  p := NEW (pool, F64, 3, 4) ;
+  p := NEW (r.pool, Rec) ;
+  p := NEW (OWN, Rec) ;
+  p := NEW (OWN, Mod.Rec) ;
+  v := SLICE (s, 0, 10) ;
+  v := SLICE (r.items, i + 1, LEN (r.items) - i - 1) ;
+  g := GRID (flat, 5) ;
+  g := GRID (flat, rows, cols) ;
+  g := GRID (flat, 2, 3, 4, 5) ;
+
+  (* factors: designators and calls *)
+  n := x ;
+  n := r.f ;
+  n := a[i] ;
+  n := a[i, j] ;
+  n := a[i][j] ;
+  n := r.f[i].g[j, k].h ;
+  n := Mod.Name ;
+  n := F () ;
+  n := F (x) ;
+  n := F (x, y + 1, G (z)) ;
+  n := Mod.F (x) ;
+  n := r.handler (x) ;
+  n := F (x).f ;
+  n := F (x)[i] ;
+  n := F (x).p.b[i].c ;
+  n := a[F (i) + G (j)] ;
+  n := LEN (g, 1) + MAX (I64) ;
+
+  (* parentheses *)
+  n := (x) ;
+  n := ((x + y)) ;
+  n := (((x))) * 2 ;
+
+  (* all together *)
+  b := NOT (a[i] + F (x).f * (-y) >= 0x10 MOD z) OR s # NONE AND p IS SOME
+END FxExprs.

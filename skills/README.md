@@ -1,7 +1,7 @@
 # Claude Code skills for M9
 
-Two skills for [Claude Code](https://claude.com/claude-code), the ones
-the M9 repository itself works with:
+Three skills for [Claude Code](https://claude.com/claude-code), the
+ones the M9 repository itself works with:
 
 - `m9/` -- what a Pascal, Oberon or Modula-2 hand gets wrong in M9,
   as a short ordered list, each item pointing at the gated document
@@ -11,12 +11,18 @@ the M9 repository itself works with:
 - `m9-lookup/` -- how to find what already exists before writing it:
   the compiler's own `m9c --json` for a module's exact signatures,
   modes and RAISES sets, never a remembered list of names.
+- `oracles-gates/` -- how to prove a port, migration or change right
+  with evidence that can say no: an independent oracle, gates and
+  goldens, sabotage that shows a gate can fail, and fuzzing with a
+  judge.  It names no M9 feature, so it serves a project in any
+  language.
 
 ## Using them
 
-Copy both directories into your project's `.claude/skills/`:
+Copy the directories you want into your project's `.claude/skills/`,
+or into `~/.claude/skills/` for every project:
 
-    cp -R skills/m9 skills/m9-lookup  YOURPROJECT/.claude/skills/
+    cp -R skills/m9 skills/m9-lookup skills/oracles-gates  YOURPROJECT/.claude/skills/
 
 Claude Code lists project skills from that directory and loads one
 when its description matches the work at hand; a skill can also be

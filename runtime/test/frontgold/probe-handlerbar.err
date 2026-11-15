@@ -1,0 +1,9 @@
+parseprobes/handlerbar.m9:6:3: parse: handler | expected after EXCEPT
+parseprobes/handlerbar.m9:6:3: parse: END expected, found Ident 'Io'
+parseprobes/handlerbar.m9:6:5: parse: END name does not match MODULE HandlerBar
+parseprobes/handlerbar.m9:6:6: parse: DEFINITION, IMPLEMENTATION, or MODULE expected, found Ident
+parseprobes/handlerbar.m9:6:16: parse: DEFINITION, IMPLEMENTATION, or MODULE expected, found LParen
+parseprobes/handlerbar.m9:6:17: parse: DEFINITION, IMPLEMENTATION, or MODULE expected, found StrLit
+parseprobes/handlerbar.m9:6:21: parse: DEFINITION, IMPLEMENTATION, or MODULE expected, found RParen
+parseprobes/handlerbar.m9:7:1: parse: DEFINITION, IMPLEMENTATION, or MODULE expected, found END
+m9c: 10 parse errors in parseprobes/handlerbar.m9

@@ -12,7 +12,7 @@ IMPORT Text ;
    It is the fixture for report par 2.2.4, 2026-10-01.  It is not
    installed; gendiff and build.sh run it.
 
-   Since 2026-10-05 it covers the RECORD half too (Alex: positional, in
+   Since 2026-10-05 it covers the RECORD half too (the author: positional, in
    a CONST and in statements).  Status (200, 'OK', FALSE) is a record
    value, and a CONST of literals is read-only data like a table.  A
    table of them is a table whose array typedef follows the record's

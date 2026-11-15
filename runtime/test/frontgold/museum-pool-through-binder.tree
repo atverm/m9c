@@ -1,0 +1,33 @@
+MODULE PoolThroughBinder ;
+
+TYPE
+  Kid = OPT PTR Node ;
+  Node = RECORD
+    name : STR ;
+    kids : SLICE OF Kid
+  END ;
+
+PROCEDURE Rename (VAR n: PTR Node) =
+VAR
+  s : SLICE OF CHAR ;
+BEGIN
+  s := NEW (n, CHAR, 3) ;
+  s[0] := 'a' ;
+  s[1] := '.' ;
+  s[2] := 'b' ;
+  n.name := s
+END Rename ;
+
+PROCEDURE CheckFile (root: PTR Node) =
+VAR
+  i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (root.kids) - 1 DO
+    IF root.kids[i] IS SOME u THEN
+      Rename (u)
+    END
+  END
+END CheckFile ;
+
+BEGIN
+END PoolThroughBinder.

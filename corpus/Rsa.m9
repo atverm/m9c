@@ -17,7 +17,7 @@ DEFINITION MODULE Rsa ;
    verifier written in M9 first, on 24-bit limbs with Montgomery
    multiplication, passed the same test and measured 70 times slower:
    0.55 ms against 8 us at 2048 bits.  It bought nothing, since the
-   runtime links libcrypto anyway; Alex: "why not call openssl?"  M9
+   runtime links libcrypto anyway; the author: "why not call openssl?"  M9
    keeps the key's reading (PEM, the DER walk to the modulus and
    exponent, so Bits/ModulusHex/ExponentHex answer from what was
    read) and the refusals by name.

@@ -1,6 +1,6 @@
 /* fmtsweep.c prints printf's %.*f and %.*e over a fixed set of 6,000
    doubles at every precision 0..17, one line each: 216,000 lines.
-   tools/release/win/vmgates.sh builds it with glibc on zoefii and
+   tools/release/win/vmgates.sh builds it with glibc on host2 and
    with mingw for the Windows 11 VM.  It holds the two outputs equal
    by SHA-256.  Fmt.Fixed and Fmt.Sci take their digits from this
    printf through the runtime (m9_fmt_fixed/m9_fmt_sci, 2026-10-25).

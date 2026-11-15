@@ -1,0 +1,187 @@
+MODULE Supervise ;
+
+(* Supervise is the stage 5 example of docs/task-plan.md: three worker
+   tasks under a supervisor (corpus/Sup.m9).
+
+     Supervise            every item fails once, by a checked
+                          exception; each failed start is started
+                          again, from scratch, and then succeeds
+     Supervise giveup     item 7 always fails: after the policy's 4
+                          restarts the supervisor gives up, and the
+                          module body handles GaveUp: it fails upward
+     Supervise dirty      worker 0 indexes out of range on every
+                          start: a bug.  It is restarted dirty, and
+                          its third dirty crash stops the program by
+                          name (decided 2026-11-02)
+
+   A worker sums the squares of its ten items.  The service it asks is
+   flaky: Flaky counts the attempts per item, and an item's first
+   attempt fails.  A restart begins the worker's sum again from zero,
+   so the sums printed are the clean ones.  It prints, by default,
+
+     worker 0 sum 285 starts 11
+     worker 1 sum 285 starts 11
+     worker 2 sum 285 starts 11
+     restarts 30 clean, 0 dirty
+
+   (each worker's ten items are 0 .. 9 squared, so each sums to 285,
+   after ten failed starts and one whole one). *)
+
+IMPORT Io ;
+IMPORT Fmt ;
+IMPORT Text ;
+IMPORT Sup ;
+IMPORT Faults ;
+
+CONST
+  Workers = 3 ;
+  Items = 10 ;
+  Normal = 0 ;
+  GiveUp = 1 ;
+  Dirty = 2 ;
+
+EXCEPTION
+  Unavailable ;
+
+TYPE
+  (* Flaky is the service: it counts attempts per item, and fails an
+     item's first attempt, or item 7's every one when giving up. *)
+  Flaky = MONITOR RECORD
+    tries : ARRAY 30 OF I64 ;
+  END ;
+
+  Tally = MONITOR RECORD
+    sum, starts : ARRAY 3 OF I64 ;
+    gone : I64 ;
+  END ;
+
+  Job = RECORD
+    board : Sup.Board ;
+    flaky : Flaky ;
+    tally : Tally ;
+    mode : I64 ;
+    small : SLICE OF I64 ;      (* three long: the dirty worker indexes past it *)
+  END [SHARABLE] ;
+
+PROCEDURE Ask (VAR f: Flaky ; item, mode: I64) : I64 RAISES Unavailable =
+BEGIN
+  f.tries[item] := f.tries[item] + 1 ;
+  IF mode = GiveUp AND item = 7 THEN RAISE Unavailable END ;
+  IF f.tries[item] = 1 THEN RAISE Unavailable END ;
+  RETURN (item MOD Items) * (item MOD Items)
+EXCEPT
+| IndexError : RETURN 0
+END Ask ;
+
+PROCEDURE Starts (VAR y: Tally ; k: I64) =
+BEGIN
+  y.starts[k] := y.starts[k] + 1
+EXCEPT
+| IndexError :
+END Starts ;
+
+PROCEDURE Record (VAR y: Tally ; k, s: I64) =
+BEGIN
+  y.sum[k] := s
+EXCEPT
+| IndexError :
+END Record ;
+
+PROCEDURE Leaves (VAR y: Tally) =
+BEGIN
+  y.gone := y.gone + 1 ;
+  SIGNAL (y)
+END Leaves ;
+
+PROCEDURE AwaitGone (VAR y: Tally) =
+BEGIN
+  WHILE y.gone < Workers DO WAIT (y) END
+END AwaitGone ;
+
+PROCEDURE Report (VAR y: Tally) =
+VAR k : I64 ;
+BEGIN
+  FOR k := 0 TO Workers - 1 DO
+    Io.WriteLine ('worker ' + Fmt.I64Str (k) + ' sum ' + Fmt.I64Str (y.sum[k])
+                  + ' starts ' + Fmt.I64Str (y.starts[k]))
+  END
+EXCEPT
+| IndexError :
+END Report ;
+
+(* One start of a worker: the sum of its items' answers, from zero. *)
+PROCEDURE Work (VAR j: Job ; id: I64) : I64 RAISES Unavailable =
+VAR i, s : I64 ;
+BEGIN
+  s := 0 ;
+  FOR i := 0 TO Items - 1 DO
+    IF j.mode = Dirty AND id = 0 THEN s := s + j.small[Items + i] END ;
+    s := s + Ask (j.flaky, id * Items + i, j.mode)
+  END ;
+  RETURN s
+END Work ;
+
+PROCEDURE Worker (VAR j: Job) =
+VAR
+  s : Sup.Seat ;
+  total : I64 ;
+BEGIN
+  BEGIN
+    s := Sup.Join (j.board)
+  EXCEPT
+  | Faults.BadArg (w) : Leaves (j.tally) ; RETURN
+  END ;
+  WHILE Sup.Run (j.board, s) DO
+    Starts (j.tally, s.id) ;
+    BEGIN
+      total := Work (j, s.id) ;
+      Record (j.tally, s.id, total) ;
+      Sup.Done (j.board, s)
+    EXCEPT
+    | Unavailable : Sup.Failed (j.board, s, 'Unavailable')
+    | IndexError : Sup.Crashed (j.board, s, 'IndexError')
+    | Overflow : Sup.Crashed (j.board, s, 'Overflow')
+    END
+  END ;
+  Leaves (j.tally)
+END Worker ;
+
+VAR
+  pool : POOL ;
+  j : PTR Job ;
+  k, clean, dirty : I64 ;
+
+BEGIN
+  j := NEW (pool, Job) ;
+  j.mode := Normal ;
+  IF Io.ArgCount () > 1 THEN
+    IF Text.Eq (Io.Arg (pool, 1), 'giveup') THEN j.mode := GiveUp
+    ELSIF Text.Eq (Io.Arg (pool, 1), 'dirty') THEN j.mode := Dirty
+    END
+  END ;
+  j.small := NEW (pool, I64, 3) ;
+  (* 40 clean restarts in 10 s for the normal run's 30; 4 when giving up *)
+  IF j.mode = GiveUp THEN
+    Sup.Policy (j.board, Sup.OneForOne, 4, 10000, 3)
+  ELSE
+    Sup.Policy (j.board, Sup.OneForOne, 40, 10000, 3)
+  END ;
+  FOR k := 1 TO Workers DO TASK (Worker, j) END ;
+  BEGIN
+    Sup.Watch (j.board, Workers)
+  EXCEPT
+  | Sup.GaveUp :
+      AwaitGone (j.tally) ;
+      Sup.Restarts (j.board, clean, dirty) ;
+      Io.WriteLine ('the supervisor gave up after ' + Fmt.I64Str (clean) + ' restarts') ;
+      Io.Halt (2)
+  END ;
+  AwaitGone (j.tally) ;
+  Report (j.tally) ;
+  Sup.Restarts (j.board, clean, dirty) ;
+  Io.WriteLine ('restarts ' + Fmt.I64Str (clean) + ' clean, ' + Fmt.I64Str (dirty) + ' dirty')
+EXCEPT
+| Faults.BadArg (w) : Io.ErrLine ('Supervise: ' + w) ; Io.Halt (1)
+| ValueRange : Io.ErrLine ('Supervise: an argument out of range') ; Io.Halt (1)
+| OutOfMemory : Io.ErrLine ('Supervise: out of memory') ; Io.Halt (1)
+END Supervise.

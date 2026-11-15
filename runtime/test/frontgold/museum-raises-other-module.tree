@@ -1,0 +1,12 @@
+MODULE m ;
+
+IMPORT Json, Csv ;
+
+PROCEDURE Load () : PTR Json.Node
+  RAISES Csv.ParseError =
+BEGIN
+  RETURN Json.Parse ('[1, 2')
+END Load ;
+
+BEGIN
+END m.

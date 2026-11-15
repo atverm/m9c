@@ -50,9 +50,12 @@ W=$(mktemp -d)
 fail=0
 
 # Every skip entry must still exist, so the list cannot outlive what it
-# excuses.
+# excuses.  The public tree does not carry every file the list names
+# (it has no tools/release): there an entry that is absent is not an
+# error.
 for p in $(grep -v '^#' "$SKIP" | awk 'NF { print $1 }'); do
-  [ -e "$ROOT/$p" ] || { echo "m9f: FAIL -- m9f.skip names $p, which is gone"; fail=1; }
+  [ -e "$ROOT/$p" ] || [ ! -d "$ROOT/tools/release" ] ||
+    { echo "m9f: FAIL -- m9f.skip names $p, which is gone"; fail=1; }
 done
 
 # --make writes each module's .h and .o where it runs, so it runs in W.

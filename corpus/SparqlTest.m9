@@ -223,7 +223,7 @@ BEGIN
        them, not a hand count (which said six, and there are five).  The
        test READS the answer with Rdf rather than counting its line
        feeds: the rdflib of Ubuntu 24.04 ends N-Triples with an empty
-       line, and CI counted six where zoefii's 7.6.0 gives five. *)
+       line, and CI counted six where host2's 7.6.0 gives five. *)
     Check.EqI64 (t, 'Construct: one triple a name, read by Rdf',
                  Rdf.Count (Rdf.ParseNTriples (p, nt)),
                  Check.GoldI64 (t, gold, 'sel1.rows'))

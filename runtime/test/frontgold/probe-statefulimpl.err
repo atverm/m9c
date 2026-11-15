@@ -1,0 +1,2 @@
+parseprobes/statefulimpl.m9:1:10: parse: STATEFUL belongs on the definition
+m9c: 1 parse errors in parseprobes/statefulimpl.m9

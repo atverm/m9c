@@ -6,6 +6,8 @@
 #include "Io.h"
 #include "Time.h"
 #include "Text.h"
+#include "Tsk.h"
+#include "Faults.h"
 
 void Csv_m9init (m9_state *err);
 
@@ -14,6 +16,8 @@ typedef struct Csv_Kind Csv_Kind;
 typedef struct Csv_Options Csv_Options;
 typedef struct Csv_Held Csv_Held;
 typedef struct Csv_Table Csv_Table;
+typedef struct Csv_Gate Csv_Gate;
+typedef struct Csv_Job Csv_Job;
 
 typedef struct Csv_Kind Csv_Kind;
 struct Csv_Kind {
@@ -50,6 +54,14 @@ extern const m9_exc Csv_RangeError;
 #define Csv_StampYmdHms INT64_C(1)
 #define Csv_StampIso INT64_C(2)
 #define Csv_StampEpoch INT64_C(3)
+#define Csv_BandsPerWorker INT64_C(8)
+#define Csv_OpCount INT64_C(0)
+#define Csv_OpFill INT64_C(1)
+#define Csv_ErrNone INT64_C(0)
+#define Csv_ErrFields INT64_C(1)
+#define Csv_ErrRange INT64_C(2)
+#define Csv_ErrValue INT64_C(3)
+#define Csv_ErrIndex INT64_C(4)
 
 #ifndef M9SL_m9_sl_Csv_Kind
 #define M9SL_m9_sl_Csv_Kind
@@ -85,6 +97,7 @@ struct Csv_Options {
   float missing;
   bool hasMissing;
   double utcOffset;
+  int64_t threads;
 };
 
 Csv_Options Csv_Defaults (m9_state *err);
@@ -93,12 +106,6 @@ Csv_Table * Csv_OpenBytes (m9_pool *pool, m9_sl_BYTE src, Csv_Options *opt, m9_s
 int64_t Csv_Rows (Csv_Table * t, m9_state *err);
 int64_t Csv_Cols (Csv_Table * t, m9_state *err);
 void Csv_SetKind (Csv_Table * *t, m9_pool *t_pool, int64_t c, Csv_Kind k, m9_state *err);
-void Csv_SetReal (Csv_Table * *t, m9_pool *t_pool, int64_t c, m9_state *err);
-void Csv_SetReal64 (Csv_Table * *t, m9_pool *t_pool, int64_t c, m9_state *err);
-void Csv_SetInt (Csv_Table * *t, m9_pool *t_pool, int64_t c, m9_state *err);
-void Csv_SetText (Csv_Table * *t, m9_pool *t_pool, int64_t c, m9_state *err);
-void Csv_SetSkip (Csv_Table * *t, m9_pool *t_pool, int64_t c, m9_state *err);
-void Csv_SetStamp (Csv_Table * *t, m9_pool *t_pool, int64_t c, int64_t format, m9_state *err);
 Csv_Kind Csv_KindAt (Csv_Table * t, int64_t c, m9_state *err);
 bool Csv_IsSet (Csv_Table * t, int64_t c, m9_state *err);
 int64_t Csv_FormatAt (Csv_Table * t, int64_t c, m9_state *err);

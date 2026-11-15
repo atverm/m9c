@@ -125,7 +125,7 @@ begin
   GenModule ('Check', ['Io', 'Fmt', 'Math', 'Text']);
   GenModule ('Arrays', ['Faults', 'Math']);
   GenModule ('Numeric', ['Faults', 'Math']);
-  GenModule ('Csv', ['DynStr', 'Io', 'Time', 'Text']);
+  GenModule ('Csv', ['DynStr', 'Io', 'Time', 'Text', 'Tsk', 'Faults']);
   GenModule ('Delim', ['DynStr', 'Io', 'Text']);
   GenModule ('Zip', ['DynStr', 'Io', 'Bits', 'Text']);
   GenModule ('Png', ['Faults', 'Zip', 'Math', 'DynStr', 'Text']);

@@ -1,0 +1,22 @@
+MODULE Lie ;
+IMPORT Io ;
+
+(* The claim is TRUE and the loop runs past the slice: a lie. *)
+PROCEDURE Fill (VAR a: SLICE OF I64 ; hi: I64) =
+VAR k : I64 ;
+BEGIN
+  FOR [INRANGE TRUE] k := 0 TO hi DO a[k] := k END
+END Fill ;
+
+VAR
+  w : SLICE OF I64 ;
+
+BEGIN
+  w := NEW (I64, 4) ;
+  Fill (w, 3) ;
+  Io.WriteLine ('in range: done') ;
+  Fill (w, 4) ;
+  Io.WriteLine ('not reached')
+EXCEPT
+| IndexError : Io.WriteLine ('IndexError: a handler took a false claim')
+END Lie.

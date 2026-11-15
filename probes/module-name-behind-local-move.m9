@@ -1,0 +1,16 @@
+(* EXPECT: cannot move the module variable own into an OWN parameter in a procedure *)
+(* m.own behind a parameter own is the module's variable in the
+   ownership judgement too: a procedure may not move it away, exactly
+   as when it is written bare (par 4.2, docs/module-name-plan.md). *)
+MODULE m ;
+TYPE Cell = RECORD v : I64 END ;
+VAR own : PTR Cell ;
+PROCEDURE Eat (OWN c: PTR Cell) = BEGIN DISPOSE (c) END Eat ;
+PROCEDURE Moved (own: I64) : I64 =
+BEGIN
+  Eat (m.own) ;
+  RETURN own
+END Moved ;
+BEGIN
+  own := NEW (OWN, Cell)
+END m.

@@ -34,7 +34,7 @@ Run waits for the child's next start and answers FALSE once the
 supervisor has stopped.  A start is a turn of the child's loop, and
 the child builds its state afresh in it: a restart is from scratch.
 
-TWO KINDS OF FAILURE (Alex, 2026-11-02).  A child that ends by a
+TWO KINDS OF FAILURE (decided 2026-11-02).  A child that ends by a
 checked exception reports Failed, and the policy decides: it is
 started again, unless that makes more than maxRestarts restarts in
 windowMs, and then the supervisor stops every child and Watch

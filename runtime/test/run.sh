@@ -13,7 +13,7 @@
 #
 # This is A GATE OF ITS OWN, not the tail of m9c.sh.  m9c.sh stops at
 # its ldd line on macOS, and its later half never runs there.  And
-# --run is meant to work on macOS (Alex, 2026-10-04).  Two sabotaged
+# --run is meant to work on macOS (decided 2026-10-04).  Two sabotaged
 # compilers showed it able to fail (2026-10-04).  A key that ignores
 # the imports' text fails the edited-import check.  A warm path that
 # never reuses the binary fails the unchanged-run check.
@@ -28,6 +28,8 @@ cd "$(dirname "$0")"
 export M9RUNTIME=$(cd .. && pwd)
 export M9LIBRARY=$(cd ../../corpus && pwd)
 FIX=$(cd runfix && pwd)
+INR=$(cd inrange && pwd)
+SELF=$(cd selfname && pwd)
 RW=/tmp/m9c-run
 rm -rf "$RW"; mkdir -p "$RW/src"
 cp "$FIX/RunEcho.m9" "$FIX/RunHelper.m9" "$RW/src/"
@@ -100,6 +102,82 @@ export M9CACHE="$RW/cache"
     { echo "FAIL: ExportUse did not run:"; tail -3 o8.txt; exit 1; }
   printf 'ExportUse compares a Shade across modules\nand its negation\nExportUse reads count 40, LEN xs 3, version 2, LEN row 4\nExportDef sees count 42, xs[1] 9.50, box.n 7, version 2\ntime 6, ExportDef.time 12, exit 6\nSetTime (1) gives 5\n' > want8.txt
   cmp -s o8.txt want8.txt || { echo "FAIL: ExportUse said:"; cat o8.txt; exit 1; }
+  # A module's name behind a local of the same name (par 3 rule 5,
+  # docs/module-name-plan.md): Hidden.time beside a parameter time is
+  # the module's.  Each line shows the procedure's value and the
+  # module's apart, for a parameter, a local, a FOR variable, an
+  # IS SOME binder, a handler's binder and a constant.
+  "$M9C" --run "$SELF/Hidden.m9" < /dev/null > o16.txt 2>&1 ||
+    { echo "FAIL: selfname/Hidden did not run:"; tail -3 o16.txt; exit 1; }
+  printf 'time 7\nlocal 25 module 15\nloop 10 module 10\nbind -1 module none\nhandler 41 module 42\ndecls 97 module 103\n' > want16.txt
+  cmp -s o16.txt want16.txt || { echo "FAIL: selfname/Hidden said:"; cat o16.txt; exit 1; }
+  # FOR [INRANGE b]: the author's claim that a loop's subscripts are in
+  # range (docs/loop-check-plan.md).  TRUE runs the body with the
+  # unchecked accessors, FALSE the loop as any other.  A claim never
+  # changes what a program does: the fixture runs each loop both ways
+  # and the answers agree, a claim is read once, and a FALSE claim on a
+  # range past the slice raises at index 5 with the stores before it
+  # made.  The review page lists each claim, --no-unsafe refuses one,
+  # and only a FOR over a range takes one.  The unchecked accessors are
+  # in the fixture's C and in no bootstrap C: nothing but a claimed
+  # body names them.
+  "$M9C" --run "$INR/Claim.m9" < /dev/null > o10.txt 2>&1 ||
+    { echo "FAIL: inrange/Claim did not run:"; tail -3 o10.txt; exit 1; }
+  printf '1.0 5.0\nslice sums agree: 2015\narray sums agree: 49\ngrid sums agree: 1654.0\ncall sums agree: 13.8\nthe third claim raised; claims read: 3\nIndexError 5 of 5, v[4] = 4.0\n' > want10.txt
+  cmp -s o10.txt want10.txt || { echo "FAIL: inrange/Claim said:"; cat o10.txt; exit 1; }
+  "$M9C" --review "$INR/Claim.m9" 2> /dev/null | grep -q '^  INRANGE claims  *16  ' ||
+    { echo "FAIL: --review does not list Claim's sixteen INRANGE claims"; exit 1; }
+  # A program's page lists the claims of the modules it imports: Main
+  # has none of its own and Kern has two.  Plain has none and is not
+  # named, and a module's own page has no such section.
+  ( cd "$INR/prog" && M9LIBRARY="$INR/prog:$M9LIBRARY" "$M9C" --review Main.m9 2> /dev/null ) > o15.txt
+  grep -q '^IN THE MODULES IT IMPORTS' o15.txt && grep -q '^  Kern  *2   17 Sum, 24 Fill$' o15.txt ||
+    { echo "FAIL: --review of a program does not list the claims of what it imports:"; tail -4 o15.txt; exit 1; }
+  if grep -q '^  Plain ' o15.txt; then
+    echo "FAIL: --review of a program names a module without claims"; exit 1
+  fi
+  if ( cd "$INR/prog" && M9LIBRARY="$INR/prog:$M9LIBRARY" "$M9C" --review Kern.m9 2> /dev/null ) | grep -q '^IN THE MODULES'; then
+    echo "FAIL: --review of a module has the program's section"; exit 1
+  fi
+  mkdir -p inrc && "$M9C" --out-dir inrc "$INR/Claim.m9" > /dev/null 2>&1
+  for acc in m9_uat m9_ugat1 m9_ugat2 m9_ugat3 m9_ugat4; do
+    grep -q "$acc (" inrc/Claim.c ||
+      { echo "FAIL: Claim's C does not use $acc: a TRUE claim's body is still checked"; exit 1; }
+  done
+  if grep -l 'm9_uat (\|m9_ugat[1-4] (' "$INR"/../../gen/*.c > o12.txt 2>/dev/null; then
+    echo "FAIL: an unchecked accessor outside a claimed FOR, in:"; cat o12.txt; exit 1
+  fi
+  # --verify-claims keeps the checks in a claimed body.  The fixture
+  # says the same there, its C names no unchecked accessor, and a
+  # claim that is TRUE for a loop past its slice stops the program by
+  # the claim's line: not an IndexError, though the program has a
+  # handler for one.
+  "$M9C" --verify-claims --run "$INR/Claim.m9" < /dev/null > o13.txt 2>&1 ||
+    { echo "FAIL: inrange/Claim did not run under --verify-claims:"; tail -3 o13.txt; exit 1; }
+  cmp -s o13.txt want10.txt || { echo "FAIL: inrange/Claim under --verify-claims said:"; cat o13.txt; exit 1; }
+  mkdir -p inrv && "$M9C" --verify-claims --out-dir inrv "$INR/Claim.m9" > /dev/null 2>&1
+  if grep -q 'm9_uat (\|m9_ugat[1-4] (' inrv/Claim.c; then
+    echo "FAIL: --verify-claims left an unchecked accessor in Claim's C"; exit 1
+  fi
+  st=0
+  "$M9C" --verify-claims --run "$INR/Lie.m9" < /dev/null > o14.txt 2>&1 || st=$?
+  [ "$st" = 134 ] && grep -q '^in range: done$' o14.txt &&
+    grep -q '^m9: the INRANGE claim at line 8 of Lie.Fill was false: index 4, extent 4$' o14.txt ||
+    { echo "FAIL: a false claim under --verify-claims (exit $st) said:"; cat o14.txt; exit 1; }
+  if grep -q 'a handler took a false claim' o14.txt; then
+    echo "FAIL: a handler took a false claim"; exit 1
+  fi
+  if "$M9C" --no-unsafe --check "$INR/Claim.m9" > o11.txt 2>&1; then
+    echo "FAIL: --no-unsafe accepted an INRANGE claim"; exit 1
+  fi
+  grep -q 'Claim.m9:[0-9]*:[0-9]*: no-unsafe: an INRANGE claim on the FOR over j' o11.txt ||
+    { echo "FAIL: the --no-unsafe refusal did not name the claim:"; cat o11.txt; exit 1; }
+  printf 'MODULE Cin ;\nVAR s : SLICE OF I64 ; x : I64 ;\nBEGIN\n  FOR [INRANGE TRUE] x IN s DO END\nEND Cin.\n' > Cin.m9
+  "$M9C" --check Cin.m9 2>&1 | grep -q 'parse: INRANGE stands on FOR v := lo TO hi' ||
+    { echo "FAIL: an INRANGE claim on FOR IN is not refused by name"; exit 1; }
+  printf 'MODULE Cat ;\nVAR i : I64 ;\nBEGIN\n  FOR [PURE] i := 0 TO 2 DO END\nEND Cat.\n' > Cat.m9
+  "$M9C" --check Cat.m9 2>&1 | grep -q 'parse: a FOR takes one attribute: \[INRANGE b\]' ||
+    { echo "FAIL: another attribute on a FOR is not refused by name"; exit 1; }
   # On x86-64 m9c tells the C compiler -mno-mmx, and on no other
   # processor (gcc 12 and 13 left the x87 state full after an MMX
   # move, and Math.Fmod answered NaN in that thread; 2026-11-14).
@@ -151,7 +229,7 @@ export M9CACHE="$RW/cache"
   grep -q '0 rows x 0 columns' o10.txt ||
     { echo "FAIL: --show did not show the frame:"; cat o10.txt; exit 1; }
   # TWO DEFINITIONS IMPORTING EACH OTHER build from clean, both ways
-  # (Alex, 2026-10-22: allowed; types do not change at run time).  A
+  # (decided 2026-10-22: allowed; types do not change at run time).  A
   # clean --make failed on the partner's missing header, and a second
   # run passed on the leftovers.  With the header written, the
   # partner's record was `unknown type name' in the other's prototype.

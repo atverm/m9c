@@ -1,0 +1,19 @@
+MODULE m ;
+
+IMPORT Io, Fmt ;
+
+TYPE
+  Node = RECORD
+    n : I64
+  END ;
+
+PROCEDURE ReadUnset () =
+VAR
+  p : PTR Node ;
+BEGIN
+  Io.WriteLine (Fmt.I64Str (p.n))
+END ReadUnset ;
+
+BEGIN
+  ReadUnset ()
+END m.

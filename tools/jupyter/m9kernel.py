@@ -579,7 +579,7 @@ class M9Kernel(Kernel):
         RUN AGAIN, a state cell becomes a new GENERATION (C names
         Mod_gN, m9c --prefix), and so does every loaded state cell that
         imports it, re-run after it in the order they were first run
-        (Alex, 2026-10-04: "rerun dependents" -- the notebook mistake of
+        (decided 2026-10-04: "rerun dependents" -- the notebook mistake of
         a cell computed from a dependency that has since changed is the
         one this makes impossible).  Old generations stay loaded and
         nothing compiled later refers to them."""

@@ -1,7 +1,7 @@
 # This file holds the toolchain's module list and how to build and run
 # its generator.  lib/gen.sh sources it to make runtime/gen, and
 # bootstrap.sh sources it to show the result a fixpoint.  It moved here
-# from bootstrap.sh on 2026-10-22, when M9Gen.pas was frozen (Alex) and
+# from bootstrap.sh on 2026-10-22, when M9Gen.pas was frozen (the author) and
 # the M9 generator became the one that makes runtime/gen.  The callers
 # are in runtime/test and set TG, a directory of their own.
 
@@ -58,7 +58,7 @@ deps_of () {
     Io)            echo DynStr ;;
     Time)          echo DynStr Fmt Text ;;
     Text)          echo DynStr ;;
-    Csv)           echo DynStr Io Time Text ;;
+    Csv)           echo DynStr Io Time Text Tsk Faults ;;
     Frame)         echo Csv Io Math DynStr Fmt Time NetCDF Faults Sort Stats Text ;;
     Parquet)       echo Frame Io DynStr Csv Math Fmt Time NetCDF Faults Zip Bits Text ;;
     NbCells)       echo Parquet Frame Io DynStr Csv Math Fmt Time NetCDF Faults Zip Bits Text ;;

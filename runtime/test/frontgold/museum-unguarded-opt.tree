@@ -1,0 +1,14 @@
+MODULE m ;
+
+TYPE
+  R = RECORD
+    v : I64
+  END ;
+
+VAR
+  p : OPT PTR R ;
+  x : I64 ;
+
+BEGIN
+  x := p.v
+END m.

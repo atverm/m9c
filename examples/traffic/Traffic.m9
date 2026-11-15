@@ -1,0 +1,357 @@
+MODULE Traffic ;
+
+(* Traffic is a ring road in simulated time: the stage 4 example of
+   docs/task-plan.md.  It shows the three things TASK is for, in one
+   program.
+
+     A TASK PER CAR that sleeps in simulated time.  A car drives a
+     trip of a few segments, one segment at a time, at the speed its
+     segment allows, then stops for a while and drives again.  Between
+     moves it sleeps on the clock until its tick comes.
+
+     A MASTER, the module body, that owns the clock.  It moves to the
+     next tick only when every car due at this one has moved and is
+     asleep again.  So the run is the same whatever the scheduler
+     does: every car sees the state of the tick before.
+
+     A PARALLEL STEP after every tick: Tsk.For on a crew of TASKs
+     gives each car its speed from how full its segment is.  Each
+     worker writes the speeds of its own cars only.
+
+   A car that arrives sends its number and its trip time through a
+   Chan to the Logger task, which sums them.  The sums do not depend
+   on the order the arrivals come in.
+
+     Traffic [CARS [TICKS]]          default 400 cars, 1000 ticks
+
+   It prints the arrivals, the summed trip times and a checksum.  The
+   same arguments give the same three numbers on one carrier and on
+   every core (runtime/test/tasks.sh holds them).
+
+   THE CLOCK IS 64 MONITORS, NOT ONE.  SIGNAL wakes every waiter of a
+   monitor (report par 6).  With one Clock, each tick woke every car,
+   and every car fought for the one lock to look at its tick: 2,000
+   cars for 500 ticks took 2.85 s on every core and 0.29 s on one
+   (the M4, 2026-11-02).  A car sleeps in the Bucket of its tick
+   MOD 64, so a tick wakes the cars due at it and no others.  Quiet,
+   a monitor of its own, counts the cars still moving.  The same run
+   takes 0.32 s on every core and 0.05 s on one.  A car does almost
+   nothing between two sleeps, so a wake across carriers costs more
+   than the work it starts; one carrier is the faster for this load. *)
+
+IMPORT Io ;
+IMPORT Fmt ;
+IMPORT Chan ;
+IMPORT Tsk ;
+IMPORT Faults ;
+
+CONST
+  Segments = 50 ;               (* the ring *)
+  MaxSpeed = 4 ;                (* ticks to cross an empty segment: 1 *)
+  MaxTicks = 100000 ;
+  Big = 1000000 ;               (* an arrival is car * Big + trip time *)
+  Prime = 1000000007 ;
+
+TYPE
+  (* Bucket holds the cars asleep until a tick t with t MOD Window its
+     number.  now is the last tick it was opened for. *)
+  Bucket = MONITOR RECORD
+    now : I64 ;
+    due : I64 ;                 (* cars asleep in it *)
+    stop : BOOL ;
+  END ;
+
+  (* Quiet counts the cars moving at this tick, and the cars gone after
+     the stop. *)
+  Quiet = MONITOR RECORD
+    awake : I64 ;
+    finished : I64 ;
+  END ;
+
+  (* Sums is the Logger's answer. *)
+  Sums = MONITOR RECORD
+    arrivals, trips, check : I64 ;
+    done : BOOL ;
+  END ;
+
+  Ids = MONITOR RECORD
+    n : I64 ;
+  END ;
+
+  Job = RECORD
+    buckets : ARRAY 64 OF Bucket ;
+    quiet : Quiet ;
+    sums : Sums ;
+    ids : Ids ;
+    arrivals : Chan.Ints ;
+    crew : Tsk.Crew ;
+    seg : SLICE OF I64 ;        (* car k's segment; car k writes it *)
+    speed : SLICE OF I64 ;      (* car k's ticks per segment; the crew writes it *)
+    count : SLICE OF I64 ;      (* cars on a segment; the master writes it *)
+  END [SHARABLE] ;
+
+CONST
+  Window = 64 ;                 (* the longest sleep, in ticks, is less *)
+
+(* ---- the clock ---------------------------------------------------- *)
+
+PROCEDURE Enlist (VAR b: Bucket) =
+BEGIN
+  b.due := b.due + 1
+END Enlist ;
+
+PROCEDURE AwaitTick (VAR b: Bucket ; t: I64) : BOOL =
+  (* AwaitTick waits until the bucket is opened for tick t.  It answers
+     FALSE when the run has stopped. *)
+BEGIN
+  WHILE b.now < t AND NOT b.stop DO WAIT (b) END ;
+  RETURN NOT b.stop
+END AwaitTick ;
+
+PROCEDURE TakeDue (VAR b: Bucket) : I64 =
+VAR n : I64 ;
+BEGIN
+  n := b.due ;
+  b.due := 0 ;
+  RETURN n
+END TakeDue ;
+
+PROCEDURE Open (VAR b: Bucket ; t: I64) =
+BEGIN
+  b.now := t ;
+  SIGNAL (b)
+END Open ;
+
+PROCEDURE Halt (VAR b: Bucket) =
+BEGIN
+  b.stop := TRUE ;
+  SIGNAL (b)
+END Halt ;
+
+PROCEDURE Dozes (VAR q: Quiet) =
+BEGIN
+  q.awake := q.awake - 1 ;
+  IF q.awake = 0 THEN SIGNAL (q) END
+END Dozes ;
+
+PROCEDURE Gone (VAR q: Quiet) =
+BEGIN
+  q.finished := q.finished + 1 ;
+  SIGNAL (q)
+END Gone ;
+
+PROCEDURE SetAwake (VAR q: Quiet ; n: I64) =
+BEGIN
+  q.awake := n
+END SetAwake ;
+
+PROCEDURE AwaitQuiet (VAR q: Quiet) =
+BEGIN
+  WHILE q.awake > 0 DO WAIT (q) END
+END AwaitQuiet ;
+
+PROCEDURE AwaitGone (VAR q: Quiet ; cars: I64) =
+BEGIN
+  WHILE q.finished < cars DO WAIT (q) END
+END AwaitGone ;
+
+(* SleepUntil puts the calling car to sleep until tick t, after the
+   tick it is in, and answers FALSE when the run has stopped.  The car
+   counts itself in its bucket first and only then out of Quiet: the
+   master opens a bucket only when Quiet is 0, so it never misses a
+   car.  A car that finds the bucket already open does not wait. *)
+PROCEDURE SleepUntil (VAR j: Job ; t: I64) : BOOL RAISES IndexError =
+BEGIN
+  Enlist (j.buckets[t MOD Window]) ;
+  Dozes (j.quiet) ;
+  IF AwaitTick (j.buckets[t MOD Window], t) THEN RETURN TRUE END ;
+  Gone (j.quiet) ;
+  RETURN FALSE
+END SleepUntil ;
+
+(* Advance opens tick t: the cars due wake, and Quiet counts them
+   first, so none can doze before it is counted. *)
+PROCEDURE Advance (VAR j: PTR Job ; t: I64) RAISES IndexError =
+BEGIN
+  SetAwake (j.quiet, TakeDue (j.buckets[t MOD Window])) ;
+  Open (j.buckets[t MOD Window], t)
+END Advance ;
+
+PROCEDURE StopAll (VAR j: PTR Job ; cars: I64) RAISES IndexError =
+VAR b : I64 ;
+BEGIN
+  FOR b := 0 TO Window - 1 DO Halt (j.buckets[b]) END ;
+  AwaitGone (j.quiet, cars)
+END StopAll ;
+
+(* ---- the logger --------------------------------------------------- *)
+
+PROCEDURE Add (VAR s: Sums ; car, trip: I64) =
+BEGIN
+  s.arrivals := s.arrivals + 1 ;
+  s.trips := s.trips + trip ;
+  s.check := (s.check + car * 31 + trip * 7) MOD Prime
+END Add ;
+
+PROCEDURE LoggerEnds (VAR s: Sums) =
+BEGIN
+  s.done := TRUE ;
+  SIGNAL (s)
+END LoggerEnds ;
+
+PROCEDURE AwaitLogger (VAR s: Sums ; VAR arrivals, trips, check: I64) =
+BEGIN
+  WHILE NOT s.done DO WAIT (s) END ;
+  arrivals := s.arrivals ;
+  trips := s.trips ;
+  check := s.check
+END AwaitLogger ;
+
+PROCEDURE Logger (VAR j: Job) =
+VAR v : I64 ;
+BEGIN
+  v := 0 ;
+  WHILE Chan.Receive (j.arrivals, v) DO Add (j.sums, v DIV Big, v MOD Big) END ;
+  LoggerEnds (j.sums)
+END Logger ;
+
+(* ---- a car -------------------------------------------------------- *)
+
+PROCEDURE NextId (VAR d: Ids) : I64 =
+BEGIN
+  d.n := d.n + 1 ;
+  RETURN d.n - 1
+END NextId ;
+
+PROCEDURE Draw (VAR x: I64 ; n: I64) : I64 =
+  (* Draw answers 0 .. n - 1 from the car's own generator (Park and
+     Miller's). *)
+BEGIN
+  x := (x * 48271) MOD 2147483647 ;
+  RETURN x MOD n
+END Draw ;
+
+(* Car drives trip after trip until the clock stops.  t is the tick
+   it is at: it wakes at t, moves, and sleeps until a later one. *)
+PROCEDURE Car (VAR j: Job) =
+VAR
+  k, x, t, hops, h, start : I64 ;
+  going : BOOL ;
+BEGIN
+  k := NextId (j.ids) ;
+  x := k + 1 ;
+  t := 0 ;
+  going := TRUE ;
+  BEGIN
+    WHILE going DO
+      hops := 2 + Draw (x, 6) ;
+      start := t ;
+      h := 0 ;
+      WHILE going AND h < hops DO
+        t := t + j.speed[k] ;
+        IF SleepUntil (j, t) THEN
+          j.seg[k] := (j.seg[k] + 1) MOD Segments ;
+          h := h + 1
+        ELSE
+          going := FALSE
+        END
+      END ;
+      IF going THEN
+        Chan.Send (j.arrivals, k * Big + (t - start)) ;
+        t := t + 1 + Draw (x, 5) ;
+        going := SleepUntil (j, t)
+      END
+    END
+  EXCEPT
+  | IndexError :
+  | Chan.Closed :
+  END
+END Car ;
+
+(* ---- the parallel step -------------------------------------------- *)
+
+(* Worker is one member of the crew: each round it gives the cars of
+   its chunk their speed, from the count of cars on their segment. *)
+PROCEDURE Worker (VAR j: Job) =
+VAR
+  s : Tsk.Seat ;
+  k, c : I64 ;
+BEGIN
+  s := Tsk.Join (j.crew) ;
+  WHILE Tsk.Next (j.crew, s) DO
+    BEGIN
+      FOR k := s.lo TO s.hi - 1 DO
+        c := j.count[j.seg[k]] ;
+        IF c <= 2 THEN j.speed[k] := 1
+        ELSIF c <= 6 THEN j.speed[k] := 2
+        ELSIF c <= 12 THEN j.speed[k] := 3
+        ELSE j.speed[k] := MaxSpeed
+        END
+      END
+    EXCEPT
+    | IndexError : s.failed := TRUE
+    END
+  END
+END Worker ;
+
+(* ---- the master --------------------------------------------------- *)
+
+VAR
+  pool : POOL ;
+  j : PTR Job ;
+  cars, ticks, k, i, workers, started, arrivals, trips, check : I64 ;
+
+BEGIN
+  cars := 400 ;
+  ticks := 1000 ;
+  IF Io.ArgCount () > 1 THEN cars := Io.ParseI64 (Io.Arg (pool, 1)) END ;
+  IF Io.ArgCount () > 2 THEN ticks := Io.ParseI64 (Io.Arg (pool, 2)) END ;
+  IF cars < 1 OR ticks < 1 OR ticks > MaxTicks THEN
+    Io.ErrLine ('usage: Traffic [CARS [TICKS]]') ;
+    Io.Halt (2)
+  END ;
+  j := NEW (pool, Job) ;
+  j.seg := NEW (pool, I64, cars) ;
+  j.speed := NEW (pool, I64, cars) ;
+  j.count := NEW (pool, I64, Segments) ;
+  FOR k := 0 TO cars - 1 DO
+    j.seg[k] := k MOD Segments ;
+    j.speed[k] := 1
+  END ;
+  Chan.SetCap (j.arrivals, 64) ;
+  TASK (Logger, j) ;
+  workers := Tsk.Workers (cars) ;
+  started := 0 ;
+  FOR k := 1 TO workers DO
+    TASK (Worker, j) ;
+    started := started + 1
+  END ;
+  Tsk.Start (j.crew, started) ;
+  SetAwake (j.quiet, cars) ;
+  FOR k := 1 TO cars DO TASK (Car, j) END ;
+  FOR k := 1 TO ticks DO
+    AwaitQuiet (j.quiet) ;
+    (* every car is asleep: count the segments, then the speeds *)
+    FOR i := 0 TO Segments - 1 DO j.count[i] := 0 END ;
+    FOR i := 0 TO cars - 1 DO j.count[j.seg[i]] := j.count[j.seg[i]] + 1 END ;
+    Tsk.For (j.crew, cars, 0) ;
+    Advance (j, k)
+  END ;
+  AwaitQuiet (j.quiet) ;
+  StopAll (j, cars) ;
+  Tsk.Stop (j.crew) ;
+  Chan.Close (j.arrivals) ;
+  arrivals := 0 ;
+  trips := 0 ;
+  check := 0 ;
+  AwaitLogger (j.sums, arrivals, trips, check) ;
+  Io.WriteLine ('cars ' + Fmt.I64Str (cars) + ' ticks ' + Fmt.I64Str (ticks)
+                + ' arrivals ' + Fmt.I64Str (arrivals) + ' trip ticks ' + Fmt.I64Str (trips)
+                + ' check ' + Fmt.I64Str (check))
+EXCEPT
+| ValueRange : Io.ErrLine ('Traffic: a value out of range') ; Io.Halt (1)
+| IndexError : Io.ErrLine ('Traffic: an index out of range') ; Io.Halt (1)
+| Tsk.Failed : Io.ErrLine ('Traffic: a step failed') ; Io.Halt (1)
+| Faults.BadArg (w) : Io.ErrLine ('Traffic: ' + w) ; Io.Halt (1)
+| OutOfMemory : Io.ErrLine ('Traffic: out of memory') ; Io.Halt (1)
+END Traffic.

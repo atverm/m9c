@@ -3,7 +3,7 @@
 # over every corpus module, including Gen.m9 generating itself.  The
 # reference is the checked-in runtime/gen, and gold/c/ for the fixtures
 # runtime/gen does not hold.  It was the FPC oracle until 2026-10-22
-# (M9Gen.pas frozen, Alex; docs/twin-plan.md).  The dep lists must
+# (M9Gen.pas frozen, the author; docs/twin-plan.md).  The dep lists must
 # match gentest.pas exactly.
 # Scratch files go in a directory of this run's own.  Fixed /tmp names
 # collided between two checkouts or two gates run at once (the compiler
@@ -109,7 +109,7 @@ run Seq Sort Text
 run Check Io Fmt Math Text
 run Arrays Faults Math
 run Numeric Faults Math
-run Csv DynStr Io Time Text
+run Csv DynStr Io Time Text Tsk Faults
 run Delim DynStr Io Text
 run Zip DynStr Io Bits Text
 run Png Faults Zip Math DynStr Text

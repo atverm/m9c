@@ -499,7 +499,7 @@ g = statuses(P, b"GET /probe?x=1 HTTP/1.1\r\n" + H + b"x-PROBE:  abc  \r\n"
 if g:
     ck(g[0][2] == b"x-probe=abc method=GET peer=127.0.0.1 client=127.0.0.1",
        f"Header lookup: {g[0][2]!r}")
-# text past Latin-1, each way (Alex, 2026-10-31): text goes out as its
+# text past Latin-1, each way (decided 2026-10-31): text goes out as its
 # UTF-8 octets; each line of a request head reads as UTF-8 when it is
 # UTF-8, else one character per octet
 UTFBODY = "pi=π euro=€".encode()
@@ -573,7 +573,7 @@ if NATIVE_WIN:
     # stack discards the 408 waiting in the client's receive buffer
     # when it arrives, where Linux's delivers it first.  This client
     # never reads while it sends, so no bounded drain outlasts it, and a
-    # client that does not read is not owed the answer (Alex,
+    # client that does not read is not owed the answer (decided
     # 2026-10-25: "if the client does not read the 408 will not be read
     # so why waste it").  Said, not failed: a decision, not a defect.
     print("srvfix: SKIP a header trickling in (Windows drops the 408 on the reset; "

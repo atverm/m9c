@@ -307,7 +307,7 @@ rule about differential testing, demonstrated on itself.
 
 ### Julia (added 2026-10-07, measured on the MacBook)
 
-Alex: "do the mandelbrot benchmark in Julia".  `bench/mandel.jl` is
+The author: "do the mandelbrot benchmark in Julia".  `bench/mandel.jl` is
 the same scalar loop (no `@simd`, no threads, no StaticArrays), its
 output diffed against the M9 bitmap at N=200 and N=4000 before the
 clock.  Another machine than the table above, so M9 and C are
@@ -333,14 +333,14 @@ Julia pays is the 0.1s before the loop -- startup and compilation,
 paid once per process, as the JVM's is.  Same reading as for Scala:
 nothing for a service, everything for a command run in a loop.
 
-Alex: "and mandelbrot in python on this machine?  uv has a newer
+The author: "and mandelbrot in python on this machine?  uv has a newer
 python".  The same ratios as on WSL with 3.12: numpy at 4.7x M9 (4.8x
 there), pure CPython at 33x (about 50x there -- the M4 and 3.14 both
 help the interpreter more than they help the compiled loop, which was
 already at the arithmetic's speed).  3.13 and 3.14 are the same
 number; the system 3.9 has no numpy and was not run.
 
-Alex: "and scala?"  Scala's loop at 0.47s is FASTER than gcc -O2's
+The author: "and scala?"  Scala's loop at 0.47s is FASTER than gcc -O2's
 0.53s here, and the bitmap is the same byte for byte (the JVM does
 not fuse a multiply and an add on its own).  Found while placing it:
 **gcc 16 at `-O3` on arm64 gives a different bitmap** -- one pixel of
@@ -580,9 +580,238 @@ time in one row; fpc 3.6× off the pack, as before.
   slot as `m9_err`, the type the runtime renamed `m9_state`.  Fixed
   with this section; the C baseline had been un-runnable since the
   rename, unnoticed because no gate builds it.
-- **The runners are GNU-only** (`/usr/bin/time -f`, `stat -c`,
-  `~/.cargo/bin`); on the Mac they ran as patched copies with
-  Homebrew's GNU `time` and `stat` and Homebrew's rustc.  Owed.
+- **The runners were GNU-only** (`/usr/bin/time -f`, `stat -c`,
+  `~/.cargo/bin`); on the Mac they ran as patched copies.  Since
+  2026-11-14 they find Homebrew's GNU `time` and the installed rustc
+  themselves; GNU `stat` is expected first on PATH.
+
+## The MacBook again, with 0.28.0 (2026-11-15)
+
+The same programs seven weeks and six releases later, on the same
+Apple M5 Pro, at night, load average 2.3 to 4.6 (other sessions' idle
+editors; the load before each step is in the run's log).  m9c 0.28.0
+in development, Homebrew gcc 16.2, Apple clang 21, rustc 1.98.1, fpc
+3.2.2, Scala 3.9.0 on OpenJDK 27, Python 3.13.15 with numpy 2.5.4,
+Julia 1.13.1.  Same protocol; the runners now run on macOS as they
+are.
+
+**The machine is about 9 per cent slower than on 2026-09-30**: every
+row that has nothing to do with M9 says so (C, Rust, Scala, Pascal).
+So the ratios are what to read.
+
+**binary-trees, depth 18**
+
+| implementation | now | 2026-09-30 |
+|---|---:|---:|
+| Rust, `typed-arena` | 0.15s | 0.13s |
+| C, plain bump arena | 0.16s | 0.14s |
+| C, m9rt POOL | 0.27s | 0.24s |
+| Scala 3, JVM | 0.33s | 0.30s |
+| **M9** | **0.36s** | 0.41s |
+| Object Pascal | 0.78s | 0.71s |
+| Rust, `Box` | 1.08s | 0.99s |
+
+M9 is the one row that got faster in seconds.  Over the C pool it
+paid 70 per cent then and pays 33 per cent now.  The frame arena that
+frees an empty frame without a call (0.14.0) and the statement release
+(0.23.0) are the likely causes; neither was measured apart.
+
+**fannkuch-redux, n = 11**
+
+| implementation | now | 2026-09-30 |
+|---|---:|---:|
+| Rust, overflow checks on | 1.33s | 1.19s |
+| Rust, release default | 1.35s | 1.21s |
+| **M9**, clang | **1.47s** | 1.30s |
+| Object Pascal, unchecked | 1.49s | 1.34s |
+| Scala 3, JVM | 1.50s | 1.37s |
+| **M9**, gcc | **1.66s** | 1.63s |
+| C, gcc, no checks | 1.69s | 1.52s |
+| Object Pascal, checked | 3.40s | 3.04s |
+
+M9 with every check, under gcc, now runs as fast as C without any
+under gcc.  It was 7 per cent behind.
+
+**mandelbrot, N = 4000**: M9 0.53s under gcc and 0.54s under clang, C
+the same, Rust 0.53s, Scala 0.55s (0.48s of it compute), Julia 0.64s
+(0.54s compute), Object Pascal 1.98s, numpy 2.57s.  Parity, as it
+was.
+
+**Reading the 207 MB CSV**
+
+| reader | time | threads |
+|---|---:|---:|
+| polars 2.1.0 | 0.05s | 18 |
+| polars 2.1.0 | 0.46s | 1 |
+| **M9 `Csv`** | **0.57s** (and 0.08s for the header and the row count) | 1 |
+| pandas 3.1.1 | 1.75s | 1 |
+
+Five runs of the M9 reader: 0.57 to 0.62s, all 47 checks passing.
+On this machine the reader is 1.2 times polars on one thread, and
+1.4 times with the header pass.  The table further up, from the x86
+laptop, has the two at parity; a Linux container in October had M9
+at twice polars.  Three machines, three ratios, not explained.  The
+reader has no threads; that is the larger gap.
+
+**The zarr sum, both from a filesystem store**
+
+| reader | time |
+|---|---:|
+| Rust `zarrs` 0.17.1 | 0.05s |
+| **M9 `ZarrStore`** | **0.11s** |
+
+Both give n = 15800721 and the same sum.  The section above compared
+M9 over HTTP with Rust on the filesystem.  ZarrStore reads a local
+store since 0.14.0, so this is the like-for-like figure: 2.2 times.
+
+**Whole-project rebuild**, the compiler from a copy of `corpus/`,
+load about 4, two runs, milliseconds:
+
+| step | run 1 | run 2 | 2026-10-25 |
+|---|---:|---:|---:|
+| cold | 40,689 | 40,302 | 26,277 |
+| nothing changed | 7,634 | 7,657 | 5,211 |
+| a line added to Text.m9 | 39,494 | 39,605 | 26,578 |
+| a line added to M9c.m9 | 7,637 | 7,652 | 5,276 |
+
+The corpus is larger than it was (118 modules) and the machine was
+busier, and the two were not separated.  The floor is still the link:
+7.6 s for a rebuild that does no work.
+
+**Two numbers in the runner's own tables that mean less than they
+say.**  The one-file build of mandelbrot shows M9 at 2.60s and
+325 KB.  `Mandel.m9` imports Fmt and Text since 0.26.0, and the
+runner compiles their generated C by hand, without the link-time
+optimisation `m9c` gives.  They are the runner's cost, not m9c's.
+
+## What a bounds check costs in a tight loop, and a claimed FOR (2026-11-15)
+
+"About 3 per cent" is fannkuch's figure, and a fair one for a program
+without tight index loops.  A loop that does nothing but index pays
+more.  The kernel here is a ported model's LU factorisation: 20,000
+dense systems of order 87, a transcription of reference LAPACK, the
+same answer to the last digit in every row.  Its inner loop does
+three accesses on a grid of two axes for two loads and a store.  Best
+of five.
+
+| build | gcc 16.2 | Apple clang 21 |
+|---|---:|---:|
+| M9 0.27.1 as released | 2.69 to 2.81s | |
+| the accessors inlined whatever the caller (0.28.0) | 2.36s | 2.95s |
+| and a claim on each of the two innermost loops | 1.89s | |
+| the claims on the outer loops instead | 1.85s | 1.65s |
+| every check removed (a measurement on a copy of the runtime) | 1.73s | |
+| the Fortran, gfortran -O2 (the port's figure, another run) | 1.75s | |
+
+- **The accessors were not inlined.**  As `static inline` they were
+  gcc's to place, and in a large procedure it kept them as functions.
+  Forcing them inline is 15 to 18 per cent of this kernel and nothing
+  on fannkuch or binary-trees, whose callers are small.
+- **Holding the grid's descriptor in locals gained nothing** (2.24 to
+  2.35s by hand): with the accessor inlined the compiler keeps it in
+  registers.  The runtime's comment that says the reloads were the
+  cost was written before the inlining.
+- **The checks themselves are the rest: 24 per cent.**
+- **A claimed FOR takes most of it back.**  `FOR [INRANGE ok] j := lo
+  TO hi DO` runs the body unchecked when `ok`, a BOOL computed before
+  the loop, is TRUE, and as any FOR when it is FALSE.  Two claims and
+  two booleans bring the kernel from 35 per cent behind the Fortran
+  to 6 per cent.  A claim on an outer loop covers the accesses
+  between the loops, which is why it does better.
+- **Under Apple clang the spread is wider**: 2.95s without claims,
+  1.65s with them, faster than gcc with them and than the Fortran.
+
+The reference Fortran was not rebuilt here (its link wants a LAPACK
+auxiliary this machine's copy lacks), so its row is the port's own
+measurement on the same machine.
+
+## gcc against clang as M9's C compiler (2026-11-15)
+
+m9c drives gcc by default.  The same programs built through `m9c
+--make` with `CC=clang`:
+
+| program | gcc 16.2 | Apple clang 21 |
+|---|---:|---:|
+| fannkuch-redux, n = 11 | 1.62s | 1.44s |
+| binary-trees, depth 18 | 0.33s | 0.41s |
+| mandelbrot, N = 4000 | 0.53s | 0.54s |
+| LU kernel, no claims | 2.36s | 2.95s |
+| LU kernel, claimed | 1.85s | 1.65s |
+
+Neither wins.  clang is 11 per cent faster on fannkuch and on the
+claimed kernel, gcc 20 per cent faster on binary-trees and on the
+unclaimed kernel.  m9c gives gcc `--param max-inline-insns-auto=200`,
+which clang does not take; the unclaimed kernel, where the checked
+accessors and their callers must be inlined, is where that shows.
+gcc stays the default.  A program that is mostly claimed loops or
+integer loops may be worth building both ways.
+
+## The CSV read on threads (2026-11-15)
+
+`Csv` reads on several threads when the caller sets `opt.threads`
+(0.28.0).  The 207 MB file again, same MacBook (6 fast cores, 12 slow
+ones), all 242 measurement columns as F32 and two stamps:
+
+| reader | threads | time |
+|---|---:|---:|
+| polars 2.1.0 | 18 | 0.05s |
+| **M9 `Csv`**, parse | 18 | **0.05s** (and 0.03s for the read, the header and the row count) |
+| M9 `Csv`, parse | 6 | 0.11s |
+| polars 2.1.0 | 1 | 0.46s |
+| M9 `Csv`, parse | 1 | 0.60s (and 0.10s) |
+
+Every one of the 34.2 million fields equals strtof on the same bytes,
+bit for bit, at every count.  The first threaded run stopped at 0.14s
+however many threads it had: macOS's strtof takes a lock at every
+call, and the one field in a hundred that goes to it was enough.
+`docs/csv-threads-plan.md` has the table by thread count and what
+was done about it.
+
+## A script's first run, with the library shipped compiled (2026-11-15)
+
+From 0.28.0 the Debian package carries the library's modules compiled
+(`docs/run-cache-plan.md`).  In the Docker image built from it, on a
+32-core Linux machine under load, each from an empty user cache:
+
+| script | the package's cache | none |
+|---|---:|---:|
+| two modules, `--run` | **0.11s** | 1.71s |
+| twelve modules, `--run` | **0.25s** | 12.4s |
+| twelve modules, `--cell` (a notebook's first cell) | **2.08s** | 13.5s |
+
+A second run is 0.03 to 0.13s either way.
+
+## tcc for `m9c --run`: tried, and not taken (2026-11-15)
+
+The idea was that a script's first run is almost all C compile time,
+and tcc compiles C many times faster than gcc.  Tried on Ubuntu 26.04
+on arm64 (a virtual machine on the MacBook, six cores), m9c 0.27.1,
+gcc 15, tcc 0.9.27.  Homebrew has no tcc for Apple silicon.
+
+| a script that prints one line | time |
+|---|---:|
+| the first script on the machine, nothing cached | 1.3 to 1.5s |
+| any new script after that | 0.06s |
+| a script that has run before | 0.009s |
+
+- **The 1.5 s is the library, not the script.**  With nothing cached,
+  `m9c --run` compiles the modules the script imports: DynStr 0.27s,
+  Io 0.34s, Fmt 0.61s under gcc -O2.  It does so once for a compiler
+  and an m9c.  After that a new script is one compiler call that
+  compiles its C and links: 0.05s.
+- **tcc compiles the script's own C in 5 ms, gcc in 20 to 35 ms.**
+  That is all it would save on every run but the first.
+- **tcc does not build the library or the runtime as they are.**  It
+  has no `-iquote`, no `__builtin_add_overflow` and its two siblings,
+  no `__auto_type` and no atomic builtins.  The script's own C linked
+  only with three functions written for the trial.
+- **gcc -O0 builds the three modules in 0.04, 0.05 and 0.10s.**  A
+  cold start three to four times faster, and a library that runs
+  slowly from then on.
+
+So a second C compiler is not the answer.  What would remove the
+1.5 s is a package that ships the library's modules compiled, or
+fills the module cache when it is installed.  Not built.
 
 ## Not yet measured
 

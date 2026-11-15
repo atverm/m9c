@@ -1,0 +1,21 @@
+DEFINITION MODULE m ;
+
+CONST
+  Half = 1.5 ;
+
+PROCEDURE Wait () : I64 ;
+
+END m.
+
+
+IMPLEMENTATION MODULE m ;
+
+PROCEDURE Wait () : I64 =
+VAR
+  n : I64 ;
+BEGIN
+  n := Half ;
+  RETURN n
+END Wait ;
+
+END m.

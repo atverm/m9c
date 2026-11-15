@@ -481,6 +481,11 @@ BEGIN
   | Ast.NFor :
       Sp (d, ind) ;
       DynStr.Append (d, 'FOR ') ;
+      IF n.nkids > 4 THEN
+        DynStr.Append (d, '[INRANGE ') ;
+        E (d, n.kids[4]) ;
+        DynStr.Append (d, '] ')
+      END ;
       DynStr.Append (d, n.au) ;
       DynStr.Append (d, ' := ') ;
       E (d, n.kids[0]) ;
