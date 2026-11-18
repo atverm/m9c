@@ -144,7 +144,14 @@ export M9CACHE="$RW/cache"
     grep -q "$acc (" inrc/Claim.c ||
       { echo "FAIL: Claim's C does not use $acc: a TRUE claim's body is still checked"; exit 1; }
   done
-  if grep -l 'm9_uat (\|m9_ugat[1-4] (' "$INR"/../../gen/*.c > o12.txt 2>/dev/null; then
+  # A library module may claim a loop (Mat's dense kernels do).  Its C then names the unchecked accessors, and its source
+  # must hold a claim.  A C file that names them while its source has
+  # none got them from somewhere other than a claimed body.
+  : > o12.txt
+  for c in $(grep -l 'm9_uat (\|m9_ugat[1-4] (' "$INR"/../../gen/*.c 2>/dev/null); do
+    grep -q 'FOR \[INRANGE' "$INR/../../../corpus/$(basename "$c" .c).m9" 2>/dev/null || echo "$c" >> o12.txt
+  done
+  if [ -s o12.txt ]; then
     echo "FAIL: an unchecked accessor outside a claimed FOR, in:"; cat o12.txt; exit 1
   fi
   # --verify-claims keeps the checks in a claimed body.  The fixture

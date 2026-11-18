@@ -1,0 +1,5 @@
+# built by the commands in the README
+paddletest
+paddleserver
+*.o
+*.h

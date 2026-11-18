@@ -108,4 +108,20 @@ got=$(compiled "$W/o4.txt")
 [ "$got" = "$LIBMODS" ] ||
   { echo "pkgcache: FAIL another m9c binary used the package's cache: compiled '$got', wanted '$LIBMODS'"; exit 1; }
 
+# ---- the package's own fill program checks (0.28.1) ----
+# build.sh --fill-cache imports every module the package ships.  It
+# named the three program modules too, and the refusal of an imported
+# program MODULE stopped every package build; only the release
+# rehearsal said so.  This holds the program build.sh writes, over the
+# library as build.sh lists it, to the checker.
+mkdir -p "$W/lib"
+for m in $(sed -n '/^LIBRARY="/,/"$/p' ../../build.sh | tr -d '"\\' | sed 's/LIBRARY=//'); do
+  cp "$SRC/$m.m9" "$W/lib/"
+done
+sh ../../build.sh --fill-source "$W/lib" > "$W/FillAll.m9"
+grep -q '^IMPORT Io ;$' "$W/FillAll.m9" ||
+  { echo "pkgcache: FAIL build.sh --fill-source names no library module"; head -5 "$W/FillAll.m9"; exit 1; }
+M9LIBRARY="$W/lib" "$M9C" --check "$W/FillAll.m9" > "$W/fillall.txt" 2>&1 ||
+  { echo "pkgcache: FAIL the package's fill program is refused:"; head -5 "$W/fillall.txt"; exit 1; }
+
 echo "pkgcache: a filled cache travels with its install and is read only; an edited source and another compiler miss it"

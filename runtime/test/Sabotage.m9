@@ -9,7 +9,7 @@ MODULE Sabotage ;
    then exits 1 and names it.
 
      runtime/test/Sabotage.m9 srvfix|smtp|rdf M9C PY [NAME-PART]
-     runtime/test/Sabotage.m9 pg|regex|rsa|xml M9C [NAME-PART]
+     runtime/test/Sabotage.m9 pg|regex|rsa|xml|numpyexact M9C [NAME-PART]
 
    Run it from the repository root, or name the root with --root=DIR.
    M9C is the compiler.  PY is a Python with h11 (srvfix), with
@@ -50,13 +50,18 @@ MODULE Sabotage ;
              some entries edit runtime/tlsshim.c.  RsaTest against
              copies of corpus/ and the runtime, run from the root, 120 s.
              docs/library-plan-2.md, section 13.
+     numpyexact  runtime/test/numpyexactsabotage.txt, default file
+             corpus/NumpyExact.m9.  The program writes the C of Math and
+             NumpyExact from a copy of corpus/, builds
+             runtime/test/numpyexact_driver.c against it with CC (gcc
+             by default), and runs it in runtime/test, 120 s.
      rdf     runtime/test/rdfsabotage.txt, default file corpus/Rdf.m9.
              RdfTest and RdfConv are built against a copy of corpus/.
              RdfTest runs from the root, 300 s.  RdfConv converts the
              W3C suites that runtime/test/gold/Rdf.gold lists into a
              folder of the entry's own, and PY runs rdfjudge.py on it.
              At least one of the two must go red; the line says which.
-     The test kinds (pg, regex, xml, rsa, rdf) write no files of their
+     The test kinds (pg, regex, xml, rsa, rdf, numpyexact) write no files of their
      own outside the entry's folder, so every kind runs side by side.
      docs/datalib-plan.md for pg, regex, xml and rdf.
 
@@ -89,7 +94,8 @@ CONST
   Regex = 4 ;
   Rsa = 5 ;
   Xml = 6 ;
-  Kinds = ['srvfix', 'smtp', 'pg', 'rdf', 'regex', 'rsa', 'xml'] ;
+  Numpy = 7 ;
+  Kinds = ['srvfix', 'smtp', 'pg', 'rdf', 'regex', 'rsa', 'xml', 'numpyexact'] ;
   Suite = '/runtime/test/xmlconf/xmlconf' ;
   JldBase = 'https://w3c.github.io/json-ld-api/tests/' ;
   SrvPort0 = 21000 ;
@@ -559,6 +565,44 @@ BEGIN
   END
 END GateTest ;
 
+(* GateNumpy writes the C of Math and NumpyExact from the copy lib,
+   builds numpyexact_driver.c against it and runs the driver in
+   runtime/test, where its golden is.  It prints the verdict. *)
+PROCEDURE GateNumpy (VAR j: Job ; RO name, w, lib: STR)
+  RAISES ValueRange, Failed =
+VAR
+  p : POOL ;
+  args, none : SLICE OF STR ;
+  r : System.Result ;
+BEGIN
+  none := NEW (p, STR, 0) ;
+  args := NEW (p, STR, 7) ;
+  args[0] := '-c' ;
+  args[1] := 'set -e ; for m in Math NumpyExact ; do M9LIBRARY="$2" "$1" --out-dir "$3" "$2/$m.m9" ; done ; '
+             + '${CC:-gcc} -std=c11 -O2 -iquote "$4/runtime" -iquote "$3" "$4/runtime/m9rt.c" '
+             + '"$3/Math.c" "$3/NumpyExact.c" "$4/runtime/test/numpyexact_driver.c" -lm -o "$3/t"' ;
+  args[2] := 'sabotage' ;
+  args[3] := Text.Keep (p, j.m9c) ;
+  args[4] := Text.Keep (p, lib) ;
+  args[5] := Text.Keep (p, w) ;
+  args[6] := Text.Keep (p, j.root) ;
+  r := Run (p, 'sh', args, none, 0.0) ;
+  IF r.status # 0 THEN
+    Say (j.b, "sabotage: '" + name + "' does not build -- not a sabotage:" + 0AC
+              + Tail (r.err + r.out, 10), TRUE) ;
+    RETURN
+  END ;
+  r := RunIn (p, j.root + '/runtime/test', w + '/t', none, none, 120.0) ;
+  IF r.stopped THEN
+    Say (j.b, 'sabotage: HUNG (120 s), not judged: ' + name, TRUE)
+  ELSIF r.status = 0 THEN
+    Say (j.b, 'sabotage: PASSED (numpyexact_driver missed it): ' + name, TRUE)
+  ELSE
+    Say (j.b, 'sabotage: red, as it must be: ' + name + ' -- '
+              + Verdict (r.out, 'FAIL', FALSE, 120), FALSE)
+  END
+END GateNumpy ;
+
 (* List answers the paths on the line of gold whose first field is key:
    its fields from the fourth on (rdf.sh's lists).  A later line with
    the same key wins. *)
@@ -732,6 +776,7 @@ BEGIN
     | Srv : GateSrv (j, e.name, w, slot)
     | Smtp : GateSmtp (j, e.name, w, slot)
     | Rdf : GateRdf (j, e.name, w, rt, lib)
+    | Numpy : GateNumpy (j, e.name, w, lib)
     ELSE GateTest (j, e.name, w, rt, lib)
     END
   FINALLY
@@ -890,7 +935,7 @@ BEGIN
   IF i = Srv OR i = Smtp OR i = Rdf THEN np := 3 END ;
   IF i < 0 OR LEN (pos) < np OR LEN (pos) > np + 1 THEN
     Io.ErrLine ('usage: Sabotage.m9 srvfix|smtp|rdf M9C PY [NAME-PART] [--root=DIR] [--data=FILE] [--list]') ;
-    Io.ErrLine ('       Sabotage.m9 pg|regex|rsa|xml M9C [NAME-PART] [--root=DIR] [--data=FILE] [--list]') ;
+    Io.ErrLine ('       Sabotage.m9 pg|regex|rsa|xml|numpyexact M9C [NAME-PART] [--root=DIR] [--data=FILE] [--list]') ;
     RETURN 2
   END ;
   j := NEW (pool, Job) ;
@@ -913,6 +958,9 @@ BEGIN
   | Rdf : data := 'runtime/test/rdfsabotage.txt' ; dflt := 'corpus/Rdf.m9'
   | Regex : data := 'runtime/test/regexsabotage.txt' ; dflt := 'corpus/Regex.m9'
   | Rsa : data := 'runtime/test/rsasabotage.txt' ; dflt := 'corpus/Rsa.m9'
+  | Numpy :
+      data := 'runtime/test/numpyexactsabotage.txt' ;
+      dflt := 'corpus/NumpyExact.m9'
   ELSE data := 'runtime/test/xmlsabotage.txt' ; dflt := 'corpus/Xml.m9'
   END ;
   data := Absolute (pool, j.root, System.Value ('--data', data)) ;

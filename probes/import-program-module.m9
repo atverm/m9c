@@ -1,0 +1,44 @@
+(* EXPECT: PlainLib is a program MODULE, which exports nothing: write DEFINITION MODULE PlainLib with the headings and IMPLEMENTATION MODULE PlainLib with the bodies (par 3) *)
+(* A program module exports nothing.  Until 0.28.1 the checker passed
+   the call below and the generator refused it as `callee unsupported
+   yet'.  The legal form imports a module with a definition. *)
+MODULE PlainLib ;
+
+PROCEDURE Twice (n: I64) : I64 =
+BEGIN
+  RETURN n * 2
+END Twice ;
+
+END PlainLib.
+
+DEFINITION MODULE Lib ;
+PROCEDURE Thrice (n: I64) : I64 ;
+END Lib.
+
+IMPLEMENTATION MODULE Lib ;
+PROCEDURE Thrice (n: I64) : I64 =
+BEGIN
+  RETURN n * 3
+END Thrice ;
+END Lib.
+
+DEFINITION MODULE Use ;
+PROCEDURE Six () : I64 ;
+PROCEDURE FortyTwo () : I64 ;
+END Use.
+
+IMPLEMENTATION MODULE Use ;
+IMPORT Lib ;
+IMPORT PlainLib ;
+
+PROCEDURE Six () : I64 =
+BEGIN
+  RETURN Lib.Thrice (2)
+END Six ;
+
+PROCEDURE FortyTwo () : I64 =
+BEGIN
+  RETURN PlainLib.Twice (21)
+END FortyTwo ;
+
+END Use.

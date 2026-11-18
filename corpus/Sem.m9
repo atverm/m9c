@@ -20246,11 +20246,56 @@ BEGIN
   END
 END AddModuleVars ;
 
+(* ---- A PROGRAM MODULE IS NOT IMPORTED (par 3 rule 5; 0.28.1).  A
+   bare MODULE is a program: it has no definition, so it exports
+   nothing.  Until 0.28.1 the checker read its procedures like any
+   module's, `--check' passed the importer's call, and the generator
+   refused it as `callee unsupported yet'.  An agent's first library
+   met it.  The refusal is at the IMPORT and names the two units to
+   write. ---- *)
+
+(* IsProgramOnly asks whether `name' is loaded as a program module and
+   nothing else.  Only CollectUnit makes a module's entry, from a unit,
+   so an entry with no definition and no implementation came from a
+   bare MODULE.  m9c loads an imported file through LoadFile, not into
+   the root being checked, so the entry is the only place to ask. *)
+PROCEDURE IsProgramOnly (RO name: UTF) : BOOL =
+VAR m : I64 ;
+BEGIN
+  m := FindMod (name) ;
+  IF m < 0 THEN RETURN FALSE END ;
+  RETURN NOT mods[m].hasDef AND NOT mods[m].hasImpl
+END IsProgramOnly ;
+
+PROCEDURE ProgramImports (u: PTR Ast.Node) =
+VAR j, k : I64 ;
+BEGIN
+  FOR j := 0 TO u.nkids - 1 DO
+    IF u.kids[j] IS SOME imp THEN
+      IF imp.kind = Ast.NImportList THEN
+        IF imp.kids[0] IS SOME ids THEN
+          FOR k := 0 TO ids.nkids - 1 DO
+            IF ids.kids[k] IS SOME id THEN
+              IF NOT Text.Eq (id.au, u.au) AND IsProgramOnly (id.au) THEN
+                ErrN (id, u.au, id.au + ' is a program MODULE, which exports' +
+                      ' nothing: write DEFINITION MODULE ' + id.au +
+                      ' with the headings and IMPLEMENTATION MODULE ' +
+                      id.au + ' with the bodies (par 3)')
+              END
+            END
+          END
+        END
+      END
+    END
+  END
+END ProgramImports ;
+
 PROCEDURE CheckImports (root: PTR Ast.Node ; u: PTR Ast.Node) =
 VAR
   seen : SLICE OF BOOL ;
   i : I64 ;
 BEGIN
+  ProgramImports (u) ;
   seen := NEW (BOOL, nmods) ;
   IF LEN (impB) = 0 THEN impB := NEW (pool, UTF, 16) END ;
   nimpB := 0 ;

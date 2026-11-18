@@ -1,0 +1,346 @@
+DEFINITION MODULE NumpyExact ;
+
+(* NumpyExact gives numpy's and pandas' own digits for a few sums and
+   means, bit for bit.  A port that is held byte for byte to a Python
+   oracle needs them.  Arrays.NanSum and Stats.RollingMean round more
+   accurately than numpy on purpose.  This module does not: it repeats
+   numpy's and pandas' algorithms, last-place quirks included.
+
+   It mirrors numpy 2.5.4 and pandas 3.1.1.  "Exact" holds for those
+   versions.  Another version may round differently: pandas 3 changed
+   its own groupby mean.  tools/numpyexactgold.py records the answers
+   of those versions, and runtime/test/numpyexact_driver.c holds this
+   module to them. *)
+
+PROCEDURE Sum (RO a: SLICE OF F64) : F64 RAISES IndexError ;
+  (* Sum is np.sum of a float64 array (np.add.reduce): 0.0 plus
+     numpy's pairwise sum.  Below 8 values the pairwise sum adds them
+     in order to -0.0.  Up to 128 it keeps eight running sums, folds
+     them ((0+1)+(2+3))+((4+5)+(6+7)) and adds the rest.  Above 128 it
+     sums two halves, the first a multiple of 8.  A NaN propagates.
+     An empty array sums to 0.0.  IndexError cannot happen. *)
+
+PROCEDURE Mean (RO a: SLICE OF F64) : F64 RAISES IndexError ;
+  (* Mean is np.mean: Sum divided by the length.  An empty array
+     answers NaN. *)
+
+PROCEDURE ReduceAt (RO a: SLICE OF F64 ; RO starts: SLICE OF I64 ;
+                    VAR out: SLICE OF F64) RAISES IndexError ;
+  (* ReduceAt is np.add.reduceat (a, starts).  out[i] sums a from
+     starts[i] up to starts[i + 1], or to the end for the last start.
+     The sum is the segment's first value plus numpy's pairwise sum of
+     the rest, not Sum of the segment.  When starts[i] >= starts[i + 1],
+     out[i] is a[starts[i]].  A start outside [0, LEN (a)) raises
+     IndexError, as numpy does, and so does an out shorter than
+     starts. *)
+
+PROCEDURE KahanGroupMean (RO v: SLICE OF F64 ; RO ids: SLICE OF I64 ;
+                          VAR out: SLICE OF F64) RAISES IndexError ;
+  (* KahanGroupMean is pandas' group_mean (_libs/groupby.pyx).  Row i
+     belongs to group ids[i]; out has one entry per group.  A negative
+     id drops its row.  Each group sums its values in row order with a
+     Kahan compensation, skips a NaN, and divides by the count of its
+     values.  The compensation goes back to 0 when it turns NaN, so an
+     infinity gives an infinity (GH#50367).  A group without values
+     answers NaN.  An id at or past LEN (out) raises IndexError, and
+     so do ids and v of different lengths. *)
+
+PROCEDURE GroupMean (RO v: SLICE OF F64 ; RO ids: SLICE OF I64 ;
+                     VAR out: SLICE OF F64) RAISES IndexError ;
+  (* GroupMean is pandas' Series.groupby (...).mean () over float64,
+     with pandas 3.1.1's dispatch (core/groupby/ops.py).  The ids are
+     pandas' group codes: with sort, the rank of each row's key, and
+     -1 for a dropped key.  When the ids never decrease and no value is
+     NaN, pandas takes np.add.reduceat and divides by each group's
+     size.  Otherwise it takes group_mean, as KahanGroupMean.  The two
+     differ in the last digit, and a plain sum misses both.  A group
+     without rows answers NaN.  The errors are KahanGroupMean's. *)
+
+PROCEDURE RollMean (RO v: SLICE OF F64 ; window, minPeriods: I64 ;
+                    center: BOOL ; VAR out: SLICE OF F64)
+  RAISES ValueRange, IndexError ;
+  (* RollMean is pandas' Series.rolling (window, center, min_periods)
+     .mean () (roll_mean in _libs/window/aggregations.pyx).  Window i
+     ends at i + 1, plus (window - 1) DIV 2 when centred, clipped to
+     LEN (v); it starts window values earlier, clipped to 0.  One
+     running sum takes adds and removes with separate Kahan
+     compensations.  A NaN is skipped, and so is an infinity: pandas
+     makes it NaN first (_prep_values in core/window/rolling.py).
+     out[i] is NaN below minPeriods values.  When every value in the
+     window equals the last one added, out[i] is that value
+     (GH#42064).  A mean of all non-negative values below 0, or of all
+     negative values above 0, is 0.  The residue of a large value that
+     left the window can make such a mean 0 where the true mean is
+     not.  A negative value has its sign bit set, so -0.0 counts.  A
+     window
+     below 0, or minPeriods outside [0, window], raises ValueRange.
+     An out shorter than v raises IndexError. *)
+
+END NumpyExact.
+
+IMPLEMENTATION MODULE NumpyExact ;
+
+IMPORT Math ;
+
+(* Pairwise is numpy's pairwise_sum (loops_utils.h.src) over a[lo] ..
+   a[lo + n - 1]. *)
+PROCEDURE Pairwise (RO a: SLICE OF F64 ; lo, n: I64) : F64
+  RAISES IndexError =
+VAR
+  r : ARRAY 8 OF F64 ;
+  res : F64 ;
+  i, j, n2 : I64 ;
+BEGIN
+  IF n < 8 THEN
+    (* The start is -0.0, so a sum of -0.0 stays -0.0. *)
+    res := -0.0 ;
+    FOR i := 0 TO n - 1 DO res := res + a[lo + i] END ;
+    RETURN res
+  END ;
+  IF n <= 128 THEN
+    FOR j := 0 TO 7 DO r[j] := a[lo + j] END ;
+    i := 8 ;
+    WHILE i < n - n MOD 8 DO
+      FOR j := 0 TO 7 DO r[j] := r[j] + a[lo + i + j] END ;
+      i := i + 8
+    END ;
+    res := ((r[0] + r[1]) + (r[2] + r[3])) + ((r[4] + r[5]) + (r[6] + r[7])) ;
+    WHILE i < n DO
+      res := res + a[lo + i] ;
+      i := i + 1
+    END ;
+    RETURN res
+  END ;
+  n2 := n DIV 2 ;
+  n2 := n2 - n2 MOD 8 ;
+  RETURN Pairwise (a, lo, n2) + Pairwise (a, lo + n2, n - n2)
+END Pairwise ;
+
+PROCEDURE Sum (RO a: SLICE OF F64) : F64 RAISES IndexError =
+BEGIN
+  (* np.add.reduce starts from the identity 0.0. *)
+  RETURN 0.0 + Pairwise (a, 0, LEN (a))
+END Sum ;
+
+PROCEDURE Mean (RO a: SLICE OF F64) : F64 RAISES IndexError =
+BEGIN
+  IF LEN (a) = 0 THEN RETURN NaN END ;
+  RETURN Sum (a) / F64 (LEN (a))
+END Mean ;
+
+(* Segment is one segment of np.add.reduceat: the first value, then
+   the pairwise sum of the rest added to it. *)
+PROCEDURE Segment (RO a: SLICE OF F64 ; lo, hi: I64) : F64
+  RAISES IndexError =
+BEGIN
+  RETURN a[lo] + Pairwise (a, lo + 1, hi - lo - 1)
+END Segment ;
+
+PROCEDURE ReduceAt (RO a: SLICE OF F64 ; RO starts: SLICE OF I64 ;
+                    VAR out: SLICE OF F64) RAISES IndexError =
+VAR
+  i, s, e, n : I64 ;
+BEGIN
+  n := LEN (a) ;
+  IF LEN (out) < LEN (starts) THEN RAISE IndexError END ;
+  FOR i := 0 TO LEN (starts) - 1 DO
+    IF starts[i] < 0 OR starts[i] >= n THEN RAISE IndexError END
+  END ;
+  FOR i := 0 TO LEN (starts) - 1 DO
+    s := starts[i] ;
+    IF i + 1 < LEN (starts) THEN e := starts[i + 1] ELSE e := n END ;
+    IF s < e THEN out[i] := Segment (a, s, e) ELSE out[i] := a[s] END
+  END
+END ReduceAt ;
+
+PROCEDURE KahanGroupMean (RO v: SLICE OF F64 ; RO ids: SLICE OF I64 ;
+                          VAR out: SLICE OF F64) RAISES IndexError =
+VAR
+  pool : POOL ;
+  sum, comp : SLICE OF F64 ;
+  nobs : SLICE OF I64 ;
+  g, i, lab : I64 ;
+  y, t : F64 ;
+BEGIN
+  IF LEN (v) # LEN (ids) THEN RAISE IndexError END ;
+  g := LEN (out) ;
+  sum := NEW (pool, F64, g) ;
+  comp := NEW (pool, F64, g) ;
+  nobs := NEW (pool, I64, g) ;
+  FOR i := 0 TO g - 1 DO
+    sum[i] := 0.0 ;
+    comp[i] := 0.0 ;
+    nobs[i] := 0
+  END ;
+  FOR i := 0 TO LEN (v) - 1 DO
+    lab := ids[i] ;
+    IF lab >= g THEN RAISE IndexError END ;
+    IF lab >= 0 AND NOT Math.IsNaN (v[i]) THEN
+      nobs[lab] := nobs[lab] + 1 ;
+      y := v[i] - comp[lab] ;
+      t := sum[lab] + y ;
+      comp[lab] := t - sum[lab] - y ;
+      (* GH#50367: an infinity makes the compensation NaN. *)
+      IF Math.IsNaN (comp[lab]) THEN comp[lab] := 0.0 END ;
+      sum[lab] := t
+    END
+  END ;
+  FOR i := 0 TO g - 1 DO
+    IF nobs[i] = 0 THEN
+      out[i] := NaN
+    ELSE
+      out[i] := sum[i] / F64 (nobs[i])
+    END
+  END
+END KahanGroupMean ;
+
+PROCEDURE GroupMean (RO v: SLICE OF F64 ; RO ids: SLICE OF I64 ;
+                     VAR out: SLICE OF F64) RAISES IndexError =
+VAR
+  i, s, e, g, first : I64 ;
+  mono : BOOL ;
+BEGIN
+  IF LEN (v) # LEN (ids) THEN RAISE IndexError END ;
+  g := LEN (out) ;
+  mono := TRUE ;
+  FOR i := 0 TO LEN (v) - 1 DO
+    IF ids[i] >= g THEN RAISE IndexError END ;
+    IF Math.IsNaN (v[i]) THEN mono := FALSE END ;
+    IF i > 0 AND ids[i] < ids[i - 1] THEN mono := FALSE END
+  END ;
+  (* pandas falls back to group_mean when every row is dropped. *)
+  first := 0 ;
+  WHILE first < LEN (ids) AND ids[first] < 0 DO first := first + 1 END ;
+  IF NOT mono OR first = LEN (ids) THEN
+    KahanGroupMean (v, ids, out) ;
+    RETURN
+  END ;
+  FOR i := 0 TO g - 1 DO out[i] := NaN END ;
+  (* The dropped rows lead.  Each run of one id is a segment. *)
+  s := first ;
+  WHILE s < LEN (ids) DO
+    e := s + 1 ;
+    WHILE e < LEN (ids) AND ids[e] = ids[s] DO e := e + 1 END ;
+    out[ids[s]] := Segment (v, s, e) / F64 (e - s) ;
+    s := e
+  END
+END GroupMean ;
+
+(* Neg is Cython's signbit: TRUE for every negative value and for
+   -0.0. *)
+PROCEDURE Neg (x: F64) : BOOL =
+BEGIN
+  RETURN x < 0.0 OR (x = 0.0 AND 1.0 / x < 0.0)
+END Neg ;
+
+TYPE
+  Roll = RECORD
+    nobs, neg, same : I64 ;
+    sum, cadd, crem, prev : F64
+  END ;
+
+(* Prep is rolling's _prep_values: an infinity is NaN to roll_mean. *)
+PROCEDURE Prep (x: F64) : F64 =
+BEGIN
+  IF Math.IsFinite (x) THEN RETURN x END ;
+  RETURN NaN
+END Prep ;
+
+(* Add is add_mean over a prepared value: a NaN is skipped. *)
+PROCEDURE Add (VAR r: Roll ; val: F64) =
+VAR y, t : F64 ;
+BEGIN
+  val := Prep (val) ;
+  IF NOT Math.IsNaN (val) THEN
+    r.nobs := r.nobs + 1 ;
+    y := val - r.cadd ;
+    t := r.sum + y ;
+    r.cadd := t - r.sum - y ;
+    r.sum := t ;
+    IF Neg (val) THEN r.neg := r.neg + 1 END ;
+    IF val = r.prev THEN r.same := r.same + 1 ELSE r.same := 1 END ;
+    r.prev := val
+  END
+END Add ;
+
+(* Remove is remove_mean over a prepared value: its compensation is
+   its own. *)
+PROCEDURE Remove (VAR r: Roll ; val: F64) =
+VAR y, t : F64 ;
+BEGIN
+  val := Prep (val) ;
+  IF NOT Math.IsNaN (val) THEN
+    r.nobs := r.nobs - 1 ;
+    y := - val - r.crem ;
+    t := r.sum + y ;
+    r.crem := t - r.sum - y ;
+    r.sum := t ;
+    IF Neg (val) THEN r.neg := r.neg - 1 END
+  END
+END Remove ;
+
+(* Calc is calc_mean. *)
+PROCEDURE Calc (RO r: Roll ; minp: I64) : F64 =
+VAR res : F64 ;
+BEGIN
+  IF r.nobs < minp OR r.nobs = 0 THEN RETURN NaN END ;
+  res := r.sum / F64 (r.nobs) ;
+  IF r.same >= r.nobs THEN
+    res := r.prev
+  ELSIF r.neg = 0 AND res < 0.0 THEN
+    res := 0.0
+  ELSIF r.neg = r.nobs AND res > 0.0 THEN
+    res := 0.0
+  END ;
+  RETURN res
+END Calc ;
+
+PROCEDURE RollMean (RO v: SLICE OF F64 ; window, minPeriods: I64 ;
+                    center: BOOL ; VAR out: SLICE OF F64)
+  RAISES ValueRange, IndexError =
+VAR
+  r : Roll ;
+  n, i, j, s, e, ps, pe, offset : I64 ;
+BEGIN
+  IF window < 0 OR minPeriods < 0 OR minPeriods > window THEN
+    RAISE ValueRange
+  END ;
+  n := LEN (v) ;
+  IF LEN (out) < n THEN RAISE IndexError END ;
+  (* FixedWindowIndexer: Python's floor division, so a window of 0
+     has the offset -1. *)
+  offset := 0 ;
+  IF window = 0 THEN
+    offset := -1
+  ELSIF center THEN
+    offset := (window - 1) DIV 2
+  END ;
+  ps := 0 ;
+  pe := 0 ;
+  FOR i := 0 TO n - 1 DO
+    e := i + 1 + offset ;
+    s := e - window ;
+    IF e > n THEN e := n END ;
+    IF e < 0 THEN e := 0 END ;
+    IF s > n THEN s := n END ;
+    IF s < 0 THEN s := 0 END ;
+    IF i = 0 OR s >= pe THEN
+      r.cadd := 0.0 ;
+      r.crem := 0.0 ;
+      r.sum := 0.0 ;
+      r.nobs := 0 ;
+      r.neg := 0 ;
+      r.prev := Prep (v[s]) ;
+      r.same := 0 ;
+      FOR j := s TO e - 1 DO Add (r, v[j]) END
+    ELSE
+      FOR j := ps TO s - 1 DO Remove (r, v[j]) END ;
+      FOR j := pe TO e - 1 DO Add (r, v[j]) END
+    END ;
+    out[i] := Calc (r, minPeriods) ;
+    ps := s ;
+    pe := e
+  END
+END RollMean ;
+
+END NumpyExact.

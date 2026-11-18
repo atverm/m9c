@@ -125,6 +125,7 @@ begin
   GenModule ('Check', ['Io', 'Fmt', 'Math', 'Text']);
   GenModule ('Arrays', ['Faults', 'Math']);
   GenModule ('Numeric', ['Faults', 'Math']);
+  GenModule ('NumpyExact', ['Math']);
   GenModule ('Csv', ['DynStr', 'Io', 'Time', 'Text', 'Tsk', 'Faults']);
   GenModule ('Delim', ['DynStr', 'Io', 'Text']);
   GenModule ('Zip', ['DynStr', 'Io', 'Bits', 'Text']);
@@ -148,7 +149,9 @@ begin
   GenModule ('Sem', ['Ast', 'DynStr', 'Print', 'Text']);
   GenModule ('Doc', ['Ast', 'DynStr', 'Text', 'Print', 'Lex']);
   GenModule ('Review', ['Ast', 'DynStr', 'Text']);
-  GenModule ('M9c', ['Io', 'Ast', 'Parse', 'Gen', 'Sem', 'DynStr', 'Doc', 'Review', 'Lex', 'M9f', 'System', 'Text']);
+  GenModule ('ExplainTab', []);
+  GenModule ('Explain', ['Text', 'ExplainTab']);
+  GenModule ('M9c', ['Io', 'Ast', 'Parse', 'Gen', 'Sem', 'DynStr', 'Doc', 'Review', 'Lex', 'M9f', 'System', 'Text', 'Explain', 'ExplainTab']);
   GenModule ('Gen', ['Ast', 'DynStr', 'Text']);
   GenModule ('Diag', ['DynStr', 'Io', 'Lex', 'Text']);
 end.

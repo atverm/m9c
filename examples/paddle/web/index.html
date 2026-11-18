@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paddle against the computer</title>
+<style>
+  body { background: #10151f; color: #e6e9ef; font-family: monospace;
+         display: flex; flex-direction: column; align-items: center;
+         margin: 1.5rem 0; padding: 0 16px; }
+  canvas { background: #161c28; border: 1px solid #34405a; cursor: none;
+           max-width: 100%; height: auto; }
+  p { color: #a3abbb; }
+  /* The banner: chunky capitals with a hard shadow, each letter a band
+     of the rainbow, and the bands drifting as an old attract screen's
+     colours did. */
+  .banner { font-family: "Courier New", monospace; font-weight: 900;
+            font-size: clamp(1rem, 3.4vw, 1.9rem); letter-spacing: 0.14em;
+            text-transform: uppercase; text-align: center; margin: 0.4rem 0 1.1rem;
+            background: repeating-linear-gradient(90deg,
+              #ff004d 0 12.5%, #ff7a00 12.5% 25%, #ffe600 25% 37.5%,
+              #00d84a 37.5% 50%, #00c8ff 50% 62.5%, #3d5bff 62.5% 75%,
+              #b14bff 75% 87.5%, #ff3fb4 87.5% 100%);
+            background-size: 200% 100%;
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent;
+            filter: drop-shadow(3px 3px 0 #000) drop-shadow(0 0 6px rgba(255,255,255,0.18));
+            animation: drift 6s linear infinite; }
+  @keyframes drift { to { background-position: -200% 0; } }
+  @media (prefers-reduced-motion: reduce) { .banner { animation: none; } }
+</style>
+</head>
+<body>
+<h1 class="banner">Paddle game brought to you by Modula-9</h1>
+<canvas id="court" width="800" height="500"></canvas>
+<p>Move the mouse to control the left paddle. Click or press space to serve.</p>
+<script>
+const W = 800, H = 500, PH = 80, PW = 12, BR = 8, PX = 20, AX = 768;
+const cv = document.getElementById('court');
+const ctx = cv.getContext('2d');
+let paddleY = H / 2, serve = false, state = null;
+
+window.addEventListener('mousemove', e => {
+  const r = cv.getBoundingClientRect();
+  paddleY = Math.max(0, Math.min(H, (e.clientY - r.top) * (H / r.height)));
+});
+cv.addEventListener('mousedown', () => { serve = true; });
+window.addEventListener('keydown', e => {
+  if (e.code === 'Space') { serve = true; e.preventDefault(); }
+});
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  ctx.strokeStyle = '#34405a';
+  ctx.setLineDash([8, 10]);
+  ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.stroke();
+  ctx.setLineDash([]);
+  if (!state) return;
+  ctx.fillStyle = '#e6e9ef';
+  ctx.fillRect(PX, state.py - PH / 2, PW, PH);
+  ctx.fillStyle = '#8db4f0';
+  ctx.fillRect(AX, state.ay - PH / 2, PW, PH);
+  ctx.beginPath(); ctx.arc(state.bx, state.by, BR, 0, 2 * Math.PI); ctx.fill();
+  ctx.font = '32px monospace';
+  ctx.fillStyle = '#e6e9ef';
+  ctx.fillText(state.sp, W / 2 - 60, 44);
+  ctx.fillStyle = '#8db4f0';
+  ctx.fillText(state.sa, W / 2 + 40, 44);
+}
+
+async function poll() {
+  const q = 'y=' + paddleY.toFixed(1) + (serve ? '&serve=1' : '');
+  serve = false;
+  try {
+    const r = await fetch('/tick?' + q);
+    if (r.ok) state = await r.json();
+  } catch (e) { /* server briefly away; keep last frame */ }
+  draw();
+}
+setInterval(poll, 33);
+draw();
+</script>
+</body>
+</html>

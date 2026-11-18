@@ -245,6 +245,20 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 ./stats_test
 }
 
+# b_numpyexact holds NumpyExact to numpy's and pandas' own digits, bit
+# for bit.  The answers are CHECKED IN: tools/numpyexactgold.py records
+# them from numpy 2.5.4 and pandas 3.1.1 by hand, so the gate needs no
+# Python and cannot regenerate what it compares against.  The driver
+# remakes each input from the golden line's seed.
+# runtime/test/numpyexactsabotage.txt holds 19 breaks it must see
+# (Sabotage.m9 numpyexact).
+b_numpyexact () {
+gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
+    -iquote .. -iquote ../gen ../m9rt.c ../gen/Math.c ../gen/NumpyExact.c \
+    numpyexact_driver.c -lm -o numpyexact_test
+./numpyexact_test
+}
+
 # b_frame holds Frame against polars.  Sample and goldens are CHECKED IN
 # (tools/framegold.py regenerates by hand).  Frame imports NetCDF
 # (phase 3), so the gate needs the library and SKIPS OUT LOUD
@@ -691,7 +705,7 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label \
 echo "PASS (1 check) -- catbench.c still compiles"
 }
 
-for b in dynstr dict fmt time text syslog math mat sort sort_rt bits crc utfrt blockreuse task execlimit parsef64 csvnum system stats \
+for b in dynstr dict fmt time text syslog math mat sort sort_rt bits crc utfrt blockreuse task execlimit parsef64 csvnum system stats numpyexact \
          frame delim io zip csv grib json apispec arrow \
          httpserver sigpipe release zarrw stores; do
   battery "$b"

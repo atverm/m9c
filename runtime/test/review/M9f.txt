@@ -3,9 +3,9 @@ REVIEW M9f -- 36 procedures with a body, 27 of them functions; 6 headings in a D
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              27
   assignments                                   170
-  arguments                                     594
+  arguments                                     596
   RETURN values                                  77
-  operands of a comparison or an operator       207
+  operands of a comparison or an operator       208
   CASE labels                                    25
   THREAD arguments                                0
   CASE over variants, proved total                0

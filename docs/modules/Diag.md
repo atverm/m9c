@@ -55,7 +55,9 @@ OneUtf is One for a UTF message, copied into pool the same way.
 Check runs `(cd 'DIR' && M9C FLAGS --check 'FILE') > 'OUTFILE'
 2>&1` and answers every finding it printed, in order.  An indented
 line after a finding continues its message (the signature mismatch
-prints both signatures under it, each on a line).  dir may be
+prints both signatures under it, each on a line; since 0.28.1 the
+fix m9c prints under a refusal is such a line too, so an editor
+shows the fix with the refusal).  dir may be
 empty (no cd); outFile is a path as seen from THIS process,
 which is where it is read back.  Exit 0 answers no finding
 without reading anything.  A nonzero exit that printed NO

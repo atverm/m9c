@@ -67,6 +67,7 @@ run DynStr
 run Faults
 run Mat Math Faults
 run Stats Math Bits Faults Sort
+run NumpyExact Math
 run System Io DynStr Text
 run Json DynStr Text
 run JsonUtf DynStr Text
@@ -208,7 +209,9 @@ grep -q 'UINT64_C(18446744073709551615)' "$TG"/gen_want.txt \
 run Sem Ast DynStr Print Text
 run Doc Ast DynStr Text Print Lex
 run Review Ast DynStr Text
-run M9c Io Ast Parse Gen Sem DynStr Doc Review Lex M9f System Text
+run ExplainTab
+run Explain Text ExplainTab
+run M9c Io Ast Parse Gen Sem DynStr Doc Review Lex M9f System Text Explain ExplainTab
 run Gen Ast DynStr Text
 run Diag DynStr Io Lex Text
 # LibmGate is a gendiff-only fixture (not in gentest.pas / runtime/gen):

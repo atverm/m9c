@@ -409,8 +409,13 @@ ck
 # the finding (Diag) and newline-escaped (Json).  The first version
 # dropped them and painted a colon with nothing after it.
 curl -s -X POST --data-binary @"$EXA/X3Sig.m9" "http://127.0.0.1:$PORT/check" > "$B/check.x3"
-grep -q '"line":16,"col":1,"msg":"X3Sig.ToKelvin: signature differs from definition:\\u000a    definition     (celsius: F64) : F64\\u000a    implementation (celsius: F32) : F64"' "$B/check.x3" \
+grep -q '"line":16,"col":1,"msg":"X3Sig.ToKelvin: signature differs from definition:\\u000a    definition     (celsius: F64) : F64\\u000a    implementation (celsius: F32) : F64\\u000a' "$B/check.x3" \
   || { echo "FAIL: /check of X3Sig lost the signatures:"; head -c 400 "$B/check.x3"; exit 1; }
+# The fix m9c prints under a refusal (0.28.1) is an indented line too,
+# so it arrives in the same finding, after the signatures: the page
+# shows the fix where it shows the refusal.
+grep -q ': F64\\u000a  fix: copy the definition.s heading exactly; .*\[m9c --explain signature-differs-from-definition\]"' "$B/check.x3" \
+  || { echo "FAIL: /check of X3Sig lost the fix line:"; head -c 600 "$B/check.x3"; exit 1; }
 ck
 # A clean cell is exactly ok.
 [ "$(curl -s -X POST --data-binary @"$EXA/C1Hello.m9" "http://127.0.0.1:$PORT/check")" = '{"ok":true,"diags":[]}' ] \

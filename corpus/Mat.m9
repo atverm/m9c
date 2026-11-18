@@ -339,6 +339,14 @@ BEGIN
   RETURN LEN (m.d, 1)
 END Cols ;
 
+(* Square says m is n by n.  The claimed loops of the dense kernels
+   below rest on it: every subscript they write is a row and a column
+   in [0, n). *)
+PROCEDURE Square (m: PTR Matrix ; n: I64) : BOOL =
+BEGIN
+  RETURN LEN (m.d, 0) = n AND LEN (m.d, 1) = n
+END Square ;
+
 PROCEDURE Get (m: PTR Matrix ; r, c: I64) : F64 =
 BEGIN
   RETURN m.d[r, c]
@@ -712,14 +720,20 @@ VAR
   x : SLICE OF F64 ;
   c0, c1, col, i, m, a, bb, kk, n : I64 ;
   acc : F64 ;
+  ok : BOOL ;
 BEGIN
   n := j.n ;
   c0 := b * j.band ;
   c1 := c0 + j.band ;
   IF c1 > n THEN c1 := n END ;
+  (* Each pass's claim: the band [c0, c1) lies in [0, n), and every
+     matrix and slice the pass reaches is n long on each axis.  The
+     inner indices run from the band's row to n - 1. *)
+  ok := c0 >= 0 AND c1 <= n ;
   IF j.pass = 1 THEN
     x := NEW (wpool, F64, n) ;
-    FOR col := c0 TO c1 - 1 DO
+    FOR [INRANGE ok AND Square (j.l, n) AND Square (j.t, n) AND LEN (x) = n]
+        col := c0 TO c1 - 1 DO
       (* L x = e_col: x is zero above col *)
       FOR i := col TO n - 1 DO
         IF i = col THEN acc := 1.0 ELSE acc := 0.0 END ;
@@ -732,7 +746,8 @@ BEGIN
       FOR i := col TO n - 1 DO j.t.d[col, i] := x[i] END
     END
   ELSIF j.pass = 2 THEN
-    FOR a := c0 TO c1 - 1 DO
+    FOR [INRANGE ok AND Square (j.t, n) AND Square (j.p, n)]
+        a := c0 TO c1 - 1 DO
       FOR bb := a TO n - 1 DO
         acc := 0.0 ;
         FOR kk := bb TO n - 1 DO
@@ -744,7 +759,8 @@ BEGIN
     END
   ELSIF j.pass = 3 THEN
     x := NEW (wpool, F64, n) ;
-    FOR col := c0 TO c1 - 1 DO
+    FOR [INRANGE ok AND Square (j.l, n) AND LEN (x) = n AND LEN (j.ld) = n]
+        col := c0 TO c1 - 1 DO
       FOR i := col TO n - 1 DO
         IF i = col THEN acc := 1.0 ELSE acc := 0.0 END ;
         FOR m := col TO i - 1 DO
@@ -755,7 +771,8 @@ BEGIN
       FOR i := col TO n - 1 DO j.l.d[col, i] := x[i] END
     END
   ELSIF j.pass = 4 THEN
-    FOR a := c0 TO c1 - 1 DO
+    FOR [INRANGE ok AND Square (j.l, n) AND LEN (j.pd) = n]
+        a := c0 TO c1 - 1 DO
       FOR bb := a TO n - 1 DO
         acc := 0.0 ;
         FOR kk := bb TO n - 1 DO
@@ -765,7 +782,8 @@ BEGIN
       END
     END
   ELSE
-    FOR a := c0 TO c1 - 1 DO
+    FOR [INRANGE ok AND Square (j.l, n) AND LEN (j.pd) = n]
+        a := c0 TO c1 - 1 DO
       j.l.d[a, a] := j.pd[a] ;
       FOR bb := a + 1 TO n - 1 DO j.l.d[a, bb] := j.l.d[bb, a] END
     END
@@ -809,15 +827,21 @@ PROCEDURE CholBand (VAR j: CholJob ; b: I64) =
 VAR
   r0, r1, i, jj, k : I64 ;
   acc : F64 ;
+  ok : BOOL ;
 BEGIN
   r0 := j.k1 + b * j.band ;
   r1 := r0 + j.band ;
   IF r1 > j.n THEN r1 := j.n END ;
+  (* The claim: l is n by n, and 0 <= k0 <= k1 <= r0 and r1 <= n, so
+     rows i, columns jj (to k1 - 1 or to i) and k (below jj) are in
+     [0, n). *)
+  ok := Square (j.l, j.n) AND 0 <= j.k0 AND j.k0 <= j.k1 AND j.k1 <= r0
+        AND r1 <= j.n ;
   IF j.pass = 1 THEN
     (* This fills the panel below the diagonal block: row i's entries
        in columns k0..k1-1.  Each is the serial recurrence continued
        from the value the earlier panels' updates left in l[i, jj]. *)
-    FOR i := r0 TO r1 - 1 DO
+    FOR [INRANGE ok] i := r0 TO r1 - 1 DO
       FOR jj := j.k0 TO j.k1 - 1 DO
         acc := j.l.d[i, jj] ;
         FOR k := j.k0 TO jj - 1 DO
@@ -830,7 +854,7 @@ BEGIN
     (* This is the trailing update: the lower triangle of rows k1..,
        the panel's products subtracted k ascending from the running
        value. *)
-    FOR i := r0 TO r1 - 1 DO
+    FOR [INRANGE ok] i := r0 TO r1 - 1 DO
       FOR jj := j.k1 TO i DO
         acc := j.l.d[i, jj] ;
         FOR k := j.k0 TO j.k1 - 1 DO
@@ -883,8 +907,9 @@ BEGIN
     k1 := k0 + nb ;
     IF k1 > n THEN k1 := n END ;
     (* This fills the diagonal block, serially: the serial recurrence
-       on rows k0..k1-1 within their own columns. *)
-    FOR i := k0 TO k1 - 1 DO
+       on rows k0..k1-1 within their own columns.  The claim: l is n
+       by n and 0 <= k0 < k1 <= n. *)
+    FOR [INRANGE Square (l, n) AND 0 <= k0 AND k1 <= n] i := k0 TO k1 - 1 DO
       FOR jj := k0 TO i DO
         acc := l.d[i, jj] ;
         FOR k := k0 TO jj - 1 DO
@@ -999,7 +1024,11 @@ BEGIN
   r0 := b * j.band ;
   r1 := r0 + j.band ;
   IF r1 > j.n THEN r1 := j.n END ;
-  FOR i := 0 TO j.m - 1 DO
+  (* The claim: h is m by n, k is n by n, the weights are m long, and
+     the band [r0, r1) lies in [0, n); columns cc run from c to n - 1. *)
+  FOR [INRANGE LEN (j.h.d, 0) = j.m AND LEN (j.h.d, 1) = j.n
+       AND Square (j.k, j.n) AND LEN (j.wt) = j.m AND r0 >= 0 AND r1 <= j.n]
+      i := 0 TO j.m - 1 DO
     FOR c := r0 TO r1 - 1 DO
       hic := j.h.d[i, c] ;
       IF hic # 0.0 THEN
@@ -1048,7 +1077,8 @@ BEGIN
   IF threads < 1 THEN threads := 1 END ;
   FOR t := 1 TO threads DO THREAD (NormalWorker, j) END ;
   AwaitAll (j.w, threads) ;
-  FOR c := 1 TO j.n - 1 DO
+  (* The mirror's claim: k is n by n, checked above. *)
+  FOR [INRANGE Square (k, j.n)] c := 1 TO j.n - 1 DO
     FOR cc := 0 TO c - 1 DO
       k.d[c, cc] := k.d[cc, c]
     END

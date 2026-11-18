@@ -1,0 +1,342 @@
+DEFINITION MODULE Explain ;
+
+(* Explain finds the probe behind a refusal, so m9c can print the fix
+   under it and `m9c --explain' can print the whole entry (0.28.1).
+
+   Each probe in probes/ is the smallest program that earns one
+   refusal, and docs/diagnose.md gives each a cause and a fix.  An
+   agent asked for that table inside the compiler, where it cannot be
+   a version behind.  tools/MkDiagnose.m9 writes it as ExplainTab: the
+   probe's message, made a PATTERN, with its cause and fix.
+
+   A PATTERN is the message with every name that came from the probe's
+   own program and every number replaced by `~'.  So `module Lib is
+   named and not imported' becomes `module ~ is named and not
+   imported', and matches the same refusal in any program.  A `~'
+   stands for one character or more.  A builtin type stays as it is:
+   with the types made wildcards every `cannot assign X to Y' looked
+   alike, and the I32-to-I64 refusal was offered four probes about
+   handler binders and none about widening.  A refusal with other
+   types gets no line, which is better than a wrong one.
+
+   One refusal can have several probes: the same words are earned by
+   different programs, with different fixes.  So a message gets the
+   CANDIDATES, not one answer: every probe whose pattern matches with
+   a score close to the best.  The score is the pattern's length less
+   its wildcards, so a more literal pattern wins.  MkDiagnose refuses
+   to write the table unless every probe's own message has its own
+   probe among at most MaxCandidates. *)
+
+CONST
+  Wild = '~' ;
+  Slack = 12 ;          (* a candidate scores at least best - Slack *)
+  MaxCandidates = 5 ;
+
+PROCEDURE Template (RO msg: STR ; RO names: SLICE OF STR) : STR ;
+  (* Template answers msg as a pattern.  A word is a run of letters,
+     digits, `_' and `.' that starts with a letter or `_'; a number is
+     a run of digits.  A word is replaced by `~' when it, or its part
+     before the first `.', is in names and is not a builtin type;
+     every number is.  Runs of `~' collapse to one. *)
+
+PROCEDURE Score (RO pat: STR) : I64 ;
+  (* Score answers the octets of pat that are not `~'. *)
+
+PROCEDURE Matches (RO pat: STR ; RO msg: STR) : BOOL ;
+  (* Matches asks whether pat occurs in msg, each `~' taking one
+     character or more.  The pattern may start anywhere in msg. *)
+
+PROCEDURE Candidates (RO pats: SLICE OF STR ; RO msg: STR ;
+                      VAR out: SLICE OF I64) : I64 ;
+  (* Candidates answers how many patterns of pats match msg with a
+     score of at least the best score less Slack, and puts their
+     indexes in out, best score first and then in index order, as many
+     as out holds.  It answers 0 when none matches. *)
+
+PROCEDURE Nearest (VAR pool: POOL ; RO text: STR ; VAR out: SLICE OF I64) : I64 ;
+  (* Nearest is for a refusal's text pasted in part, which no pattern
+     may match: `module Frob is named and not imported' stops before
+     the `: write IMPORT' the pattern needs.  It counts the words of
+     text that occur among the words of each ExplainTab message, and
+     answers the entries with the best count, if that count is at
+     least three and at least two thirds of text's words.  out is
+     filled as Candidates fills it. *)
+
+PROCEDURE Patterns (VAR pool: POOL) : SLICE OF STR ;
+  (* Patterns answers ExplainTab's patterns in its order, in pool. *)
+
+PROCEDURE Find (RO name: STR) : I64 ;
+  (* Find answers the ExplainTab index of probe `name', or -1. *)
+
+PROCEDURE Hint (VAR pool: POOL ; RO msg: STR) : STR ;
+  (* Hint answers the line m9c prints under refusal msg, or '' when
+     no probe matches.  One candidate gives its fix and its name for
+     `m9c --explain'; several give their names, best first. *)
+
+END Explain.
+
+IMPLEMENTATION MODULE Explain ;
+
+IMPORT Text ;
+IMPORT ExplainTab ;
+
+CONST
+  Builtins = ['I8', 'I16', 'I32', 'I64', 'U8', 'U16', 'U32', 'U64',
+              'F32', 'F64', 'BOOL', 'CHAR', 'STR', 'UTF', 'BYTE', 'POOL'] ;
+  Digits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'] ;
+
+PROCEDURE IsLetter (b: I64) : BOOL =
+BEGIN
+  RETURN (b >= ORD ('a') AND b <= ORD ('z')) OR
+         (b >= ORD ('A') AND b <= ORD ('Z')) OR b = ORD ('_')
+END IsLetter ;
+
+PROCEDURE IsDigit (b: I64) : BOOL =
+BEGIN
+  RETURN b >= ORD ('0') AND b <= ORD ('9')
+END IsDigit ;
+
+PROCEDURE B (RO s: STR ; i: I64) : I64 =
+BEGIN
+  RETURN I64 (Text.BAt (s, i))
+END B ;
+
+(* Count answers n as decimal text; Fmt is not in the compiler. *)
+PROCEDURE Count (n: I64) : STR =
+VAR s : STR ;
+BEGIN
+  IF n < 10 THEN RETURN Digits[n] END ;
+  s := Count (n DIV 10) ;
+  RETURN s + Digits[n MOD 10]
+END Count ;
+
+(* Named asks whether word w is a name of the program: w itself, or
+   its head before the first `.'. *)
+PROCEDURE Named (RO w: STR ; RO names: SLICE OF STR) : BOOL =
+VAR k : I64 ;
+BEGIN
+  IF Text.OneOf (w, Builtins) THEN RETURN FALSE END ;
+  IF Text.OneOf (w, names) THEN RETURN TRUE END ;
+  k := Text.FindChar (w, '.') ;
+  IF k > 0 THEN RETURN Text.OneOf (SLICE (w, 0, k), names) END ;
+  RETURN FALSE
+END Named ;
+
+PROCEDURE Template (RO msg: STR ; RO names: SLICE OF STR) : STR =
+VAR
+  i, j, n : I64 ;
+  out : STR ;
+  wild : BOOL ;
+BEGIN
+  out := '' ;
+  wild := FALSE ;
+  n := Text.BLen (msg) ;
+  i := 0 ;
+  WHILE i < n DO
+    j := i ;
+    IF IsLetter (B (msg, i)) THEN
+      WHILE j < n AND (IsLetter (B (msg, j)) OR IsDigit (B (msg, j)) OR
+                       B (msg, j) = ORD ('.')) DO
+        j := j + 1
+      END ;
+      (* a sentence's full stop is not part of the word *)
+      WHILE j > i + 1 AND B (msg, j - 1) = ORD ('.') DO j := j - 1 END ;
+      IF Named (SLICE (msg, i, j - i), names) THEN
+        IF NOT wild THEN out := out + Wild END ;
+        wild := TRUE
+      ELSE
+        out := out + SLICE (msg, i, j - i) ;
+        wild := FALSE
+      END
+    ELSIF IsDigit (B (msg, i)) THEN
+      WHILE j < n AND IsDigit (B (msg, j)) DO j := j + 1 END ;
+      IF NOT wild THEN out := out + Wild END ;
+      wild := TRUE
+    ELSE
+      j := i + 1 ;
+      out := out + SLICE (msg, i, 1) ;
+      wild := FALSE
+    END ;
+    i := j
+  END ;
+  RETURN out
+END Template ;
+
+PROCEDURE Score (RO pat: STR) : I64 =
+VAR i, s : I64 ;
+BEGIN
+  s := 0 ;
+  FOR i := 0 TO Text.BLen (pat) - 1 DO
+    IF NOT Text.BIs (pat, i, '~') THEN s := s + 1 END
+  END ;
+  RETURN s
+END Score ;
+
+(* FindFrom answers the first index at or after `from' where needle
+   occurs in hay, or -1. *)
+PROCEDURE FindFrom (RO hay: STR ; RO needle: STR ; from: I64) : I64 =
+VAR k : I64 ;
+BEGIN
+  IF from > Text.BLen (hay) THEN RETURN -1 END ;
+  k := Text.Find (SLICE (hay, from, Text.BLen (hay) - from), needle) ;
+  IF k < 0 THEN RETURN -1 END ;
+  RETURN from + k
+END FindFrom ;
+
+PROCEDURE Matches (RO pat: STR ; RO msg: STR) : BOOL =
+VAR
+  pieces : SLICE OF STR ;
+  j, k, from, last : I64 ;
+BEGIN
+  (* The pieces between the wildcards are placed leftmost, each at
+     least one character after the last: a placement further right can
+     only leave less room for the pieces after it.  An empty first
+     piece is a leading `~', which needs one character before the
+     next; an empty last piece needs one after. *)
+  pieces := Text.Split (pat, '~') ;
+  from := 0 ;
+  last := 0 ;
+  FOR j := 0 TO LEN (pieces) - 1 DO
+    IF Text.BLen (pieces[j]) = 0 THEN
+      IF j = 0 THEN
+        from := 1
+      ELSIF j = LEN (pieces) - 1 THEN
+        RETURN last < Text.BLen (msg)
+      END
+    ELSE
+      k := FindFrom (msg, pieces[j], from) ;
+      IF k < 0 THEN RETURN FALSE END ;
+      last := k + Text.BLen (pieces[j]) ;
+      from := last + 1
+    END
+  END ;
+  RETURN TRUE
+END Matches ;
+
+PROCEDURE Candidates (RO pats: SLICE OF STR ; RO msg: STR ;
+                      VAR out: SLICE OF I64) : I64 =
+VAR
+  i, best, s, n, floor, want : I64 ;
+BEGIN
+  best := -1 ;
+  FOR i := 0 TO LEN (pats) - 1 DO
+    IF Matches (pats[i], msg) THEN
+      s := Score (pats[i]) ;
+      IF s > best THEN best := s END
+    END
+  END ;
+  IF best < 0 THEN RETURN 0 END ;
+  floor := best - Slack ;
+  n := 0 ;
+  (* best score first: a pass per score, from the best down *)
+  want := best ;
+  WHILE want >= floor DO
+    FOR i := 0 TO LEN (pats) - 1 DO
+      IF Score (pats[i]) = want AND Matches (pats[i], msg) THEN
+        IF n < LEN (out) THEN out[n] := i END ;
+        n := n + 1
+      END
+    END ;
+    want := want - 1
+  END ;
+  RETURN n
+END Candidates ;
+
+(* Words answers the words of s: runs of letters, digits and `_'. *)
+PROCEDURE Words (VAR pool: POOL ; RO s: STR) : SLICE OF STR =
+VAR
+  r, g : SLICE OF STR ;
+  i, j, n, k, m : I64 ;
+BEGIN
+  r := NEW (pool, STR, 16) ;
+  m := 0 ;
+  n := Text.BLen (s) ;
+  i := 0 ;
+  WHILE i < n DO
+    IF IsLetter (B (s, i)) OR IsDigit (B (s, i)) THEN
+      j := i ;
+      WHILE j < n AND (IsLetter (B (s, j)) OR IsDigit (B (s, j))) DO j := j + 1 END ;
+      IF m = LEN (r) THEN
+        g := NEW (pool, STR, 2 * m) ;
+        FOR k := 0 TO m - 1 DO g[k] := r[k] END ;
+        r := g
+      END ;
+      r[m] := SLICE (s, i, j - i) ;
+      m := m + 1 ;
+      i := j
+    ELSE
+      i := i + 1
+    END
+  END ;
+  RETURN SLICE (r, 0, m)
+END Words ;
+
+PROCEDURE Nearest (VAR pool: POOL ; RO text: STR ; VAR out: SLICE OF I64) : I64 =
+VAR
+  q, w : SLICE OF STR ;
+  i, j, c, best, n : I64 ;
+  counts : SLICE OF I64 ;
+BEGIN
+  q := Words (pool, text) ;
+  counts := NEW (pool, I64, ExplainTab.Count ()) ;
+  best := 0 ;
+  FOR i := 0 TO ExplainTab.Count () - 1 DO
+    w := Words (pool, ExplainTab.Message (i)) ;
+    c := 0 ;
+    FOR j := 0 TO LEN (q) - 1 DO
+      IF Text.OneOf (q[j], w) THEN c := c + 1 END
+    END ;
+    counts[i] := c ;
+    IF c > best THEN best := c END
+  END ;
+  IF best < 3 OR 3 * best < 2 * LEN (q) THEN RETURN 0 END ;
+  n := 0 ;
+  FOR i := 0 TO LEN (counts) - 1 DO
+    IF counts[i] = best THEN
+      IF n < LEN (out) THEN out[n] := i END ;
+      n := n + 1
+    END
+  END ;
+  RETURN n
+END Nearest ;
+
+PROCEDURE Patterns (VAR pool: POOL) : SLICE OF STR =
+VAR
+  r : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  r := NEW (pool, STR, ExplainTab.Count ()) ;
+  FOR i := 0 TO LEN (r) - 1 DO r[i] := ExplainTab.Pattern (i) END ;
+  RETURN r
+END Patterns ;
+
+PROCEDURE Find (RO name: STR) : I64 =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO ExplainTab.Count () - 1 DO
+    IF Text.Eq (ExplainTab.Name (i), name) THEN RETURN i END
+  END ;
+  RETURN -1
+END Find ;
+
+PROCEDURE Hint (VAR pool: POOL ; RO msg: STR) : STR =
+VAR
+  out : SLICE OF I64 ;
+  n, i : I64 ;
+  s : STR ;
+BEGIN
+  out := NEW (I64, MaxCandidates) ;
+  n := Candidates (Patterns (pool), msg, out) ;
+  IF n = 0 THEN RETURN '' END ;
+  IF n = 1 THEN
+    RETURN Text.Keep (pool, '  fix: ' + ExplainTab.Fix (out[0]) +
+                      '  [m9c --explain ' + ExplainTab.Name (out[0]) + ']')
+  END ;
+  s := '  explain: m9c --explain' ;
+  FOR i := 0 TO LEN (out) - 1 DO
+    IF i < n THEN s := s + ' ' + ExplainTab.Name (out[i]) END
+  END ;
+  RETURN Text.Keep (pool, s + '  (one refusal, ' + Count (n) + ' causes)')
+END Hint ;
+
+END Explain.

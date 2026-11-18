@@ -569,6 +569,27 @@ with no input file prints the version instead.
 .B \-\-version
 Print the version and exit.
 .TP
+.B \-\-explain \fINAME\fR|\fITEXT\fR ...
+Print the entry of a refusal and exit: its message, cause and fix, and
+where its program is in the diagnostics table.  A
+.I NAME
+is a probe's, as printed under a refusal; any other argument is read as
+the text of a refusal, whole or in part, and prints every entry it
+matches.  Exits 1 when an argument matches nothing.
+.TP
+.B \-\-guide
+Print the guide for an agent writing M9 and exit: the working loop, the
+refusals a Modula-2 habit meets most, each with the probe that holds
+it, and where this
+.B m9c
+keeps the language report, the diagnostics table
+.RI ( diagnose.md )
+and the Claude Code skills.  Each place is the source tree's when
+.B m9c
+runs from one, else the installed copy under
+.IR share ,
+else the public copy on GitHub.
+.TP
 .B \-\-
 Pass everything after this point to the C compiler, verbatim \(em and
 turn off every flag

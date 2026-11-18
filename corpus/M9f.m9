@@ -810,6 +810,11 @@ BEGIN
         IF dropGap THEN
           dropGap := FALSE ;
           IF Text.CountChar (t.gap, 0AC) > 0 THEN Emit (o, t.gap) END
+        ELSIF t.kind = TOp AND Text.Eq (t.text, '\') THEN
+          (* A continuation's backslash stands for nothing in M9, and
+             the gap before it goes with it.  The way there wrote
+             ' \', and its space left a trailing blank on the way
+             back. *)
         ELSE
           Emit (o, t.gap)
         END ;

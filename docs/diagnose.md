@@ -142,6 +142,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `cannot assign I64 to UTF (no implicit conversions, par 2.1)` | a handler's payload binder (the names in `| Err (m, c) :') has the type of the EXCEPTION declaration's field it stands for, in order -- since 2026-10-08; until then a binder had no type and `s := c' with s a STR and c an I64 payload compiled | use the binder at its field's type, or convert it (Fmt.I64Str for a number into text); the declaration names the fields and their types | `handler-binder-typed` |
 | `v.E: v is a variable, not a module` | a handler names an exception qualified by a variable; only the module that declares an exception qualifies it, and a name in scope is never a module (par 3 rule 5); until 2026-10-22 the checker said only that the exception was unhandled | name the exception bare (| E :) or qualified by its module (| Mod.E :) | `handler-qualified-by-variable` |
 | `cannot assign I32 to I64` | there is no implicit conversion between any two numeric types, widening included | I64 (x) explicitly; the conversion RAISES ValueRange, which your RAISES set must carry (par 2.1) | `implicit-widening` |
+| `PlainLib is a program MODULE, which exports nothing: write DEFINITION MODULE PlainLib with the headings and IMPLEMENTATION MODULE PlainLib with the bodies (par 3)` | an IMPORT names a bare MODULE, which is a program: it has no definition, so it exports nothing.  Until 0.28.1 the checker passed a call into it and the generator refused it as `callee unsupported yet' | split the module in two: DEFINITION MODULE M with the headings it exports and IMPLEMENTATION MODULE M with the bodies (par 3) | `import-program-module` |
 | `cannot assign I64 to UTF (no implicit conversions, par 2.1)` | a handler of the predeclared IndexError binds (index, length : I64) since 2026-10-09, and a binder was used at another type | use the binder as an I64 -- the index and the length as the check saw them -- or convert it | `index-error-binder-typed` |
 | `r[0]: cannot index -- the type R is no array, slice, grid or string` | a subscript applied to a value that has no elements -- a record, a monitor, an enumeration or a scalar; until 2026-10-22 the checker passed it and the generator refused it as `index into a non-array unsupported yet' (par 2.2.1) | subscript the component that holds the elements (r.a[0]), or make the type an ARRAY, SLICE or GRID | `index-not-indexable` |
 | `an INRANGE claim is a BOOL, not an integer literal` | FOR [INRANGE b] is the author's claim that every subscript in the loop is in range, read once before the loop: TRUE runs the body unchecked, FALSE runs it as any loop.  So b is a BOOL | write a condition: ok := lo >= 0 AND hi < LEN (s) ; FOR [INRANGE ok] i := lo TO hi DO | `inrange-not-bool` |
@@ -153,7 +154,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `IS SOME needs an OPT operand` | IS SOME is the guard for OPT; the operand is not OPT (a cross-module PTR T IN pool may type as unknown and NOT be diagnosed -- check the declaration) | declare the type OPT PTR T, or drop the guard if it cannot be absent | `is-some-on-non-opt` |
 | `argument 1 of Note: borrowed msg is kept by the callee -- declare KEPT msg (par 4.1)` | a borrowed parameter is passed to a parameter the callee declares KEPT, so the caller is retaining it too | declare the caller's own parameter KEPT as well -- the declaration composes upward, exactly as RAISES does (par 4.1, docs/retention.md) | `kept-borrow-arg` |
 | `argument 1 of Note: a KEPT parameter cannot take a concatenation -- it dies with this frame (par 4.1); give it storage that outlives the call: a string through Text.Keep (pool, s), an allocation through NEW (pool, T)` | a + result lives in the frame's arena and dies at RETURN, but the callee declares it will keep the argument | build the string in a pool that outlives the retention (DynStr into a caller-supplied pool, or HEAP) and pass that (par 2.3, par 4.1) | `kept-concat-arg` |
-| `argument 2 of Keep: borrowed v is kept by the callee -- declare KEPT v (par 4.1)` | a PROCEDURE is declared inside another procedure's body; the grammar parses it (par 10) and neither checker nor generator supports it -- until 2026-10-08 the first call of it was `unknown procedure' | declare the procedure at module level and hand it what it used of the enclosing procedure as parameters | `kept-constructor-arg` |
+| `argument 2 of Keep: borrowed v is kept by the callee -- declare KEPT v (par 4.1)` | a borrowed slice or pointer is an argument of a variant or record CONSTRUCTOR handed to a KEPT parameter (Keep (f, Data.F64s (v, 0.0))); since 2026-10-08 the call check reads through the constructor, as it reads a record value's fields | declare KEPT on the caller's own parameter, as for a bare borrow; or construct the value from a copy | `kept-constructor-arg` |
 | `argument 1 of Grow: borrowed p is kept by the callee -- declare KEPT p (par 4.1)` | a POOL parameter handed on to a KEPT one: this procedure's caller may have passed a local pool, so the keeping is a retention this procedure declares too (par 4.1) | declare the POOL parameter KEPT, as the callee does | `kept-pool-forward` |
 | `argument 1 of FwdKept: a KEPT parameter cannot take the pool scratch -- it dies with this frame` | a local pool handed to a KEPT POOL parameter that forwards it to another: refused at the first KEPT parameter, however far down the keeping is (par 4.1) | give the first KEPT parameter HEAP or a module's pool | `kept-pool-forward-local` |
 | `argument 1 of Grow: a KEPT parameter cannot take the pool n.pool -- it dies with this frame` | the POOL field of a record reached through a local handed to a KEPT POOL parameter: the rule reads the root, a local, which may die with this frame (par 4.1) | name the pool through a module variable, or use HEAP or a module pool | `kept-pool-in-pooled-local` |
@@ -183,7 +184,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `m.Wrong: cannot assign BOOL to I64` | inside Mod, Mod.time beside a parameter time is the module's variable, with the module's type; the parameter's type does not make it fit | convert the value to the type of the module variable, or give the parameter that type | `module-name-behind-local-type` |
 | `m.time: this procedure declares a time of its own, which hides the module's` | a module names itself (par 3 rule 5): inside Mod, Mod.x is x.  Where the procedure declares an x of its own, Mod.x still reaches the module's (0.28.0).  The form stays refused where that x is also a member in the procedure, a parameter of a procedure type say: the checker cannot follow such a name | rename the parameter or the local, and write the module variable bare or as Mod.x | `module-name-hidden` |
 | `module Lib is named and not imported: write IMPORT Lib` | a qualified name's module is known to the compiler -- something imported imports it -- and this module does not import it; until 2026-10-02 any module in the import closure could be named, so a program's IMPORT lines did not say what it depended on (museum/named-not-imported.m9) | add the line: IMPORT Lib ;  An implementation may lean on its definition's IMPORT and the other way round.  NOT SOURCE COMPATIBLE for a program that leaned on the gap: 5 sites in 386 files (par 3) | `module-named-not-imported` |
-| `module Lib is named and not imported: write IMPORT Lib` | a borrowed slice or pointer is an argument of a variant or record CONSTRUCTOR handed to a KEPT parameter (Keep (f, Data.F64s (v, 0.0))); since 2026-10-08 the call check reads through the constructor, as it reads a record value's fields | declare KEPT on the caller's own parameter, as for a bare borrow; or construct the value from a copy | `module-shadow-by-scope` |
+| `module Lib is named and not imported: write IMPORT Lib` | the same refusal where a BINDER of the module's name exists elsewhere in the procedure -- an IS SOME, a CASE arm, a handler -- and the qualified name is outside the statements that binder covers; until 2026-10-08 the shadow test was by subtree and such a name passed as the binder's | IMPORT the module, or rename the binder; a binder is in scope only in the THEN, the arm or the handler that binds it | `module-shadow-by-scope` |
 | `module-level state requires STATEFUL on the definition` | a module-level VAR is state, and a module with state must say so | add [STATEFUL] to the DEFINITION MODULE, or move the state into a record the caller owns (par 6) | `module-state-without-stateful` |
 | `Same is bound to the monitor g, which this procedure is bound to and holds the lock of: the call waits for that lock for ever -- pass what it needs instead of the monitor, or call it from a procedure that is not bound (par 6)` | a call, from a procedure bound to a monitor, of another procedure bound to the same monitor: the caller holds the monitor lock for its whole body and the lock is not recursive, so the callee waits on it for ever | hand the callee the values it needs (a field, a key) instead of the monitor, or make the call from a procedure that is not bound and takes the lock once per call | `monitor-bound-calls-bound` |
 | `may enter a monitor of another type while this procedure holds its own, and a procedure bound to that type may enter one of this type` | two monitor types taken in opposite orders: a procedure bound to one may enter the other, and a procedure bound to the other may enter the first, so two threads can each hold one lock and wait for the other | take the locks in one order everywhere: take what is needed out of the first monitor, leave it, then enter the second | `monitor-lock-order` |
@@ -194,7 +195,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `NAME needs an enumeration or a case record, not I64` | NAME turns an enumeration member -- or a case-record variant -- into its identifier text; applied to anything else (a number, a record, a slice) it has nothing to name | pass an enumeration or case-record value; NAME (Colour.Red) is 'Red', and it reads the identifier from a table the generator emits per type, so it retires a hand-written code-to-name CASE | `name-needs-enum` |
 | `no '=' with NaN: no comparison with NaN is ever TRUE` | a comparison operator has NaN on one side; NaN compares unequal to everything, itself included, so = < <= > >= are never TRUE and # always is -- the test a reader takes for one and the machine does not | compare with Math.IsNaN (x), or x # x, which is TRUE exactly when x is a NaN | `nan-compared` |
 | `NaN is predeclared, the quiet NaN: a declaration may not take its name` | a CONST, TYPE, VAR, EXCEPTION, PROCEDURE, parameter or local is named NaN, the predeclared quiet NaN; until 2026-10-05 the library had four private procedures of that name, because there was no constant | choose another name; NaN is the language's | `nan-declared` |
-| `a nested procedure is not supported: Inner is declared inside Outer; declare it at module level (par 3)` | a THREAD names a procedure of another module as its target; the generator makes the thread's thunk in the module that starts it, so this was a link error naming a C symbol until 2026-10-08 | declare a procedure in this module that calls the imported one, and start that | `nested-procedure` |
+| `a nested procedure is not supported: Inner is declared inside Outer; declare it at module level (par 3)` | a PROCEDURE is declared inside another procedure's body; the grammar parses it (par 10) and neither checker nor generator supports it -- until 2026-10-08 the first call of it was `unknown procedure' | declare the procedure at module level and hand it what it used of the enclosing procedure as parameters | `nested-procedure` |
 | `NEW takes the pool first, then the type` | NEW's arguments are the wrong way round: the pool comes first, then the type | NEW (pool, T) for a pointer, NEW (pool, T, n) for a slice, NEW (pool, T, n1, n2) for a grid (par 4.3) | `new-reversed` |
 | `unknown type: Nosuch` | the type position of a NEW names a type no module declares -- a bare name declared nowhere, or Mod.T where the loaded module Mod has no T; until 2026-10-08 the checker passed it and the generator refused the C | name the type as declared, qualified by its module where it is imported; a type is declared in this module or imported, never guessed | `new-type-unknown` |
 | `no field w` | the record has no field of that name | read the record in docs/modules/<M>.md; a variant's payload is reached through CASE | `no-such-field` |
@@ -285,7 +286,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `use of q after it was moved into a THREAD running Work` | a name used after a THREAD took it, the argument written in parentheses (par 4.2) | do not use a name after handing it to a thread; read what is needed before | `thread-paren-move` |
 | `THREAD (Own): the target allocates through its parameter, in the pool of the record both threads hold, and the pool takes no lock` | one record handed to several threads in a loop, and the target allocates in its POOL field: the field is shared, not the worker own, and the pool takes no lock | hand each thread its own record (an element of a slice of jobs), or give each worker a POOL of its own | `thread-pool-field-in-loop` |
 | `THREAD (Work): the target takes its m.Job by value, and a thread is handed PTR m.Job` | a thread is handed a pointer; a target whose first parameter is a RECORD taken by value or RO wants the record itself, which only a VAR parameter reaches through the pointer (par 6) | declare the parameter VAR, or of the pointer type | `thread-record-by-value` |
-| `THREAD (Lib.Work): the target must be a procedure of this module, not Lib's -- start it from a procedure declared here (par 6)` | the same refusal where a BINDER of the module's name exists elsewhere in the procedure -- an IS SOME, a CASE arm, a handler -- and the qualified name is outside the statements that binder covers; until 2026-10-08 the shadow test was by subtree and such a name passed as the binder's | IMPORT the module, or rename the binder; a binder is in scope only in the THEN, the arm or the handler that binds it | `thread-target-elsewhere` |
+| `THREAD (Lib.Work): the target must be a procedure of this module, not Lib's -- start it from a procedure declared here (par 6)` | a THREAD names a procedure of another module as its target; the generator makes the thread's thunk in the module that starts it, so this was a link error naming a C symbol until 2026-10-08 | declare a procedure in this module that calls the imported one, and start that | `thread-target-elsewhere` |
 | `THREAD (Name): the target allocates through its parameter, in the pool of the record both threads hold, and the pool takes no lock` | UTF (pool, s) carves its pool as NEW (pool, T) does; the threads share the one record, so they carve its POOL field at once, and the pool takes no lock (par 6). A MONITOR's POOL field, carved in a procedure bound to it, is legal: the lock is held | give each worker its own record (THREAD (W, js[i])), or put the POOL in a MONITOR and build the UTF in a procedure bound to it | `thread-utf-shared-pool` |
 | `is not total (missing R)` | CASE over a CASE RECORD must name every variant of the selector's own type | add the missing arm; there is no ELSE for variants (par 8) | `totality-uses-selector-type` |
 | `type H refers to itself other than through a pointer to a record: it would have no size or no end -- point to it with PTR from a RECORD field (par 2.2)` | a type is a pointer to itself, or two names are each other: there is no record for the recursion to stop at, and until 2026-10-21 --check followed the names until it ran out of stack or for ever (par 2.2) | point to a RECORD that holds the pointer back: P = PTR R ; R = RECORD p : P END | `type-alias-cycle` |
@@ -3344,6 +3345,56 @@ MODULE m ;
 VAR a : I32 ; b : I64 ;
 PROCEDURE F () = BEGIN b := a END F ;
 END m.
+```
+
+### import-program-module
+
+`PlainLib is a program MODULE, which exports nothing: write DEFINITION MODULE PlainLib with the headings and IMPLEMENTATION MODULE PlainLib with the bodies (par 3)`
+
+```
+(* A program module exports nothing.  Until 0.28.1 the checker passed
+   the call below and the generator refused it as `callee unsupported
+   yet'.  The legal form imports a module with a definition. *)
+MODULE PlainLib ;
+
+PROCEDURE Twice (n: I64) : I64 =
+BEGIN
+  RETURN n * 2
+END Twice ;
+
+END PlainLib.
+
+DEFINITION MODULE Lib ;
+PROCEDURE Thrice (n: I64) : I64 ;
+END Lib.
+
+IMPLEMENTATION MODULE Lib ;
+PROCEDURE Thrice (n: I64) : I64 =
+BEGIN
+  RETURN n * 3
+END Thrice ;
+END Lib.
+
+DEFINITION MODULE Use ;
+PROCEDURE Six () : I64 ;
+PROCEDURE FortyTwo () : I64 ;
+END Use.
+
+IMPLEMENTATION MODULE Use ;
+IMPORT Lib ;
+IMPORT PlainLib ;
+
+PROCEDURE Six () : I64 =
+BEGIN
+  RETURN Lib.Thrice (2)
+END Six ;
+
+PROCEDURE FortyTwo () : I64 =
+BEGIN
+  RETURN PlainLib.Twice (21)
+END FortyTwo ;
+
+END Use.
 ```
 
 ### index-error-binder-typed

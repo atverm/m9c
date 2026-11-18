@@ -1,0 +1,120 @@
+DEFINITION MODULE Paddle ;
+
+CONST
+  W = 800.0 ;
+  H = 500.0 ;
+  PaddleH = 80.0 ;
+  PaddleW = 12.0 ;
+  BallR = 8.0 ;
+  PlayerX = 20.0 ;
+  AiX = 768.0 ;
+  BaseSpeed = 300.0 ;
+  AiSpeed = 260.0 ;
+
+TYPE
+  State = RECORD
+    bx, by, vx, vy : F64 ;
+    py, ay : F64 ;
+    sp, sa : I64 ;
+    started : BOOL ;
+  END ;
+
+PROCEDURE Serve (VAR s: State) ;
+  (* Serve puts the ball at the centre and launches it, keeping the
+     scores. The direction alternates with the total score. *)
+
+PROCEDURE Step (VAR s: State ; dt, playerY: F64) ;
+  (* Step advances one frame of dt seconds. playerY is the player's
+     requested paddle centre; the AI moves its own paddle. *)
+
+END Paddle.
+
+IMPLEMENTATION MODULE Paddle ;
+
+PROCEDURE Serve (VAR s: State) =
+BEGIN
+  s.bx := W / 2.0 ;
+  s.by := H / 2.0 ;
+  IF (s.sp + s.sa) MOD 2 = 0 THEN
+    s.vx := -BaseSpeed
+  ELSE
+    s.vx := BaseSpeed
+  END ;
+  s.vy := 120.0 ;
+  s.started := TRUE
+END Serve ;
+
+PROCEDURE Clamp (v, lo, hi: F64) : F64 =
+BEGIN
+  IF v < lo THEN
+    RETURN lo
+  ELSIF v > hi THEN
+    RETURN hi
+  ELSE
+    RETURN v
+  END
+END Clamp ;
+
+PROCEDURE Step (VAR s: State ; dt, playerY: F64) =
+VAR
+  target, delta, move, face : F64 ;
+BEGIN
+  s.py := Clamp (playerY, PaddleH / 2.0, H - PaddleH / 2.0) ;
+
+  target := H / 2.0 ;
+  IF s.vx > 0.0 THEN
+    target := s.by
+  END ;
+  delta := target - s.ay ;
+  move := AiSpeed * dt ;
+  IF delta > move THEN
+    delta := move
+  ELSIF delta < -move THEN
+    delta := -move
+  END ;
+  s.ay := Clamp (s.ay + delta, PaddleH / 2.0, H - PaddleH / 2.0) ;
+
+  s.bx := s.bx + s.vx * dt ;
+  s.by := s.by + s.vy * dt ;
+
+  IF s.by < BallR THEN
+    s.by := 2.0 * BallR - s.by ;
+    s.vy := -s.vy
+  ELSIF s.by > H - BallR THEN
+    s.by := 2.0 * (H - BallR) - s.by ;
+    s.vy := -s.vy
+  END ;
+
+  face := PlayerX + PaddleW ;
+  IF s.vx < 0.0 AND s.bx - BallR <= face AND s.bx > PlayerX - BallR
+     AND s.by >= s.py - PaddleH / 2.0 - BallR
+     AND s.by <= s.py + PaddleH / 2.0 + BallR THEN
+    s.bx := face + BallR ;
+    s.vx := -s.vx * 1.05 ;
+    s.vy := Clamp (s.vy + (s.by - s.py) * 3.0, -400.0, 400.0)
+  END ;
+
+  IF s.vx > 0.0 AND s.bx + BallR >= AiX AND s.bx < AiX + PaddleW + BallR
+     AND s.by >= s.ay - PaddleH / 2.0 - BallR
+     AND s.by <= s.ay + PaddleH / 2.0 + BallR THEN
+    s.bx := AiX - BallR ;
+    s.vx := -s.vx * 1.05 ;
+    s.vy := Clamp (s.vy + (s.by - s.ay) * 3.0, -400.0, 400.0)
+  END ;
+
+  IF s.vx > 700.0 THEN
+    s.vx := 700.0
+  ELSIF s.vx < -700.0 THEN
+    s.vx := -700.0
+  END ;
+
+  IF s.bx < -2.0 * BallR THEN
+    s.sa := s.sa + 1 ;
+    Serve (s)
+  ELSIF s.bx > W + 2.0 * BallR THEN
+    s.sp := s.sp + 1 ;
+    Serve (s)
+  END
+END Step ;
+
+END Paddle.

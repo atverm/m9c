@@ -1,0 +1,123 @@
+MODULE PaddleServer ;
+
+(* PaddleServer serves the game of Paddle.m9 to a browser.
+
+       paddleserver [PORT [WEBDIR]]      default 8000 and web
+
+   The rules run here.  The page in WEBDIR asks GET /tick thirty times
+   a second with the mouse position, and draws the state that comes
+   back.  So the browser decides nothing, and PaddleTest holds the
+   whole game without one.
+
+   The state is one MONITOR record.  HttpServer answers requests on
+   several workers, and Tick, which is bound to the monitor, is the
+   only procedure that reads or writes it.
+
+   Qwen wrote this program on a prompt by the author (2026-11-18); see
+   the README. *)
+
+IMPORT Io, Fmt, Text, Time, Json, HttpServer, Paddle ;
+
+TYPE
+  Game = MONITOR RECORD
+    s : Paddle.State ;
+    last : F64 ;
+  END ;
+
+VAR
+  game : Game ;
+  pool : POOL ;
+
+(* Tick advances the game by the time since the last call and answers
+   the new state.  The step is at most a tenth of a second, so a
+   browser tab that slept does not make the ball jump. *)
+PROCEDURE Tick (VAR g: Game ; playerY: F64 ; serve: BOOL) : Paddle.State =
+VAR
+  now, dt : F64 ;
+BEGIN
+  now := Time.Now ().t ;
+  IF serve OR NOT g.s.started THEN
+    Paddle.Serve (g.s) ;
+    g.last := now
+  ELSE
+    dt := now - g.last ;
+    IF dt < 0.0 THEN
+      dt := 0.0
+    END ;
+    IF dt > 0.1 THEN
+      dt := 0.1
+    END ;
+    g.last := now ;
+    Paddle.Step (g.s, dt, playerY)
+  END ;
+  RETURN g.s
+END Tick ;
+
+(* TickHandler answers GET /tick?y=N[&serve=1] with the state as JSON.
+   y is the player's paddle centre in court units. *)
+PROCEDURE TickHandler (RO req: HttpServer.Request) : HttpServer.Response
+  RAISES ValueRange =
+VAR
+  parts : SLICE OF STR ;
+  p : STR ;
+  y : F64 ;
+  serve : BOOL ;
+  st : Paddle.State ;
+  obj, v : PTR Json.Node ;
+BEGIN
+  y := Paddle.H / 2.0 ;
+  serve := FALSE ;
+  parts := Text.Fields (req.query, '&') ;
+  FOR p IN parts DO
+    IF Text.Find (p, 'y=') = 0 THEN
+      y := Fmt.ParseF64 (SLICE (p, 2, Text.BLen (p) - 2))
+    ELSIF Text.Eq (p, 'serve=1') THEN
+      serve := TRUE
+    END
+  END ;
+  st := Tick (game, y, serve) ;
+  obj := Json.NewObj () ;
+  v := Json.NewF64 (st.bx) ; Json.Set (obj, 'bx', v) ;
+  v := Json.NewF64 (st.by) ; Json.Set (obj, 'by', v) ;
+  v := Json.NewF64 (st.py) ; Json.Set (obj, 'py', v) ;
+  v := Json.NewF64 (st.ay) ; Json.Set (obj, 'ay', v) ;
+  v := Json.NewI64 (st.sp) ; Json.Set (obj, 'sp', v) ;
+  v := Json.NewI64 (st.sa) ; Json.Set (obj, 'sa', v) ;
+  RETURN HttpServer.Reply (200, 'application/json', Json.Compact (obj))
+EXCEPT
+| Json.TypeMismatch :
+  RETURN HttpServer.Reply (500, 'text/plain', 'json build failed')
+| ValueRange :
+  RETURN HttpServer.Reply (400, 'text/plain', 'bad y parameter')
+END TickHandler ;
+
+VAR
+  r : PTR HttpServer.Router ;
+  cfg : HttpServer.Config ;
+  stats : HttpServer.Stats ;
+  rc : I64 ;
+  web : STR ;
+
+BEGIN
+  cfg := HttpServer.Defaults () ;
+  web := 'web' ;
+  IF Io.ArgCount () > 1 THEN cfg.port := Io.ParseI64 (Io.Arg (pool, 1)) END ;
+  IF Io.ArgCount () > 2 THEN web := Text.Keep (pool, Io.Arg (pool, 2)) END ;
+  r := HttpServer.NewRouter (HEAP) ;
+  (* THE ORDER MATTERS.  Routes are matched in the order they are
+     added, and the file route takes every path under /.  Added first,
+     it answered /tick with 404 and the game stood still. *)
+  HttpServer.AddHandler (r, 'GET', '/tick', TickHandler,
+                         'application/json', 'advance the game') ;
+  HttpServer.AddFiles (r, '/', web, 'the page') ;
+  HttpServer.Freeze (r) ;
+  Io.WriteLine ('Paddle on http://127.0.0.1:' + Fmt.I64Str (cfg.port)) ;
+  Io.Flush () ;
+  rc := HttpServer.Run (cfg, r, stats) ;
+  Io.WriteLine ('server stopped: ' + Fmt.I64Str (rc))
+EXCEPT
+| HttpServer.Frozen (path) :
+  Io.ErrLine ('route added after freeze: ' + path)
+| ValueRange :
+  Io.ErrLine ('usage: paddleserver [PORT [WEBDIR]]')
+END PaddleServer.

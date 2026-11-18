@@ -32,6 +32,8 @@ IMPORT Text ;
 IMPORT DynStr ;
 IMPORT Fmt ;
 IMPORT Sort ;
+IMPORT Lex ;
+IMPORT Explain ;
 
 CONST
   Probe = [
@@ -163,10 +165,10 @@ CONST
     'kept-via-record',
     'kept-via-constructor',
     'kept-record-value',
-    'module-shadow-by-scope',
     'kept-constructor-arg',
     'nested-procedure',
     'thread-target-elsewhere',
+    'module-shadow-by-scope',
     'pool-root-own',
     'pool-root-value',
     'pool-root-local-no-in',
@@ -354,7 +356,8 @@ CONST
     'view-of-ro-written',
     'inrange-not-bool',
     'module-name-behind-local-type',
-    'module-name-behind-local-move'
+    'module-name-behind-local-move',
+    'import-program-module'
   ] ;
   Cause = [
     'ADR takes the address of a value, which is the one thing the memory rules cannot check',
@@ -676,7 +679,8 @@ CONST
     "a VIEW is its grid's storage, so a view of what an RO parameter lends is read-only as the grid is (par 2.4); a view of a VAR or value grid may be written through",
     "FOR [INRANGE b] is the author's claim that every subscript in the loop is in range, read once before the loop: TRUE runs the body unchecked, FALSE runs it as any loop.  So b is a BOOL",
     "inside Mod, Mod.time beside a parameter time is the module's variable, with the module's type; the parameter's type does not make it fit",
-    "inside Mod, Mod.own beside a parameter own is the module's variable in the ownership rules too: a procedure may not move a module's owned value away, however it is named"
+    "inside Mod, Mod.own beside a parameter own is the module's variable in the ownership rules too: a procedure may not move a module's owned value away, however it is named",
+    "an IMPORT names a bare MODULE, which is a program: it has no definition, so it exports nothing.  Until 0.28.1 the checker passed a call into it and the generator refused it as `callee unsupported yet'"
   ] ;
   Fix = [
     'put the procedure in an UNSAFE module, or pass a SLICE/VAR instead of an address (par 7)',
@@ -998,7 +1002,8 @@ CONST
     'take the grid as VAR or by value where the procedure writes it; RO promises it does not',
     'write a condition: ok := lo >= 0 AND hi < LEN (s) ; FOR [INRANGE ok] i := lo TO hi DO',
     'convert the value to the type of the module variable, or give the parameter that type',
-    'move it in the module body, or keep the owned value in a local'
+    'move it in the module body, or keep the owned value in a local',
+    'split the module in two: DEFINITION MODULE M with the headings it exports and IMPLEMENTATION MODULE M with the bodies (par 3)'
   ] ;
 
 VAR
@@ -1077,12 +1082,89 @@ BEGIN
   DynStr.AppendChar (d, 0AC)
 END Line ;
 
+(* ---- THE TABLE INSIDE THE COMPILER (0.28.1) ----
+
+   The page above is for a reader.  ExplainTab is the same entries for
+   m9c itself: under each refusal it prints the fix, and `m9c
+   --explain NAME' prints the entry.  An agent asked for the table in
+   the compiler, where it is the version in hand.  Each entry carries
+   its message as a PATTERN (Explain.Template): the names the probe's
+   own program declares, its numbers and the builtin types become `~'.
+   The names come from the compiler's own Lex, not a second scanner.
+   A ledger probe is not a refusal and has no entry. *)
+
+(* ProgramNames answers every identifier in the probe's text, once.
+   Lex skips the comments, so the first line's message names nothing. *)
+PROCEDURE ProgramNames (RO text: STR) : SLICE OF STR =
+VAR
+  lx : Lex.Lexer ;
+  t : Lex.Token ;
+  r, g : SLICE OF STR ;
+  n, i : I64 ;
+BEGIN
+  r := NEW (pool, STR, 64) ;
+  n := 0 ;
+  Lex.Init (lx, text) ;
+  Lex.Next (lx, t) ;
+  WHILE t.kind # 0 DO
+    IF t.kind = 2 AND NOT Text.OneOf (t.text, SLICE (r, 0, n)) THEN
+      IF n = LEN (r) THEN
+        g := NEW (pool, STR, 2 * n) ;
+        FOR i := 0 TO n - 1 DO g[i] := r[i] END ;
+        r := g
+      END ;
+      r[n] := Text.Keep (pool, t.text) ;
+      n := n + 1
+    END ;
+    Lex.Next (lx, t)
+  END ;
+  RETURN SLICE (r, 0, n)
+END ProgramNames ;
+
+(* Quoted answers s as an M9 string literal: in double quotes unless
+   it holds one, then in single quotes.  A text holding both cannot be
+   one literal and stops the script. *)
+PROCEDURE Quoted (RO s: STR) : STR =
+BEGIN
+  IF Text.FindChar (s, '"') < 0 THEN RETURN '"' + s + '"' END ;
+  IF Text.FindChar (s, "'") < 0 THEN RETURN "'" + s + "'" END ;
+  Io.ErrLine ('mkdiagnose: a text holds both quotes: ' + s) ;
+  Io.Halt (1) ;
+  RETURN ''
+END Quoted ;
+
+PROCEDURE Table (VAR d: PTR DynStr.DString ; RO cname: STR ;
+                 RO xs: SLICE OF STR) =
+VAR i : I64 ;
+BEGIN
+  Line (d, '  ' + cname + ' = [') ;
+  FOR i := 0 TO LEN (xs) - 1 DO
+    DynStr.Append (d, '    ' + Quoted (xs[i])) ;
+    IF i < LEN (xs) - 1 THEN Line (d, ',') ELSE Line (d, '') END
+  END ;
+  Line (d, '  ] ;')
+END Table ;
+
+PROCEDURE Accessor (VAR d: PTR DynStr.DString ; RO pname: STR ; RO cname: STR) =
+BEGIN
+  Line (d, 'PROCEDURE ' + pname + ' (i: I64) : STR RAISES IndexError =') ;
+  Line (d, 'BEGIN') ;
+  Line (d, '  RETURN ' + cname + '[i]') ;
+  Line (d, 'END ' + pname + ' ;' + 0AC)
+END Accessor ;
+
 VAR
   names, files : SLICE OF STR ;
   i, k, n, bad : I64 ;
   d : PTR DynStr.DString IN pool ;
   kind, msg, text, page, cur, path, out : STR ;
   check : BOOL ;
+  xn, xm, xp, xc, xf : SLICE OF STR ;
+  hits : SLICE OF I64 ;
+  nx, j, h : I64 ;
+  own : BOOL ;
+  tab, tabOut : STR ;
+  e : PTR DynStr.DString IN pool ;
 
 BEGIN
   check := (Io.ArgCount () > 1) AND Text.Eq (Io.Arg (pool, 1), '--check') ;
@@ -1176,6 +1258,84 @@ BEGIN
   END ;
   page := DynStr.View (d) ;
 
+  (* the entries for the compiler: every EXPECT probe, in name order *)
+  xn := NEW (pool, STR, LEN (names)) ;
+  xm := NEW (pool, STR, LEN (names)) ;
+  xp := NEW (pool, STR, LEN (names)) ;
+  xc := NEW (pool, STR, LEN (names)) ;
+  xf := NEW (pool, STR, LEN (names)) ;
+  nx := 0 ;
+  FOR i := 0 TO LEN (names) - 1 DO
+    text := Octets (root + '/probes/' + names[i] + '.m9') ;
+    IF Expect (text, kind, msg) AND Text.Eq (kind, 'EXPECT') THEN
+      k := Entry (names[i]) ;
+      xn[nx] := names[i] ;
+      xm[nx] := Text.Keep (pool, msg) ;
+      xp[nx] := Text.Keep (pool, Explain.Template (msg, ProgramNames (text))) ;
+      xc[nx] := Cause[k] ;
+      xf[nx] := Fix[k] ;
+      nx := nx + 1
+    END
+  END ;
+  xn := SLICE (xn, 0, nx) ; xm := SLICE (xm, 0, nx) ; xp := SLICE (xp, 0, nx) ;
+  xc := SLICE (xc, 0, nx) ; xf := SLICE (xf, 0, nx) ;
+
+  (* THE SELF-CHECK: each probe's own message finds its own entry among
+     at most Explain.MaxCandidates.  A pattern that misses its message,
+     or a refusal shared by too many probes, stops the script. *)
+  hits := NEW (pool, I64, Explain.MaxCandidates) ;
+  bad := 0 ;
+  FOR i := 0 TO nx - 1 DO
+    h := Explain.Candidates (xp, xm[i], hits) ;
+    own := FALSE ;
+    FOR j := 0 TO LEN (hits) - 1 DO
+      IF j < h AND hits[j] = i THEN own := TRUE END
+    END ;
+    IF NOT own OR h > Explain.MaxCandidates THEN
+      Io.ErrLine ('mkdiagnose: probe ' + xn[i] + ': its message finds ' +
+                  Fmt.I64Str (h) + ' entries, and not its own among the first ' +
+                  Fmt.I64Str (Explain.MaxCandidates) + ' -- pattern ' + xp[i]) ;
+      bad := bad + 1
+    END
+  END ;
+  IF bad > 0 THEN Io.Halt (1) END ;
+
+  e := DynStr.New (pool) ;
+  Line (e, 'DEFINITION MODULE ExplainTab ;' + 0AC) ;
+  Line (e, '(* GENERATED by tools/MkDiagnose.m9 from probes/ -- do not edit.') ;
+  Line (e, '   One entry a refusal probe: its name, its message, the message') ;
+  Line (e, '   as an Explain pattern, and the cause and fix of') ;
+  Line (e, '   docs/diagnose.md.  m9c prints the fix under a refusal and') ;
+  Line (e, '   `m9c --explain NAME` the entry.  runtime/test/diagdiff.sh holds') ;
+  Line (e, '   this file to the probes. *)' + 0AC) ;
+  Line (e, 'PROCEDURE Count () : I64 ;') ;
+  Line (e, 'PROCEDURE Name (i: I64) : STR RAISES IndexError ;') ;
+  Line (e, 'PROCEDURE Message (i: I64) : STR RAISES IndexError ;') ;
+  Line (e, 'PROCEDURE Pattern (i: I64) : STR RAISES IndexError ;') ;
+  Line (e, 'PROCEDURE Cause (i: I64) : STR RAISES IndexError ;') ;
+  Line (e, 'PROCEDURE Fix (i: I64) : STR RAISES IndexError ;' + 0AC) ;
+  Line (e, 'END ExplainTab.' + 0AC) ;
+  Line (e, 'IMPLEMENTATION MODULE ExplainTab ;' + 0AC) ;
+  Line (e, 'CONST') ;
+  Table (e, 'Names', xn) ;
+  Table (e, 'Messages', xm) ;
+  Table (e, 'Patterns', xp) ;
+  Table (e, 'Causes', xc) ;
+  Table (e, 'Fixes', xf) ;
+  Line (e, '') ;
+  Line (e, 'PROCEDURE Count () : I64 =') ;
+  Line (e, 'BEGIN') ;
+  Line (e, '  RETURN LEN (Names)') ;
+  Line (e, 'END Count ;' + 0AC) ;
+  Accessor (e, 'Name', 'Names') ;
+  Accessor (e, 'Message', 'Messages') ;
+  Accessor (e, 'Pattern', 'Patterns') ;
+  Accessor (e, 'Cause', 'Causes') ;
+  Accessor (e, 'Fix', 'Fixes') ;
+  Line (e, 'END ExplainTab.') ;
+  tab := DynStr.View (e) ;
+  tabOut := Text.Keep (pool, root + '/corpus/ExplainTab.m9') ;
+
   IF check THEN
     cur := '' ;
     IF Io.Exists (out) THEN cur := Octets (out) END ;
@@ -1183,11 +1343,20 @@ BEGIN
       Io.ErrLine ('diagdiff: docs/diagnose.md is stale; run tools/MkDiagnose.m9') ;
       Io.Halt (1)
     END ;
-    Io.WriteLine ('diagdiff: docs/diagnose.md matches probes/ ('
-                  + Fmt.I64Str (LEN (Probe)) + ' entries)')
+    cur := '' ;
+    IF Io.Exists (tabOut) THEN cur := Octets (tabOut) END ;
+    IF NOT Text.Eq (cur, tab) THEN
+      Io.ErrLine ('diagdiff: corpus/ExplainTab.m9 is stale; run tools/MkDiagnose.m9') ;
+      Io.Halt (1)
+    END ;
+    Io.WriteLine ('diagdiff: docs/diagnose.md and corpus/ExplainTab.m9 match probes/ ('
+                  + Fmt.I64Str (LEN (Probe)) + ' entries, ' + Fmt.I64Str (nx)
+                  + ' refusals, each finds its own)')
   ELSE
     Io.WriteFile (out, page) ;
-    Io.WriteLine ('docs/diagnose.md: ' + Fmt.I64Str (LEN (Probe)) + ' entries from probes/')
+    Io.WriteFile (tabOut, tab) ;
+    Io.WriteLine ('docs/diagnose.md: ' + Fmt.I64Str (LEN (Probe)) + ' entries from probes/') ;
+    Io.WriteLine ('corpus/ExplainTab.m9: ' + Fmt.I64Str (nx) + ' refusals, each finds its own')
   END
 EXCEPT
 | Io.IOError (p) :

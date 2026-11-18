@@ -1,11 +1,11 @@
-REVIEW Mat -- 53 procedures with a body, 25 of them functions; 31 headings in a DEFINITION
+REVIEW Mat -- 54 procedures with a body, 26 of them functions; 31 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              25
-  assignments                                   339
-  arguments                                     361
-  RETURN values                                  28
-  operands of a comparison or an operator       361
+  functions answering on every path              26
+  assignments                                   341
+  arguments                                     383
+  RETURN values                                  29
+  operands of a comparison or an operator       381
   CASE labels                                     0
   THREAD arguments                                3
   CASE over variants, proved total                2
@@ -24,7 +24,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   SHARED (x)                                      0
   THREAD                                          3   RunInv, RunChol, AddNormal
   TASK                                            0
-  INRANGE claims                                  0
+  INRANGE claims                                 10   InvBand, InvBand, InvBand, InvBand, InvBand, CholBand, +4 more
   [SHARABLE] records                              3   InvJob, NormalJob, CholJob
   module variables                                0
 

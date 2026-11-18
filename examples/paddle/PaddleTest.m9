@@ -1,0 +1,45 @@
+MODULE PaddleTest ;
+IMPORT Io, Check, Paddle ;
+
+VAR
+  t : Check.T ;
+  s : Paddle.State ;
+
+BEGIN
+  Paddle.Serve (s) ;
+  Check.EqF64 (t, 'serve bx', s.bx, 400.0) ;
+  Check.EqF64 (t, 'serve by', s.by, 250.0) ;
+  Check.EqF64 (t, 'serve vx', s.vx, -300.0) ;
+  Check.That (t, 'serve started', s.started) ;
+
+  Paddle.Serve (s) ;
+  s.by := 9.0 ; s.vy := -100.0 ; s.vx := 0.0 ;
+  Paddle.Step (s, 0.1, 250.0) ;
+  Check.EqF64 (t, 'wall by', s.by, 17.0) ;
+  Check.EqF64 (t, 'wall vy', s.vy, 100.0) ;
+
+  Paddle.Serve (s) ;
+  s.bx := 41.0 ; s.by := 250.0 ; s.vx := -300.0 ; s.vy := 0.0 ;
+  Paddle.Step (s, 0.01, 250.0) ;
+  Check.That (t, 'hit reverses', s.vx > 0.0) ;
+  Check.Near (t, 'hit speeds up', s.vx, 315.0, 0.000001, 0.0) ;
+  Check.EqF64 (t, 'hit repositions', s.bx, 40.0) ;
+
+  Paddle.Serve (s) ;
+  s.bx := 5.0 ; s.by := 250.0 ; s.vx := -300.0 ; s.vy := 0.0 ;
+  Paddle.Step (s, 0.1, 250.0) ;
+  Check.EqI64 (t, 'miss scores AI', s.sa, 1) ;
+  Check.EqF64 (t, 'miss re-serves', s.bx, 400.0) ;
+  Check.EqF64 (t, 'serve alternates', s.vx, 300.0) ;
+
+  Paddle.Serve (s) ;
+  s.ay := 40.0 ; s.by := 460.0 ; s.vx := 300.0 ; s.vy := 0.0 ;
+  Paddle.Step (s, 0.1, 250.0) ;
+  Check.EqF64 (t, 'AI speed cap', s.ay, 66.0) ;
+
+  Paddle.Serve (s) ;
+  Paddle.Step (s, 0.0, 1000.0) ;
+  Check.EqF64 (t, 'player clamps', s.py, 460.0) ;
+
+  Io.Halt (Check.Done (t, 'Paddle'))
+END PaddleTest.

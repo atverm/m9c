@@ -54,7 +54,7 @@ check Parse Ast Lex Text
 check Gen Ast DynStr Text
 check Sem Ast DynStr Print Text
 check Io DynStr
-check M9c Io Ast Parse Gen Sem DynStr Doc Review Lex M9f System Text
+check M9c Io Ast Parse Gen Sem DynStr Doc Review Lex M9f System Text Explain ExplainTab
 
 # Usage and exit status are part of the tool, so they are checked too.
 # A request for help SUCCEEDS.  The usage you get because you gave no
@@ -496,7 +496,7 @@ rm -rf "$LIB"; mkdir -p "$LIB"; cd "$LIB"
 export M9RUNTIME="$RT"
 export M9LIBRARY="$SRC"
 
-for m in DynStr Text Io System Lex M9f Ast Parse Print Sem Gen Doc Review; do "$M9C" -c $m; done
+for m in DynStr Text Io System Lex M9f Ast Parse Print Sem Gen Doc Review ExplainTab Explain; do "$M9C" -c $m; done
 "$M9C" -v --ar libm9.a M9c 2>ar.txt
 [ -f libm9.a ] || { echo "FAIL: --ar produced no archive"; exit 1; }
 # The members are the closure m9c just resolved, and its own object.
@@ -1271,3 +1271,39 @@ echo "     library, headers and runtime with no variable set; an install"
 echo "     with share/m9/runtime runs --cell, and links with its archive"
 
 echo "m9c: --make builds a diamond in dependency order, first run"
+
+# THE LINE UNDER A REFUSAL AND --explain (0.28.1).  An agent asked for
+# the diagnostics table inside the compiler.  diagdiff holds every
+# probe's own message to its own entry; this holds the line m9c prints
+# under real refusals, with the suffixes the probes' messages leave out.
+# The cases are the ones that shaped it: an agent's first library (a
+# program MODULE imported), and I32 to I64, which had been offered four
+# probes about handler binders before the builtin types stayed literal.
+rm -rf w5 && mkdir w5
+printf 'MODULE PlainLib ;\n\nPROCEDURE Twice (n: I64) : I64 =\nBEGIN\n  RETURN n * 2\nEND Twice ;\n\nEND PlainLib.\n' > w5/PlainLib.m9
+printf 'MODULE PlainLibUse ;\nIMPORT Io, PlainLib ;\n\nBEGIN\n  Io.WriteI64 (PlainLib.Twice (21)) ;\n  Io.WriteLine ("")\nEND PlainLibUse.\n' > w5/PlainLibUse.m9
+printf 'MODULE Widen ;\nVAR x : I32 ; y : I64 ;\nBEGIN\n  y := x\nEND Widen.\n' > w5/Widen.m9
+( cd w5 &&
+  M9LIBRARY="$SRC" "$M9C" --check PlainLibUse.m9 > p.txt 2>&1 &&
+    { echo "FAIL: a program MODULE was imported and passed"; cat p.txt; exit 1; }
+  grep -q "PlainLib is a program MODULE, which exports nothing" p.txt ||
+    { echo "FAIL: the import of a program MODULE was not refused at the IMPORT:"; cat p.txt; exit 1; }
+  grep -q "^  fix: split the module in two.*\[m9c --explain import-program-module\]$" p.txt ||
+    { echo "FAIL: no fix line under the program-MODULE refusal:"; cat p.txt; exit 1; }
+  M9LIBRARY="$SRC" "$M9C" --check Widen.m9 > w.txt 2>&1 &&
+    { echo "FAIL: I32 to I64 passed"; exit 1; }
+  grep -q "^  explain: m9c --explain implicit-widening " w.txt ||
+    { echo "FAIL: I32 to I64 did not name implicit-widening first:"; cat w.txt; exit 1; }
+  "$M9C" --explain implicit-widening > e1.txt ||
+    { echo "FAIL: --explain implicit-widening exited nonzero"; exit 1; }
+  grep -q "^  fix:     I64 (x) explicitly" e1.txt ||
+    { echo "FAIL: --explain NAME printed no fix:"; cat e1.txt; exit 1; }
+  "$M9C" --explain 'module Frob is named and not imported' > e2.txt ||
+    { echo "FAIL: --explain TEXT exited nonzero"; exit 1; }
+  grep -q "^module-named-not-imported$" e2.txt ||
+    { echo "FAIL: --explain TEXT did not find module-named-not-imported:"; cat e2.txt; exit 1; }
+  "$M9C" --explain no-such-probe > e3.txt 2>&1 &&
+    { echo "FAIL: --explain of nothing exited 0"; exit 1; }
+  true ) || exit 1
+echo "m9c: a refusal carries its fix, I32 to I64 names implicit-widening,"
+echo "     and --explain finds an entry by name and by text"

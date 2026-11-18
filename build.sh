@@ -31,18 +31,31 @@ CC=${CC:-cc}
 # shared objects --cell loads.  The C compiler is the one a user's m9c
 # calls when CC is unset, so the keys match theirs; the runtime's
 # headers come from this tree, the same file the package installs.
+# fill_source LIBDIR prints the program that imports every module of
+# LIBDIR.  A program MODULE (Lsp, M9fmt, M9elide) is left out: it exports
+# nothing and an IMPORT of one is refused since 0.28.1.  The rehearsal
+# of that release found it, in every family.
+fill_source () {
+  echo "MODULE FillAll ;"
+  echo "(* every module of the library, for m9c --fill-cache *)"
+  for f in "$1"/*.m9; do
+    if grep -Eq '^([A-Z]+ )*DEFINITION MODULE ' "$f"; then
+      m=${f##*/}; echo "IMPORT ${m%.m9} ;"
+    fi
+  done
+  echo "BEGIN"
+  echo "END FillAll."
+}
+# --fill-source LIBDIR prints that program, for the pkgcache gate.
+if [ "${1:-}" = --fill-source ]; then
+  fill_source "${2:?--fill-source wants a library directory}"
+  exit 0
+fi
 if [ "${1:-}" = --fill-cache ]; then
   D=${2:?--fill-cache wants DESTDIR}
   # every module installed: the library, as LIBRARY below names it
-  LIB=$(cd "$D/usr/lib/m9" && ls ./*.m9 | sed 's#^./##; s#[.]m9$##')
   F=$(mktemp -d)
-  {
-    echo "MODULE FillAll ;"
-    echo "(* every module of the library, for m9c --fill-cache *)"
-    for m in $LIB; do echo "IMPORT $m ;"; done
-    echo "BEGIN"
-    echo "END FillAll."
-  } > "$F/FillAll.m9"
+  fill_source "$D/usr/lib/m9" > "$F/FillAll.m9"
   for form in --run --cell; do
     env -u CC M9LIBRARY="$D/usr/lib/m9" M9RUNTIME="$(pwd)/runtime" \
       "$D/usr/bin/m9c" --fill-cache "$D/usr/lib/m9/cache" $form "$F/FillAll.m9"
@@ -93,7 +106,7 @@ esac
 
 # COMPILER lists the modules m9c itself is made of, in dependency
 # order.
-COMPILER="DynStr Io Lex M9f Ast Parse Print Text System Sem Gen Doc DynUtf Review M9c"
+COMPILER="DynStr Io Lex M9f Ast Parse Print Text System Sem Gen Doc DynUtf Review ExplainTab Explain M9c"
 
 # LIBRARY lists everything else a program may import: the standard
 # library, shipped as source.  M9 has no binary module format: the .m9
@@ -103,8 +116,8 @@ COMPILER="DynStr Io Lex M9f Ast Parse Print Text System Sem Gen Doc DynUtf Revie
 # 0.4.1's changelog said it did, and /usr/lib/m9 of that release held
 # no Lsp.m9: the claim had no gate.  debian/tests/compile-a-program
 # builds both now.
-LIBRARY="DynStr Io Lex M9f Ast Parse Print Text Fmt Sem Gen \
-         Json JsonUtf Chars DynUtf Tsk Chan Sup Dict Faults Mat Math Bits Sort Seq Check Arrays Numeric Png Time Logger Syslog Http HttpServer OpenApi ApiSpec \
+LIBRARY="DynStr Io Lex M9f Ast Parse Print Text Fmt Sem Gen ExplainTab Explain \
+         Json JsonUtf Chars DynUtf Tsk Chan Sup Dict Faults Mat Math Bits Sort Seq Check Arrays Numeric NumpyExact Png Time Logger Syslog Http HttpServer OpenApi ApiSpec \
          Arrow Doc Review \
          NetCDF Grib Csv Delim Zip Pg Sparql Rdf Regex Xml Hash Smtp Rsa Map Stats System Frame Parquet NbCells NbShow \
          Plot ZarrStore Zarr Diag Lsp M9fmt M9elide"
@@ -179,10 +192,22 @@ install -m 644 man/m9c.1         "$DESTDIR/usr/share/man/man1/m9c.1"
 # atverm/m9c (corpus, host/fpc, runtime, the man page and the module
 # reference only; decided 2026-08-30).  An install from that tree says
 # what it is not installing instead of failing on the first of them.
-for d in docs/M9-report.md docs/pools.md docs/bench.md; do
+for d in docs/M9-report.md docs/pools.md docs/bench.md docs/diagnose.md; do
   if [ -f "$d" ]; then install -m 644 "$d" "$DESTDIR/usr/share/doc/m9/$(basename "$d")"
   else echo "note: no $d in this tree; not installed"; fi
 done
+# The agent skills, so `m9c --guide` can name a copy of the m9c in
+# hand rather than a web page of another version (0.28.1).
+if [ -d skills ]; then
+  for s in skills/*/; do
+    s=${s%/}
+    install -d "$DESTDIR/usr/share/m9/$s"
+    for f in "$s"/*; do
+      [ -f "$f" ] && install -m 644 "$f" "$DESTDIR/usr/share/m9/$f"
+    done
+  done
+  install -m 644 skills/README.md "$DESTDIR/usr/share/m9/skills/README.md"
+fi
 if [ -d tools/vscode-m9 ]; then
 # The VS Code extension gives syntax highlighting plus docstring hovers
 # and completion (fed by m9c --doc), and m9c's diagnostics, for .m9 and

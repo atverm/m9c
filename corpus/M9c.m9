@@ -42,6 +42,8 @@ IMPORT Lex ;
 IMPORT M9f ;
 IMPORT DynStr ;
 IMPORT System ;
+IMPORT Explain ;
+IMPORT ExplainTab ;
 
 TYPE
   Conversion = PTR M9f.Result ;   (* a .m9f's conversion, with its map *)
@@ -254,7 +256,7 @@ CONST
      compiler is the one artifact that cannot read its own package
      version, and a generated file would drag the build system into
      the bootstrap. *)
-  Version = '0.28.0' ;
+  Version = '0.28.1' ;
   (* StdInclude is where its runtime lives, which --help quotes so
      that the example a user copies out of it actually compiles. *)
   StdInclude = '/usr/include/m9' ;
@@ -2390,6 +2392,10 @@ BEGIN
   About () ;
   Io.WriteLine ('usage: m9c [options] FILE.m9 [DEP.m9 ...] [-- CCFLAGS]') ;
   Io.WriteLine ('') ;
+  Io.WriteLine ('An agent writing M9 starts with m9c --guide: the') ;
+  Io.WriteLine ('working loop, the refusals habit meets most, and') ;
+  Io.WriteLine ('where the report, the diagnostics and the skills are.') ;
+  Io.WriteLine ('') ;
   Io.WriteLine ('Checks FILE.m9 and writes NAME.h and NAME.c into the') ;
   Io.WriteLine ('working directory, where NAME is the file base name.') ;
   Io.WriteLine ('') ;
@@ -2481,6 +2487,15 @@ BEGIN
   Io.WriteLine ('                   C compiler; a bare -v with no') ;
   Io.WriteLine ('                   file prints the version instead') ;
   Io.WriteLine ('  --version        print the version and exit') ;
+  Io.WriteLine ('  --guide          print the guide for an agent writing') ;
+  Io.WriteLine ('                   M9, and where this m9c keeps the') ;
+  Io.WriteLine ('                   report, the diagnostics and the') ;
+  Io.WriteLine ('                   skills, then exit') ;
+  Io.WriteLine ('  --explain NAME|TEXT ...') ;
+  Io.WriteLine ('                   print the cause and fix of a') ;
+  Io.WriteLine ('                   refusal, by its probe name (the') ;
+  Io.WriteLine ('                   one under a refusal) or by its') ;
+  Io.WriteLine ('                   text, then exit') ;
   Io.WriteLine ('  --               pass everything after this to the') ;
   Io.WriteLine ('                   C compiler, verbatim -- and turn') ;
   Io.WriteLine ('                   OFF every default below') ;
@@ -2874,6 +2889,185 @@ BEGIN
   END ;
   RETURN ''
 END SourceAt ;
+
+(* ---- THE AGENT GUIDE (m9c --guide, 0.28.1) ----
+
+   An agent writing M9 asked for guidance shipped WITH the compiler: a
+   guide copied beside it drifts, and one printed by the m9c in hand
+   is that version's.  The guide is short on purpose.  It gives the
+   working loop, the habits the checker refuses most, each with the
+   probe that holds the refusal, and where the long documents are for
+   this m9c.  The gate (runtime/test/guide.sh) checks that every probe
+   it names exists and every place it prints is there.  The places
+   are found, never assumed: a source tree's, then the install's, then
+   the public copy on GitHub. *)
+
+CONST
+  PublicTree = 'https://github.com/atverm/m9c/blob/main/' ;
+
+(* TreeDir answers the source tree this m9c was built in, or ''.  out/m9c
+   has the tree as its prefix; runtime/test/m9c has it one level up. *)
+PROCEDURE TreeDir () : UTF RAISES ValueRange =
+VAR d : UTF ;
+BEGIN
+  IF Text.BLen (prefix) = 0 THEN RETURN '' END ;
+  d := prefix ;
+  IF Io.Exists (Cat (d, '/docs/M9-report.md')) AND Io.Exists (Cat (d, '/corpus')) THEN
+    RETURN d
+  END ;
+  d := DirOf (prefix) ;
+  IF Text.BLen (d) > 0 AND Io.Exists (Cat (d, '/docs/M9-report.md')) AND
+     Io.Exists (Cat (d, '/corpus')) THEN
+    RETURN d
+  END ;
+  RETURN ''
+END TreeDir ;
+
+(* Place answers where a document is for this m9c: tree/inTree in a
+   source tree, <prefix>/share/inShare when installed, else the public
+   copy of inTree. *)
+PROCEDURE Place (RO tree: UTF ; RO inTree: UTF ; RO inShare: UTF)
+  : UTF RAISES ValueRange =
+VAR p : UTF ;
+BEGIN
+  IF Text.BLen (tree) > 0 THEN
+    p := Cat (tree, Cat ('/', inTree)) ;
+    IF Io.Exists (p) THEN RETURN p END
+  END ;
+  IF Text.BLen (prefix) > 0 THEN
+    p := Cat (prefix, Cat ('/share/', inShare)) ;
+    IF Io.Exists (p) THEN RETURN p END
+  END ;
+  p := Cat ('/usr/share/', inShare) ;
+  IF Io.Exists (p) THEN RETURN p END ;
+  RETURN Cat (PublicTree, inTree)
+END Place ;
+
+PROCEDURE GuideLine (RO what: UTF ; RO probe: UTF) =
+VAR i : I64 ;
+BEGIN
+  Io.Write ('  ') ;
+  Io.Write (what) ;
+  FOR i := Text.CpCount (what) TO 52 DO Io.Write (' ') END ;
+  Io.WriteLine (probe)
+END GuideLine ;
+
+PROCEDURE Guide () RAISES ValueRange =
+VAR tree, skills : UTF ;
+BEGIN
+  tree := TreeDir () ;
+  Io.WriteLine ('m9c --guide -- for an agent writing M9, from m9c ' + Version) ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('M9 reads like Modula-2 and is not.  The checker refuses') ;
+  Io.WriteLine ('what a fluent hand writes from habit, and each refusal') ;
+  Io.WriteLine ('says what to write instead.  Work in this loop:') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('  1. Ask for a heading before calling it:') ;
+  Io.WriteLine ('       m9c --doc --json MODULE') ;
+  Io.WriteLine ('     writes MODULE.md and MODULE.json: every exported') ;
+  Io.WriteLine ('     name with its parameters, modes, result and RAISES.') ;
+  Io.WriteLine ('     A name from memory is the commonest refusal.') ;
+  Io.WriteLine ('  2. Check without building:  m9c --check FILE.m9') ;
+  Io.WriteLine ('  3. Fix the FIRST refusal, then check again.  A parse') ;
+  Io.WriteLine ('     error cascades: the ones after it are its echoes.') ;
+  Io.WriteLine ('  4. Build and run:  m9c --run FILE.m9 [ARG ...]') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('Under a refusal m9c prints its fix, or the probes to') ;
+  Io.WriteLine ('ask about when the words have several causes:') ;
+  Io.WriteLine ('       m9c --explain NAME      or  m9c --explain TEXT') ;
+  Io.WriteLine ('prints the cause, the fix and where the program is.') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('What habit gets wrong, each with the probe that holds') ;
+  Io.WriteLine ('the refusal:') ;
+  Io.WriteLine ('') ;
+  GuideLine ('not-equal is #, never <>', 'parseprobes/notequal') ;
+  GuideLine ('strings compare with Text.Eq (a, b), not =', 'compare-strings') ;
+  GuideLine ('each unit has its own IMPORT list', 'module-named-not-imported') ;
+  GuideLine ('no implicit conversion, widening too: I64 (x)', 'implicit-widening') ;
+  GuideLine ("a callee's RAISES joins yours, or is handled", 'raises-in-condition') ;
+  GuideLine ('no NIL: OPT PTR T, read by IF x IS SOME p', 'is-some-on-non-opt') ;
+  GuideLine ('NEW (pool, T): the pool comes first', 'new-reversed') ;
+  GuideLine ('a borrow kept past the call is declared KEPT', 'kept-undeclared') ;
+  GuideLine ('a function RETURNs or RAISEs on every path', 'function-falls-off-end') ;
+  GuideLine ('a CASE over a number has an ELSE', 'case-scalar-without-else') ;
+  GuideLine ('a library is DEFINITION + IMPLEMENTATION', 'import-program-module') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ("A string has no escapes.  One that holds ' is written") ;
+  Io.WriteLine ('in double quotes, and one that holds " in single ones.') ;
+  Io.WriteLine ('The language report is the specification.  Where a') ;
+  Io.WriteLine ('guide and the report disagree, the report is right.') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('Where the documents are, for this m9c:') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('  the language report') ;
+  Io.WriteLine ('    ' + Place (tree, 'docs/M9-report.md', 'doc/m9/M9-report.md')) ;
+  Io.WriteLine ('  every refusal, with its cause and fix') ;
+  Io.WriteLine ('    ' + Place (tree, 'docs/diagnose.md', 'doc/m9/diagnose.md')) ;
+  Io.WriteLine ('  the library, one page a module') ;
+  Io.WriteLine ('    ' + Place (tree, 'docs/modules', 'doc/m9/modules')) ;
+  skills := Place (tree, 'skills', 'm9/skills') ;
+  Io.WriteLine ('  skills for Claude Code (m9, m9-lookup, oracles-gates)') ;
+  Io.WriteLine ('    ' + skills) ;
+  IF NOT Text.StartsWithUtf (skills, 'https:') THEN
+    Io.WriteLine ('    into a project:  cp -R ' + skills + '/m9 ' + skills +
+                  '/m9-lookup .claude/skills/')
+  END ;
+  Io.WriteLine ('  the tutorial') ;
+  Io.WriteLine ('    https://tutorial.modula9.net')
+END Guide ;
+
+(* Entry prints one entry of the table, with where its program is. *)
+PROCEDURE Entry (k: I64 ; RO diag: UTF) RAISES IndexError =
+BEGIN
+  Io.WriteLine (ExplainTab.Name (k)) ;
+  Io.WriteLine ('  refusal: ' + ExplainTab.Message (k)) ;
+  Io.WriteLine ('  cause:   ' + ExplainTab.Cause (k)) ;
+  Io.WriteLine ('  fix:     ' + ExplainTab.Fix (k)) ;
+  Io.WriteLine ('  program: ' + diag + ', section ' + ExplainTab.Name (k))
+END Entry ;
+
+(* ExplainCmd is `m9c --explain ARG ...'.  An ARG that names a probe
+   prints its entry.  Any other ARG is read as a refusal's text, pasted
+   whole or in part, and prints the entries it matches.  It answers
+   FALSE when an ARG matches nothing. *)
+PROCEDURE ExplainCmd () : BOOL RAISES ValueRange, IndexError =
+VAR
+  i, j, k, n : I64 ;
+  a, diag : UTF ;
+  hits : SLICE OF I64 ;
+  ok : BOOL ;
+BEGIN
+  ok := TRUE ;
+  diag := Place (TreeDir (), 'docs/diagnose.md', 'doc/m9/diagnose.md') ;
+  IF Io.ArgCount () < 3 THEN
+    Io.ErrLine ('m9c: --explain wants a probe name or the text of a refusal') ;
+    RETURN FALSE
+  END ;
+  hits := NEW (I64, Explain.MaxCandidates) ;
+  FOR i := 2 TO Io.ArgCount () - 1 DO
+    a := Io.ArgUtf (pool, i) ;
+    k := Explain.Find (a) ;
+    IF i > 2 THEN Io.WriteLine ('') END ;
+    IF k >= 0 THEN
+      Entry (k, diag)
+    ELSE
+      n := Explain.Candidates (Explain.Patterns (pool), a, hits) ;
+      IF n = 0 THEN n := Explain.Nearest (pool, a, hits) END ;
+      IF n = 0 THEN
+        Io.ErrLine ('m9c: --explain: no probe is named or matches: ' + a) ;
+        ok := FALSE
+      ELSE
+        FOR j := 0 TO LEN (hits) - 1 DO
+          IF j < n THEN
+            IF j > 0 THEN Io.WriteLine ('') END ;
+            Entry (hits[j], diag)
+          END
+        END
+      END
+    END
+  END ;
+  RETURN ok
+END ExplainCmd ;
 
 PROCEDURE IsHelp (RO a: UTF) : BOOL =
 BEGIN
@@ -4358,11 +4552,22 @@ BEGIN
   RETURN path + ': ' + m
 END Located ;
 
+(* HintUnder prints, under a refusal, the fix of the probe that earns
+   it, or the probes to ask `m9c --explain' about when several do
+   (Explain, 0.28.1).  A refusal no probe earns gets no line. *)
+PROCEDURE HintUnder (RO msg: UTF) RAISES IndexError =
+VAR h : UTF ;
+BEGIN
+  h := Explain.Hint (pool, msg) ;
+  IF Text.BLen (h) > 0 THEN Io.ErrLine (h) END
+END HintUnder ;
+
 PROCEDURE Report () : BOOL RAISES IndexError =
 VAR i : I64 ;
 BEGIN
   FOR i := 0 TO Sem.ErrCount () - 1 DO
-    Io.ErrLine (Located (Shown (main), Remap (main, Unshift (Sem.ErrAt (i)))))
+    Io.ErrLine (Located (Shown (main), Remap (main, Unshift (Sem.ErrAt (i))))) ;
+    HintUnder (Sem.ErrAt (i))
   END ;
   (* A note (a deprecated name, par 3.9) is printed the same way, and
      refuses nothing. *)
@@ -4575,6 +4780,10 @@ BEGIN
     failed := TRUE
   ELSIF IsHelp (Io.ArgUtf (pool, 1)) THEN
     Help ()
+  ELSIF Text.Eq (Io.ArgUtf (pool, 1), '--guide') THEN
+    Guide ()
+  ELSIF Text.Eq (Io.ArgUtf (pool, 1), '--explain') THEN
+    IF NOT ExplainCmd () THEN failed := TRUE END
   ELSE
     ScanArgs () ;
     (* a refused argument has been said; nothing after it is meant *)
@@ -4873,6 +5082,7 @@ BEGIN
         WHILE i < Gen.Errs () AND i < 8 DO
           DiagN (Cat (Shown (ErrFile (Gen.ErrModAt (i), main)), ':'), Gen.ErrLineAt (i), ': gen: ',
                  Gen.ErrMsgAt (i)) ;
+          HintUnder (Gen.ErrMsgAt (i)) ;
           i := i + 1
         END ;
         DiagN ('m9c: ', Gen.Errs (), ' generator errors in ', Shown (main)) ;

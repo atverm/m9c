@@ -1368,6 +1368,14 @@ Rules:
    55 files, every one an implementation leaning on its definition's
    imports, which is why it is not read that way.
    `museum/named-not-imported.m9` is the piece.)*
+   **A program module is not imported.**  A bare `MODULE` has no
+   definition, so it exports nothing, and an `IMPORT` that names one
+   is refused there.  The fix is two units: `DEFINITION MODULE M` with
+   the headings and `IMPLEMENTATION MODULE M` with the bodies.  *(Since
+   0.28.1.  Until then the checker read a program's procedures like
+   any module's, `--check` passed the call, and the generator refused
+   it as `callee unsupported yet`.  An agent's first library met it.
+   Probe `import-program-module`.)*
    Two definitions may import each other.  Types do not change at run
    time, so each one's generated header carries the names of the
    other's record, monitor, case record, enumeration and opaque types,
