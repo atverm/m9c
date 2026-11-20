@@ -9,19 +9,3 @@
 # carries the version removes it (the pointer commit), and
 # tutrelease fails on a line whose version is out, whose example
 # agrees with the release after all, or whose example is gone.
-C6Nan      0.29.0   interpolation literals
-C8Zarr     0.29.0   interpolation literals
-C10Icos    0.29.0   interpolation literals
-C12Pad     0.29.0   interpolation literals
-C12Line    0.29.0   the interpolation literal is its subject
-C13Kinds   0.29.0   interpolation literals
-C13Modes   0.29.0   interpolation literals
-C14Flux    0.29.0   interpolation literals
-C15Stats   0.29.0   interpolation literals
-C16Hash    0.29.0   interpolation literals
-C16Mat     0.29.0   interpolation literals
-C17Pipe    0.29.0   interpolation literals, a slice in brackets, a character beside a BYTE
-C18Dist    0.29.0   interpolation literals, a CONST over CONSTs
-C18Fit     0.29.0   interpolation literals
-C18Taylor  0.29.0   interpolation literals
-X12Hole    0.29.0   the refusal of a hole's format
