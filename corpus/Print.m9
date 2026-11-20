@@ -120,6 +120,45 @@ BEGIN
   END
 END Desig ;
 
+(* An interpolation literal is a chain of `+' the parser marked with
+   `$' in b, over NString nodes for its text and NHole nodes for its
+   holes (Parse.PInterp).  It is written back as the literal it was:
+   InterpParts writes what stands between the quotes, and
+   InterpQuoted answers TRUE when the text holds the single quote, so
+   that the double one delimits it. *)
+PROCEDURE InterpQuoted (k: Ast.Kid) : BOOL =
+BEGIN
+  IF k IS SOME n THEN
+    IF n.kind = Ast.NString THEN RETURN Text.FindChar (n.au, "'") >= 0 END ;
+    IF n.kind = Ast.NBin AND Text.Eq (n.bu, '$') THEN
+      RETURN InterpQuoted (n.kids[0]) OR InterpQuoted (n.kids[1])
+    END
+  END ;
+  RETURN FALSE
+END InterpQuoted ;
+
+PROCEDURE InterpParts (VAR d: PTR DynStr.DString ; k: Ast.Kid) =
+BEGIN
+  IF k IS SOME n THEN
+    IF n.kind = Ast.NBin AND Text.Eq (n.bu, '$') THEN
+      InterpParts (d, n.kids[0]) ;
+      InterpParts (d, n.kids[1])
+    ELSIF n.kind = Ast.NString THEN
+      DynStr.Append (d, n.au)
+    ELSIF n.kind = Ast.NHole THEN
+      DynStr.Append (d, '${') ;
+      IF n.nkids > 0 THEN E (d, n.kids[0]) END ;
+      IF n.f1 THEN
+        DynStr.AppendChar (d, ':') ;
+        DynStr.Append (d, n.au)
+      END ;
+      DynStr.AppendChar (d, '}')
+    ELSE
+      E (d, k)
+    END
+  END
+END InterpParts ;
+
 PROCEDURE E (VAR d: PTR DynStr.DString ;
              k: Ast.Kid) =
 VAR j : I64 ;
@@ -127,11 +166,18 @@ BEGIN
   IF k IS SOME n THEN
     CASE n.kind OF
     | Ast.NBin :
-        E (d, n.kids[0]) ;
-        DynStr.AppendChar (d, ' ') ;
-        DynStr.Append (d, n.au) ;
-        DynStr.AppendChar (d, ' ') ;
-        E (d, n.kids[1])
+        IF Text.Eq (n.bu, '$') THEN
+          DynStr.AppendChar (d, '$') ;
+          IF InterpQuoted (k) THEN DynStr.AppendChar (d, '"') ELSE DynStr.AppendChar (d, "'") END ;
+          InterpParts (d, k) ;
+          IF InterpQuoted (k) THEN DynStr.AppendChar (d, '"') ELSE DynStr.AppendChar (d, "'") END
+        ELSE
+          E (d, n.kids[0]) ;
+          DynStr.AppendChar (d, ' ') ;
+          DynStr.Append (d, n.au) ;
+          DynStr.AppendChar (d, ' ') ;
+          E (d, n.kids[1])
+        END
     | Ast.NUn :
         IF Text.Eq (n.au, 'NOT') THEN
           DynStr.Append (d, 'NOT ')

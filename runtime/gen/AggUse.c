@@ -416,26 +416,26 @@ int main (int argc, char **argv)
   Io_WriteLineUtf (m9a8, err);
   if (err->exc) { m9ln = 126; goto L_hdl_m9t1; };
   }
-  { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, AggUse_Lookup (INT64_C(404), err), ((m9_sl_UTF8){ (uint8_t *) m9s8, 3 }), err), AggUse_Lookup (INT64_C(1), err), err)) m9a9 = m9_utf_cat (err->res, m9_utf_cat (err->res, AggUse_Lookup (INT64_C(404), err), ((m9_sl_UTF8){ (uint8_t *) m9s8, 3 }), err), AggUse_Lookup (INT64_C(1), err), err);
+  { __typeof__(({ m9_sl_UTF8 m9t9 = m9_utf_cat (err->res, AggUse_Lookup (INT64_C(404), err), ((m9_sl_UTF8){ (uint8_t *) m9s8, 3 }), err); m9_utf_cat (err->res, m9t9, AggUse_Lookup (INT64_C(1), err), err); })) m9a9 = ({ m9_sl_UTF8 m9t9 = m9_utf_cat (err->res, AggUse_Lookup (INT64_C(404), err), ((m9_sl_UTF8){ (uint8_t *) m9s8, 3 }), err); m9_utf_cat (err->res, m9t9, AggUse_Lookup (INT64_C(1), err), err); });
     if (err->exc) { m9ln = 127; goto L_hdl_m9t1; };
   Io_WriteLineUtf (m9a9, err);
   if (err->exc) { m9ln = 127; goto L_hdl_m9t1; };
   }
   AggUse__n = INT64_C(0);
-  { __typeof__(AggUse__i) m9t9to;
+  { __typeof__(AggUse__i) m9t10to;
   AggUse__i = INT64_C(0);
-  m9t9to = m9_sub_i64 (INT64_C(3), INT64_C(1), err);
+  m9t10to = m9_sub_i64 (INT64_C(3), INT64_C(1), err);
   if (err->exc) { m9ln = 129; goto L_hdl_m9t1; };
-  if (AggUse__i <= m9t9to) for (;;) {
-    bool m9t10 = (*(AggUse_Status *) m9_at ((*Statuses).v, AggUse__i, INT64_C(3), sizeof (AggUse_Status), err)).fatal;
+  if (AggUse__i <= m9t10to) for (;;) {
+    bool m9t11 = (*(AggUse_Status *) m9_at ((*Statuses).v, AggUse__i, INT64_C(3), sizeof (AggUse_Status), err)).fatal;
     if (err->exc) { m9ln = 130; goto L_hdl_m9t1; };
-    if (m9t10) {
+    if (m9t11) {
       { __typeof__(AggUse__n) m9v = m9_add_i64 (AggUse__n, INT64_C(1), err);
         if (err->exc) { m9ln = 130; goto L_hdl_m9t1; };
         AggUse__n = m9v;
       }
     }
-    if ((uint64_t) m9t9to - (uint64_t) AggUse__i < (uint64_t) 1) break;
+    if ((uint64_t) m9t10to - (uint64_t) AggUse__i < (uint64_t) 1) break;
     AggUse__i += 1;
   } }
   Io_WriteI64 (AggUse__n, err);
@@ -450,7 +450,7 @@ int main (int argc, char **argv)
   if (err->exc) { m9ln = 135; goto L_hdl_m9t1; };
   { __typeof__((*Ok)) m9a10 = (*Ok);
     if (err->exc) { m9ln = 136; goto L_hdl_m9t1; };
-  { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s10, 1 }), AggUse_Line (&(AggUse__made), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s11, 3 }), err), AggUse_Line (&m9a10, err), err)) m9a11 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s10, 1 }), AggUse_Line (&(AggUse__made), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s11, 3 }), err), AggUse_Line (&m9a10, err), err);
+  { __typeof__(({ m9_sl_UTF8 m9t13 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t12 = ((m9_sl_UTF8){ (uint8_t *) m9s10, 1 }); m9_utf_cat (err->res, m9t12, AggUse_Line (&(AggUse__made), err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s11, 3 }), err); m9_utf_cat (err->res, m9t13, AggUse_Line (&m9a10, err), err); })) m9a11 = ({ m9_sl_UTF8 m9t13 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t12 = ((m9_sl_UTF8){ (uint8_t *) m9s10, 1 }); m9_utf_cat (err->res, m9t12, AggUse_Line (&(AggUse__made), err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s11, 3 }), err); m9_utf_cat (err->res, m9t13, AggUse_Line (&m9a10, err), err); });
     if (err->exc) { m9ln = 136; goto L_hdl_m9t1; };
   Io_WriteLineUtf (m9a11, err);
   if (err->exc) { m9ln = 136; goto L_hdl_m9t1; };

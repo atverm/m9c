@@ -19,6 +19,7 @@ extern const m9_exc Smtp_Error;
 #define Smtp_Plain INT64_C(0)
 #define Smtp_Tls INT64_C(1)
 #define Smtp_StartTls INT64_C(2)
+#define Smtp_ReplyMs INT64_C(60000)
 #define Smtp_ReplyMax INT64_C(65536)
 #define Smtp_LineWrap INT64_C(76)
 static const uint8_t Smtp_Ehlo_d[7] = { 69, 72, 76, 79, 32, 109, 57 };
@@ -41,6 +42,7 @@ void Smtp_SetText (Smtp_Message * *m, m9_pool *m_pool, m9_sl_UTF8 body, m9_state
 void Smtp_SetDate (Smtp_Message * *m, m9_pool *m_pool, Time_Instant t, m9_state *err);
 void Smtp_SetId (Smtp_Message * *m, m9_pool *m_pool, m9_sl_UTF8 id, m9_state *err);
 void Smtp_Attach (Smtp_Message * *m, m9_pool *m_pool, m9_sl_UTF8 name, m9_sl_UTF8 ctype, m9_sl_BYTE data, m9_state *err);
+void Smtp_SetTimeout (Smtp_Message * *m, m9_pool *m_pool, int64_t ms, m9_state *err);
 m9_sl_UTF8 Smtp_Wire (Smtp_Message * m, m9_state *err);
 void Smtp_Send (m9_sl_UTF8 host, int64_t port, int64_t security, m9_sl_UTF8 user, m9_sl_UTF8 pass, Smtp_Message * m, m9_state *err);
 void Smtp_SendText (m9_sl_UTF8 host, int64_t port, int64_t security, m9_sl_UTF8 user, m9_sl_UTF8 pass, m9_sl_UTF8 from, m9_sl_m9_sl_UTF8 to, m9_sl_UTF8 subject, m9_sl_UTF8 body, m9_state *err);

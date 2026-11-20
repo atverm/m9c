@@ -156,6 +156,7 @@ CONST
   KLParen = 214 ; KRParen = 215 ; KLBrack = 216 ; KRBrack = 217 ;
   KComma = 218 ; KSemi = 219 ; KColon = 220 ; KDot = 221 ;
   KDotDot = 222 ; KBar = 223 ; KCaret = 224 ;
+  KInterp = 225 ;           (* an interpolation literal, $'...' *)
 
   HexMsg   = '0123456789abcdef' ;
   HexUp    = '0123456789ABCDEF' ;
@@ -336,6 +337,7 @@ BEGIN
   | KDotDot : RETURN 'DotDot'
   | KBar : RETURN 'Bar'
   | KCaret : RETURN 'Caret'
+  | KInterp : RETURN 'InterpLit'
   ELSE RETURN '?'
   END
 END KindName ;
@@ -874,6 +876,68 @@ BEGIN
       RETURN
     END ;
     Mk (t, KStr, SLICE (lx.src, start, lx.pos - start), ln, cl) ;
+    Advance (lx) ;
+    RETURN
+  END ;
+
+  (* An interpolation literal, $'...${e}...' (docs/interpolation-rfc.md,
+     2026-11-19).  It is one token: its text is what stands between
+     the quotes, holes and all.  The parser cuts it into text and
+     holes.  A hole holds no string, so the first quote of the kind
+     that opened the literal closes it, as for a plain string.  A
+     quote inside a hole is refused here, where it would otherwise
+     end the literal early and leave the rest of the line as noise.
+     The line's rest is skipped after that refusal. *)
+  IF c = '$' AND (Peek (lx, 1) = "'" OR Peek (lx, 1) = '"') THEN
+    Advance (lx) ;
+    q := Peek (lx, 0) ;
+    Advance (lx) ;
+    start := lx.pos ;
+    k := 0 ;                    (* 1 inside a hole *)
+    LOOP
+      c := Peek (lx, 0) ;
+      IF c = 0C OR c = 0AC THEN EXIT END ;
+      IF k = 0 THEN
+        IF c = q THEN EXIT END ;
+        IF c = '$' AND Peek (lx, 1) = '{' THEN
+          k := 1 ;
+          Advance (lx)
+        END
+      ELSIF c = '}' THEN
+        k := 0
+      ELSIF c = "'" OR c = '"' THEN
+        (* A quote in a hole is a string where a } still follows on
+           the line.  Where none does, the hole was left open and the
+           quote is the literal's own end. *)
+        p := lx.col ;
+        n := 0 ;
+        WHILE Peek (lx, 0) # 0C AND Peek (lx, 0) # 0AC DO
+          IF Peek (lx, 0) = '}' THEN n := 1 END ;
+          Advance (lx)
+        END ;
+        IF n = 1 THEN
+          Mk (t, KError, 'a hole holds no string literal: give the value a name, or join it with +', ln, p)
+        ELSE
+          Mk (t, KError, 'a hole of this interpolation literal is not closed: ${ needs its }', ln, cl)
+        END ;
+        RETURN
+      END ;
+      Advance (lx)
+    END ;
+    IF Peek (lx, 0) # q THEN
+      IF k = 1 THEN
+        Mk (t, KError, 'a hole of this interpolation literal is not closed on its line', ln, cl)
+      ELSE
+        Mk (t, KError, 'unterminated interpolation literal', ln, cl)
+      END ;
+      RETURN
+    END ;
+    IF k = 1 THEN
+      Mk (t, KError, 'a hole of this interpolation literal is not closed', ln, cl) ;
+      Advance (lx) ;
+      RETURN
+    END ;
+    Mk (t, KInterp, SLICE (lx.src, start, lx.pos - start), ln, cl) ;
     Advance (lx) ;
     RETURN
   END ;

@@ -1,0 +1,12 @@
+(* The brackets are read as a slice in two places: a whole argument
+   and a CONST.  Anywhere else a slice has a name and is filled from
+   NEW. *)
+MODULE m ;
+PROCEDURE Bad () : I64 =
+VAR v : SLICE OF I64 ;
+BEGIN
+  v := [1, 2] ;
+  RETURN LEN (v)
+END Bad ;
+BEGIN
+END m.

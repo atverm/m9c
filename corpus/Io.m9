@@ -23,6 +23,14 @@ PROCEDURE WriteI64 (v: I64) ;
      below flushes them.  That is why Halt is the only way out of a
      program that has written anything.
 
+     A LOG LINE IS NOT OUTPUT.  Standard output that goes to a file
+     is written when its buffer fills, not when the line is written.
+     A server that reports "worker died" with WriteLine has that line
+     in its buffer when someone reads the log after the crash.  A
+     line that must be seen when it happens goes through ErrLine or
+     Logger, which flush, or is followed by Flush.  An agent in a
+     blind trial lost exactly those lines (2026-11-20).
+
        u -- the text, written as its UTF-8 octets.  Since 0.26 a
             call of WriteLine or Write is WriteLineUtf's or
             WriteUtf's.  Nothing in this module raises, so these

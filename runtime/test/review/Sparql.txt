@@ -2,7 +2,7 @@ REVIEW Sparql -- 15 procedures with a body, 13 of them functions; 11 headings in
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              13
-  assignments                                    35
+  assignments                                    38
   arguments                                      94
   RETURN values                                  15
   operands of a comparison or an operator        25

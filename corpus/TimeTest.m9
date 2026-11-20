@@ -6,7 +6,9 @@ MODULE TimeTest ;
    ParseNanos against OffsetDateTime.parse with ISO_OFFSET_DATE_TIME
    on 434 strings, the refusals included.  It holds IsoNanos against
    Instant.toString and FormatDate against an IMF-fixdate pattern on
-   411 instants from year 0 to 9999.  The rest of Time keeps its C
+   411 instants from year 0 to 9999.  It holds ParseRfc3339 against
+   the RFC's grammar and Go's Time.UnmarshalText on 640 strings
+   (Rfc3339.gold).  The rest of Time keeps its C
    driver (time_driver.c). *)
 
 IMPORT Check ;
@@ -58,6 +60,62 @@ BEGIN
 EXCEPT
 | IndexError : Check.That (t, 'the parse golden lines differ in length', FALSE)
 END Parses ;
+
+(* Strict answers ParseRfc3339's verdict on s, as Parsed does. *)
+PROCEDURE Strict (RO s: STR ; VAR r: Time.Nanos) : BOOL =
+BEGIN
+  r := Time.ParseRfc3339 (s) ;
+  RETURN TRUE
+EXCEPT
+| ValueRange : RETURN FALSE
+END Strict ;
+
+(* StrictParses holds ParseRfc3339 against two judges that must both
+   accept: the grammar of RFC 3339 and Go's Time.UnmarshalText
+   (runtime/test/gold/Rfc3339.gold, written by
+   tools/timegold3339/main.go, which says where Go alone is looser).  Go cuts a fraction at nine digits and
+   ParseRfc3339 refuses the tenth.  So the gold has no such case, and
+   the tenth digit is held here by hand. *)
+PROCEDURE StrictParses () =
+VAR
+  gold, first : STR ;
+  ins : SLICE OF STR ;
+  ok : SLICE OF BOOL ;
+  secs, nanos : SLICE OF I64 ;
+  r : Time.Nanos ;
+  i, verdict, value : I64 ;
+BEGIN
+  gold := Check.GoldPath ('Rfc3339.gold') ;
+  ins := Check.GoldStrs (t, gold, 'parse.in') ;
+  ok := Check.GoldBools (t, gold, 'parse.ok') ;
+  secs := Check.GoldI64s (t, gold, 'parse.secs') ;
+  nanos := Check.GoldI64s (t, gold, 'parse.nanos') ;
+  verdict := 0 ;
+  value := 0 ;
+  first := '' ;
+  FOR i := 0 TO LEN (ins) - 1 DO
+    IF Strict (Text.Replace (ins[i], '_', ' '), r) # ok[i] THEN
+      verdict := verdict + 1 ;
+      IF Text.BLen (first) = 0 THEN first := ins[i] END
+    ELSIF ok[i] AND (r.secs # secs[i] OR r.nanos # nanos[i]) THEN
+      value := value + 1 ;
+      IF Text.BLen (first) = 0 THEN first := ins[i] END
+    END
+  END ;
+  Check.That (t, 'the RFC 3339 golden file has parse cases', LEN (ins) > 600) ;
+  Check.EqI64 (t, 'ParseRfc3339 accepts and refuses as the grammar and Go do', verdict, 0) ;
+  Check.EqI64 (t, 'ParseRfc3339 = Time.UnmarshalText', value, 0) ;
+  Check.EqStr (t, 'no golden case differs', first, '') ;
+  Check.That (t, 'ParseRfc3339 takes nine fraction digits',
+              Strict ('2026-10-10T12:34:56.123456789Z', r) AND r.nanos = 123456789) ;
+  Check.That (t, 'and refuses the tenth', NOT Strict ('2026-10-10T12:34:56.1234567891Z', r)) ;
+  Check.That (t, 'ParseRfc3339 takes +19:00, which ParseNanos refuses',
+              Strict ('2026-10-10T12:34:56+19:00', r) AND NOT Parsed ('2026-10-10T12:34:56+19:00', r)) ;
+  Check.That (t, 'ParseRfc3339 refuses a missing seconds field, which ParseNanos takes',
+              NOT Strict ('2026-10-10T12:34Z', r) AND Parsed ('2026-10-10T12:34Z', r))
+EXCEPT
+| IndexError : Check.That (t, 'the RFC 3339 golden lines differ in length', FALSE)
+END StrictParses ;
 
 PROCEDURE Prints () =
 VAR
@@ -129,6 +187,7 @@ VAR a, b : Time.Nanos ;
 
 BEGIN
   Parses () ;
+  StrictParses () ;
   Prints () ;
   Rounds () ;
   Check.That (t, 'IsoNanos refuses a nanosecond of a billion', Refuses (0, 1000000000)) ;

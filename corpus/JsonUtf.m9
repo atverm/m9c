@@ -149,11 +149,22 @@ IMPORT DynStr ;
 IMPORT Text ;
 
 TYPE
+  Elem = OPT PTR Node ;
+
+  (* ArrIx is an array's index (MakeIx): its elements by position,
+     and the last of them. *)
+  ArrIx = RECORD
+    at : SLICE OF Elem ;       (* at[0 .. n - 1] are the elements *)
+    n : I64 ;
+    last : OPT PTR Node ;
+  END ;
+
   Node = RECORD
     v    : Value ;
     RO name : UTF ;    (* member name inside Object, document text *)
     next : OPT PTR Node ;
     RO raw : UTF ;     (* a Num's text as NewRaw was given it; '' else *)
+    ix : OPT PTR ArrIx ;   (* an array's index, or NONE *)
   END ;
 
   Cursor = RECORD
@@ -258,12 +269,38 @@ BEGIN
   RETURN n
 END ParseObject ;
 
+(* MakeIx fills an array's index x from the list that starts at head,
+   as Json.MakeIx does: the elements by position, in x.at, which the
+   caller made long enough, and the last one.  Item then answers
+   element i in one step and Add appends in one.  Json's comment has
+   the reasons.  An index whose n is not the array's count is not
+   believed: Item and Add then walk. *)
+PROCEDURE MakeIx (VAR x: PTR ArrIx ; KEPT head: OPT PTR Node) =
+VAR
+  cur : OPT PTR Node ;
+  i : I64 ;
+BEGIN
+  x.last := NONE ;
+  cur := head ;
+  i := 0 ;
+  WHILE cur IS SOME p DO
+    IF i < LEN (x.at) THEN x.at[i] := SOME (p) END ;
+    x.last := SOME (p) ;
+    i := i + 1 ;
+    cur := p.next
+  END ;
+  x.n := i
+EXCEPT
+| IndexError : x.n := -1
+END MakeIx ;
+
 PROCEDURE ParseArray (VAR c: PTR Cursor) : PTR Node
   RAISES ParseError =
 VAR
   n, child   : PTR Node ;
   head, last : OPT PTR Node ;
   k          : I64 ;
+  x          : PTR ArrIx ;
 BEGIN
   Bump (c) ;
   Skip (c) ;
@@ -285,6 +322,10 @@ BEGIN
   END ;
   n := NEW (c, Node) ;
   n.v := Value.Arr (head, k) ;
+  x := NEW (c, ArrIx) ;
+  x.at := NEW (c, Elem, k) ;
+  MakeIx (x, head) ;
+  n.ix := SOME (x) ;
   RETURN n
 END ParseArray ;
 
@@ -451,6 +492,12 @@ BEGIN
   CASE arr.v OF
   | Arr (first, count) :
       IF i < 0 OR i >= count THEN RAISE IndexError (i, count) END ;
+      (* by the index, when the array has one that agrees *)
+      IF arr.ix IS SOME x THEN
+        IF x.n = count THEN
+          IF x.at[i] IS SOME p THEN RETURN p END
+        END
+      END ;
       c := first ;
       j := i ;
       WHILE c IS SOME p DO
@@ -1034,6 +1081,7 @@ VAR
   cc : PTR Node ;
   cur, head, last : OPT PTR Node ;
   k : I64 ;
+  x : PTR ArrIx ;
 BEGIN
   CASE n.v OF
   | Object (first) :
@@ -1061,7 +1109,11 @@ BEGIN
         k := k + 1 ;
         cur := p.next
       END ;
-      c.v := Value.Arr (head, k)
+      c.v := Value.Arr (head, k) ;
+      x := NEW (root, ArrIx) ;
+      x.at := NEW (root, Elem, k) ;
+      MakeIx (x, head) ;
+      c.ix := SOME (x)
   | Str (t) :
       (* the payload is copied, as Json's is: a view kept into another
          pool would dangle *)
@@ -1269,25 +1321,58 @@ END Set ;
 PROCEDURE Add (VAR arr: PTR Node ; VAR KEPT v: PTR Node)
   RAISES TypeMismatch =
 VAR
-  cur, prev, head : OPT PTR Node ;
-  k : I64 ;
+  head, xo : OPT PTR Node ;
+  ix : OPT PTR ArrIx ;
+  bigger : SLICE OF Elem ;
+  nx : PTR ArrIx ;
+  k, i : I64 ;
+  sound : BOOL ;
 BEGIN
+  (* The head is read out HERE.  A rebuilt variant with the new count
+     is the only way to store it, and CASE is the only way back in. *)
   CASE arr.v OF
-  | Arr (first, count) : head := first ; cur := first ; k := count
+  | Arr (first, count) : head := first ; k := count
   ELSE RAISE TypeMismatch ('Add on a node that is not an array')
   END ;
   v.next := NONE ;
-  prev := NONE ;
-  WHILE cur IS SOME p DO
-    prev := SOME (p) ;
-    cur := p.next
+  IF k = 0 THEN
+    arr.v := Value.Arr (SOME (v), 1) ;
+    nx := NEW (arr, ArrIx) ;
+    nx.at := NEW (arr, Elem, 8) ;
+    nx.at[0] := SOME (v) ;
+    nx.last := SOME (v) ;
+    nx.n := 1 ;
+    arr.ix := SOME (nx) ;
+    RETURN
   END ;
-  IF prev IS SOME q THEN
-    q.next := SOME (v) ;
-    arr.v := Value.Arr (head, k + 1)
-  ELSE
-    arr.v := Value.Arr (SOME (v), k + 1)
-  END
+  (* The index says where the list ends.  One that does not agree
+     with the count is made again, by one walk. *)
+  sound := FALSE ;
+  ix := arr.ix ;
+  IF ix IS SOME x THEN sound := x.n = k END ;
+  IF NOT sound THEN
+    nx := NEW (arr, ArrIx) ;
+    nx.at := NEW (arr, Elem, 2 * k + 8) ;
+    MakeIx (nx, head) ;
+    arr.ix := SOME (nx) ;
+    ix := arr.ix
+  END ;
+  xo := NONE ;
+  IF ix IS SOME x THEN
+    xo := x.last ;
+    IF k >= LEN (x.at) THEN
+      bigger := NEW (arr, Elem, 2 * k + 8) ;
+      FOR i := 0 TO k - 1 DO bigger[i] := x.at[i] END ;
+      x.at := bigger
+    END ;
+    x.at[k] := SOME (v) ;
+    x.last := SOME (v) ;
+    x.n := k + 1
+  END ;
+  IF xo IS SOME q THEN q.next := SOME (v) END ;
+  arr.v := Value.Arr (head, k + 1)
+EXCEPT
+| IndexError : arr.ix := NONE
 END Add ;
 
 END JsonUtf.

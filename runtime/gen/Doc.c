@@ -2291,7 +2291,7 @@ static void Doc_TwinOver (m9_pool *pool, m9_sl_Doc_Anchor *anch, int64_t nanch, 
           if (m9t7) {
             { __typeof__((*(Doc_Anchor *) m9_at ((*anch).p, j, (*anch).len, sizeof (Doc_Anchor), err)).sig) m9a70 = (*(Doc_Anchor *) m9_at ((*anch).p, j, (*anch).len, sizeof (Doc_Anchor), err)).sig;
               if (err->exc) { m9ln = 824; goto L_ret; };
-            { __typeof__(m9_utf_cat (err->res, (*(Doc_Anchor *) m9_at ((*anch).p, i, (*anch).len, sizeof (Doc_Anchor), err)).name, m9_utf_slice ((*(Doc_Anchor *) m9_at ((*anch).p, j, (*anch).len, sizeof (Doc_Anchor), err)).sig, n, m9_sub_i64 (Text_BLen (m9a70, err), n, err), err), err)) m9a71 = m9_utf_cat (err->res, (*(Doc_Anchor *) m9_at ((*anch).p, i, (*anch).len, sizeof (Doc_Anchor), err)).name, m9_utf_slice ((*(Doc_Anchor *) m9_at ((*anch).p, j, (*anch).len, sizeof (Doc_Anchor), err)).sig, n, m9_sub_i64 (Text_BLen (m9a70, err), n, err), err), err);
+            { __typeof__(({ m9_sl_UTF8 m9t9 = (*(Doc_Anchor *) m9_at ((*anch).p, i, (*anch).len, sizeof (Doc_Anchor), err)).name; m9_utf_cat (err->res, m9t9, m9_utf_slice ((*(Doc_Anchor *) m9_at ((*anch).p, j, (*anch).len, sizeof (Doc_Anchor), err)).sig, n, m9_sub_i64 (Text_BLen (m9a70, err), n, err), err), err); })) m9a71 = ({ m9_sl_UTF8 m9t9 = (*(Doc_Anchor *) m9_at ((*anch).p, i, (*anch).len, sizeof (Doc_Anchor), err)).name; m9_utf_cat (err->res, m9t9, m9_utf_slice ((*(Doc_Anchor *) m9_at ((*anch).p, j, (*anch).len, sizeof (Doc_Anchor), err)).sig, n, m9_sub_i64 (Text_BLen (m9a70, err), n, err), err), err); });
               if (err->exc) { m9ln = 824; goto L_ret; };
             { __typeof__((*(Doc_Anchor *) m9_at ((*anch).p, i, (*anch).len, sizeof (Doc_Anchor), err)).sig) m9v = Text_KeepUtf (pool, m9a71, err);
               if (err->exc) { m9ln = 824; goto L_ret; };
@@ -2332,9 +2332,9 @@ static void Doc_TwinOver (m9_pool *pool, m9_sl_Doc_Anchor *anch, int64_t nanch, 
             (*(Doc_Anchor *) m9_at ((*anch).p, i, (*anch).len, sizeof (Doc_Anchor), err)).attribText = m9v;
             if (err->exc) { m9ln = 832; goto L_ret; };
           }
-          bool m9t9 = (!(*(Doc_Anchor *) m9_at ((*anch).p, i, (*anch).len, sizeof (Doc_Anchor), err)).shared);
+          bool m9t10 = (!(*(Doc_Anchor *) m9_at ((*anch).p, i, (*anch).len, sizeof (Doc_Anchor), err)).shared);
           if (err->exc) { m9ln = 837; goto L_ret; };
-          if (m9t9) {
+          if (m9t10) {
             { __typeof__((*(Doc_Anchor *) m9_at ((*anch).p, i, (*anch).len, sizeof (Doc_Anchor), err)).doc) m9v = (*(Doc_Anchor *) m9_at ((*anch).p, j, (*anch).len, sizeof (Doc_Anchor), err)).doc;
               if (err->exc) { m9ln = 838; goto L_ret; };
               (*(Doc_Anchor *) m9_at ((*anch).p, i, (*anch).len, sizeof (Doc_Anchor), err)).doc = m9v;

@@ -75,6 +75,7 @@ run Chars Bits Faults Text
 run DynUtf
 run Tsk Faults System
 run Chan
+run Jobs
 run Sup Faults Time Io Fmt
 run Http DynStr Io Text
 run Sparql DynStr Io Http Json Text
@@ -85,7 +86,7 @@ run Xml DynStr Fmt Text
 run Hash Bits Faults Text
 run Smtp Time DynStr Fmt Text
 run Rsa Hash Text
-run HttpServer DynStr Http Io Logger Zip Text
+run HttpServer DynStr Http Io Json Logger Zip Text
 run OpenApi HttpServer DynStr Text
 run ApiSpec DynStr Text
 run Arrow DynStr Faults Text

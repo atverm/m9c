@@ -97,6 +97,7 @@ typedef struct Ast_Node Ast_Node;
 #define Ast_NLinkList INT64_C(86)
 #define Ast_NCallSel INT64_C(87)
 #define Ast_NForIn INT64_C(88)
+#define Ast_NHole INT64_C(89)
 static const uint8_t Ast_HiddenSuffix_d[3] = { 95, 95, 108 };
 #define Ast_HiddenSuffix ((m9_sl_UTF8){ (uint8_t *) Ast_HiddenSuffix_d, 3 })
 
@@ -143,6 +144,7 @@ void Ast_SetNoWrites (int64_t id, m9_state *err);
 bool Ast_NoWritesAt (int64_t id, m9_state *err);
 void Ast_SetReadsOnly (int64_t id, m9_state *err);
 bool Ast_ReadsOnlyAt (int64_t id, m9_state *err);
+bool Ast_HoleFormat (m9_sl_UTF8 f, bool *zero, int64_t *width, int64_t *decimals, bool *sci, m9_state *err);
 bool Ast_FoldInt (Ast_Node * k, int64_t *v, m9_state *err);
 int64_t Ast_IntText (int64_t v, m9_arr_24_uint32_t *buf, m9_state *err);
 void Ast_Unhide (m9_pool *pool, Ast_Node * *n, m9_pool *n_pool, m9_sl_UTF8 me, m9_state *err);

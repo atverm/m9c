@@ -1,0 +1,145 @@
+MODULE SnakeServer ;
+
+(* SnakeServer serves the game of Snake.m9 to a browser.
+
+       snakeserver [PORT [WEBDIR]]      default 8001 and web
+
+   The rules run here.  The page in WEBDIR asks GET /tick thirty times
+   a second with the last key pressed, and draws the state that comes
+   back.  The browser decides nothing, and SnakeTest holds the whole
+   game without one.
+
+   The state is one MONITOR record.  HttpServer answers requests on
+   several workers, and Tick, which is bound to the monitor, is the
+   only procedure that reads or writes it. *)
+
+IMPORT Io, Fmt, Text, Time, Math, Json, HttpServer, Snake, Faults ;
+
+TYPE
+  Game = MONITOR RECORD
+    s : Snake.State ;
+    last : F64 ;
+  END ;
+
+VAR
+  game : Game ;
+  pool : POOL ;
+
+(* Tick advances the game by the time since the last call and answers
+   the new state.  The pace quickens with the score, from one cell
+   every 0.16 s to one every 0.07 s.  A browser tab that slept advances
+   at most three cells. *)
+PROCEDURE Tick (VAR g: Game ; dir: I64 ; hasDir, start: BOOL)
+  : Snake.State RAISES ValueRange, Faults.BadArg =
+VAR
+  now, dt, interval : F64 ;
+  steps, i : I64 ;
+BEGIN
+  now := Time.Now ().t ;
+  IF start THEN
+    Snake.Reset (g.s, Math.Trunc (now * 1000.0)) ;
+    g.last := now
+  ELSIF NOT g.s.started THEN
+    RETURN g.s
+  ELSE
+    IF hasDir THEN Snake.Turn (g.s, Snake.Dir (dir)) END ;
+    interval := 0.16 - 0.006 * F64 (g.s.score) ;
+    IF interval < 0.07 THEN interval := 0.07 END ;
+    dt := now - g.last ;
+    IF dt < 0.0 THEN dt := 0.0 END ;
+    steps := Math.Trunc (dt / interval) ;
+    IF steps > 3 THEN
+      steps := 3 ;
+      g.last := now
+    ELSE
+      g.last := g.last + F64 (steps) * interval
+    END ;
+    FOR i := 1 TO steps DO Snake.Step (g.s) END
+  END ;
+  RETURN g.s
+END Tick ;
+
+(* TickHandler answers GET /tick?dir=N[&start=1] with the state as
+   JSON.  dir is the queued direction, 0 up, 1 down, 2 left, 3 right. *)
+PROCEDURE TickHandler (RO req: HttpServer.Request) : HttpServer.Response
+  RAISES ValueRange =
+VAR
+  parts : SLICE OF STR ;
+  p : STR ;
+  dir : I64 ;
+  hasDir, start : BOOL ;
+  st : Snake.State ;
+  obj, body, pair, v : PTR Json.Node ;
+  i : I64 ;
+BEGIN
+  dir := 0 ;
+  hasDir := FALSE ;
+  start := FALSE ;
+  parts := Text.Fields (req.query, '&') ;
+  FOR p IN parts DO
+    IF Text.Find (p, 'dir=') = 0 THEN
+      dir := Io.ParseI64 (SLICE (p, 4, Text.BLen (p) - 4)) ;
+      hasDir := TRUE
+    ELSIF Text.Eq (p, 'start=1') THEN
+      start := TRUE
+    END
+  END ;
+  st := Tick (game, dir, hasDir, start) ;
+  obj := Json.NewObj () ;
+  body := Json.NewArr () ;
+  FOR i := 0 TO st.len - 1 DO
+    pair := Json.NewArr () ;
+    v := Json.NewI64 (st.xs[i]) ; Json.Add (pair, v) ;
+    v := Json.NewI64 (st.ys[i]) ; Json.Add (pair, v) ;
+    Json.Add (body, pair)
+  END ;
+  Json.Set (obj, 'body', body) ;
+  pair := Json.NewArr () ;
+  v := Json.NewI64 (st.fx) ; Json.Add (pair, v) ;
+  v := Json.NewI64 (st.fy) ; Json.Add (pair, v) ;
+  Json.Set (obj, 'food', pair) ;
+  v := Json.NewI64 (st.score) ; Json.Set (obj, 'score', v) ;
+  v := Json.NewBool (st.alive) ; Json.Set (obj, 'alive', v) ;
+  v := Json.NewBool (st.started) ; Json.Set (obj, 'started', v) ;
+  v := Json.NewBool (st.won) ; Json.Set (obj, 'won', v) ;
+  RETURN HttpServer.Reply (200, 'application/json', Json.Compact (obj))
+EXCEPT
+| Json.TypeMismatch :
+  RETURN HttpServer.Reply (500, 'text/plain', 'json build failed')
+| Faults.BadArg :
+  RETURN HttpServer.Reply (500, 'text/plain', 'game step failed')
+| ValueRange :
+  RETURN HttpServer.Reply (400, 'text/plain', 'bad dir parameter')
+END TickHandler ;
+
+VAR
+  r : PTR HttpServer.Router ;
+  cfg : HttpServer.Config ;
+  stats : HttpServer.Stats ;
+  rc : I64 ;
+  web : STR ;
+
+BEGIN
+  cfg := HttpServer.Defaults () ;
+  cfg.port := 8001 ;
+  web := 'web' ;
+  IF Io.ArgCount () > 1 THEN cfg.port := Io.ParseI64 (Io.Arg (pool, 1)) END ;
+  IF Io.ArgCount () > 2 THEN web := Text.Keep (pool, Io.Arg (pool, 2)) END ;
+  r := HttpServer.NewRouter (HEAP) ;
+  (* The order matters: routes match in the order they are added, and
+     the file route takes every path under /.  Added first, it would
+     answer /tick with 404. *)
+  HttpServer.AddHandler (r, 'GET', '/tick', TickHandler,
+                         'application/json', 'advance the game') ;
+  HttpServer.AddFiles (r, '/', web, 'the page') ;
+  HttpServer.Freeze (r) ;
+  Io.WriteLine ('Snake on http://127.0.0.1:' + Fmt.I64Str (cfg.port)) ;
+  Io.Flush () ;
+  rc := HttpServer.Run (cfg, r, stats) ;
+  Io.WriteLine ('server stopped: ' + Fmt.I64Str (rc))
+EXCEPT
+| HttpServer.Frozen (path) :
+  Io.ErrLine ('route added after freeze: ' + path)
+| ValueRange :
+  Io.ErrLine ('usage: snakeserver [PORT [WEBDIR]]')
+END SnakeServer.

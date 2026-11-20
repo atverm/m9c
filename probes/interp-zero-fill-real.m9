@@ -1,0 +1,15 @@
+(* EXPECT: a real in a hole is padded with blanks: the zero fill is for an integer (par 2.3) *)
+(* The zero fill is Fmt.I64Pad's, and an integer's.  A real field is
+   padded with blanks, as Fmt.FixedPad pads it.  The legal form shows
+   both. *)
+MODULE m ;
+PROCEDURE Fine (id: I64 ; x: F64) : STR =
+BEGIN
+  RETURN $'${id:08} ${x:8.2}'
+END Fine ;
+PROCEDURE Bad (x: F64) : STR =
+BEGIN
+  RETURN $'${x:08.2}'
+END Bad ;
+BEGIN
+END m.

@@ -88,29 +88,29 @@ Time_Civil Time_ToCivil (Time_Instant t, m9_state *err)
   double sod = 0; (void) sod;
   int64_t isod = 0; (void) isod;
   { __typeof__(days) m9v = Time_FloorDiv (t.t, Time_SecPerDay, err);
-    if (err->exc) { m9ln = 293; goto L_ret; };
+    if (err->exc) { m9ln = 324; goto L_ret; };
     days = m9v;
   }
   sod = (t.t - (days * Time_SecPerDay));
   { __typeof__(m9_i64_f64 ((double)(days), err)) m9a1 = m9_i64_f64 ((double)(days), err);
-    if (err->exc) { m9ln = 295; goto L_ret; };
+    if (err->exc) { m9ln = 326; goto L_ret; };
   Time_CivilFromDays (m9a1, &(c.year), &(c.month), &(c.day), err);
-  if (err->exc) { m9ln = 295; goto L_ret; };
+  if (err->exc) { m9ln = 326; goto L_ret; };
   }
   { __typeof__(isod) m9v = m9_i64_f64 ((double)(sod), err);
-    if (err->exc) { m9ln = 296; goto L_ret; };
+    if (err->exc) { m9ln = 327; goto L_ret; };
     isod = m9v;
   }
   { __typeof__(c.hour) m9v = m9_div_i64 (isod, INT64_C(3600), err);
-    if (err->exc) { m9ln = 297; goto L_ret; };
+    if (err->exc) { m9ln = 328; goto L_ret; };
     c.hour = m9v;
   }
   { __typeof__(c.minute) m9v = m9_div_i64 ((m9_mod_i64 (isod, INT64_C(3600), err)), INT64_C(60), err);
-    if (err->exc) { m9ln = 298; goto L_ret; };
+    if (err->exc) { m9ln = 329; goto L_ret; };
     c.minute = m9v;
   }
   { __typeof__(c.second) m9v = (sod - (double)(m9_add_i64 (m9_mul_i64 (c.hour, INT64_C(3600), err), m9_mul_i64 (c.minute, INT64_C(60), err), err)));
-    if (err->exc) { m9ln = 299; goto L_ret; };
+    if (err->exc) { m9ln = 330; goto L_ret; };
     c.second = m9v;
   }
   err->res = m9res;
@@ -136,37 +136,37 @@ Time_Instant Time_FromCivil (Time_Civil c, m9_state *err)
   int64_t days = 0; (void) days;
   if (((c.month < INT64_C(1)) || (c.month > INT64_C(12)))) {
     m9_raise (err, &m9_exc_ValueRange);
-    m9_site (err, 308, m9pn);
+    m9_site (err, 339, m9pn);
     goto L_ret;
   }
   bool m9t1 = ((c.day < INT64_C(1)) || (c.day > Time_DaysInMonth (c.year, c.month, err)));
-  if (err->exc) { m9ln = 309; goto L_ret; };
+  if (err->exc) { m9ln = 340; goto L_ret; };
   if (m9t1) {
     m9_raise (err, &m9_exc_ValueRange);
-    m9_site (err, 310, m9pn);
+    m9_site (err, 341, m9pn);
     goto L_ret;
   }
   if (((c.hour < INT64_C(0)) || (c.hour > INT64_C(23)))) {
     m9_raise (err, &m9_exc_ValueRange);
-    m9_site (err, 312, m9pn);
+    m9_site (err, 343, m9pn);
     goto L_ret;
   }
   if (((c.minute < INT64_C(0)) || (c.minute > INT64_C(59)))) {
     m9_raise (err, &m9_exc_ValueRange);
-    m9_site (err, 313, m9pn);
+    m9_site (err, 344, m9pn);
     goto L_ret;
   }
   if (((c.second < 0.0) || (c.second >= 60.0))) {
     m9_raise (err, &m9_exc_ValueRange);
-    m9_site (err, 314, m9pn);
+    m9_site (err, 345, m9pn);
     goto L_ret;
   }
   { __typeof__(days) m9v = Time_DaysFromCivil (c.year, c.month, c.day, err);
-    if (err->exc) { m9ln = 315; goto L_ret; };
+    if (err->exc) { m9ln = 346; goto L_ret; };
     days = m9v;
   }
   { __typeof__(r.t) m9v = ((((double)(days) * Time_SecPerDay) + (double)(m9_add_i64 (m9_mul_i64 (c.hour, INT64_C(3600), err), m9_mul_i64 (c.minute, INT64_C(60), err), err))) + c.second);
-    if (err->exc) { m9ln = 316; goto L_ret; };
+    if (err->exc) { m9ln = 347; goto L_ret; };
     r.t = m9v;
   }
   err->res = m9res;
@@ -196,31 +196,31 @@ Time_Span Time_Diff (Time_Instant a, Time_Instant b, m9_state *err)
   int64_t tm = 0; (void) tm;
   bool back = false; (void) back;
   { __typeof__(ca) m9v = Time_ToCivil (a, err);
-    if (err->exc) { m9ln = 367; goto L_ret; };
+    if (err->exc) { m9ln = 398; goto L_ret; };
     ca = m9v;
   }
   { __typeof__(cb) m9v = Time_ToCivil (b, err);
-    if (err->exc) { m9ln = 368; goto L_ret; };
+    if (err->exc) { m9ln = 399; goto L_ret; };
     cb = m9v;
   }
   back = (b.t < a.t);
   { __typeof__(tm) m9v = m9_sub_i64 ((m9_add_i64 (m9_mul_i64 (cb.year, INT64_C(12), err), cb.month, err)), (m9_add_i64 (m9_mul_i64 (ca.year, INT64_C(12), err), ca.month, err)), err);
-    if (err->exc) { m9ln = 381; goto L_ret; };
+    if (err->exc) { m9ln = 412; goto L_ret; };
     tm = m9v;
   }
   { __typeof__(mid) m9v = Time_AddMonthsOnly (a, tm, err);
-    if (err->exc) { m9ln = 382; goto L_ret; };
+    if (err->exc) { m9ln = 413; goto L_ret; };
     mid = m9v;
   }
   if (back) {
     for (;;) {
       if (!(((mid.t < b.t) && (tm < INT64_C(0))))) break;
       { __typeof__(tm) m9v = m9_add_i64 (tm, INT64_C(1), err);
-        if (err->exc) { m9ln = 385; goto L_ret; };
+        if (err->exc) { m9ln = 416; goto L_ret; };
         tm = m9v;
       }
       { __typeof__(mid) m9v = Time_AddMonthsOnly (a, tm, err);
-        if (err->exc) { m9ln = 386; goto L_ret; };
+        if (err->exc) { m9ln = 417; goto L_ret; };
         mid = m9v;
       }
     }
@@ -228,11 +228,11 @@ Time_Span Time_Diff (Time_Instant a, Time_Instant b, m9_state *err)
     for (;;) {
       if (!(((mid.t > b.t) && (tm > INT64_C(0))))) break;
       { __typeof__(tm) m9v = m9_sub_i64 (tm, INT64_C(1), err);
-        if (err->exc) { m9ln = 390; goto L_ret; };
+        if (err->exc) { m9ln = 421; goto L_ret; };
         tm = m9v;
       }
       { __typeof__(mid) m9v = Time_AddMonthsOnly (a, tm, err);
-        if (err->exc) { m9ln = 391; goto L_ret; };
+        if (err->exc) { m9ln = 422; goto L_ret; };
         mid = m9v;
       }
     }
@@ -242,45 +242,45 @@ Time_Span Time_Diff (Time_Instant a, Time_Instant b, m9_state *err)
     rest = (- rest);
   }
   { __typeof__(s.days) m9v = m9_i64_f64 ((double)(Time_FloorDiv (rest, Time_SecPerDay, err)), err);
-    if (err->exc) { m9ln = 397; goto L_ret; };
+    if (err->exc) { m9ln = 428; goto L_ret; };
     s.days = m9v;
   }
   rest = (rest - ((double)(s.days) * Time_SecPerDay));
   { __typeof__(s.hours) m9v = m9_i64_f64 ((double)(Time_FloorDiv (rest, 3600.0, err)), err);
-    if (err->exc) { m9ln = 399; goto L_ret; };
+    if (err->exc) { m9ln = 430; goto L_ret; };
     s.hours = m9v;
   }
   { __typeof__(rest) m9v = (rest - (double)(m9_mul_i64 (s.hours, INT64_C(3600), err)));
-    if (err->exc) { m9ln = 400; goto L_ret; };
+    if (err->exc) { m9ln = 431; goto L_ret; };
     rest = m9v;
   }
   { __typeof__(s.minutes) m9v = m9_i64_f64 ((double)(Time_FloorDiv (rest, 60.0, err)), err);
-    if (err->exc) { m9ln = 401; goto L_ret; };
+    if (err->exc) { m9ln = 432; goto L_ret; };
     s.minutes = m9v;
   }
   { __typeof__(s.seconds) m9v = (rest - (double)(m9_mul_i64 (s.minutes, INT64_C(60), err)));
-    if (err->exc) { m9ln = 402; goto L_ret; };
+    if (err->exc) { m9ln = 433; goto L_ret; };
     s.seconds = m9v;
   }
   { __typeof__(s.years) m9v = m9_div_i64 (tm, INT64_C(12), err);
-    if (err->exc) { m9ln = 404; goto L_ret; };
+    if (err->exc) { m9ln = 435; goto L_ret; };
     s.years = m9v;
   }
   { __typeof__(s.months) m9v = m9_sub_i64 (tm, m9_mul_i64 (s.years, INT64_C(12), err), err);
-    if (err->exc) { m9ln = 405; goto L_ret; };
+    if (err->exc) { m9ln = 436; goto L_ret; };
     s.months = m9v;
   }
   if ((b.t < mid.t)) {
     { __typeof__(s.days) m9v = m9_neg_i64 (s.days, err);
-      if (err->exc) { m9ln = 410; goto L_ret; };
+      if (err->exc) { m9ln = 441; goto L_ret; };
       s.days = m9v;
     }
     { __typeof__(s.hours) m9v = m9_neg_i64 (s.hours, err);
-      if (err->exc) { m9ln = 411; goto L_ret; };
+      if (err->exc) { m9ln = 442; goto L_ret; };
       s.hours = m9v;
     }
     { __typeof__(s.minutes) m9v = m9_neg_i64 (s.minutes, err);
-      if (err->exc) { m9ln = 412; goto L_ret; };
+      if (err->exc) { m9ln = 443; goto L_ret; };
       s.minutes = m9v;
     }
     s.seconds = (- s.seconds);
@@ -306,14 +306,14 @@ Time_Instant Time_Add (Time_Instant t, Time_Span s, m9_state *err)
   Time_Instant m9ret = {0};
   Time_Instant r = {0}; (void) r;
   { __typeof__(m9_add_i64 (m9_mul_i64 (s.years, INT64_C(12), err), s.months, err)) m9a2 = m9_add_i64 (m9_mul_i64 (s.years, INT64_C(12), err), s.months, err);
-    if (err->exc) { m9ln = 341; goto L_ret; };
+    if (err->exc) { m9ln = 372; goto L_ret; };
   { __typeof__(r) m9v = Time_AddMonthsOnly (t, m9a2, err);
-    if (err->exc) { m9ln = 341; goto L_ret; };
+    if (err->exc) { m9ln = 372; goto L_ret; };
     r = m9v;
   }
   }
   { __typeof__(r.t) m9v = (((r.t + ((double)(s.days) * Time_SecPerDay)) + (double)(m9_add_i64 (m9_mul_i64 (s.hours, INT64_C(3600), err), m9_mul_i64 (s.minutes, INT64_C(60), err), err))) + s.seconds);
-    if (err->exc) { m9ln = 343; goto L_ret; };
+    if (err->exc) { m9ln = 374; goto L_ret; };
     r.t = m9v;
   }
   err->res = m9res;
@@ -354,97 +354,97 @@ m9_sl_UTF8 Time_Iso (Time_Instant t, int64_t decimals, m9_state *err)
   } }
   if ((decimals == INT64_C(0))) {
     { __typeof__(k) m9v = Time_FloorDiv (t.t, 1.0, err);
-      if (err->exc) { m9ln = 436; goto L_ret; };
+      if (err->exc) { m9ln = 467; goto L_ret; };
       k = m9v;
     }
   } else {
     { __typeof__(k) m9v = Time_FloorDiv (((t.t * scale) + 0.5), 1.0, err);
-      if (err->exc) { m9ln = 437; goto L_ret; };
+      if (err->exc) { m9ln = 468; goto L_ret; };
       k = m9v;
     }
   }
   { __typeof__(w) m9v = Time_FloorDiv (k, scale, err);
-    if (err->exc) { m9ln = 439; goto L_ret; };
+    if (err->exc) { m9ln = 470; goto L_ret; };
     w = m9v;
   }
   u.t = w;
   { __typeof__(c) m9v = Time_ToCivil (u, err);
-    if (err->exc) { m9ln = 441; goto L_ret; };
+    if (err->exc) { m9ln = 472; goto L_ret; };
     c = m9v;
   }
   { __typeof__(d) m9v = DynStr_New (&(pool), err);
-    if (err->exc) { m9ln = 442; goto L_ret; };
+    if (err->exc) { m9ln = 473; goto L_ret; };
     d = m9v;
   }
   { __typeof__(Fmt_I64PadUtf (c.year, INT64_C(4), true, err)) m9a3 = Fmt_I64PadUtf (c.year, INT64_C(4), true, err);
-    if (err->exc) { m9ln = 443; goto L_ret; };
+    if (err->exc) { m9ln = 474; goto L_ret; };
   DynStr_Append (&(d), &(pool), m9a3, err);
-  if (err->exc) { m9ln = 443; goto L_ret; };
+  if (err->exc) { m9ln = 474; goto L_ret; };
   }
   DynStr_AppendChar (&(d), &(pool), 45u, err);
-  if (err->exc) { m9ln = 444; goto L_ret; };
+  if (err->exc) { m9ln = 475; goto L_ret; };
   { __typeof__(Fmt_I64PadUtf (c.month, INT64_C(2), true, err)) m9a4 = Fmt_I64PadUtf (c.month, INT64_C(2), true, err);
-    if (err->exc) { m9ln = 445; goto L_ret; };
+    if (err->exc) { m9ln = 476; goto L_ret; };
   DynStr_Append (&(d), &(pool), m9a4, err);
-  if (err->exc) { m9ln = 445; goto L_ret; };
+  if (err->exc) { m9ln = 476; goto L_ret; };
   }
   DynStr_AppendChar (&(d), &(pool), 45u, err);
-  if (err->exc) { m9ln = 446; goto L_ret; };
+  if (err->exc) { m9ln = 477; goto L_ret; };
   { __typeof__(Fmt_I64PadUtf (c.day, INT64_C(2), true, err)) m9a5 = Fmt_I64PadUtf (c.day, INT64_C(2), true, err);
-    if (err->exc) { m9ln = 447; goto L_ret; };
+    if (err->exc) { m9ln = 478; goto L_ret; };
   DynStr_Append (&(d), &(pool), m9a5, err);
-  if (err->exc) { m9ln = 447; goto L_ret; };
+  if (err->exc) { m9ln = 478; goto L_ret; };
   }
   DynStr_AppendChar (&(d), &(pool), 84u, err);
-  if (err->exc) { m9ln = 448; goto L_ret; };
+  if (err->exc) { m9ln = 479; goto L_ret; };
   { __typeof__(Fmt_I64PadUtf (c.hour, INT64_C(2), true, err)) m9a6 = Fmt_I64PadUtf (c.hour, INT64_C(2), true, err);
-    if (err->exc) { m9ln = 449; goto L_ret; };
+    if (err->exc) { m9ln = 480; goto L_ret; };
   DynStr_Append (&(d), &(pool), m9a6, err);
-  if (err->exc) { m9ln = 449; goto L_ret; };
+  if (err->exc) { m9ln = 480; goto L_ret; };
   }
   DynStr_AppendChar (&(d), &(pool), 58u, err);
-  if (err->exc) { m9ln = 450; goto L_ret; };
+  if (err->exc) { m9ln = 481; goto L_ret; };
   { __typeof__(Fmt_I64PadUtf (c.minute, INT64_C(2), true, err)) m9a7 = Fmt_I64PadUtf (c.minute, INT64_C(2), true, err);
-    if (err->exc) { m9ln = 451; goto L_ret; };
+    if (err->exc) { m9ln = 482; goto L_ret; };
   DynStr_Append (&(d), &(pool), m9a7, err);
-  if (err->exc) { m9ln = 451; goto L_ret; };
+  if (err->exc) { m9ln = 482; goto L_ret; };
   }
   DynStr_AppendChar (&(d), &(pool), 58u, err);
-  if (err->exc) { m9ln = 452; goto L_ret; };
+  if (err->exc) { m9ln = 483; goto L_ret; };
   if ((decimals == INT64_C(0))) {
     { __typeof__(m9_i64_f64 ((double)(c.second), err)) m9a8 = m9_i64_f64 ((double)(c.second), err);
-      if (err->exc) { m9ln = 454; goto L_ret; };
+      if (err->exc) { m9ln = 485; goto L_ret; };
     { __typeof__(Fmt_I64PadUtf (m9a8, INT64_C(2), true, err)) m9a9 = Fmt_I64PadUtf (m9a8, INT64_C(2), true, err);
-      if (err->exc) { m9ln = 454; goto L_ret; };
+      if (err->exc) { m9ln = 485; goto L_ret; };
     DynStr_Append (&(d), &(pool), m9a9, err);
-    if (err->exc) { m9ln = 454; goto L_ret; };
+    if (err->exc) { m9ln = 485; goto L_ret; };
     }
     }
   } else {
     { __typeof__(m9_i64_f64 ((double)(c.second), err)) m9a10 = m9_i64_f64 ((double)(c.second), err);
-      if (err->exc) { m9ln = 456; goto L_ret; };
+      if (err->exc) { m9ln = 487; goto L_ret; };
     { __typeof__(Fmt_I64PadUtf (m9a10, INT64_C(2), true, err)) m9a11 = Fmt_I64PadUtf (m9a10, INT64_C(2), true, err);
-      if (err->exc) { m9ln = 456; goto L_ret; };
+      if (err->exc) { m9ln = 487; goto L_ret; };
     DynStr_Append (&(d), &(pool), m9a11, err);
-    if (err->exc) { m9ln = 456; goto L_ret; };
+    if (err->exc) { m9ln = 487; goto L_ret; };
     }
     }
     DynStr_AppendChar (&(d), &(pool), 46u, err);
-    if (err->exc) { m9ln = 457; goto L_ret; };
+    if (err->exc) { m9ln = 488; goto L_ret; };
     { __typeof__(m9_i64_f64 ((double)((k - (w * scale))), err)) m9a12 = m9_i64_f64 ((double)((k - (w * scale))), err);
-      if (err->exc) { m9ln = 458; goto L_ret; };
+      if (err->exc) { m9ln = 489; goto L_ret; };
     { __typeof__(Fmt_I64PadUtf (m9a12, decimals, true, err)) m9a13 = Fmt_I64PadUtf (m9a12, decimals, true, err);
-      if (err->exc) { m9ln = 458; goto L_ret; };
+      if (err->exc) { m9ln = 489; goto L_ret; };
     DynStr_Append (&(d), &(pool), m9a13, err);
-    if (err->exc) { m9ln = 458; goto L_ret; };
+    if (err->exc) { m9ln = 489; goto L_ret; };
     }
     }
   }
   DynStr_AppendChar (&(d), &(pool), 90u, err);
-  if (err->exc) { m9ln = 460; goto L_ret; };
+  if (err->exc) { m9ln = 491; goto L_ret; };
   err->res = m9res;
   m9ret = DynStr_View (d, err);
-  if (err->exc) { m9ln = 461; goto L_ret; };
+  if (err->exc) { m9ln = 492; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -469,33 +469,33 @@ Time_Instant Time_ParseIso (m9_sl_UTF8 s, m9_state *err)
   int64_t i = 0; (void) i;
   int64_t v = 0; (void) v;
   bool m9t1 = (Text_BLen (s, err) < INT64_C(20));
-  if (err->exc) { m9ln = 480; goto L_ret; };
+  if (err->exc) { m9ln = 511; goto L_ret; };
   if (m9t1) {
     m9_raise (err, &m9_exc_ValueRange);
-    m9_site (err, 480, m9pn);
+    m9_site (err, 511, m9pn);
     goto L_ret;
   }
   bool m9t2 = (((!Text_BIs (s, INT64_C(4), 45u, err)) || (!Text_BIs (s, INT64_C(7), 45u, err))) || (!Text_BIs (s, INT64_C(10), 84u, err)));
-  if (err->exc) { m9ln = 481; goto L_ret; };
+  if (err->exc) { m9ln = 512; goto L_ret; };
   if (m9t2) {
     m9_raise (err, &m9_exc_ValueRange);
-    m9_site (err, 481, m9pn);
+    m9_site (err, 512, m9pn);
     goto L_ret;
   }
   bool m9t3 = ((!Text_BIs (s, INT64_C(13), 58u, err)) || (!Text_BIs (s, INT64_C(16), 58u, err)));
-  if (err->exc) { m9ln = 482; goto L_ret; };
+  if (err->exc) { m9ln = 513; goto L_ret; };
   if (m9t3) {
     m9_raise (err, &m9_exc_ValueRange);
-    m9_site (err, 482, m9pn);
+    m9_site (err, 513, m9pn);
     goto L_ret;
   }
   { __typeof__(m9_sub_i64 (Text_BLen (s, err), INT64_C(1), err)) m9a14 = m9_sub_i64 (Text_BLen (s, err), INT64_C(1), err);
-    if (err->exc) { m9ln = 483; goto L_ret; };
+    if (err->exc) { m9ln = 514; goto L_ret; };
   bool m9t4 = (!Text_BIs (s, m9a14, 90u, err));
-  if (err->exc) { m9ln = 483; goto L_ret; };
+  if (err->exc) { m9ln = 514; goto L_ret; };
   if (m9t4) {
     m9_raise (err, &m9_exc_ValueRange);
-    m9_site (err, 483, m9pn);
+    m9_site (err, 514, m9pn);
     goto L_ret;
   } }
   v = INT64_C(0);
@@ -504,14 +504,14 @@ Time_Instant Time_ParseIso (m9_sl_UTF8 s, m9_state *err)
   m9t5to = INT64_C(3);
   if (i <= m9t5to) for (;;) {
     bool m9t6 = (((int64_t)(Text_BAt (s, i, err)) < (int64_t)(48u)) || ((int64_t)(Text_BAt (s, i, err)) > (int64_t)(57u)));
-    if (err->exc) { m9ln = 487; goto L_ret; };
+    if (err->exc) { m9ln = 518; goto L_ret; };
     if (m9t6) {
       m9_raise (err, &m9_exc_ValueRange);
-      m9_site (err, 487, m9pn);
+      m9_site (err, 518, m9pn);
       goto L_ret;
     }
     { __typeof__(v) m9v = m9_add_i64 (m9_mul_i64 (v, INT64_C(10), err), (m9_sub_i64 ((int64_t)(Text_BAt (s, i, err)), INT64_C(48), err)), err);
-      if (err->exc) { m9ln = 488; goto L_ret; };
+      if (err->exc) { m9ln = 519; goto L_ret; };
       v = m9v;
     }
     if ((uint64_t) m9t5to - (uint64_t) i < (uint64_t) 1) break;
@@ -519,31 +519,31 @@ Time_Instant Time_ParseIso (m9_sl_UTF8 s, m9_state *err)
   } }
   c.year = v;
   { __typeof__(c.month) m9v = Time_Digits2 (s, INT64_C(5), err);
-    if (err->exc) { m9ln = 491; goto L_ret; };
+    if (err->exc) { m9ln = 522; goto L_ret; };
     c.month = m9v;
   }
   { __typeof__(c.day) m9v = Time_Digits2 (s, INT64_C(8), err);
-    if (err->exc) { m9ln = 492; goto L_ret; };
+    if (err->exc) { m9ln = 523; goto L_ret; };
     c.day = m9v;
   }
   { __typeof__(c.hour) m9v = Time_Digits2 (s, INT64_C(11), err);
-    if (err->exc) { m9ln = 493; goto L_ret; };
+    if (err->exc) { m9ln = 524; goto L_ret; };
     c.hour = m9v;
   }
   { __typeof__(c.minute) m9v = Time_Digits2 (s, INT64_C(14), err);
-    if (err->exc) { m9ln = 494; goto L_ret; };
+    if (err->exc) { m9ln = 525; goto L_ret; };
     c.minute = m9v;
   }
   { __typeof__(m9_utf_slice (s, INT64_C(17), m9_sub_i64 (Text_BLen (s, err), INT64_C(18), err), err)) m9a15 = m9_utf_slice (s, INT64_C(17), m9_sub_i64 (Text_BLen (s, err), INT64_C(18), err), err);
-    if (err->exc) { m9ln = 496; goto L_ret; };
+    if (err->exc) { m9ln = 527; goto L_ret; };
   { __typeof__(c.second) m9v = Fmt_ParseF64Utf (m9a15, err);
-    if (err->exc) { m9ln = 496; goto L_ret; };
+    if (err->exc) { m9ln = 527; goto L_ret; };
     c.second = m9v;
   }
   }
   err->res = m9res;
   m9ret = Time_FromCivil (c, err);
-  if (err->exc) { m9ln = 497; goto L_ret; };
+  if (err->exc) { m9ln = 528; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -577,212 +577,398 @@ Time_Nanos Time_ParseNanos (m9_sl_UTF8 s, m9_state *err)
   int64_t sign = 0; (void) sign;
   int64_t off = 0; (void) off;
   { __typeof__(y) m9v = Time_DigitsAt (s, INT64_C(0), INT64_C(4), err);
-    if (err->exc) { m9ln = 524; goto L_ret; };
+    if (err->exc) { m9ln = 555; goto L_ret; };
     y = m9v;
   }
   { __typeof__(mo) m9v = Time_DigitsAt (s, INT64_C(5), INT64_C(2), err);
-    if (err->exc) { m9ln = 525; goto L_ret; };
+    if (err->exc) { m9ln = 556; goto L_ret; };
     mo = m9v;
   }
   { __typeof__(d) m9v = Time_DigitsAt (s, INT64_C(8), INT64_C(2), err);
-    if (err->exc) { m9ln = 526; goto L_ret; };
+    if (err->exc) { m9ln = 557; goto L_ret; };
     d = m9v;
   }
   { __typeof__(h) m9v = Time_DigitsAt (s, INT64_C(11), INT64_C(2), err);
-    if (err->exc) { m9ln = 527; goto L_ret; };
+    if (err->exc) { m9ln = 558; goto L_ret; };
     h = m9v;
   }
   { __typeof__(mi) m9v = Time_DigitsAt (s, INT64_C(14), INT64_C(2), err);
-    if (err->exc) { m9ln = 528; goto L_ret; };
+    if (err->exc) { m9ln = 559; goto L_ret; };
     mi = m9v;
   }
   bool m9t1 = (((((((((y < INT64_C(0)) || (mo < INT64_C(0))) || (d < INT64_C(0))) || (h < INT64_C(0))) || (mi < INT64_C(0))) || (!Time_CharAt (s, INT64_C(4), 45u, err))) || (!Time_CharAt (s, INT64_C(7), 45u, err))) || (!((Time_CharAt (s, INT64_C(10), 84u, err) || Time_CharAt (s, INT64_C(10), 116u, err))))) || (!Time_CharAt (s, INT64_C(13), 58u, err)));
-  if (err->exc) { m9ln = 529; goto L_ret; };
+  if (err->exc) { m9ln = 560; goto L_ret; };
   if (m9t1) {
     m9_raise (err, &m9_exc_ValueRange);
-    m9_site (err, 533, m9pn);
+    m9_site (err, 564, m9pn);
     goto L_ret;
   }
   bool m9t2 = ((((((mo < INT64_C(1)) || (mo > INT64_C(12))) || (d < INT64_C(1))) || (d > Time_DaysInMonth (y, mo, err))) || (h > INT64_C(23))) || (mi > INT64_C(59)));
-  if (err->exc) { m9ln = 535; goto L_ret; };
+  if (err->exc) { m9ln = 566; goto L_ret; };
   if (m9t2) {
     m9_raise (err, &m9_exc_ValueRange);
-    m9_site (err, 537, m9pn);
+    m9_site (err, 568, m9pn);
     goto L_ret;
   }
   p = INT64_C(16);
   se = INT64_C(0);
   frac = INT64_C(0);
   bool m9t3 = Time_CharAt (s, p, 58u, err);
-  if (err->exc) { m9ln = 542; goto L_ret; };
+  if (err->exc) { m9ln = 573; goto L_ret; };
   if (m9t3) {
     { __typeof__(m9_add_i64 (p, INT64_C(1), err)) m9a16 = m9_add_i64 (p, INT64_C(1), err);
-      if (err->exc) { m9ln = 543; goto L_ret; };
+      if (err->exc) { m9ln = 574; goto L_ret; };
     { __typeof__(se) m9v = Time_DigitsAt (s, m9a16, INT64_C(2), err);
-      if (err->exc) { m9ln = 543; goto L_ret; };
+      if (err->exc) { m9ln = 574; goto L_ret; };
       se = m9v;
     }
     }
     if (((se < INT64_C(0)) || (se > INT64_C(59)))) {
       m9_raise (err, &m9_exc_ValueRange);
-      m9_site (err, 544, m9pn);
+      m9_site (err, 575, m9pn);
       goto L_ret;
     }
     { __typeof__(p) m9v = m9_add_i64 (p, INT64_C(3), err);
-      if (err->exc) { m9ln = 545; goto L_ret; };
+      if (err->exc) { m9ln = 576; goto L_ret; };
       p = m9v;
     }
     bool m9t4 = Time_CharAt (s, p, 46u, err);
-    if (err->exc) { m9ln = 546; goto L_ret; };
+    if (err->exc) { m9ln = 577; goto L_ret; };
     if (m9t4) {
       { __typeof__(p) m9v = m9_add_i64 (p, INT64_C(1), err);
-        if (err->exc) { m9ln = 547; goto L_ret; };
+        if (err->exc) { m9ln = 578; goto L_ret; };
         p = m9v;
       }
       fd = INT64_C(0);
       for (;;) {
         bool m9t5 = (((p < Text_BLen (s, err)) && ((int64_t)(Text_BAt (s, p, err)) >= (int64_t)(48u))) && ((int64_t)(Text_BAt (s, p, err)) <= (int64_t)(57u)));
-        if (err->exc) { m9ln = 549; goto L_ret; };
+        if (err->exc) { m9ln = 580; goto L_ret; };
         if (!(m9t5)) break;
         if ((fd == INT64_C(9))) {
           m9_raise (err, &m9_exc_ValueRange);
-          m9_site (err, 550, m9pn);
+          m9_site (err, 581, m9pn);
           goto L_ret;
         }
         { __typeof__(frac) m9v = m9_add_i64 (m9_mul_i64 (frac, INT64_C(10), err), (m9_sub_i64 ((int64_t)(Text_BAt (s, p, err)), INT64_C(48), err)), err);
-          if (err->exc) { m9ln = 551; goto L_ret; };
+          if (err->exc) { m9ln = 582; goto L_ret; };
           frac = m9v;
         }
         { __typeof__(fd) m9v = m9_add_i64 (fd, INT64_C(1), err);
-          if (err->exc) { m9ln = 552; goto L_ret; };
+          if (err->exc) { m9ln = 583; goto L_ret; };
           fd = m9v;
         }
         { __typeof__(p) m9v = m9_add_i64 (p, INT64_C(1), err);
-          if (err->exc) { m9ln = 553; goto L_ret; };
+          if (err->exc) { m9ln = 584; goto L_ret; };
           p = m9v;
         }
       }
       for (;;) {
         if (!((fd < INT64_C(9)))) break;
         { __typeof__(frac) m9v = m9_mul_i64 (frac, INT64_C(10), err);
-          if (err->exc) { m9ln = 556; goto L_ret; };
+          if (err->exc) { m9ln = 587; goto L_ret; };
           frac = m9v;
         }
         { __typeof__(fd) m9v = m9_add_i64 (fd, INT64_C(1), err);
-          if (err->exc) { m9ln = 557; goto L_ret; };
+          if (err->exc) { m9ln = 588; goto L_ret; };
           fd = m9v;
         }
       }
     }
   }
   bool m9t6 = (Time_CharAt (s, p, 90u, err) || Time_CharAt (s, p, 122u, err));
-  if (err->exc) { m9ln = 561; goto L_ret; };
+  if (err->exc) { m9ln = 592; goto L_ret; };
   if (m9t6) {
     off = INT64_C(0);
     { __typeof__(p) m9v = m9_add_i64 (p, INT64_C(1), err);
-      if (err->exc) { m9ln = 563; goto L_ret; };
+      if (err->exc) { m9ln = 594; goto L_ret; };
       p = m9v;
     }
   } else {
     bool m9t7 = (Time_CharAt (s, p, 43u, err) || Time_CharAt (s, p, 45u, err));
-    if (err->exc) { m9ln = 563; goto L_ret; };
+    if (err->exc) { m9ln = 594; goto L_ret; };
     if (m9t7) {
       sign = INT64_C(1);
       bool m9t8 = Text_BIs (s, p, 45u, err);
-      if (err->exc) { m9ln = 566; goto L_ret; };
+      if (err->exc) { m9ln = 597; goto L_ret; };
       if (m9t8) {
         { __typeof__(sign) m9v = m9_neg_i64 (INT64_C(1), err);
-          if (err->exc) { m9ln = 566; goto L_ret; };
+          if (err->exc) { m9ln = 597; goto L_ret; };
           sign = m9v;
         }
       }
       { __typeof__(m9_add_i64 (p, INT64_C(1), err)) m9a17 = m9_add_i64 (p, INT64_C(1), err);
-        if (err->exc) { m9ln = 567; goto L_ret; };
+        if (err->exc) { m9ln = 598; goto L_ret; };
       { __typeof__(oh) m9v = Time_DigitsAt (s, m9a17, INT64_C(2), err);
-        if (err->exc) { m9ln = 567; goto L_ret; };
+        if (err->exc) { m9ln = 598; goto L_ret; };
         oh = m9v;
       }
       }
       if ((oh < INT64_C(0))) {
         m9_raise (err, &m9_exc_ValueRange);
-        m9_site (err, 568, m9pn);
+        m9_site (err, 599, m9pn);
         goto L_ret;
       }
       { __typeof__(p) m9v = m9_add_i64 (p, INT64_C(3), err);
-        if (err->exc) { m9ln = 569; goto L_ret; };
+        if (err->exc) { m9ln = 600; goto L_ret; };
         p = m9v;
       }
       om = INT64_C(0);
       os = INT64_C(0);
       bool m9t9 = Time_CharAt (s, p, 58u, err);
-      if (err->exc) { m9ln = 572; goto L_ret; };
+      if (err->exc) { m9ln = 603; goto L_ret; };
       if (m9t9) {
         { __typeof__(m9_add_i64 (p, INT64_C(1), err)) m9a18 = m9_add_i64 (p, INT64_C(1), err);
-          if (err->exc) { m9ln = 573; goto L_ret; };
+          if (err->exc) { m9ln = 604; goto L_ret; };
         { __typeof__(om) m9v = Time_DigitsAt (s, m9a18, INT64_C(2), err);
-          if (err->exc) { m9ln = 573; goto L_ret; };
+          if (err->exc) { m9ln = 604; goto L_ret; };
           om = m9v;
         }
         }
         if (((om < INT64_C(0)) || (om > INT64_C(59)))) {
           m9_raise (err, &m9_exc_ValueRange);
-          m9_site (err, 574, m9pn);
+          m9_site (err, 605, m9pn);
           goto L_ret;
         }
         { __typeof__(p) m9v = m9_add_i64 (p, INT64_C(3), err);
-          if (err->exc) { m9ln = 575; goto L_ret; };
+          if (err->exc) { m9ln = 606; goto L_ret; };
           p = m9v;
         }
         bool m9t10 = Time_CharAt (s, p, 58u, err);
-        if (err->exc) { m9ln = 576; goto L_ret; };
+        if (err->exc) { m9ln = 607; goto L_ret; };
         if (m9t10) {
           { __typeof__(m9_add_i64 (p, INT64_C(1), err)) m9a19 = m9_add_i64 (p, INT64_C(1), err);
-            if (err->exc) { m9ln = 577; goto L_ret; };
+            if (err->exc) { m9ln = 608; goto L_ret; };
           { __typeof__(os) m9v = Time_DigitsAt (s, m9a19, INT64_C(2), err);
-            if (err->exc) { m9ln = 577; goto L_ret; };
+            if (err->exc) { m9ln = 608; goto L_ret; };
             os = m9v;
           }
           }
           if (((os < INT64_C(0)) || (os > INT64_C(59)))) {
             m9_raise (err, &m9_exc_ValueRange);
-            m9_site (err, 578, m9pn);
+            m9_site (err, 609, m9pn);
             goto L_ret;
           }
           { __typeof__(p) m9v = m9_add_i64 (p, INT64_C(3), err);
-            if (err->exc) { m9ln = 579; goto L_ret; };
+            if (err->exc) { m9ln = 610; goto L_ret; };
             p = m9v;
           }
         }
       }
       { __typeof__(off) m9v = m9_add_i64 (m9_add_i64 (m9_mul_i64 (oh, INT64_C(3600), err), m9_mul_i64 (om, INT64_C(60), err), err), os, err);
-        if (err->exc) { m9ln = 582; goto L_ret; };
+        if (err->exc) { m9ln = 613; goto L_ret; };
         off = m9v;
       }
       bool m9t11 = (off > m9_mul_i64 (INT64_C(18), INT64_C(3600), err));
-      if (err->exc) { m9ln = 583; goto L_ret; };
+      if (err->exc) { m9ln = 614; goto L_ret; };
       if (m9t11) {
         m9_raise (err, &m9_exc_ValueRange);
-        m9_site (err, 583, m9pn);
+        m9_site (err, 614, m9pn);
         goto L_ret;
       }
       { __typeof__(off) m9v = m9_mul_i64 (sign, off, err);
-        if (err->exc) { m9ln = 584; goto L_ret; };
+        if (err->exc) { m9ln = 615; goto L_ret; };
         off = m9v;
       }
   } else {
     m9_raise (err, &m9_exc_ValueRange);
-    m9_site (err, 586, m9pn);
+    m9_site (err, 617, m9pn);
     goto L_ret;
   } }
   bool m9t12 = (p != Text_BLen (s, err));
-  if (err->exc) { m9ln = 588; goto L_ret; };
+  if (err->exc) { m9ln = 619; goto L_ret; };
   if (m9t12) {
     m9_raise (err, &m9_exc_ValueRange);
-    m9_site (err, 588, m9pn);
+    m9_site (err, 619, m9pn);
     goto L_ret;
   }
   { __typeof__(r.secs) m9v = m9_sub_i64 (m9_add_i64 (m9_add_i64 (m9_add_i64 (m9_mul_i64 (Time_DaysFromCivil (y, mo, d, err), INT64_C(86400), err), m9_mul_i64 (h, INT64_C(3600), err), err), m9_mul_i64 (mi, INT64_C(60), err), err), se, err), off, err);
-    if (err->exc) { m9ln = 589; goto L_ret; };
+    if (err->exc) { m9ln = 620; goto L_ret; };
+    r.secs = m9v;
+  }
+  r.nanos = frac;
+  err->res = m9res;
+  m9ret = r;
+  goto L_ret;
+L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+Time_Nanos Time_ParseRfc3339 (m9_sl_UTF8 s, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  static const char m9pn[] = "Time.ParseRfc3339"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
+  Time_Nanos m9ret = {0};
+  Time_Nanos r = {0}; (void) r;
+  int64_t y = 0; (void) y;
+  int64_t mo = 0; (void) mo;
+  int64_t d = 0; (void) d;
+  int64_t h = 0; (void) h;
+  int64_t mi = 0; (void) mi;
+  int64_t se = 0; (void) se;
+  int64_t frac = 0; (void) frac;
+  int64_t fd = 0; (void) fd;
+  int64_t p = 0; (void) p;
+  int64_t oh = 0; (void) oh;
+  int64_t om = 0; (void) om;
+  int64_t off = 0; (void) off;
+  { __typeof__(y) m9v = Time_DigitsAt (s, INT64_C(0), INT64_C(4), err);
+    if (err->exc) { m9ln = 630; goto L_ret; };
+    y = m9v;
+  }
+  { __typeof__(mo) m9v = Time_DigitsAt (s, INT64_C(5), INT64_C(2), err);
+    if (err->exc) { m9ln = 631; goto L_ret; };
+    mo = m9v;
+  }
+  { __typeof__(d) m9v = Time_DigitsAt (s, INT64_C(8), INT64_C(2), err);
+    if (err->exc) { m9ln = 632; goto L_ret; };
+    d = m9v;
+  }
+  { __typeof__(h) m9v = Time_DigitsAt (s, INT64_C(11), INT64_C(2), err);
+    if (err->exc) { m9ln = 633; goto L_ret; };
+    h = m9v;
+  }
+  { __typeof__(mi) m9v = Time_DigitsAt (s, INT64_C(14), INT64_C(2), err);
+    if (err->exc) { m9ln = 634; goto L_ret; };
+    mi = m9v;
+  }
+  { __typeof__(se) m9v = Time_DigitsAt (s, INT64_C(17), INT64_C(2), err);
+    if (err->exc) { m9ln = 635; goto L_ret; };
+    se = m9v;
+  }
+  bool m9t1 = (((((((((((y < INT64_C(0)) || (mo < INT64_C(0))) || (d < INT64_C(0))) || (h < INT64_C(0))) || (mi < INT64_C(0))) || (se < INT64_C(0))) || (!Time_CharAt (s, INT64_C(4), 45u, err))) || (!Time_CharAt (s, INT64_C(7), 45u, err))) || (!Time_CharAt (s, INT64_C(10), 84u, err))) || (!Time_CharAt (s, INT64_C(13), 58u, err))) || (!Time_CharAt (s, INT64_C(16), 58u, err)));
+  if (err->exc) { m9ln = 636; goto L_ret; };
+  if (m9t1) {
+    m9_raise (err, &m9_exc_ValueRange);
+    m9_site (err, 640, m9pn);
+    goto L_ret;
+  }
+  bool m9t2 = (((((((mo < INT64_C(1)) || (mo > INT64_C(12))) || (d < INT64_C(1))) || (d > Time_DaysInMonth (y, mo, err))) || (h > INT64_C(23))) || (mi > INT64_C(59))) || (se > INT64_C(59)));
+  if (err->exc) { m9ln = 642; goto L_ret; };
+  if (m9t2) {
+    m9_raise (err, &m9_exc_ValueRange);
+    m9_site (err, 644, m9pn);
+    goto L_ret;
+  }
+  p = INT64_C(19);
+  frac = INT64_C(0);
+  bool m9t3 = Time_CharAt (s, p, 46u, err);
+  if (err->exc) { m9ln = 648; goto L_ret; };
+  if (m9t3) {
+    { __typeof__(p) m9v = m9_add_i64 (p, INT64_C(1), err);
+      if (err->exc) { m9ln = 649; goto L_ret; };
+      p = m9v;
+    }
+    fd = INT64_C(0);
+    for (;;) {
+      bool m9t4 = (Time_DigitsAt (s, p, INT64_C(1), err) >= INT64_C(0));
+      if (err->exc) { m9ln = 651; goto L_ret; };
+      if (!(m9t4)) break;
+      M9_YCHK ();
+      if ((fd == INT64_C(9))) {
+        m9_raise (err, &m9_exc_ValueRange);
+        m9_site (err, 652, m9pn);
+        goto L_ret;
+      }
+      { __typeof__(frac) m9v = m9_add_i64 (m9_mul_i64 (frac, INT64_C(10), err), Time_DigitsAt (s, p, INT64_C(1), err), err);
+        if (err->exc) { m9ln = 653; goto L_ret; };
+        frac = m9v;
+      }
+      { __typeof__(fd) m9v = m9_add_i64 (fd, INT64_C(1), err);
+        if (err->exc) { m9ln = 654; goto L_ret; };
+        fd = m9v;
+      }
+      { __typeof__(p) m9v = m9_add_i64 (p, INT64_C(1), err);
+        if (err->exc) { m9ln = 655; goto L_ret; };
+        p = m9v;
+      }
+    }
+    if ((fd == INT64_C(0))) {
+      m9_raise (err, &m9_exc_ValueRange);
+      m9_site (err, 657, m9pn);
+      goto L_ret;
+    }
+    for (;;) {
+      if (!((fd < INT64_C(9)))) break;
+      { __typeof__(frac) m9v = m9_mul_i64 (frac, INT64_C(10), err);
+        if (err->exc) { m9ln = 659; goto L_ret; };
+        frac = m9v;
+      }
+      { __typeof__(fd) m9v = m9_add_i64 (fd, INT64_C(1), err);
+        if (err->exc) { m9ln = 660; goto L_ret; };
+        fd = m9v;
+      }
+    }
+  }
+  bool m9t5 = Time_CharAt (s, p, 90u, err);
+  if (err->exc) { m9ln = 663; goto L_ret; };
+  if (m9t5) {
+    off = INT64_C(0);
+    { __typeof__(p) m9v = m9_add_i64 (p, INT64_C(1), err);
+      if (err->exc) { m9ln = 665; goto L_ret; };
+      p = m9v;
+    }
+  } else {
+    bool m9t6 = (Time_CharAt (s, p, 43u, err) || Time_CharAt (s, p, 45u, err));
+    if (err->exc) { m9ln = 665; goto L_ret; };
+    if (m9t6) {
+      { __typeof__(m9_add_i64 (p, INT64_C(1), err)) m9a20 = m9_add_i64 (p, INT64_C(1), err);
+        if (err->exc) { m9ln = 667; goto L_ret; };
+      { __typeof__(oh) m9v = Time_DigitsAt (s, m9a20, INT64_C(2), err);
+        if (err->exc) { m9ln = 667; goto L_ret; };
+        oh = m9v;
+      }
+      }
+      { __typeof__(m9_add_i64 (p, INT64_C(4), err)) m9a21 = m9_add_i64 (p, INT64_C(4), err);
+        if (err->exc) { m9ln = 668; goto L_ret; };
+      { __typeof__(om) m9v = Time_DigitsAt (s, m9a21, INT64_C(2), err);
+        if (err->exc) { m9ln = 668; goto L_ret; };
+        om = m9v;
+      }
+      }
+      bool m9t8 = ({ bool m9t7 = ((((oh < INT64_C(0)) || (om < INT64_C(0))) || (oh > INT64_C(23))) || (om > INT64_C(59))); if (!m9t7) { { __typeof__(m9_add_i64 (p, INT64_C(3), err)) m9a22 = m9_add_i64 (p, INT64_C(3), err);   if (err->exc) { m9ln = 669; goto L_ret; }; m9t7 = ((!Time_CharAt (s, m9a22, 58u, err))); } } m9t7; });
+      if (err->exc) { m9ln = 669; goto L_ret; };
+      if (m9t8) {
+        m9_raise (err, &m9_exc_ValueRange);
+        m9_site (err, 670, m9pn);
+        goto L_ret;
+      }
+      { __typeof__(off) m9v = m9_add_i64 (m9_mul_i64 (oh, INT64_C(3600), err), m9_mul_i64 (om, INT64_C(60), err), err);
+        if (err->exc) { m9ln = 672; goto L_ret; };
+        off = m9v;
+      }
+      bool m9t9 = Text_BIs (s, p, 45u, err);
+      if (err->exc) { m9ln = 673; goto L_ret; };
+      if (m9t9) {
+        { __typeof__(off) m9v = m9_neg_i64 (off, err);
+          if (err->exc) { m9ln = 673; goto L_ret; };
+          off = m9v;
+        }
+      }
+      { __typeof__(p) m9v = m9_add_i64 (p, INT64_C(6), err);
+        if (err->exc) { m9ln = 674; goto L_ret; };
+        p = m9v;
+      }
+  } else {
+    m9_raise (err, &m9_exc_ValueRange);
+    m9_site (err, 676, m9pn);
+    goto L_ret;
+  } }
+  bool m9t10 = (p != Text_BLen (s, err));
+  if (err->exc) { m9ln = 678; goto L_ret; };
+  if (m9t10) {
+    m9_raise (err, &m9_exc_ValueRange);
+    m9_site (err, 678, m9pn);
+    goto L_ret;
+  }
+  { __typeof__(r.secs) m9v = m9_sub_i64 (m9_add_i64 (m9_add_i64 (m9_add_i64 (m9_mul_i64 (Time_DaysFromCivil (y, mo, d, err), INT64_C(86400), err), m9_mul_i64 (h, INT64_C(3600), err), err), m9_mul_i64 (mi, INT64_C(60), err), err), se, err), off, err);
+    if (err->exc) { m9ln = 679; goto L_ret; };
     r.secs = m9v;
   }
   r.nanos = frac;
@@ -813,79 +999,79 @@ m9_sl_UTF8 Time_IsoNanos (Time_Nanos t, m9_state *err)
   m9_sl_UTF8 out = {0}; (void) out;
   if (((t.nanos < INT64_C(0)) || (t.nanos > INT64_C(999999999)))) {
     m9_raise (err, &m9_exc_ValueRange);
-    m9_site (err, 607, m9pn);
+    m9_site (err, 697, m9pn);
     goto L_ret;
   }
   { __typeof__(days) m9v = m9_div_i64 (t.secs, INT64_C(86400), err);
-    if (err->exc) { m9ln = 608; goto L_ret; };
+    if (err->exc) { m9ln = 698; goto L_ret; };
     days = m9v;
   }
   { __typeof__(rem) m9v = m9_mod_i64 (t.secs, INT64_C(86400), err);
-    if (err->exc) { m9ln = 609; goto L_ret; };
+    if (err->exc) { m9ln = 699; goto L_ret; };
     rem = m9v;
   }
   if ((rem < INT64_C(0))) {
     { __typeof__(rem) m9v = m9_add_i64 (rem, INT64_C(86400), err);
-      if (err->exc) { m9ln = 611; goto L_ret; };
+      if (err->exc) { m9ln = 701; goto L_ret; };
       rem = m9v;
     }
     { __typeof__(days) m9v = m9_sub_i64 (days, INT64_C(1), err);
-      if (err->exc) { m9ln = 612; goto L_ret; };
+      if (err->exc) { m9ln = 702; goto L_ret; };
       days = m9v;
     }
   }
   Time_CivilFromDays (days, &(y), &(m), &(d), err);
-  if (err->exc) { m9ln = 614; goto L_ret; };
+  if (err->exc) { m9ln = 704; goto L_ret; };
   if (((y < INT64_C(0)) || (y > INT64_C(9999)))) {
     m9_raise (err, &m9_exc_ValueRange);
-    m9_site (err, 615, m9pn);
+    m9_site (err, 705, m9pn);
     goto L_ret;
   }
-  { __typeof__(m9_div_i64 (rem, INT64_C(3600), err)) m9a20 = m9_div_i64 (rem, INT64_C(3600), err);
-    if (err->exc) { m9ln = 616; goto L_ret; };
-  { __typeof__(m9_div_i64 ((m9_mod_i64 (rem, INT64_C(3600), err)), INT64_C(60), err)) m9a21 = m9_div_i64 ((m9_mod_i64 (rem, INT64_C(3600), err)), INT64_C(60), err);
-    if (err->exc) { m9ln = 616; goto L_ret; };
-  { __typeof__(m9_mod_i64 (rem, INT64_C(60), err)) m9a22 = m9_mod_i64 (rem, INT64_C(60), err);
-    if (err->exc) { m9ln = 616; goto L_ret; };
-  { __typeof__(out) m9v = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, Time_Pad (y, INT64_C(4), err), ((m9_sl_UTF8){ (uint8_t *) m9s0, 1 }), err), Time_Pad (m, INT64_C(2), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s1, 1 }), err), Time_Pad (d, INT64_C(2), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s2, 1 }), err), Time_Pad (m9a20, INT64_C(2), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s3, 1 }), err), Time_Pad (m9a21, INT64_C(2), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s4, 1 }), err), Time_Pad (m9a22, INT64_C(2), err), err);
-    if (err->exc) { m9ln = 616; goto L_ret; };
+  { __typeof__(m9_div_i64 (rem, INT64_C(3600), err)) m9a23 = m9_div_i64 (rem, INT64_C(3600), err);
+    if (err->exc) { m9ln = 706; goto L_ret; };
+  { __typeof__(m9_div_i64 ((m9_mod_i64 (rem, INT64_C(3600), err)), INT64_C(60), err)) m9a24 = m9_div_i64 ((m9_mod_i64 (rem, INT64_C(3600), err)), INT64_C(60), err);
+    if (err->exc) { m9ln = 706; goto L_ret; };
+  { __typeof__(m9_mod_i64 (rem, INT64_C(60), err)) m9a25 = m9_mod_i64 (rem, INT64_C(60), err);
+    if (err->exc) { m9ln = 706; goto L_ret; };
+  { __typeof__(out) m9v = ({ m9_sl_UTF8 m9t5 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t4 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t3 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t2 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t1 = m9_utf_cat (err->res, Time_Pad (y, INT64_C(4), err), ((m9_sl_UTF8){ (uint8_t *) m9s0, 1 }), err); m9_utf_cat (err->res, m9t1, Time_Pad (m, INT64_C(2), err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s1, 1 }), err); m9_utf_cat (err->res, m9t2, Time_Pad (d, INT64_C(2), err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s2, 1 }), err); m9_utf_cat (err->res, m9t3, Time_Pad (m9a23, INT64_C(2), err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s3, 1 }), err); m9_utf_cat (err->res, m9t4, Time_Pad (m9a24, INT64_C(2), err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s4, 1 }), err); m9_utf_cat (err->res, m9t5, Time_Pad (m9a25, INT64_C(2), err), err); });
+    if (err->exc) { m9ln = 706; goto L_ret; };
     out = m9v;
   }
   }
   }
   }
   if ((t.nanos != INT64_C(0))) {
-    bool m9t1 = (m9_mod_i64 (t.nanos, INT64_C(1000000), err) == INT64_C(0));
-    if (err->exc) { m9ln = 620; goto L_ret; };
-    if (m9t1) {
-      { __typeof__(m9_div_i64 (t.nanos, INT64_C(1000000), err)) m9a23 = m9_div_i64 (t.nanos, INT64_C(1000000), err);
-        if (err->exc) { m9ln = 621; goto L_ret; };
-      { __typeof__(out) m9v = m9_utf_cat (err->res, m9_utf_cat (err->res, out, ((m9_sl_UTF8){ (uint8_t *) m9s5, 1 }), err), Time_Pad (m9a23, INT64_C(3), err), err);
-        if (err->exc) { m9ln = 621; goto L_ret; };
+    bool m9t6 = (m9_mod_i64 (t.nanos, INT64_C(1000000), err) == INT64_C(0));
+    if (err->exc) { m9ln = 710; goto L_ret; };
+    if (m9t6) {
+      { __typeof__(m9_div_i64 (t.nanos, INT64_C(1000000), err)) m9a26 = m9_div_i64 (t.nanos, INT64_C(1000000), err);
+        if (err->exc) { m9ln = 711; goto L_ret; };
+      { __typeof__(out) m9v = ({ m9_sl_UTF8 m9t7 = m9_utf_cat (err->res, out, ((m9_sl_UTF8){ (uint8_t *) m9s5, 1 }), err); m9_utf_cat (err->res, m9t7, Time_Pad (m9a26, INT64_C(3), err), err); });
+        if (err->exc) { m9ln = 711; goto L_ret; };
         out = m9v;
       }
       }
     } else {
-      bool m9t2 = (m9_mod_i64 (t.nanos, INT64_C(1000), err) == INT64_C(0));
-      if (err->exc) { m9ln = 621; goto L_ret; };
-      if (m9t2) {
-        { __typeof__(m9_div_i64 (t.nanos, INT64_C(1000), err)) m9a24 = m9_div_i64 (t.nanos, INT64_C(1000), err);
-          if (err->exc) { m9ln = 623; goto L_ret; };
-        { __typeof__(out) m9v = m9_utf_cat (err->res, m9_utf_cat (err->res, out, ((m9_sl_UTF8){ (uint8_t *) m9s6, 1 }), err), Time_Pad (m9a24, INT64_C(6), err), err);
-          if (err->exc) { m9ln = 623; goto L_ret; };
+      bool m9t8 = (m9_mod_i64 (t.nanos, INT64_C(1000), err) == INT64_C(0));
+      if (err->exc) { m9ln = 711; goto L_ret; };
+      if (m9t8) {
+        { __typeof__(m9_div_i64 (t.nanos, INT64_C(1000), err)) m9a27 = m9_div_i64 (t.nanos, INT64_C(1000), err);
+          if (err->exc) { m9ln = 713; goto L_ret; };
+        { __typeof__(out) m9v = ({ m9_sl_UTF8 m9t9 = m9_utf_cat (err->res, out, ((m9_sl_UTF8){ (uint8_t *) m9s6, 1 }), err); m9_utf_cat (err->res, m9t9, Time_Pad (m9a27, INT64_C(6), err), err); });
+          if (err->exc) { m9ln = 713; goto L_ret; };
           out = m9v;
         }
         }
     } else {
-      { __typeof__(out) m9v = m9_utf_cat (err->res, m9_utf_cat (err->res, out, ((m9_sl_UTF8){ (uint8_t *) m9s7, 1 }), err), Time_Pad (t.nanos, INT64_C(9), err), err);
-        if (err->exc) { m9ln = 625; goto L_ret; };
+      { __typeof__(out) m9v = ({ m9_sl_UTF8 m9t10 = m9_utf_cat (err->res, out, ((m9_sl_UTF8){ (uint8_t *) m9s7, 1 }), err); m9_utf_cat (err->res, m9t10, Time_Pad (t.nanos, INT64_C(9), err), err); });
+        if (err->exc) { m9ln = 715; goto L_ret; };
         out = m9v;
       }
     } }
   }
   err->res = m9res;
   m9ret = m9_utf_cat (err->res, out, ((m9_sl_UTF8){ (uint8_t *) m9s8, 1 }), err);
-  if (err->exc) { m9ln = 628; goto L_ret; };
+  if (err->exc) { m9ln = 718; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -966,58 +1152,58 @@ void Time_CivilFromDays (int64_t z, int64_t *y, int64_t *m, int64_t *d, m9_state
   int64_t mp = 0; (void) mp;
   int64_t zz = 0; (void) zz;
   { __typeof__(zz) m9v = m9_add_i64 (z, INT64_C(719468), err);
-    if (err->exc) { m9ln = 250; goto L_ret; };
+    if (err->exc) { m9ln = 281; goto L_ret; };
     zz = m9v;
   }
   if ((zz >= INT64_C(0))) {
     { __typeof__(era) m9v = m9_div_i64 (zz, INT64_C(146097), err);
-      if (err->exc) { m9ln = 251; goto L_ret; };
+      if (err->exc) { m9ln = 282; goto L_ret; };
       era = m9v;
     }
   } else {
     { __typeof__(era) m9v = m9_div_i64 ((m9_sub_i64 (zz, INT64_C(146096), err)), INT64_C(146097), err);
-      if (err->exc) { m9ln = 251; goto L_ret; };
+      if (err->exc) { m9ln = 282; goto L_ret; };
       era = m9v;
     }
   }
   { __typeof__(doe) m9v = m9_sub_i64 (zz, m9_mul_i64 (era, INT64_C(146097), err), err);
-    if (err->exc) { m9ln = 252; goto L_ret; };
+    if (err->exc) { m9ln = 283; goto L_ret; };
     doe = m9v;
   }
   { __typeof__(yoe) m9v = m9_div_i64 ((m9_sub_i64 (m9_add_i64 (m9_sub_i64 (doe, m9_div_i64 (doe, INT64_C(1460), err), err), m9_div_i64 (doe, INT64_C(36524), err), err), m9_div_i64 (doe, INT64_C(146096), err), err)), INT64_C(365), err);
-    if (err->exc) { m9ln = 253; goto L_ret; };
+    if (err->exc) { m9ln = 284; goto L_ret; };
     yoe = m9v;
   }
   { __typeof__(doy) m9v = m9_sub_i64 (doe, (m9_sub_i64 (m9_add_i64 (m9_mul_i64 (INT64_C(365), yoe, err), m9_div_i64 (yoe, INT64_C(4), err), err), m9_div_i64 (yoe, INT64_C(100), err), err)), err);
-    if (err->exc) { m9ln = 254; goto L_ret; };
+    if (err->exc) { m9ln = 285; goto L_ret; };
     doy = m9v;
   }
   { __typeof__(mp) m9v = m9_div_i64 ((m9_add_i64 (m9_mul_i64 (INT64_C(5), doy, err), INT64_C(2), err)), INT64_C(153), err);
-    if (err->exc) { m9ln = 255; goto L_ret; };
+    if (err->exc) { m9ln = 286; goto L_ret; };
     mp = m9v;
   }
   { __typeof__((*d)) m9v = m9_add_i64 (m9_sub_i64 (doy, m9_div_i64 ((m9_add_i64 (m9_mul_i64 (INT64_C(153), mp, err), INT64_C(2), err)), INT64_C(5), err), err), INT64_C(1), err);
-    if (err->exc) { m9ln = 256; goto L_ret; };
+    if (err->exc) { m9ln = 287; goto L_ret; };
     (*d) = m9v;
   }
   if ((mp < INT64_C(10))) {
     { __typeof__((*m)) m9v = m9_add_i64 (mp, INT64_C(3), err);
-      if (err->exc) { m9ln = 257; goto L_ret; };
+      if (err->exc) { m9ln = 288; goto L_ret; };
       (*m) = m9v;
     }
   } else {
     { __typeof__((*m)) m9v = m9_sub_i64 (mp, INT64_C(9), err);
-      if (err->exc) { m9ln = 257; goto L_ret; };
+      if (err->exc) { m9ln = 288; goto L_ret; };
       (*m) = m9v;
     }
   }
   { __typeof__((*y)) m9v = m9_add_i64 (yoe, m9_mul_i64 (era, INT64_C(400), err), err);
-    if (err->exc) { m9ln = 258; goto L_ret; };
+    if (err->exc) { m9ln = 289; goto L_ret; };
     (*y) = m9v;
   }
   if (((*m) <= INT64_C(2))) {
     { __typeof__((*y)) m9v = m9_add_i64 ((*y), INT64_C(1), err);
-      if (err->exc) { m9ln = 259; goto L_ret; };
+      if (err->exc) { m9ln = 290; goto L_ret; };
       (*y) = m9v;
     }
   }
@@ -1045,43 +1231,43 @@ int64_t Time_DaysFromCivil (int64_t y, int64_t m, int64_t d, m9_state *err)
   yy = y;
   if ((m <= INT64_C(2))) {
     { __typeof__(yy) m9v = m9_sub_i64 (yy, INT64_C(1), err);
-      if (err->exc) { m9ln = 237; goto L_ret; };
+      if (err->exc) { m9ln = 268; goto L_ret; };
       yy = m9v;
     }
   }
   if ((yy >= INT64_C(0))) {
     { __typeof__(era) m9v = m9_div_i64 (yy, INT64_C(400), err);
-      if (err->exc) { m9ln = 238; goto L_ret; };
+      if (err->exc) { m9ln = 269; goto L_ret; };
       era = m9v;
     }
   } else {
     { __typeof__(era) m9v = m9_div_i64 ((m9_sub_i64 (yy, INT64_C(399), err)), INT64_C(400), err);
-      if (err->exc) { m9ln = 238; goto L_ret; };
+      if (err->exc) { m9ln = 269; goto L_ret; };
       era = m9v;
     }
   }
   { __typeof__(yoe) m9v = m9_sub_i64 (yy, m9_mul_i64 (era, INT64_C(400), err), err);
-    if (err->exc) { m9ln = 239; goto L_ret; };
+    if (err->exc) { m9ln = 270; goto L_ret; };
     yoe = m9v;
   }
   if ((m > INT64_C(2))) {
     { __typeof__(doy) m9v = m9_sub_i64 (m9_add_i64 (m9_div_i64 ((m9_add_i64 (m9_mul_i64 (INT64_C(153), (m9_sub_i64 (m, INT64_C(3), err)), err), INT64_C(2), err)), INT64_C(5), err), d, err), INT64_C(1), err);
-      if (err->exc) { m9ln = 240; goto L_ret; };
+      if (err->exc) { m9ln = 271; goto L_ret; };
       doy = m9v;
     }
   } else {
     { __typeof__(doy) m9v = m9_sub_i64 (m9_add_i64 (m9_div_i64 ((m9_add_i64 (m9_mul_i64 (INT64_C(153), (m9_add_i64 (m, INT64_C(9), err)), err), INT64_C(2), err)), INT64_C(5), err), d, err), INT64_C(1), err);
-      if (err->exc) { m9ln = 241; goto L_ret; };
+      if (err->exc) { m9ln = 272; goto L_ret; };
       doy = m9v;
     }
   }
   { __typeof__(doe) m9v = m9_add_i64 (m9_sub_i64 (m9_add_i64 (m9_mul_i64 (yoe, INT64_C(365), err), m9_div_i64 (yoe, INT64_C(4), err), err), m9_div_i64 (yoe, INT64_C(100), err), err), doy, err);
-    if (err->exc) { m9ln = 242; goto L_ret; };
+    if (err->exc) { m9ln = 273; goto L_ret; };
     doe = m9v;
   }
   err->res = m9res;
   m9ret = m9_sub_i64 (m9_add_i64 (m9_mul_i64 (era, INT64_C(146097), err), doe, err), INT64_C(719468), err);
-  if (err->exc) { m9ln = 243; goto L_ret; };
+  if (err->exc) { m9ln = 274; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -1100,14 +1286,14 @@ bool Time_IsLeap (int64_t year, m9_state *err)
   int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   bool m9t1 = (m9_mod_i64 (year, INT64_C(4), err) != INT64_C(0));
-  if (err->exc) { m9ln = 212; goto L_ret; };
+  if (err->exc) { m9ln = 243; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
   bool m9t2 = (m9_mod_i64 (year, INT64_C(100), err) != INT64_C(0));
-  if (err->exc) { m9ln = 213; goto L_ret; };
+  if (err->exc) { m9ln = 244; goto L_ret; };
   if (m9t2) {
     err->res = m9res;
     m9ret = true;
@@ -1115,7 +1301,7 @@ bool Time_IsLeap (int64_t year, m9_state *err)
   }
   err->res = m9res;
   m9ret = (m9_mod_i64 (year, INT64_C(400), err) == INT64_C(0));
-  if (err->exc) { m9ln = 214; goto L_ret; };
+  if (err->exc) { m9ln = 245; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -1135,12 +1321,12 @@ int64_t Time_DaysInMonth (int64_t year, int64_t month, m9_state *err)
   int64_t m9ret = 0;
   if (((month < INT64_C(1)) || (month > INT64_C(12)))) {
     m9_raise (err, &m9_exc_ValueRange);
-    m9_site (err, 219, m9pn);
+    m9_site (err, 250, m9pn);
     goto L_ret;
   }
   if ((month == INT64_C(2))) {
     bool m9t1 = Time_IsLeap (year, err);
-    if (err->exc) { m9ln = 221; goto L_ret; };
+    if (err->exc) { m9ln = 252; goto L_ret; };
     if (m9t1) {
       err->res = m9res;
       m9ret = INT64_C(29);
@@ -1178,17 +1364,17 @@ static double Time_FloorDiv (double x, double by, m9_state *err)
   q = (x / by);
   if ((q < 0.0)) {
     bool m9t1 = (q != (double)(m9_i64_f64 ((double)(q), err)));
-    if (err->exc) { m9ln = 270; goto L_ret; };
+    if (err->exc) { m9ln = 301; goto L_ret; };
     if (m9t1) {
       err->res = m9res;
       m9ret = ((double)(m9_i64_f64 ((double)(q), err)) - 1.0);
-      if (err->exc) { m9ln = 270; goto L_ret; };
+      if (err->exc) { m9ln = 301; goto L_ret; };
       goto L_ret;
     }
   }
   err->res = m9res;
   m9ret = (double)(m9_i64_f64 ((double)(q), err));
-  if (err->exc) { m9ln = 272; goto L_ret; };
+  if (err->exc) { m9ln = 303; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -1210,23 +1396,23 @@ static Time_Instant Time_AddMonthsOnly (Time_Instant t, int64_t months, m9_state
   int64_t total = 0; (void) total;
   int64_t dim = 0; (void) dim;
   { __typeof__(c) m9v = Time_ToCivil (t, err);
-    if (err->exc) { m9ln = 329; goto L_ret; };
+    if (err->exc) { m9ln = 360; goto L_ret; };
     c = m9v;
   }
   { __typeof__(total) m9v = m9_add_i64 (m9_add_i64 (m9_mul_i64 (c.year, INT64_C(12), err), (m9_sub_i64 (c.month, INT64_C(1), err)), err), months, err);
-    if (err->exc) { m9ln = 330; goto L_ret; };
+    if (err->exc) { m9ln = 361; goto L_ret; };
     total = m9v;
   }
   { __typeof__(c.year) m9v = Time_FloorDivI (total, INT64_C(12), err);
-    if (err->exc) { m9ln = 331; goto L_ret; };
+    if (err->exc) { m9ln = 362; goto L_ret; };
     c.year = m9v;
   }
   { __typeof__(c.month) m9v = m9_add_i64 (m9_sub_i64 (total, m9_mul_i64 (c.year, INT64_C(12), err), err), INT64_C(1), err);
-    if (err->exc) { m9ln = 332; goto L_ret; };
+    if (err->exc) { m9ln = 363; goto L_ret; };
     c.month = m9v;
   }
   { __typeof__(dim) m9v = Time_DaysInMonth (c.year, c.month, err);
-    if (err->exc) { m9ln = 333; goto L_ret; };
+    if (err->exc) { m9ln = 364; goto L_ret; };
     dim = m9v;
   }
   if ((c.day > dim)) {
@@ -1234,7 +1420,7 @@ static Time_Instant Time_AddMonthsOnly (Time_Instant t, int64_t months, m9_state
   }
   err->res = m9res;
   m9ret = Time_FromCivil (c, err);
-  if (err->exc) { m9ln = 335; goto L_ret; };
+  if (err->exc) { m9ln = 366; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -1254,16 +1440,16 @@ static int64_t Time_FloorDivI (int64_t a, int64_t b, m9_state *err)
   int64_t m9ret = 0;
   int64_t q = 0; (void) q;
   { __typeof__(q) m9v = m9_div_i64 (a, b, err);
-    if (err->exc) { m9ln = 351; goto L_ret; };
+    if (err->exc) { m9ln = 382; goto L_ret; };
     q = m9v;
   }
   bool m9t1 = (m9_mod_i64 (a, b, err) != INT64_C(0));
-  if (err->exc) { m9ln = 352; goto L_ret; };
+  if (err->exc) { m9ln = 383; goto L_ret; };
   if (m9t1) {
     if ((((a < INT64_C(0))) != ((b < INT64_C(0))))) {
       err->res = m9res;
       m9ret = m9_sub_i64 (q, INT64_C(1), err);
-      if (err->exc) { m9ln = 353; goto L_ret; };
+      if (err->exc) { m9ln = 384; goto L_ret; };
       goto L_ret;
     }
   }
@@ -1292,17 +1478,17 @@ static int64_t Time_Digits2 (m9_sl_UTF8 s, int64_t at, m9_state *err)
   { __typeof__(i) m9t1to;
   i = at;
   m9t1to = m9_add_i64 (at, INT64_C(1), err);
-  if (err->exc) { m9ln = 468; goto L_ret; };
+  if (err->exc) { m9ln = 499; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     bool m9t2 = (((int64_t)(Text_BAt (s, i, err)) < (int64_t)(48u)) || ((int64_t)(Text_BAt (s, i, err)) > (int64_t)(57u)));
-    if (err->exc) { m9ln = 469; goto L_ret; };
+    if (err->exc) { m9ln = 500; goto L_ret; };
     if (m9t2) {
       m9_raise (err, &m9_exc_ValueRange);
-      m9_site (err, 469, m9pn);
+      m9_site (err, 500, m9pn);
       goto L_ret;
     }
     { __typeof__(v) m9v = m9_add_i64 (m9_mul_i64 (v, INT64_C(10), err), (m9_sub_i64 ((int64_t)(Text_BAt (s, i, err)), INT64_C(48), err)), err);
-      if (err->exc) { m9ln = 470; goto L_ret; };
+      if (err->exc) { m9ln = 501; goto L_ret; };
       v = m9v;
     }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
@@ -1330,29 +1516,29 @@ static int64_t Time_DigitsAt (m9_sl_UTF8 s, int64_t at, int64_t n, m9_state *err
   int64_t i = 0; (void) i;
   int64_t v = 0; (void) v;
   bool m9t1 = ((at < INT64_C(0)) || (m9_add_i64 (at, n, err) > Text_BLen (s, err)));
-  if (err->exc) { m9ln = 505; goto L_ret; };
+  if (err->exc) { m9ln = 536; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
     m9ret = m9_neg_i64 (INT64_C(1), err);
-    if (err->exc) { m9ln = 505; goto L_ret; };
+    if (err->exc) { m9ln = 536; goto L_ret; };
     goto L_ret;
   }
   v = INT64_C(0);
   { __typeof__(i) m9t2to;
   i = at;
   m9t2to = m9_sub_i64 (m9_add_i64 (at, n, err), INT64_C(1), err);
-  if (err->exc) { m9ln = 507; goto L_ret; };
+  if (err->exc) { m9ln = 538; goto L_ret; };
   if (i <= m9t2to) for (;;) {
     bool m9t3 = (((int64_t)(Text_BAt (s, i, err)) < (int64_t)(48u)) || ((int64_t)(Text_BAt (s, i, err)) > (int64_t)(57u)));
-    if (err->exc) { m9ln = 508; goto L_ret; };
+    if (err->exc) { m9ln = 539; goto L_ret; };
     if (m9t3) {
       err->res = m9res;
       m9ret = m9_neg_i64 (INT64_C(1), err);
-      if (err->exc) { m9ln = 508; goto L_ret; };
+      if (err->exc) { m9ln = 539; goto L_ret; };
       goto L_ret;
     }
     { __typeof__(v) m9v = m9_add_i64 (m9_mul_i64 (v, INT64_C(10), err), (m9_sub_i64 ((int64_t)(Text_BAt (s, i, err)), INT64_C(48), err)), err);
-      if (err->exc) { m9ln = 509; goto L_ret; };
+      if (err->exc) { m9ln = 540; goto L_ret; };
       v = m9v;
     }
     if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
@@ -1379,7 +1565,7 @@ static bool Time_CharAt (m9_sl_UTF8 s, int64_t at, uint32_t c, m9_state *err)
   bool m9ret = false;
   err->res = m9res;
   m9ret = ((at < Text_BLen (s, err)) && Text_BIs (s, at, c, err));
-  if (err->exc) { m9ln = 516; goto L_ret; };
+  if (err->exc) { m9ln = 547; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -1399,15 +1585,15 @@ static m9_sl_UTF8 Time_Pad (int64_t v, int64_t width, m9_state *err)
   m9_sl_UTF8 m9ret = {0};
   m9_sl_UTF8 t = {0}; (void) t;
   { __typeof__(t) m9v = Fmt_I64Str (v, err);
-    if (err->exc) { m9ln = 597; goto L_ret; };
+    if (err->exc) { m9ln = 687; goto L_ret; };
     t = m9v;
   }
   for (;;) {
     bool m9t1 = (Text_BLen (t, err) < width);
-    if (err->exc) { m9ln = 598; goto L_ret; };
+    if (err->exc) { m9ln = 688; goto L_ret; };
     if (!(m9t1)) break;
     { __typeof__(t) m9v = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s9, 1 }), t, err);
-      if (err->exc) { m9ln = 598; goto L_ret; };
+      if (err->exc) { m9ln = 688; goto L_ret; };
       t = m9v;
     }
   }

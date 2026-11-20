@@ -125,6 +125,37 @@ PROCEDURE ParseNanos (RO s: STR) : Nanos RAISES ValueRange ;
      second, no 30 February).  A year has four digits.  Anything else
      raises ValueRange. *)
 
+PROCEDURE ParseRfc3339 (RO s: STR) : Nanos RAISES ValueRange ;
+  (* ParseRfc3339 is the STRICT parser: use it for text a program
+     must check.  It reads the one form RFC 3339 gives a date-time,
+     and is held to the RFC's grammar and Go's Time.UnmarshalText on
+     640 strings.
+
+     It TAKES exactly this:
+
+       yyyy-MM-ddTHH:mm:ss          a capital T, the seconds written
+       then, optionally, a point and 1 to 9 digits
+       then Z, or +HH:MM, or -HH:MM, the offset up to 23:59
+
+     It REFUSES, each with ValueRange:
+
+       a lowercase t or z
+       a missing seconds field
+       a point with no digit after it, and a tenth digit
+       an offset that is not HH:MM, or past 23:59
+       a date or a time the calendar does not have
+       a 60th second
+       anything before or after the form, a blank included
+
+     ParseNanos is the lenient one, for text java.time wrote: it
+     takes what this refuses in the first two lines, and it refuses
+     an offset beyond 18 hours, which this takes.
+
+     Two agents read this comment as a list of what the parser
+     ACCEPTS and wrote their own (2026-11-19 and 20).  It said
+     "differs from ParseNanos in what it refuses: a lowercase t ..."
+     in one sentence.  It is two lists now. *)
+
 PROCEDURE IsoNanos (t: Nanos) : STR RAISES ValueRange ;
   (* IsoNanos writes as java.time.Instant.toString does: always Z,
      seconds always written, a fraction of 3, 6 or 9 digits only when
@@ -590,6 +621,65 @@ BEGIN
   r.nanos := frac ;
   RETURN r
 END ParseNanos ;
+
+PROCEDURE ParseRfc3339 (RO s: STR) : Nanos RAISES ValueRange =
+VAR
+  r : Nanos ;
+  y, mo, d, h, mi, se, frac, fd, p, oh, om, off : I64 ;
+BEGIN
+  y := DigitsAt (s, 0, 4) ;
+  mo := DigitsAt (s, 5, 2) ;
+  d := DigitsAt (s, 8, 2) ;
+  h := DigitsAt (s, 11, 2) ;
+  mi := DigitsAt (s, 14, 2) ;
+  se := DigitsAt (s, 17, 2) ;
+  IF y < 0 OR mo < 0 OR d < 0 OR h < 0 OR mi < 0 OR se < 0 OR
+     NOT CharAt (s, 4, '-') OR NOT CharAt (s, 7, '-') OR
+     NOT CharAt (s, 10, 'T') OR NOT CharAt (s, 13, ':') OR
+     NOT CharAt (s, 16, ':') THEN
+    RAISE ValueRange
+  END ;
+  IF mo < 1 OR mo > 12 OR d < 1 OR d > DaysInMonth (y, mo) OR
+     h > 23 OR mi > 59 OR se > 59 THEN
+    RAISE ValueRange
+  END ;
+  p := 19 ;
+  frac := 0 ;
+  IF CharAt (s, p, '.') THEN
+    p := p + 1 ;
+    fd := 0 ;
+    WHILE DigitsAt (s, p, 1) >= 0 DO
+      IF fd = 9 THEN RAISE ValueRange END ;
+      frac := frac * 10 + DigitsAt (s, p, 1) ;
+      fd := fd + 1 ;
+      p := p + 1
+    END ;
+    IF fd = 0 THEN RAISE ValueRange END ;
+    WHILE fd < 9 DO
+      frac := frac * 10 ;
+      fd := fd + 1
+    END
+  END ;
+  IF CharAt (s, p, 'Z') THEN
+    off := 0 ;
+    p := p + 1
+  ELSIF CharAt (s, p, '+') OR CharAt (s, p, '-') THEN
+    oh := DigitsAt (s, p + 1, 2) ;
+    om := DigitsAt (s, p + 4, 2) ;
+    IF oh < 0 OR om < 0 OR oh > 23 OR om > 59 OR NOT CharAt (s, p + 3, ':') THEN
+      RAISE ValueRange
+    END ;
+    off := oh * 3600 + om * 60 ;
+    IF Text.BIs (s, p, '-') THEN off := -off END ;
+    p := p + 6
+  ELSE
+    RAISE ValueRange
+  END ;
+  IF p # Text.BLen (s) THEN RAISE ValueRange END ;
+  r.secs := DaysFromCivil (y, mo, d) * 86400 + h * 3600 + mi * 60 + se - off ;
+  r.nanos := frac ;
+  RETURN r
+END ParseRfc3339 ;
 
 PROCEDURE Pad (v, width: I64) : STR =
 VAR t : STR ;

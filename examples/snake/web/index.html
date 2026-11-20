@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Snake, served by Modula-9</title>
+<style>
+  body { background: #10151f; color: #e6e9ef; font-family: monospace;
+         display: flex; flex-direction: column; align-items: center;
+         margin: 1.5rem 0; padding: 0 16px; }
+  /* The banner: chunky capitals in one colour with a hard shadow, as
+     a monochrome screen showed a title. */
+  .banner { font-family: "Courier New", monospace; font-weight: 900;
+            font-size: clamp(1rem, 3.4vw, 1.9rem); letter-spacing: 0.14em;
+            text-transform: uppercase; text-align: center;
+            margin: 0.4rem 0 0.6rem; color: #e6e9ef;
+            text-shadow: 3px 3px 0 #000; }
+  canvas { background: #161c28; border: 1px solid #34405a;
+           max-width: 100%; height: auto; }
+  p { color: #a3abbb; }
+  #score { color: #e6e9ef; font-size: 1.1rem; min-height: 1.4em; margin: 0.6rem 0; }
+</style>
+</head>
+<body>
+<h1 class="banner">Snake game brought to you by Modula-9</h1>
+<p id="score">&nbsp;</p>
+<canvas id="board" width="480" height="480"></canvas>
+<p>Steer with the arrow keys or WASD. Space starts and restarts.</p>
+<script>
+const N = 24, CELL = 20, S = N * CELL;
+const cv = document.getElementById('board');
+const ctx = cv.getContext('2d');
+const scoreEl = document.getElementById('score');
+const DIRS = { ArrowUp: 0, KeyW: 0, ArrowDown: 1, KeyS: 1,
+               ArrowLeft: 2, KeyA: 2, ArrowRight: 3, KeyD: 3 };
+let pendingDir = null, start = false, state = null;
+
+window.addEventListener('keydown', e => {
+  if (e.code === 'Space') { start = true; e.preventDefault(); return; }
+  const d = DIRS[e.code];
+  if (d !== undefined) { pendingDir = d; e.preventDefault(); }
+});
+
+function overlay (msg) {
+  ctx.fillStyle = 'rgba(16, 21, 31, 0.72)';
+  ctx.fillRect(0, 0, S, S);
+  ctx.fillStyle = '#e6e9ef';
+  ctx.font = 'bold 22px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(msg, S / 2, S / 2);
+}
+
+function draw () {
+  ctx.clearRect(0, 0, S, S);
+  ctx.strokeStyle = '#1c2433';
+  ctx.beginPath();
+  for (let i = 1; i < N; i++) {
+    ctx.moveTo(i * CELL, 0); ctx.lineTo(i * CELL, S);
+    ctx.moveTo(0, i * CELL); ctx.lineTo(S, i * CELL);
+  }
+  ctx.stroke();
+  if (!state) return;
+  scoreEl.textContent = 'Score ' + state.score;
+  if (!state.started) { overlay('PRESS SPACE TO START'); return; }
+  if (state.alive && !state.won) {
+    ctx.fillStyle = '#ff004d';
+    ctx.beginPath();
+    ctx.arc((state.food[0] + 0.5) * CELL, (state.food[1] + 0.5) * CELL,
+            CELL * 0.35, 0, 2 * Math.PI);
+    ctx.fill();
+  }
+  for (let i = state.body.length - 1; i >= 0; i--) {
+    ctx.fillStyle = i === 0 ? '#7dffa8' : '#00d84a';
+    ctx.fillRect(state.body[i][0] * CELL + 1, state.body[i][1] * CELL + 1,
+                 CELL - 2, CELL - 2);
+  }
+  if (state.won) overlay('YOU WIN - SPACE TO PLAY AGAIN');
+  else if (!state.alive) overlay('GAME OVER - SPACE TO RETRY');
+}
+
+async function poll () {
+  const q = [];
+  if (pendingDir !== null) { q.push('dir=' + pendingDir); pendingDir = null; }
+  if (start) { q.push('start=1'); start = false; }
+  try {
+    const r = await fetch('/tick' + (q.length ? '?' + q.join('&') : ''));
+    if (r.ok) state = await r.json();
+  } catch (e) { /* server briefly away; keep last frame */ }
+  draw();
+}
+setInterval(poll, 33);
+draw();
+</script>
+</body>
+</html>

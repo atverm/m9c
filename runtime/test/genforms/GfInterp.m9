@@ -1,0 +1,114 @@
+MODULE GfInterp ;
+
+(* WANT: worker 7 died in batch -3: gone|{"id":"b1","n":42}|x=é!|TRUE FALSE|[     42][00042][-0042][42][18446744073709551615]|0.1 2.5 1e+22|[3.14][    3.14][   3][-0.50]|[1.23e4][    1.2e-3]|1.2345678901234567e0|[     0.1]|a$b {c} $ 42|same 6|stop 1|u8 200 i32 -5 pad [  7]|one hole: 9|2 3 *|last name *)
+
+(* An interpolation literal, $'...${e}...' (docs/interpolation-rfc.md,
+   2026-11-19).  It is the concatenation it stands for.  A hole takes
+   a string, a CHAR, a BOOL, an integer or a real as it is, and a
+   number may end in a format: a width, decimals and e.  Every form
+   with a twin in Fmt is held to that twin here, so the two cannot
+   drift apart.  A hole that raises ends the statement before the
+   holes after it run. *)
+
+IMPORT Fmt ;
+IMPORT Io ;
+IMPORT Text ;
+
+EXCEPTION Stop ;
+
+VAR hits : I64 ;
+
+PROCEDURE Boom (n: I64) : I64 RAISES Stop =
+BEGIN
+  IF n > 0 THEN RAISE Stop END ;
+  RETURN n
+END Boom ;
+
+PROCEDURE Hit () : I64 =
+BEGIN
+  hits := hits + 1 ;
+  RETURN hits
+END Hit ;
+
+PROCEDURE Name (RO s: STR) : STR =
+BEGIN
+  RETURN $'${s} name'
+END Name ;
+
+(* Same counts the forms that equal their Fmt twin. *)
+PROCEDURE Same () : I64 RAISES ValueRange =
+VAR
+  n, i : I64 ;
+  x : F64 ;
+  vs : ARRAY 6 OF I64 ;
+BEGIN
+  n := 0 ;
+  vs[0] := 0 ; vs[1] := -1 ; vs[2] := 9223372036854775807 ;
+  vs[3] := -9223372036854775807 - 1 ; vs[4] := 1000 ; vs[5] := -999999 ;
+  i := 0 ;
+  WHILE i < 6 AND Text.Eq ($'${vs[i]}', Fmt.I64Str (vs[i])) AND
+        Text.Eq ($'${vs[i]:12}', Fmt.I64Pad (vs[i], 12, FALSE)) AND
+        Text.Eq ($'${vs[i]:012}', Fmt.I64Pad (vs[i], 12, TRUE)) AND
+        Text.Eq ($'${vs[i]:3}', Fmt.I64Pad (vs[i], 3, FALSE)) DO
+    i := i + 1
+  END ;
+  IF i = 6 THEN n := n + 1 END ;
+  x := -1234.56789 ;
+  IF Text.Eq ($'${x}', Fmt.Short (x)) THEN n := n + 1 END ;
+  IF Text.Eq ($'${x:.3}', Fmt.Fixed (x, 3)) AND Text.Eq ($'${x:0.3}', Fmt.Fixed (x, 3)) THEN n := n + 1 END ;
+  IF Text.Eq ($'${x:14.3}', Fmt.FixedPad (x, 14, 3)) THEN n := n + 1 END ;
+  IF Text.Eq ($'${x:.4e}', Fmt.Sci (x, 4)) AND Text.Eq ($'${x:e}', Fmt.Sci (x, 16)) THEN n := n + 1 END ;
+  IF Text.Eq ($'${x:16.4e}', Fmt.SciPad (x, 16, 4)) AND Text.Eq ($'${x:30e}', Fmt.SciPad (x, 30, 16)) THEN n := n + 1 END ;
+  RETURN n
+END Same ;
+
+PROCEDURE Run () RAISES Stop, ValueRange =
+VAR
+  out, why, id : STR ;
+  k, seq, n : I64 ;
+  c : CHAR ;
+  yes : BOOL ;
+  u : U64 ;
+  b8 : U8 ;
+  i32 : I32 ;
+  x, tiny : F64 ;
+  f : F32 ;
+BEGIN
+  k := 7 ; seq := -3 ; why := 'gone' ; id := 'b1' ; n := 42 ;
+  out := $'worker ${k} died in batch ${seq}: ${why}' ;
+  out := out + '|' + $'{"id":"${id}","n":${n}}' ;
+  c := 0E9C ;
+  out := out + $"|x=${c}!" ;
+  yes := TRUE ;
+  out := out + $'|${yes} ${n < 0}' ;
+  u := 18446744073709551615 ;
+  out := out + $'|[${n:7}][${n:05}][${0 - n:05}][${n:1}][${u}]' ;
+  x := 2.5 ; tiny := 0.1 ;
+  out := out + $'|${tiny} ${x} ${1.0e22}' ;
+  x := 3.14159 ;
+  out := out + $'|[${x:.2}][${x:8.2}][${x:4.0}][${0.0 - 0.5:.2}]' ;
+  out := out + $'|[${12345.678:.2e}][${0.0012:10.1e}]' ;
+  out := out + $'|${1.2345678901234567:e}' ;
+  out := out + $'|[${tiny:8}]' ;
+  out := out + $'|a$b {c} $ ${n}' ;
+  out := out + $'|same ${Same ()}' ;
+  hits := 0 ;
+  BEGIN
+    why := $'${Hit ()} ${Boom (1)} ${Hit ()}'
+  EXCEPT
+  | Stop : out := out + $'|stop ${hits}'
+  END ;
+  b8 := 200 ; i32 := -5 ; f := 7.0 ;
+  out := out + $'|u8 ${b8} i32 ${i32} pad [${f:3.0}]' ;
+  out := out + '|' + $'one hole: ${n - 33}' ;
+  why := 'last' ;
+  out := $'${out}|${Hit ()} ${Hit ()} *|${Name (why)}' ;
+  Io.WriteLine (out)
+END Run ;
+
+BEGIN
+  Run ()
+EXCEPT
+| Stop : Io.WriteLine ('Stop where none was raised')
+| ValueRange : Io.WriteLine ('ValueRange')
+END GfInterp.

@@ -1,0 +1,17 @@
+(* The type of a slice in brackets is read from its elements.  With
+   none there is no type.  The empty slice is NEW (T, 0). *)
+MODULE m ;
+PROCEDURE Sum (RO v: SLICE OF I64) : I64 =
+BEGIN
+  RETURN LEN (v)
+END Sum ;
+PROCEDURE Fine () : I64 =
+BEGIN
+  RETURN Sum (NEW (I64, 0))
+END Fine ;
+PROCEDURE Bad () : I64 =
+BEGIN
+  RETURN Sum ([])
+END Bad ;
+BEGIN
+END m.

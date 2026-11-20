@@ -55,6 +55,8 @@ CONST
   StartTls = 2 ;               (* plain, then STARTTLS before anything
                                   else is said, 587; refused if the
                                   server does not offer it *)
+  ReplyMs = 60000 ;            (* how long a reply may take, by
+                                  default: a minute *)
 
 TYPE
   Message ;                    (* opaque; lives in a POOL *)
@@ -81,6 +83,18 @@ PROCEDURE Attach (VAR m: PTR Message ; RO name: STR ; RO ctype: STR ;
                   RO data: SLICE OF BYTE) ;
   (* Attach adds a part: Content-Type ctype, Content-Disposition
      attachment with the file name, base64. *)
+
+PROCEDURE SetTimeout (VAR m: PTR Message ; ms: I64) ;
+  (* SetTimeout says how long the server may take over one reply
+     when Send sends this message, in milliseconds.  0 or less is the
+     default, ReplyMs.  A server silent for longer ends Send with an
+     Error of code 0.  SendText and SendOctets wait ReplyMs.
+
+     Until 2026-11-20 a read had no limit, so a mail server that
+     accepted the connection and said nothing held the caller, and
+     the request it served, for as long as the server liked.  The
+     connect itself is the system's: it gives up after its own
+     time. *)
 
 PROCEDURE Wire (m: PTR Message) : STR RAISES ValueRange ;
   (* Wire answers the RFC 5322 message as the server receives it: CR
@@ -152,6 +166,10 @@ PROCEDURE TlsRead = "tls_read" (h: C.Int ; buf: C.MutPtr ; n: C.SizeT)
 PROCEDURE TlsWrite = "tls_write" (h: C.Int ; buf: C.ConstPtr ; n: C.SizeT)
   : C.SSizeT  [REENTRANT] ;
 PROCEDURE TlsClose = "tls_close" (h: C.Int) : C.Int  [REENTRANT] ;
+PROCEDURE RcvTimeo = "tcp_rcvtimeo" (fd: C.Int ; ms: C.SSizeT)
+  : C.Int  [REENTRANT] ;
+PROCEDURE TlsRcvTimeo = "tls_rcvtimeo" (h: C.Int ; ms: C.SSizeT)
+  : C.Int  [REENTRANT] ;
 
 END csmtp.
 
@@ -162,7 +180,7 @@ UNSAFE IMPLEMENTATION MODULE Smtp ;
    Http. *)
 
 FROM csmtp IMPORT Connect, Read, Write, Close, TlsConnect, TlsWrap, TlsRead,
-                  TlsWrite, TlsClose ;
+                  TlsWrite, TlsClose, RcvTimeo, TlsRcvTimeo ;
 IMPORT DynStr ;
 IMPORT Fmt ;
 IMPORT Text ;
@@ -187,6 +205,7 @@ TYPE
     nparts : I64 ;
     date : Time.Instant ;
     hasText : BOOL ;
+    replyMs : I64 ;            (* 0: the default, ReplyMs *)
   END ;
 
   Conn = RECORD
@@ -290,6 +309,11 @@ PROCEDURE SetDate (VAR m: PTR Message ; t: Time.Instant) =
 BEGIN
   m.date := t
 END SetDate ;
+
+PROCEDURE SetTimeout (VAR m: PTR Message ; ms: I64) =
+BEGIN
+  IF ms > 0 THEN m.replyMs := ms ELSE m.replyMs := 0 END
+END SetTimeout ;
 
 PROCEDURE SetId (VAR m: PTR Message ; RO id: STR) =
 BEGIN
@@ -680,7 +704,9 @@ BEGIN
     ELSE
       n := I64 (Read (C.Int (c.fd), ADR (SLICE (buf, total, want)), C.SizeT (want)))
     END ;
-    IF n <= 0 THEN RAISE Error ('smtp: the connection closed while reading a reply', 0) END ;
+    IF n <= 0 THEN
+      RAISE Error ('smtp: no reply: the server closed the connection or was silent past the timeout', 0)
+    END ;
     total := total + n ;
     ls := 0 ;
     i := 0 ;
@@ -794,7 +820,7 @@ BEGIN
      address or a file name beyond ASCII stays raw UTF-8 in its
      header. *)
   Dialogue (host, port, security, user, pass, m.from, rcpts,
-            OCTETS (Stuffed (Wire (m)) + '.' + 0DC + 0AC))
+            OCTETS (Stuffed (Wire (m)) + '.' + 0DC + 0AC), m.replyMs)
 END Send ;
 
 PROCEDURE SendOctets (RO host: STR ; port: I64 ; security: I64 ;
@@ -828,7 +854,7 @@ BEGIN
   END ;
   IF NOT atLineStart THEN data[o] := 13 ; data[o + 1] := 10 ; o := o + 2 END ;
   data[o] := 46 ; data[o + 1] := 13 ; data[o + 2] := 10 ; o := o + 3 ;
-  Dialogue (host, port, security, user, pass, from, to, SLICE (data, 0, o))
+  Dialogue (host, port, security, user, pass, from, to, SLICE (data, 0, o), 0)
 END SendOctets ;
 
 PROCEDURE HasHigh (RO b: SLICE OF BYTE) : BOOL =
@@ -857,10 +883,11 @@ END NeedsUtf8 ;
 
 PROCEDURE Dialogue (RO host: STR ; port: I64 ; security: I64 ;
                     RO user: STR ; RO pass: STR ; RO from: STR ;
-                    RO rcpts: SLICE OF STR ; RO data: SLICE OF BYTE)
+                    RO rcpts: SLICE OF STR ; RO data: SLICE OF BYTE ; replyMs: I64)
   RAISES Error, ValueRange =
   (* Dialogue runs the session: data is the message dot-stuffed and
-     ended with the dot line, as the transport sends it. *)
+     ended with the dot line, as the transport sends it.  replyMs is
+     how long the server may take over a reply, 0 for ReplyMs. *)
 VAR
   c : Conn ;
   hz : SLICE OF BYTE ;
@@ -879,6 +906,14 @@ BEGIN
   ELSE c.fd := I64 (Connect (ADR (hz), C.Int (port)))
   END ;
   IF c.fd < 0 THEN RAISE Error ('smtp: cannot connect to ' + host + ':' + Fmt.I64Str (port), 0) END ;
+  (* A server that says nothing does not hold the caller for ever:
+     a read fails after this long.  The socket keeps the limit
+     through STARTTLS, which wraps the same socket. *)
+  h := replyMs ;
+  IF h <= 0 THEN h := ReplyMs END ;
+  IF c.secure THEN h := I64 (TlsRcvTimeo (C.Int (c.fd), C.SSizeT (h)))
+  ELSE h := I64 (RcvTimeo (C.Int (c.fd), C.SSizeT (h)))
+  END ;
   BEGIN
     Need (c, 220, 'the greeting', text) ;
     Cmd (c, Ehlo) ;

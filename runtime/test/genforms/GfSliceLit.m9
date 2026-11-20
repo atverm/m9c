@@ -1,0 +1,154 @@
+MODULE GfSliceLit ;
+
+(* WANT: join one,two,three x|onetwo|42 sum 6 42 121 total 3.75 count 2 small 3 view ok stop 3 13 last mark,xname,mark *)
+
+(* A slice written in brackets as a whole argument (par 2.2.5,
+   2026-11-19): [e1, ..., en] is a SLICE OF T in the frame, lent
+   read-only.  The elements are strings, numbers, characters or
+   booleans.  A literal adapts to the type of the others.  A raising
+   element stops the statement before the elements after it run.  A
+   view of the slice that a function returns lives in the caller's
+   arena, as a NEW in a RETURN does: View holds that over 2,000
+   turns with other allocation between them, which the sanitizer gate
+   reads. *)
+
+IMPORT Fmt ;
+IMPORT Io ;
+IMPORT Text ;
+
+EXCEPTION Stop ;
+
+VAR hits : I64 ;
+
+PROCEDURE Sum (RO v: SLICE OF I64) : I64 =
+VAR i, s : I64 ;
+BEGIN
+  s := 0 ;
+  FOR i := 0 TO LEN (v) - 1 DO s := s + v[i] END ;
+  RETURN s
+END Sum ;
+
+PROCEDURE Total (RO v: SLICE OF F64) : F64 =
+VAR i : I64 ; s : F64 ;
+BEGIN
+  s := 0.0 ;
+  FOR i := 0 TO LEN (v) - 1 DO s := s + v[i] END ;
+  RETURN s
+END Total ;
+
+PROCEDURE Count (RO v: SLICE OF BOOL) : I64 =
+VAR i, n : I64 ;
+BEGIN
+  n := 0 ;
+  FOR i := 0 TO LEN (v) - 1 DO
+    IF v[i] THEN n := n + 1 END
+  END ;
+  RETURN n
+END Count ;
+
+PROCEDURE Small (RO v: SLICE OF I32) : I64 =
+BEGIN
+  RETURN LEN (v)
+END Small ;
+
+PROCEDURE Same (RO v: SLICE OF STR) : RO SLICE OF STR =
+BEGIN
+  RETURN v
+END Same ;
+
+PROCEDURE Make (n: I64) : RO SLICE OF STR =
+BEGIN
+  RETURN Same (['n=' + Fmt.I64Str (n), Fmt.I64Str (n * 2)])
+END Make ;
+
+PROCEDURE Noise (n: I64) : I64 =
+VAR i, t : I64 ; s : STR ;
+BEGIN
+  t := 0 ;
+  FOR i := 1 TO n DO
+    s := Fmt.I64Str (i) + '-' + Fmt.I64Str (i * i) ;
+    t := t + Text.BLen (s)
+  END ;
+  RETURN t
+END Noise ;
+
+PROCEDURE View () : STR =
+VAR i, t, wrong : I64 ;
+BEGIN
+  t := 0 ;
+  wrong := 0 ;
+  FOR i := 1 TO 2000 DO
+    t := t + Noise (3) + Text.BLen (Text.Join (Make (i), '/')) ;
+    IF NOT Text.Eq (Text.Join (Same (Make (i)), '/'), 'n=' + Fmt.I64Str (i) + '/' + Fmt.I64Str (i * 2)) THEN
+      wrong := wrong + 1
+    END ;
+    IF NOT Text.Eq (Text.Join ([Fmt.I64Str (i), 'a'], '='), Fmt.I64Str (i) + '=a') THEN wrong := wrong + 1 END
+  END ;
+  IF wrong = 0 AND t = 38341 THEN RETURN 'ok' END ;
+  RETURN 'WRONG ' + Fmt.I64Str (wrong) + ' ' + Fmt.I64Str (t)
+END View ;
+
+PROCEDURE Boom (n: I64) : I64 RAISES Stop =
+BEGIN
+  IF n > 0 THEN RAISE Stop END ;
+  RETURN 1
+END Boom ;
+
+PROCEDURE Hit () : I64 =
+BEGIN
+  hits := hits + 1 ;
+  RETURN 2
+END Hit ;
+
+PROCEDURE Name (n: I64) : STR RAISES Stop =
+BEGIN
+  IF n > 0 THEN RAISE Stop END ;
+  RETURN 'name'
+END Name ;
+
+PROCEDURE Mark () : STR =
+BEGIN
+  hits := hits + 10 ;
+  RETURN 'mark'
+END Mark ;
+
+PROCEDURE Run () RAISES Stop, ValueRange =
+VAR
+  a, b, out : STR ;
+  n : I64 ;
+  w : I32 ;
+BEGIN
+  a := 'one' ;
+  b := 'two' ;
+  n := 40 ;
+  w := 7 ;
+  out := 'join ' + Text.Join ([a, b, 'three'], ',') ;
+  out := out + ' ' + Text.Join (['x', a + b, Fmt.I64Str (n + 2)], '|') ;
+  out := out + ' sum ' + Fmt.I64Str (Sum ([1, 2, 3])) + ' ' + Fmt.I64Str (Sum ([n, 2])) ;
+  out := out + ' ' + Fmt.I64Str (Sum ([1, n, Sum ([n, n])])) ;
+  out := out + ' total ' + Fmt.Short (Total ([1.5, 2.25])) ;
+  out := out + ' count ' + Fmt.I64Str (Count ([TRUE, n > 3, FALSE])) ;
+  out := out + ' small ' + Fmt.I64Str (Small ([w, 2, 3])) ;
+  out := out + ' view ' + View () ;
+  hits := 0 ;
+  n := Sum ([Hit (), Boom (0), Hit ()]) ;
+  BEGIN
+    n := Sum ([Hit (), Boom (1), Hit ()])
+  EXCEPT
+  | Stop : out := out + ' stop ' + Fmt.I64Str (hits)
+  END ;
+  BEGIN
+    a := Text.Join ([Mark (), 'x' + Name (1), Mark ()], ',')
+  EXCEPT
+  | Stop : out := out + ' ' + Fmt.I64Str (hits)
+  END ;
+  out := out + ' last ' + Text.Join ([Mark (), 'x' + Name (0), Mark ()], ',') ;
+  Io.WriteLine (out)
+END Run ;
+
+BEGIN
+  Run ()
+EXCEPT
+| Stop : Io.WriteLine ('Stop where none was raised')
+| ValueRange : Io.WriteLine ('ValueRange')
+END GfSliceLit.

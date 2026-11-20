@@ -46,6 +46,7 @@ typedef struct Lex_Comment Lex_Comment;
 #define Lex_KDotDot INT64_C(222)
 #define Lex_KBar INT64_C(223)
 #define Lex_KCaret INT64_C(224)
+#define Lex_KInterp INT64_C(225)
 static const uint8_t Lex_HexMsg_d[16] = { 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102 };
 #define Lex_HexMsg ((m9_sl_UTF8){ (uint8_t *) Lex_HexMsg_d, 16 })
 static const uint8_t Lex_HexUp_d[16] = { 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70 };

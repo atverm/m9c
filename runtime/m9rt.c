@@ -1323,6 +1323,67 @@ m9_sl_UTF8 m9_utf_of_char (m9_pool *pool, uint32_t c, m9_state *err)
   return out;
 }
 
+/* m9_utf_digits writes the digits of an integer, given as its sign
+   and its magnitude, right-aligned in width.  The fill is blanks, or
+   zeros after the sign. */
+static m9_sl_UTF8 m9_utf_digits (m9_pool *pool, int neg, uint64_t mag,
+                                 int64_t width, int zero, m9_state *err)
+{
+  m9_sl_UTF8 out = { NULL, 0 };
+  char d[24];
+  int64_t nd = 0, n, pad, i, at = 0;
+  do { d[nd++] = (char) ('0' + (int) (mag % 10)); mag /= 10; } while (mag != 0);
+  n = nd + (neg ? 1 : 0);
+  pad = width > n ? width - n : 0;
+  out.p = (uint8_t *) m9_pool_alloc (pool, 1, n + pad, err);
+  if (err->exc != NULL) { out.p = NULL; return out; }
+  if (!zero) for (i = 0; i < pad; i++) out.p[at++] = ' ';
+  if (neg) out.p[at++] = '-';
+  if (zero) for (i = 0; i < pad; i++) out.p[at++] = '0';
+  for (i = nd - 1; i >= 0; i--) out.p[at++] = (uint8_t) d[i];
+  out.len = at;
+  return out;
+}
+
+m9_sl_UTF8 m9_utf_of_i64 (m9_pool *pool, int64_t v, int64_t width, int zero,
+                          m9_state *err)
+{
+  /* the magnitude of the smallest I64 has no I64: it is taken unsigned */
+  uint64_t mag = v < 0 ? (uint64_t) 0 - (uint64_t) v : (uint64_t) v;
+  return m9_utf_digits (pool, v < 0, mag, width, zero, err);
+}
+
+m9_sl_UTF8 m9_utf_of_u64 (m9_pool *pool, uint64_t v, int64_t width, int zero,
+                          m9_state *err)
+{
+  return m9_utf_digits (pool, 0, v, width, zero, err);
+}
+
+m9_sl_UTF8 m9_utf_of_bool (int b)
+{
+  static const uint8_t t[4] = { 'T', 'R', 'U', 'E' };
+  static const uint8_t f[5] = { 'F', 'A', 'L', 'S', 'E' };
+  m9_sl_UTF8 out;
+  if (b) { out.p = (uint8_t *) t; out.len = 4; }
+  else { out.p = (uint8_t *) f; out.len = 5; }
+  return out;
+}
+
+m9_sl_UTF8 m9_utf_pad (m9_pool *pool, m9_sl_UTF8 s, int64_t width,
+                       m9_state *err)
+{
+  m9_sl_UTF8 out = { NULL, 0 };
+  int64_t i, pad;
+  if (err->exc != NULL || s.len >= width) return s;
+  pad = width - s.len;
+  out.p = (uint8_t *) m9_pool_alloc (pool, 1, width, err);
+  if (err->exc != NULL) { out.p = NULL; return out; }
+  for (i = 0; i < pad; i++) out.p[i] = ' ';
+  if (s.len > 0) memcpy (out.p + pad, s.p, (size_t) s.len);
+  out.len = width;
+  return out;
+}
+
 m9_sl_CHAR m9_ch_cat (m9_pool *pool, uint32_t c, m9_sl_CHAR b,
                       m9_state *err)
 {
@@ -2598,11 +2659,13 @@ static int64_t m9_fmt_special (double v, char *b, int64_t cap)
   return (int64_t) strlen (s);
 }
 
-int64_t m9_fmt_fixed (double v, int64_t decimals, void *buf, int64_t cap)
+/* The three writers take force: 1 writes the C library's digits
+   whatever M9_FMT_PORTABLE says (m9_utf_of_f64, a hole's real). */
+static int64_t m9_fmt_fixed_x (double v, int64_t decimals, void *buf, int64_t cap, int force)
 {
   char *b = (char *) buf;
   int64_t n;
-  if (!m9_fmt_fast () || decimals < 0 || decimals > 17 || cap < 1) return -1;
+  if ((!force && !m9_fmt_fast ()) || decimals < 0 || decimals > 17 || cap < 1) return -1;
   n = m9_fmt_special (v, b, cap);
   if (n >= 0) return n;
   n = snprintf (b, (size_t) cap, "%.*f", (int) decimals, v);
@@ -2610,14 +2673,14 @@ int64_t m9_fmt_fixed (double v, int64_t decimals, void *buf, int64_t cap)
   return n;
 }
 
-int64_t m9_fmt_sci (double v, int64_t decimals, void *buf, int64_t cap)
+static int64_t m9_fmt_sci_x (double v, int64_t decimals, void *buf, int64_t cap, int force)
 {
   char t[64];
   char *b = (char *) buf;
   int64_t n, i, o;
   long e10;
   char *ep;
-  if (!m9_fmt_fast () || decimals < 0 || decimals > 17 || cap < 1) return -1;
+  if ((!force && !m9_fmt_fast ()) || decimals < 0 || decimals > 17 || cap < 1) return -1;
   n = m9_fmt_special (v, b, cap);
   if (n >= 0) return n;
   n = snprintf (t, sizeof t, "%.*e", (int) decimals, v);
@@ -2777,15 +2840,17 @@ static void m9_dragonbox (uint64_t fbits, int ebits, uint64_t *osig, int *oexp)
   *osig = sig; *oexp = minus_k + kappa;
 }
 
-int64_t m9_fmt_short (double v, void *buf, int64_t cap)
+static int64_t m9_fmt_short_x (double v, void *buf, int64_t cap, int force)
 {
   char *b = (char *) buf;
-  char ds[24];
+  /* ds is zeroed for Rocky 9's gcc 11, which could not see that the
+     loop below fills what is read and refused the file (-Werror). */
+  char ds[24] = { 0 };
   uint64_t bits, sig, m;
   int ebits, nd, i, k, x, o = 0;
   int64_t n;
   int exp;
-  if (!m9_fmt_fast () || cap < 32) return -1;
+  if ((!force && !m9_fmt_fast ()) || cap < 32) return -1;
   n = m9_fmt_special (v, b, cap);
   if (n >= 0) return n;
   memcpy (&bits, &v, 8);
@@ -2828,6 +2893,50 @@ int64_t m9_fmt_short (double v, void *buf, int64_t cap)
     b[o++] = (char) ('0' + x % 10);
   }
   return o;
+}
+
+int64_t m9_fmt_fixed (double v, int64_t decimals, void *buf, int64_t cap)
+{
+  return m9_fmt_fixed_x (v, decimals, buf, cap, 0);
+}
+
+int64_t m9_fmt_sci (double v, int64_t decimals, void *buf, int64_t cap)
+{
+  return m9_fmt_sci_x (v, decimals, buf, cap, 0);
+}
+
+int64_t m9_fmt_short (double v, void *buf, int64_t cap)
+{
+  return m9_fmt_short_x (v, buf, cap, 0);
+}
+
+/* m9_utf_of_f64 is the text of a real in a hole of an interpolation
+   literal (docs/interpolation-rfc.md; the author, 2026-11-20: "add
+   Fmt to the runtime").  The digits are the three writers' above,
+   which are Fmt's own: Short without decimals, Fixed with them, Sci
+   with sci, and 16 decimals when sci gives none.  So a program with
+   a real in a hole imports nothing.  M9_FMT_PORTABLE does not reach
+   here: it makes Fmt take its own M9 code, which writes the same
+   characters, and a hole has no such code to take.  The text is
+   right-aligned in width with blanks, and never cut. */
+m9_sl_UTF8 m9_utf_of_f64 (m9_pool *pool, double v, int64_t width,
+                          int64_t decimals, int sci, m9_state *err)
+{
+  m9_sl_UTF8 out = { NULL, 0 };
+  char t[512];
+  int64_t n, pad, i;
+  if (sci) n = m9_fmt_sci_x (v, decimals < 0 ? 16 : decimals, t, sizeof t, 1);
+  else if (decimals >= 0) n = m9_fmt_fixed_x (v, decimals, t, sizeof t, 1);
+  else n = m9_fmt_short_x (v, t, sizeof t, 1);
+  if (n < 0) n = 0;                            /* the checker held the decimals to 0 .. 17 */
+  pad = width > n ? width - n : 0;
+  if (n + pad == 0) return out;
+  out.p = (uint8_t *) m9_pool_alloc (pool, 1, n + pad, err);
+  if (err->exc != NULL) { out.p = NULL; return out; }
+  for (i = 0; i < pad; i++) out.p[i] = ' ';
+  memcpy (out.p + pad, t, (size_t) n);
+  out.len = n + pad;
+  return out;
 }
 
 #if defined (__aarch64__) && defined (__ARM_FEATURE_CRC32)

@@ -47,6 +47,10 @@ trailing newline.
 
 pgshim.c's pointer table
 
+### CONST TimeoutGrace
+
+ms a silent server gets past SetTimeout's
+
 ### Connect (VAR pool: POOL ; RO conninfo: STR) : PTR Conn IN pool RAISES PgError, ValueRange
 
 conninfo -- a libpq connection string ('host=... dbname=...'),
@@ -62,13 +66,80 @@ gone (a server restart, an idle timeout).
 
 ### Alive (c: PTR Conn) : BOOL RAISES ValueRange
 
-Alive answers PQstatus = CONNECTION_OK.  It answers FALSE after
-the server went away: the answer to "should I Reconnect before
-retrying".
+Alive answers whether the connection can carry a statement.  It
+reads what the server has sent without waiting (PQconsumeInput)
+and then asks PQstatus = CONNECTION_OK.  So it answers FALSE as
+soon as the server's close has arrived: after a restart, an idle
+timeout or a terminated backend, and before any statement has
+failed.  It sends nothing and costs no round trip.  libpq
+prints the server's parting message on stderr then.  A server
+that is unreachable without having closed (a pulled cable) still
+looks alive until a statement fails.
+
+### Ensure (VAR c: PTR Conn) RAISES PgError, ValueRange
+
+Ensure reconnects when the connection is not Alive, and does
+nothing when it is.  A handler calls it first, inside the block
+that catches PgError:
+
+  BEGIN
+    Pg.Ensure (web[req.worker]) ;
+    r := Pg.Query (scratch, web[req.worker], sql, p) ;
+    ...
+  EXCEPT
+  | Pg.PgError (m) : RETURN HttpServer.ReplyError (503, 'database')
+  END
+
+Alive sees a connection the server has closed, so the statement
+after Ensure runs on a new one.  Only a statement under way at
+the cut fails.  Without Ensure the connection stays dead and the
+handler answers 503 until the program is started again.
+
+  raises PgError when the server cannot be reached; the
+            connection stays closed and a later Ensure tries
+            again.  A transaction and a TEMP table do not
+            outlive the cut.
 
 ### Close (VAR c: PTR Conn)
 
 _(documented with the group below)_
+
+### SetTimeout (VAR c: PTR Conn ; ms: I64) RAISES PgError, ValueRange
+
+SetTimeout says how long one statement on this connection may
+take, in milliseconds, for Query, Exec, Script, Begin, Commit
+and Rollback.  0 takes the limit away, and no limit is the
+default: a migration may take an hour.  A server's worker
+calls it once, after Connect.
+
+Two things hold the limit.
+
+  The server ends a statement that runs longer.  SetTimeout
+  sets the session's statement_timeout, and Reconnect and
+  Ensure set it again on the connection they open.  The
+  statement raises PgError with the server's words, 'canceling
+  statement due to statement timeout'.  The connection is as
+  good as before, and an open transaction is aborted as after
+  any error.
+
+  A server that says nothing at all ends the wait.  The wait
+  is ms and a grace of TimeoutGrace more.  The statement raises
+  PgError ('statement timeout: no answer in N ms; the
+  connection is closed'): Alive answers FALSE and Ensure opens
+  a new one.  What the server did with the statement is not
+  known.
+
+Both messages hold the words 'statement timeout'.
+
+Until 2026-11-20 a statement had no limit, so one slow query
+or a server that had stopped answering held a worker for as
+long as it liked.  A connect has its own limit, libpq's:
+'connect_timeout=5' in the conninfo, or PGCONNECT_TIMEOUT.
+
+  raises PgError for a negative ms, and when the server
+            refuses the setting.  A SET inside a transaction
+            that is rolled back is undone with it, so it is
+            called outside one.
 
 ### Query (VAR pool: POOL ; c: PTR Conn ; RO sql: STR ; RO params: SLICE OF STR) : PTR Result IN pool RAISES PgError, ValueRange, IndexError
 
@@ -79,7 +150,11 @@ freed, so the Result owes libpq nothing.
   params -- at most MaxParams; an empty slice is fine.  Every
             CHAR goes out as UTF-8 (the database's encoding).
   raises PgError for anything that is not PGRES_TUPLES_OK or
-            PGRES_COMMAND_OK, with the server's message.
+            PGRES_COMMAND_OK, with the server's message.  The
+            connection may be dead after it (a restart, a
+            terminated backend).  Query does not open it again:
+            Alive tells and Ensure mends, here and for Exec,
+            Script, Begin, Commit and Rollback.
 
 ### Exec (c: PTR Conn ; RO sql: STR ; RO params: SLICE OF STR) : I64 RAISES PgError, ValueRange, IndexError
 
@@ -187,6 +262,10 @@ _(undocumented)_
 
 _(undocumented)_
 
+### Consume (c: C.MutPtr) : C.Int [REENTRANT]
+
+_(undocumented)_
+
 ### Finish (c: C.MutPtr) [REENTRANT]
 
 _(undocumented)_
@@ -196,6 +275,10 @@ _(undocumented)_
 _(undocumented)_
 
 ### ExecBlock (c: C.MutPtr ; sql: C.ConstPtr ; block: C.ConstPtr ; n: C.Int) : C.MutPtr [REENTRANT]
+
+_(undocumented)_
+
+### ExecTimed (c: C.MutPtr ; sql: C.ConstPtr ; block: C.ConstPtr ; n: C.Int ; ms: C.Int ; how: C.MutPtr) : C.MutPtr [REENTRANT]
 
 _(undocumented)_
 

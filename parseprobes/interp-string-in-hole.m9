@@ -1,0 +1,17 @@
+(* A hole holds no string literal.  The quotes of a line then pair
+   the way the eye pairs them.  A value that needs a literal gets a
+   name first, or is joined with a +. *)
+MODULE m ;
+IMPORT Text ;
+PROCEDURE Fine (RO a: STR) : STR =
+VAR sep : STR ;
+BEGIN
+  sep := ', ' ;
+  RETURN $'list: ${Text.Cat (a, sep)}'
+END Fine ;
+PROCEDURE Bad (RO a: STR) : STR =
+BEGIN
+  RETURN $'list: ${Text.Cat (a, ', ')}'
+END Bad ;
+BEGIN
+END m.

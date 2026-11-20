@@ -1,0 +1,125 @@
+MODULE HttpServerTest ;
+
+(* HttpServerTest holds what a handler reads a request with and
+   answers an error with: HttpServer.Query, Segments and ReplyError,
+   and Json.Quote under the last.  The golden file is
+   runtime/test/gold/HttpQuery.gold, written by tools/HttpQueryGold.py:
+   Python's urllib decodes and its json quotes.  The server itself is
+   held by the httpserver gate, against h11. *)
+
+IMPORT Check ;
+IMPORT HttpServer ;
+IMPORT Io ;
+IMPORT Json ;
+IMPORT Text ;
+
+VAR
+  t : Check.T ;
+
+(* Word answers s as the golden file writes it: a blank as '_'. *)
+PROCEDURE Word (RO s: STR) : STR =
+BEGIN
+  RETURN Text.Replace (s, ' ', '_')
+END Word ;
+
+PROCEDURE Queries () =
+VAR
+  gold, value, first : STR ;
+  qs, names, want : SLICE OF STR ;
+  has : SLICE OF BOOL ;
+  req : HttpServer.Request ;
+  i, verdict, wrong : I64 ;
+BEGIN
+  gold := Check.GoldPath ('HttpQuery.gold') ;
+  qs := Check.GoldStrs (t, gold, 'q.query') ;
+  names := Check.GoldStrs (t, gold, 'q.name') ;
+  has := Check.GoldBools (t, gold, 'q.has') ;
+  want := Check.GoldStrs (t, gold, 'q.value') ;
+  verdict := 0 ;
+  wrong := 0 ;
+  first := '' ;
+  FOR i := 0 TO LEN (qs) - 1 DO
+    req.query := qs[i] ;
+    value := 'untouched' ;
+    IF HttpServer.Query (req, Text.Replace (names[i], '_', ' '), value) # has[i] THEN
+      verdict := verdict + 1 ;
+      IF Text.BLen (first) = 0 THEN first := qs[i] END
+    ELSIF has[i] AND NOT Text.Eq (Word (value), want[i]) THEN
+      wrong := wrong + 1 ;
+      IF Text.BLen (first) = 0 THEN first := qs[i] END
+    ELSIF NOT has[i] AND NOT Text.Eq (value, 'untouched') THEN
+      wrong := wrong + 1 ;
+      IF Text.BLen (first) = 0 THEN first := qs[i] END
+    END
+  END ;
+  Check.That (t, 'the golden file has query cases', LEN (qs) > 400) ;
+  Check.EqI64 (t, 'Query finds a parameter where Python does', verdict, 0) ;
+  Check.EqI64 (t, 'Query gives the value urllib decodes, and leaves it when there is none', wrong, 0) ;
+  Check.EqStr (t, 'no query case differs', first, '')
+EXCEPT
+| IndexError : Check.That (t, 'the query golden lines differ in length', FALSE)
+END Queries ;
+
+PROCEDURE Paths () =
+VAR
+  gold, first : STR ;
+  paths, want : SLICE OF STR ;
+  counts : SLICE OF I64 ;
+  segs : SLICE OF STR ;
+  req : HttpServer.Request ;
+  i, wrong : I64 ;
+BEGIN
+  gold := Check.GoldPath ('HttpQuery.gold') ;
+  paths := Check.GoldStrs (t, gold, 'seg.path') ;
+  counts := Check.GoldI64s (t, gold, 'seg.count') ;
+  want := Check.GoldStrs (t, gold, 'seg.joined') ;
+  wrong := 0 ;
+  first := '' ;
+  FOR i := 0 TO LEN (paths) - 1 DO
+    req.path := paths[i] ;
+    segs := HttpServer.Segments (req) ;
+    IF LEN (segs) # counts[i] OR NOT Text.Eq (Word (Text.Join (segs, '|')), want[i]) THEN
+      wrong := wrong + 1 ;
+      IF Text.BLen (first) = 0 THEN first := paths[i] END
+    END
+  END ;
+  Check.That (t, 'the golden file has path cases', LEN (paths) > 300) ;
+  Check.EqI64 (t, 'Segments splits and decodes a path as Python does', wrong, 0) ;
+  Check.EqStr (t, 'no path case differs', first, '')
+EXCEPT
+| IndexError : Check.That (t, 'the path golden lines differ in length', FALSE)
+END Paths ;
+
+PROCEDURE Quotes () =
+VAR
+  gold : STR ;
+  ins, want, got : SLICE OF STR ;
+  r : HttpServer.Response ;
+  i : I64 ;
+BEGIN
+  gold := Check.GoldPath ('HttpQuery.gold') ;
+  ins := Check.GoldStrs (t, gold, 'quote.in') ;
+  want := Check.GoldStrs (t, gold, 'quote.want') ;
+  got := NEW (STR, LEN (ins)) ;
+  FOR i := 0 TO LEN (ins) - 1 DO got[i] := Json.Quote (ins[i]) END ;
+  Check.EqStrs (t, 'Json.Quote = json.dumps (s, ensure_ascii=False)', got, want) ;
+  (* The golden file's words hold no blank and no control character.
+     These are json.dumps's answers, by hand. *)
+  Check.EqStr (t, 'Quote keeps a blank', Json.Quote ('a b'), '"a b"') ;
+  Check.EqStr (t, 'Quote escapes a line feed', Json.Quote ('a' + 0AC + 'b'), '"a\nb"') ;
+  Check.EqStr (t, 'and a tab', Json.Quote ('a' + 09C + 'b'), '"a\tb"') ;
+  Check.EqStr (t, 'and a control character by its number', Json.Quote ('a' + 01C + 'b'), '"a\u0001b"') ;
+  r := HttpServer.ReplyError (404, 'no such "batch"') ;
+  Check.EqI64 (t, 'ReplyError carries the status', r.status, 404) ;
+  Check.EqStr (t, 'and the type', r.ctype, 'application/json') ;
+  Check.EqStr (t, 'and the message as a JSON string', r.text, '{"error":"no such \"batch\""}')
+EXCEPT
+| IndexError : Check.That (t, 'the quote golden lines differ in length', FALSE)
+END Quotes ;
+
+BEGIN
+  Queries () ;
+  Paths () ;
+  Quotes () ;
+  Io.Halt (Check.Done (t, 'HttpServer'))
+END HttpServerTest.

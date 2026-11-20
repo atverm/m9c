@@ -1,0 +1,67 @@
+MODULE GfConstOverConst ;
+
+(* WANT: cells 576 half 288 neg -24 back 24 deep 1153 area 6.25 text a,b;a,b len 576 label mid local 49 alias 24 on TRUE *)
+
+(* A CONST computed from CONSTs declared before it (par 2.2.4,
+   2026-11-19).  The earlier value stands where its name is written,
+   and the rules for an expression over literals then hold the whole:
+   integers fold with the runtime's arithmetic, reals are the C
+   compiler's doubles, strings and characters join into one literal.
+   The folded value serves as an ARRAY count and as a CASE label.  A
+   procedure's own CONST names a module's. *)
+
+IMPORT Fmt ;
+IMPORT Io ;
+
+CONST
+  Cols = 24 ;
+  Rows = Cols ;
+  Cells = Cols * Rows ;
+  Half = Cells DIV 2 ;
+  Neg = -Cols ;
+  Back = -Neg ;
+  Deep = (Cells + Half) + Half + 1 ;
+  Side = 2.5 ;
+  Area = Side * Side ;
+  Sep = ',' ;
+  Pair = 'a' + Sep + 'b' ;
+  Text2 = Pair + ';' + Pair ;
+  On = TRUE ;
+  Dflt = On ;
+
+VAR board : ARRAY Cells OF I64 ;
+
+PROCEDURE Label (n: I64) : STR =
+BEGIN
+  CASE n OF
+  | Cols : RETURN 'low'
+  | Half : RETURN 'mid'
+  | Cells : RETURN 'high'
+  ELSE RETURN 'none'
+  END
+END Label ;
+
+PROCEDURE Local () : I64 =
+CONST
+  Twice = Cols * 2 ;
+  More = Twice + 1 ;
+BEGIN
+  RETURN More
+END Local ;
+
+PROCEDURE Run () =
+VAR out : STR ;
+BEGIN
+  out := 'cells ' + Fmt.I64Str (Cells) + ' half ' + Fmt.I64Str (Half) ;
+  out := out + ' neg ' + Fmt.I64Str (Neg) + ' back ' + Fmt.I64Str (Back) ;
+  out := out + ' deep ' + Fmt.I64Str (Deep) + ' area ' + Fmt.Short (Area) ;
+  out := out + ' text ' + Text2 + ' len ' + Fmt.I64Str (LEN (board)) ;
+  out := out + ' label ' + Label (288) + ' local ' + Fmt.I64Str (Local ()) ;
+  out := out + ' alias ' + Fmt.I64Str (Rows) ;
+  IF Dflt THEN out := out + ' on TRUE' END ;
+  Io.WriteLine (out)
+END Run ;
+
+BEGIN
+  Run ()
+END GfConstOverConst.

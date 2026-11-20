@@ -602,7 +602,7 @@ m9_sl_UTF8 Http_UrlEncode (m9_sl_UTF8 s, m9_state *err)
     bool m9t2 = Http_Unreserved (b, err);
     if (err->exc) { m9ln = 2064; goto L_ret; };
     if (m9t2) {
-      { __typeof__(r) m9v = m9_utf_cat (err->res, r, m9_utf_of_char (err->res, m9_chr (b, err), err), err);
+      { __typeof__(r) m9v = ({ m9_sl_UTF8 m9t3 = r; m9_utf_cat (err->res, m9t3, m9_utf_of_char (err->res, m9_chr (b, err), err), err); });
         if (err->exc) { m9ln = 2065; goto L_ret; };
         r = m9v;
       }
@@ -611,7 +611,7 @@ m9_sl_UTF8 Http_UrlEncode (m9_sl_UTF8 s, m9_state *err)
         if (err->exc) { m9ln = 2067; goto L_ret; };
       { __typeof__(m9_mod_i64 (b, INT64_C(16), err)) m9a5 = m9_mod_i64 (b, INT64_C(16), err);
         if (err->exc) { m9ln = 2067; goto L_ret; };
-      { __typeof__(r) m9v = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, r, ((m9_sl_UTF8){ (uint8_t *) m9s6, 1 }), err), m9_utf_of_char (err->res, Http_HexDigit (m9a4, err), err), err), m9_utf_of_char (err->res, Http_HexDigit (m9a5, err), err), err);
+      { __typeof__(r) m9v = ({ m9_sl_UTF8 m9t5 = ({ m9_sl_UTF8 m9t4 = m9_utf_cat (err->res, r, ((m9_sl_UTF8){ (uint8_t *) m9s6, 1 }), err); m9_utf_cat (err->res, m9t4, m9_utf_of_char (err->res, Http_HexDigit (m9a4, err), err), err); }); m9_utf_cat (err->res, m9t5, m9_utf_of_char (err->res, Http_HexDigit (m9a5, err), err), err); });
         if (err->exc) { m9ln = 2067; goto L_ret; };
         r = m9v;
       }
@@ -1676,7 +1676,7 @@ m9_sl_UTF8 Http_FormType (Http_Form * f, m9_state *err)
   int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   err->res = m9res;
-  m9ret = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s24, 30 }), Http_Boundary (f, err), err);
+  m9ret = ({ m9_sl_UTF8 m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s24, 30 }); m9_utf_cat (err->res, m9t1, Http_Boundary (f, err), err); });
   if (err->exc) { m9ln = 2250; goto L_ret; };
   goto L_ret;
 L_ret: ;

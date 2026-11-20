@@ -1,0 +1,21 @@
+(* EXPECT: a hole holds a value: this call answers none (par 2.3) *)
+(* A hole holds an expression with a value.  A call of a procedure
+   that answers nothing has none to write. *)
+MODULE m ;
+PROCEDURE Count () : I64 =
+BEGIN
+  RETURN 3
+END Count ;
+PROCEDURE Log () =
+BEGIN
+END Log ;
+PROCEDURE Fine () : STR =
+BEGIN
+  RETURN $'count ${Count ()}'
+END Fine ;
+PROCEDURE Bad () : STR =
+BEGIN
+  RETURN $'count ${Log ()}'
+END Bad ;
+BEGIN
+END m.

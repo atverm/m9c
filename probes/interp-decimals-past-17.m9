@@ -1,0 +1,15 @@
+(* EXPECT: the format .25 asks for more decimals than a real has: 0 to 17 (par 2.3) *)
+(* The decimals of a hole are a literal, so the checker holds them to
+   what Fmt takes, 0 to 17.  A hole with a format then raises nothing
+   when the program runs. *)
+MODULE m ;
+PROCEDURE Fine (x: F64) : STR =
+BEGIN
+  RETURN $'${x:.17} ${x:.0} ${x:e}'
+END Fine ;
+PROCEDURE Bad (x: F64) : STR =
+BEGIN
+  RETURN $'${x:.25}'
+END Bad ;
+BEGIN
+END m.

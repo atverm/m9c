@@ -1,0 +1,16 @@
+(* EXPECT: an integer in a hole takes a width and no decimals: write ${n:8}, or ${F64 (n):8.2} for a real (par 2.3) *)
+(* The format of a hole is checked against the hole's type.  An
+   integer takes a width, with zeros as the fill when the format says
+   so.  Decimals are a real's, and the conversion that makes a real
+   of the integer is written, as everywhere. *)
+MODULE m ;
+PROCEDURE Fine (n: I64) : STR RAISES ValueRange =
+BEGIN
+  RETURN $'${n} ${n:8} ${n:08} ${F64 (n):8.2}'
+END Fine ;
+PROCEDURE Bad (n: I64) : STR =
+BEGIN
+  RETURN $'${n:8.2}'
+END Bad ;
+BEGIN
+END m.

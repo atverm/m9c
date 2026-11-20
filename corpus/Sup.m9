@@ -56,7 +56,18 @@ DEFINITION MODULE Sup ;
 
    A zeroed Board is ready, with the defaults: one for one, 3
    restarts in 5,000 ms, 3 dirty crashes.  Policy sets them, before
-   the first child joins. *)
+   the first child joins.
+
+   A SERVER'S WORKERS ARE RESTARTED FOR EVER.  A supervisor that
+   gives up fits a job that should end when it keeps failing.  A
+   server's workers must come back however often their database is
+   away.  Policy with maxRestarts = Sup.Forever never gives up:
+   Watch then raises GaveUp for nothing, and a child that fails is
+   started again every time.  The dirty limit stays: a bug is not
+   forgiven by a policy.  Two agents read this module for a server's
+   workers and did not use it, because it gave up (2026-11-20).  For
+   work that comes as jobs, Jobs gives a failed job out again
+   without a supervisor. *)
 
 IMPORT Faults ;
 IMPORT Time ;
@@ -65,6 +76,7 @@ CONST
   MaxChildren = 64 ;
   OneForOne = 0 ;
   AllForOne = 1 ;
+  Forever = -1 ;              (* for Policy's maxRestarts: no limit *)
   (* a child's state on the board *)
   Waiting = 0 ;
   Running = 1 ;
@@ -102,8 +114,8 @@ EXCEPTION
 PROCEDURE Policy (VAR b: Board ; policy, maxRestarts, windowMs, dirtyMax: I64)
   RAISES Faults.BadArg ;
   (* Policy sets the board's policy: OneForOne or AllForOne, at most
-     maxRestarts clean restarts in windowMs, and dirtyMax dirty crashes
-     of one child.  It raises Faults.BadArg for a value out of range,
+     maxRestarts clean restarts in windowMs (Forever: no limit), and
+     dirtyMax dirty crashes of one child.  It raises Faults.BadArg for a value out of range,
      or once a child has joined. *)
 
 PROCEDURE Join (VAR b: Board) : Seat RAISES Faults.BadArg ;
@@ -163,8 +175,8 @@ BEGIN
   IF policy # OneForOne AND policy # AllForOne THEN
     RAISE Faults.BadArg ('Sup.Policy: the policy is OneForOne or AllForOne')
   END ;
-  IF maxRestarts < 0 OR windowMs < 1 OR dirtyMax < 1 THEN
-    RAISE Faults.BadArg ('Sup.Policy: maxRestarts >= 0, windowMs >= 1, dirtyMax >= 1')
+  IF maxRestarts < Forever OR windowMs < 1 OR dirtyMax < 1 THEN
+    RAISE Faults.BadArg ('Sup.Policy: maxRestarts >= 0 or Forever, windowMs >= 1, dirtyMax >= 1')
   END ;
   b.set := TRUE ;
   b.policy := policy ;
@@ -252,6 +264,7 @@ END Asked ;
 PROCEDURE TooMany (RO times: ARRAY 64 OF F64 ; nt, most: I64 ; window, t: F64) : BOOL
   RAISES IndexError =
 BEGIN
+  IF most < 0 THEN RETURN FALSE END ;       (* Forever *)
   IF most = 0 THEN RETURN TRUE END ;
   IF nt < most THEN RETURN FALSE END ;
   RETURN t - times[(nt - most) MOD 64] <= window

@@ -5,6 +5,7 @@
 #include "DynStr.h"
 #include "Http.h"
 #include "Io.h"
+#include "Json.h"
 #include "Logger.h"
 #include "Zip.h"
 #include "Text.h"
@@ -40,6 +41,7 @@ extern const m9_exc HttpServer_Frozen;
 #define HttpServer_LingerMax INT64_C(16777216)
 #define HttpServer_ChunkLineMax INT64_C(1024)
 #define HttpServer_Huge INT64_C(1000000000000000)
+#define HttpServer_BodyFirst INT64_C(65536)
 
 typedef m9_sl_UTF8 (*HttpServer_Producer) (HttpServer_Request *, int64_t, m9_state *err);
 typedef HttpServer_Response (*HttpServer_Handler) (HttpServer_Request *, m9_state *err);
@@ -128,6 +130,7 @@ struct HttpServer_Config {
   int64_t keepBytes;
   bool tasks;
   int64_t maxOpen;
+  bool only4xx;
 };
 
 typedef struct HttpServer_Stats HttpServer_Stats;
@@ -165,6 +168,9 @@ HttpServer_Response HttpServer_ReplyStream (int64_t status, m9_sl_UTF8 ctype, Ht
 m9_sl_UTF8 HttpServer_TypeOf (m9_sl_UTF8 path, m9_state *err);
 HttpServer_Response HttpServer_WithHeader (HttpServer_Response *resp, m9_sl_UTF8 name, m9_sl_UTF8 value, m9_state *err);
 m9_sl_UTF8 HttpServer_Header (HttpServer_Request *req, m9_sl_UTF8 name, m9_state *err);
+bool HttpServer_Query (HttpServer_Request *req, m9_sl_UTF8 name, m9_sl_UTF8 *value, m9_state *err);
+m9_sl_m9_sl_UTF8 HttpServer_Segments (HttpServer_Request *req, m9_state *err);
+HttpServer_Response HttpServer_ReplyError (int64_t status, m9_sl_UTF8 message, m9_state *err);
 void HttpServer_Serve (HttpServer_Router * r, int64_t port, int64_t maxRequests, m9_state *err);
 
 #endif

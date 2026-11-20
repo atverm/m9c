@@ -50,7 +50,7 @@ Scala and M9 want the same thing, programs that are wrong at compile time rather
 | Concurrency | Threads, futures, cats-effect, ZIO, actors | Threads and monitors, and `TASK`s: tasks far cheaper than a thread, scheduled on the cores, with channels (`Chan`), a parallel loop (`Tsk.For`) and supervision (`Sup`); a monitor's fields are reachable only through its lock |
 | Calling C | JNI/Panama, or Scala Native | Direct; each foreign procedure says if it is `[SERIAL]` or `[REENTRANT]` and the compiler serialises the first |
 | Ecosystem | Maven Central, Spark, Akka, http4s and much more | A 66-module standard library in one repository, each module tested against an outside oracle |
-| Grammar size | Large; several ways to say most things | 74 productions, a ceiling of 100; one way to say most things |
+| Grammar size | Large; several ways to say most things | 79 productions, a ceiling of 100; one way to say most things |
 
 The short version: Scala lets you say more with less code. M9 makes you say everything, and in return a reader can see from the text alone what a procedure may raise, what it allocates, who frees it, and which calls are serialised.
 
@@ -145,7 +145,7 @@ What the gates hold, and the kind of rot each one stops:
 
 | Gate family | Holds | Stops |
 | --- | --- | --- |
-| Museum (30 programs) and 320 probes | Every bug ever seen is refused, with its exact message, line and column | A checker change quietly re-admitting an old bug |
+| Museum (30 programs) and 323 probes | Every bug ever seen is refused, with its exact message, line and column | A checker change quietly re-admitting an old bug |
 | Front end and generator (frontgold, frontprop, gendiff) | The lexer and parser against a record and against properties every file keeps; the generated C against the checked-in C | A change to the front end or the generator that nobody reviewed |
 | Bootstrap | The compiler compiles itself to a fixed point | A generator change that only shows up when the compiler is rebuilt |
 | `m9test` and the oracle batteries | Every library module against its golden values from numpy, scipy, polars, zlib, Chrome | Numerical drift, and an upgrade of an oracle that changes its answer |

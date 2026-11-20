@@ -9,6 +9,7 @@ void JsonUtf_m9init (m9_state *err);
 
 typedef struct JsonUtf_Node JsonUtf_Node;
 typedef struct JsonUtf_Value JsonUtf_Value;
+typedef struct JsonUtf_ArrIx JsonUtf_ArrIx;
 typedef struct JsonUtf_Node JsonUtf_Node;
 typedef struct JsonUtf_Cursor JsonUtf_Cursor;
 
@@ -47,13 +48,13 @@ static const m9_sl_UTF8 __attribute__((__unused__)) JsonUtf_Value_names[] = {
 extern const m9_exc JsonUtf_ParseError;
 extern const m9_exc JsonUtf_TypeMismatch;
 
-#ifndef M9SL_m9_arr_32_uint8_t
-#define M9SL_m9_arr_32_uint8_t
-typedef struct { uint8_t v[32]; } m9_arr_32_uint8_t;
-#endif
 #ifndef M9SL_m9_sl_JsonUtf_Nodep
 #define M9SL_m9_sl_JsonUtf_Nodep
 typedef struct { JsonUtf_Node * *p; int64_t len; } m9_sl_JsonUtf_Nodep;
+#endif
+#ifndef M9SL_m9_arr_32_uint8_t
+#define M9SL_m9_arr_32_uint8_t
+typedef struct { uint8_t v[32]; } m9_arr_32_uint8_t;
 #endif
 #ifndef M9SL_m9_sl_m9_sl_UTF8
 #define M9SL_m9_sl_m9_sl_UTF8

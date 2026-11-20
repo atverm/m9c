@@ -1,0 +1,16 @@
+(* EXPECT: a string, a CHAR and a BOOL take no format: only a number is padded in a hole (par 2.3) *)
+(* A number is padded on the left and a name on the right, so one
+   width for both would be wrong for one of them.  A hole pads
+   numbers only.  A string is padded by name, where the side is
+   said. *)
+MODULE m ;
+PROCEDURE Fine (RO name: STR ; n: I64) : STR =
+BEGIN
+  RETURN $'${name} ${n:10}'
+END Fine ;
+PROCEDURE Bad (RO name: STR ; n: I64) : STR =
+BEGIN
+  RETURN $'${name:10} ${n:10}'
+END Bad ;
+BEGIN
+END m.

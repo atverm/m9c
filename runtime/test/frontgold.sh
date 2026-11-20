@@ -49,7 +49,7 @@ if [ $MODE = pascal ]; then
   P1=host/fpc/p1
 fi
 # The Pascal side cannot read these.  Their record is the M9 side's.
-M9ONLY="FxClaim"
+M9ONLY="FxClaim FxArgs FxInterp"
 G=frontgold
 mkdir -p $G
 

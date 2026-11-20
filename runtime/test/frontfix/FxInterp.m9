@@ -1,0 +1,35 @@
+MODULE FxInterp ;
+
+(* FxInterp holds the interpolation literal (docs/interpolation-rfc.md,
+   2026-11-19): text and holes, a hole first and a hole last, a hole
+   alone, a format of every shape, the other quote, braces and a
+   dollar that are text, a call and an operator in a hole, and the
+   literal as an operand, an argument and a condition's part.  The
+   Pascal parser does not read the form, so the record is the M9
+   side's own. *)
+
+IMPORT Fmt ;
+IMPORT Text ;
+
+PROCEDURE Show (RO s: STR) =
+BEGIN
+END Show ;
+
+PROCEDURE Run (RO name: STR ; n: I64 ; x: F64 ; c: CHAR ; ok: BOOL) : STR =
+VAR s : STR ;
+BEGIN
+  s := $'worker ${n} died: ${name}' ;
+  s := $'${n} first and last ${x}' ;
+  s := $'${name}' ;
+  s := $"it's ${c} and ${ok}" ;
+  s := $'{"id":"${name}","n":${n}} costs $5' ;
+  s := $'[${n:8}][${n:08}][${x:.2}][${x:0.2}][${x:8.2}][${x:.3e}][${x:12.3e}][${x:e}][${x:8}]' ;
+  s := $'${Text.BLen (name) + n * 2} of ${Fmt.Hex (n, 4)}' ;
+  s := 'plain ' + $'and ${n}' + ' plain' ;
+  Show ($'shown ${n}') ;
+  IF Text.Eq (s, $'${n}') THEN s := '' END ;
+  RETURN $'${s}${name}'
+END Run ;
+
+BEGIN
+END FxInterp.

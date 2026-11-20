@@ -109,6 +109,7 @@ typedef struct Parse_Parser Parse_Parser;
 #define Parse_TkDotDot INT64_C(222)
 #define Parse_TkBar INT64_C(223)
 #define Parse_TkCaret INT64_C(224)
+#define Parse_TkInterp INT64_C(225)
 #define Parse_SEnd INT64_C(0)
 #define Parse_SBlock INT64_C(1)
 #define Parse_SIf INT64_C(2)

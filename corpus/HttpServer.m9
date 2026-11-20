@@ -115,7 +115,26 @@ DEFINITION MODULE HttpServer ;
    (Request.worker) from the handler to the last octet sent.  So one
    database connection per worker is still right.  A refusal before
    any handler ran logs worker=-1.  On Windows a TASK is a THREAD,
-   so there tasks is for tests, not for 10,000 connections. *)
+   so there tasks is for tests, not for 10,000 connections.
+
+   SILENT CONNECTIONS HOLD THE WORKER THREADS.  Without tasks a
+   connection has a worker thread from its accept to its close.  A
+   client that connects and sends nothing holds that worker for
+   headerMs, 10 s by default.  So `workers' silent connections make
+   the server answer nobody for that long, /health included.  A
+   server open to clients it does not know sets Config.tasks, where a
+   silent connection parks and holds no worker, or stands behind a
+   reverse proxy that reads the request first.  Four agents in two
+   blind trials each found this by their own checks (2026-11-19 and
+   20).
+
+   A BODY TAKES THE MEMORY OF WHAT HAS ARRIVED.  The buffer of a
+   request body starts at 64 KB or the body's length, whichever is
+   less, and doubles as the octets come, up to bodyMax.  A
+   Content-Length or a chunk size is a claim, and a claim allocates
+   nothing.  Until 2026-11-20 a chunked body took bodyMax at once and
+   a Content-Length its whole length: with a 64 MB limit two requests
+   that sent no body took a service from 21 MB to 143 MB. *)
 
 EXCEPTION
   BindError (RO msg: STR) ;
@@ -233,6 +252,15 @@ TYPE
                                   wants a backlog of thousands too:
                                   with 128, Linux drops a burst's SYNs,
                                   and each costs its client a second. *)
+    only4xx : BOOL ;           (* answer 400 where the server would
+                                  answer 505 (an HTTP version it does
+                                  not speak) or 501 (a transfer coding
+                                  or a method it does not know).  The
+                                  RFC's codes are the default.  A
+                                  service whose contract allows no 5xx
+                                  for what a client sent sets this:
+                                  two agents copied this module to
+                                  change those lines (2026-11-19). *)
   END ;
 
   Stats = RECORD
@@ -402,6 +430,31 @@ PROCEDURE Header (RO req: Request ; RO name: STR) : STR
      compared without regard to case; '' when there is none.  It is
      Http.Header over req.headers.                                   *)
 
+PROCEDURE Query (RO req: Request ; RO name: STR ; VAR value: STR) : BOOL ;
+  (* Query answers whether the request's query has the parameter name,
+     and gives its value.  The query is read as a browser's
+     URLSearchParams reads it, with one difference: a `+' stays a `+',
+     as in Http.UrlDecode.  The parts lie between `&'.  A part's name
+     ends at its first `=', and a part with no `=' is a name with the
+     value ''.  Of several parts with the name, the first counts.  The
+     name and the value are decoded with Http.UrlDecode.  One that
+     cannot be decoded is taken as it was sent, so a caller that
+     checks the value refuses it there.  value is left as it was when
+     the answer is FALSE. *)
+
+PROCEDURE Segments (RO req: Request) : SLICE OF STR ;
+  (* Segments answers the parts of the request's path between its
+     slashes, decoded as Query decodes: `/stations/Mace%20Head/hourly'
+     is ['stations', 'Mace Head', 'hourly'].  The path is split first
+     and decoded after, so a %2F stays inside its segment.  The empty
+     part before the first slash is left out and no other: `/a//b'
+     has three segments and `/a/' two.  The path `/' has none. *)
+
+PROCEDURE ReplyError (status: I64 ; RO message: STR) : Response ;
+  (* ReplyError answers status and the JSON object {"error":message},
+     as application/json.  The message is written as a JSON string,
+     with its escapes (Json.Quote). *)
+
 PROCEDURE Serve (r: PTR Router ; port: I64 ; maxRequests: I64)
   RAISES BindError, ValueRange ;
   (* Serve is the SERIAL HTTP/1.0 baseline: it accepts and answers
@@ -481,6 +534,7 @@ FROM csock IMPORT Read, Write, Close, NowSec ;
 IMPORT DynStr ;
 IMPORT Http ;
 IMPORT Io ;
+IMPORT Json ;
 IMPORT Logger ;
 IMPORT Zip ;
 
@@ -847,6 +901,64 @@ BEGIN
   RETURN Http.Header (req.headers, name)
 END Header ;
 
+(* Decoded answers s decoded, or s itself when it cannot be decoded. *)
+PROCEDURE Decoded (RO s: STR) : STR =
+BEGIN
+  RETURN Http.UrlDecode (s)
+EXCEPT
+| ValueRange : RETURN s
+END Decoded ;
+
+PROCEDURE Query (RO req: Request ; RO name: STR ; VAR value: STR) : BOOL =
+VAR
+  parts : SLICE OF STR ;
+  part : STR ;
+  eq : I64 ;
+BEGIN
+  IF Text.BLen (req.query) = 0 THEN RETURN FALSE END ;
+  parts := Text.Split (req.query, '&') ;
+  FOR part IN parts DO
+    eq := Text.FindChar (part, '=') ;
+    IF eq < 0 THEN
+      IF Text.BLen (part) > 0 AND Text.Eq (Decoded (part), name) THEN
+        value := '' ;
+        RETURN TRUE
+      END
+    ELSIF Text.Eq (Decoded (SLICE (part, 0, eq)), name) THEN
+      value := Decoded (SLICE (part, eq + 1, Text.BLen (part) - eq - 1)) ;
+      RETURN TRUE
+    END
+  END ;
+  RETURN FALSE
+EXCEPT
+| IndexError : RETURN FALSE
+END Query ;
+
+PROCEDURE Segments (RO req: Request) : SLICE OF STR =
+VAR
+  parts, out : SLICE OF STR ;
+  i, first : I64 ;
+BEGIN
+  parts := Text.Split (req.path, '/') ;
+  first := 0 ;
+  IF Text.StartsWith (req.path, '/') THEN first := 1 END ;
+  IF LEN (parts) - first = 1 AND Text.BLen (parts[first]) = 0 THEN
+    first := first + 1
+  END ;
+  out := NEW (STR, LEN (parts) - first) ;
+  FOR i := first TO LEN (parts) - 1 DO
+    out[i - first] := Decoded (parts[i])
+  END ;
+  RETURN out
+EXCEPT
+| IndexError : RETURN NEW (STR, 0)
+END Segments ;
+
+PROCEDURE ReplyError (status: I64 ; RO message: STR) : Response =
+BEGIN
+  RETURN Reply (status, 'application/json', '{"error":' + Json.Quote (message) + '}')
+END ReplyError ;
+
 PROCEDURE Defaults () : Config =
 VAR c : Config ;
 BEGIN
@@ -869,6 +981,7 @@ BEGIN
   c.keepBytes := 0 ;
   c.tasks := FALSE ;
   c.maxOpen := 10000 ;
+  c.only4xx := FALSE ;
   RETURN c
 END Defaults ;
 
@@ -1982,27 +2095,64 @@ END Continue100 ;
 
 (* ---- the body ----------------------------------------------------- *)
 
-PROCEDURE ReadFixed (VAR c: Conn ; body: SLICE OF BYTE) : BOOL =
-  (* ReadFixed reads LEN (body) octets: those already in cb first,
-     then straight from the socket.  It answers FALSE when the peer
-     stops short. *)
-VAR got, n, take : I64 ;
+CONST
+  BodyFirst = 65536 ;           (* a body's first buffer, octets *)
+
+(* NotMine answers the status of a refusal the RFC gives 505 or 501:
+   400 when the configuration asks for 4xx only. *)
+PROCEDURE NotMine (VAR w: Worker ; status: I64) : I64 =
+BEGIN
+  IF w.s.cfg.only4xx THEN RETURN 400 END ;
+  RETURN status
+END NotMine ;
+
+(* Room makes store long enough for the octets [0 .. need).  It
+   doubles the buffer, and never passes most.  The octets [0 .. have)
+   are kept.  The old buffer stays in the pool until the request is
+   done: the buffers of one body sum to less than twice its length. *)
+PROCEDURE Room (VAR pool: POOL ; VAR store: SLICE OF BYTE ; have, need, most: I64) =
+VAR
+  bigger : SLICE OF BYTE ;
+  n, i : I64 ;
+BEGIN
+  IF need <= LEN (store) THEN RETURN END ;
+  n := 2 * LEN (store) ;
+  IF n < BodyFirst THEN n := BodyFirst END ;
+  IF n < need THEN n := need END ;
+  IF n > most THEN n := most END ;
+  bigger := NEW (pool, BYTE, n) ;
+  FOR i := 0 TO have - 1 DO bigger[i] := store[i] END ;
+  store := bigger
+EXCEPT
+| IndexError :
+END Room ;
+
+PROCEDURE ReadFixed (VAR pool: POOL ; VAR c: Conn ; VAR body: SLICE OF BYTE ; len: I64) : BOOL =
+  (* ReadFixed reads len octets into body: those already in cb first,
+     then straight from the socket.  body grows with what has come
+     (Room) and is len long at the end.  It answers FALSE when the
+     peer stops short. *)
+VAR got, n, take, i : I64 ;
 BEGIN
   take := c.have ;
-  IF take > LEN (body) THEN take := LEN (body) END ;
+  IF take > len THEN take := len END ;
+  Room (pool, body, 0, take, len) ;
+  IF len <= BodyFirst THEN Room (pool, body, 0, len, len) END ;
   got := 0 ;
-  WHILE got < take DO
-    body[got] := c.cb[got] ;
-    got := got + 1
-  END ;
+  FOR i := 0 TO take - 1 DO body[i] := c.cb[i] END ;
+  got := take ;
   Consume (c, take) ;
-  WHILE got < LEN (body) DO
+  WHILE got < len DO
+    IF got = LEN (body) THEN Room (pool, body, got, got + 1, len) END ;
     n := I64 (Read (CFd (c.fd), ADR (SLICE (body, got, LEN (body) - got)),
                     CLen (LEN (body) - got))) ;
     IF n <= 0 THEN RETURN FALSE END ;
     got := got + n
   END ;
+  body := SLICE (body, 0, len) ;
   RETURN TRUE
+EXCEPT
+| IndexError : RETURN FALSE
 END ReadFixed ;
 
 PROCEDURE NextLine (VAR c: Conn ; VAR len: I64) : BOOL =
@@ -2031,13 +2181,14 @@ BEGIN
   Consume (c, lf + 1)
 END LineEnd ;
 
-PROCEDURE ReadChunked (VAR c: Conn ; store: SLICE OF BYTE ;
+PROCEDURE ReadChunked (VAR pool: POOL ; VAR c: Conn ; VAR store: SLICE OF BYTE ;
                        VAR got: I64 ; most: I64) : I64
   RAISES ValueRange =
   (* ReadChunked reads RFC 9112 par 7.1: chunk-size [; ext] CRLF data
      CRLF ... 0 CRLF trailers CRLF.  The data lands in store[0 .. got).
      It answers 0, or the status to refuse with: 400 for a malformed
-     chunk, 413 for a body over most. *)
+     chunk, 413 for a body over most.  store grows with the data that
+     has come (Room): a chunk's size line asks for no storage. *)
 VAR len, i, size, v, n, take : I64 ;
 BEGIN
   got := 0 ;
@@ -2066,6 +2217,7 @@ BEGIN
       END ;
       take := c.have ;
       IF take > size - n THEN take := size - n END ;
+      Room (pool, store, got + n, got + n + take, most) ;
       FOR i := 0 TO take - 1 DO
         store[got + n + i] := c.cb[i]
       END ;
@@ -2314,7 +2466,7 @@ BEGIN
     RETURN Refuse (w, c, 400, 'malformed request line')
   END ;
   IF NOT Text.Eq (version, 'HTTP/1.1') AND NOT Text.Eq (version, 'HTTP/1.0') THEN
-    RETURN Refuse (w, c, 505, 'HTTP/1.1 and HTTP/1.0 only')
+    RETURN Refuse (w, c, NotMine (w, 505), 'HTTP/1.1 and HTTP/1.0 only')
   END ;
 
   (* ---- the header lines ---- *)
@@ -2378,7 +2530,7 @@ BEGIN
   chunked := FALSE ;
   IF nTe > 0 THEN
     IF nTe > 1 OR NOT SameCi (te, 'chunked') THEN
-      RETURN Refuse (w, c, 501, 'transfer coding other than chunked')
+      RETURN Refuse (w, c, NotMine (w, 501), 'transfer coding other than chunked')
     END ;
     chunked := TRUE
   END ;
@@ -2389,7 +2541,7 @@ BEGIN
     IF cl = -2 THEN RETURN Refuse (w, c, 413, 'request body too large') END
   END ;
   IF NOT KnownMethod (q.method) THEN
-    RETURN Refuse (w, c, 501, 'unknown method')
+    RETURN Refuse (w, c, NotMine (w, 501), 'unknown method')
   END ;
 
   (* ---- the body ---- *)
@@ -2401,15 +2553,14 @@ BEGIN
       IF NOT Continue100 (c) THEN RETURN FALSE END
     END
   END ;
+  q.body := NEW (scratch, BYTE, 0) ;
   IF chunked THEN
-    q.body := NEW (scratch, BYTE, w.s.cfg.bodyMax) ;
-    n := ReadChunked (c, q.body, got, w.s.cfg.bodyMax) ;
+    n := ReadChunked (scratch, c, q.body, got, w.s.cfg.bodyMax) ;
     IF n = 413 THEN RETURN Refuse (w, c, 413, 'request body too large') END ;
     IF n # 0 THEN RETURN Refuse (w, c, 400, 'malformed chunked body') END ;
     q.body := SLICE (q.body, 0, got)
   ELSE
-    q.body := NEW (scratch, BYTE, cl) ;
-    IF NOT ReadFixed (c, q.body) THEN RETURN FALSE END
+    IF NOT ReadFixed (scratch, c, q.body, cl) THEN RETURN FALSE END
   END ;
 
   (* ---- the target ----

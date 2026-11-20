@@ -679,6 +679,8 @@ BEGIN
   RETURN ''
 END RealC ;
 
+PROCEDURE ConstExpand (k: Ast.Kid ; RO owner: UTF) : Ast.Kid ;
+
 PROCEDURE MAdd (VAR m: Map ; RO KEPT k: UTF ;
                 KEPT v: Ast.Kid ; RO KEPT t: UTF) =
 VAR
@@ -717,6 +719,68 @@ PROCEDURE MFind (VAR m: Map ; RO k: UTF) : I64 =
 BEGIN
   RETURN MLive (m, MSlot (m, k), k)
 END MFind ;
+
+(* ConstNames is TRUE for a constant expression that holds a name. *)
+PROCEDURE ConstNames (k: Ast.Kid) : BOOL =
+VAR j : I64 ;
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NDesignator THEN RETURN TRUE END ;
+    IF e.kind = Ast.NBin OR e.kind = Ast.NParen OR e.kind = Ast.NUn THEN
+      FOR j := 0 TO e.nkids - 1 DO
+        IF ConstNames (e.kids[j]) THEN RETURN TRUE END
+      END
+    END
+  END ;
+  RETURN FALSE
+END ConstNames ;
+
+(* ConstExpand answers a CONST's value with every earlier CONST it
+   names replaced by that CONST's registered value (par 2.2.4,
+   2026-11-19).  It is the twin of the checker's ConstExpand, which
+   refused every name this one does not find.  The value registered
+   for the earlier CONST is already expanded, so `Cells = Cols *
+   Rows' reaches FoldStr as the tree of `24 * 24'.  A table or a
+   record CONST is not in a scalar's place and stays a name.
+     owner -- '' for the module being emitted, whose CONSTs are in
+              consts; else the imported module whose DEFINITION the
+              CONST is in, and the names are found in extConsts. *)
+PROCEDURE ConstExpand (k: Ast.Kid ; RO owner: UTF) : Ast.Kid =
+VAR
+  n : PTR Ast.Node IN gpool ;
+  ci, j : I64 ;
+  found : Ast.Kid ;
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NDesignator AND e.nkids = 0 THEN
+      found := NONE ;
+      IF Text.BLen (owner) = 0 THEN
+        ci := MFind (consts, e.au) ;
+        IF ci >= 0 THEN found := consts.es[ci].v END
+      ELSE
+        ci := MFind (extConsts, S3 (owner, '.', e.au)) ;
+        IF ci >= 0 THEN found := extConsts.es[ci].v END
+      END ;
+      IF found IS SOME v THEN
+        IF v.kind = Ast.NCallExpr OR v.kind = Ast.NAggregate OR
+           v.kind = Ast.NDesignator THEN
+          RETURN k
+        END ;
+        RETURN found
+      END ;
+      RETURN k
+    END ;
+    IF (e.kind = Ast.NBin AND e.nkids = 2) OR
+       ((e.kind = Ast.NParen OR e.kind = Ast.NUn) AND e.nkids = 1) THEN
+      IF NOT ConstNames (k) THEN RETURN k END ;
+      n := Ast.NewNode (gpool, e.kind, e.line, e.col) ;
+      Ast.SetAUtf (gpool, n, e.au) ;
+      FOR j := 0 TO e.nkids - 1 DO Ast.Add (gpool, n, ConstExpand (e.kids[j], owner)) END ;
+      RETURN SOME (n)
+    END
+  END ;
+  RETURN k
+END ConstExpand ;
 
 CONST
   MaxErrs = 8 ;
@@ -1729,6 +1793,22 @@ BEGIN
   RETURN nm
 END SliceTy ;
 
+(* StrSliceTy answers the C type of a SLICE OF STR and declares it,
+   guarded as SliceTy declares it from a type's node.  A slice written
+   in brackets has no node to give SliceTy (par 2.2.5). *)
+PROCEDURE StrSliceTy () : UTF =
+CONST Nm = 'm9_sl_m9_sl_UTF8' ;
+BEGIN
+  IF MFind (arrSeen, Nm) < 0 THEN
+    MAdd (arrSeen, Nm, NONE, '') ;
+    Line (KTdefs, 0, S2 ('#ifndef M9SL_', Nm)) ;
+    Line (KTdefs, 0, S2 ('#define M9SL_', Nm)) ;
+    Line (KTdefs, 0, S3 ('typedef struct { m9_sl_UTF8 *p; int64_t len; } ', Nm, ';')) ;
+    Line (KTdefs, 0, '#endif')
+  END ;
+  RETURN Nm
+END StrSliceTy ;
+
 (* GridTy emits one struct per rank per element type, guarded like the
    slice typedefs.  Each defines a fresh anonymous struct, so the same
    name from two modules is a conflicting type and not a
@@ -2616,11 +2696,93 @@ BEGIN
   RETURN S5 ('m9_utf_from_chars (', pool, ', ', x, ', err)')
 END UtfBuiltinC ;
 
+(* HoleC answers the C of a hole of an interpolation literal: its
+   value as a string (docs/interpolation-rfc.md, par 3.3 and 3.4).
+   The checker let through a string, a CHAR, a BOOL, an integer and a
+   real, each with the format it may have.
+
+     a string    itself
+     a CHAR      its encoding
+     a BOOL      TRUE or FALSE, static text
+     an integer  the runtime's digits, padded to the width
+     a real      the runtime's m9_utf_of_f64, whose digits are Fmt's:
+                 Short without decimals, Fixed with them, Sci with e,
+                 and 16 decimals when e gives none
+
+   Nothing here names a module, so a unit with a hole imports
+   nothing for it (the author, 2026-11-20). *)
+PROCEDURE HoleC (e: PTR Ast.Node) : UTF =
+VAR
+  tg, v, w, dc, z : UTF ;
+  zero, sci, ok : BOOL ;
+  width, decimals : I64 ;
+BEGIN
+  IF e.nkids = 0 THEN RETURN '((m9_sl_UTF8){ NULL, 0 })' END ;
+  tg := TagOfExpr (e.kids[0]) ;
+  ok := Ast.HoleFormat (e.au, zero, width, decimals, sci) ;
+  w := ItoA (width) ;
+  IF Text.Eq (tg, 'UTF') OR Text.Eq (tg, 'STR1') OR Text.Eq (tg, 'SLICE') THEN
+    RETURN EX (e.kids[0], 'UTF')
+  END ;
+  IF Text.Eq (tg, 'CHAR') THEN
+    v := EX (e.kids[0], 'CHAR') ;
+    RETURN S3 ('m9_utf_of_char (err->res, ', v, ', err)')
+  END ;
+  IF Text.Eq (tg, 'BOOL') THEN
+    v := EX (e.kids[0], '') ;
+    RETURN S3 ('m9_utf_of_bool (', v, ')')
+  END ;
+  IF Text.Eq (tg, 'F64') OR Text.Eq (tg, 'F32') THEN
+    v := EX (e.kids[0], tg) ;
+    dc := ItoA (decimals) ;
+    z := '0' ;
+    IF sci THEN z := '1' END ;
+    RETURN S5 (S3 ('m9_utf_of_f64 (err->res, (double) (', v, '), '), w, ', ', dc, S3 (', ', z, ', err)'))
+  END ;
+  z := '0' ;
+  IF zero THEN z := '1' END ;
+  v := EX (e.kids[0], tg) ;
+  IF Text.Eq (tg, 'U64') THEN
+    RETURN S7 ('m9_utf_of_u64 (err->res, (uint64_t) (', v, '), ', w, ', ', z, ', err)')
+  END ;
+  IF Text.Eq (tg, '?') THEN
+    ErrAt (e, 'a hole of unresolved type') ;
+    RETURN '((m9_sl_UTF8){ NULL, 0 })'
+  END ;
+  RETURN S7 ('m9_utf_of_i64 (err->res, (int64_t) (', v, '), ', w, ', ', z, ', err)')
+END HoleC ;
+
+(* SideCalls is TRUE for an expression that holds a call: what it
+   does may be seen from outside, so the order it runs in matters. *)
+PROCEDURE SideCalls (k: Ast.Kid) : BOOL =
+VAR j : I64 ;
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NCallExpr OR e.kind = Ast.NCallSel THEN RETURN TRUE END ;
+    FOR j := 0 TO e.nkids - 1 DO
+      IF SideCalls (e.kids[j]) THEN RETURN TRUE END
+    END
+  END ;
+  RETURN FALSE
+END SideCalls ;
+
+(* UtfCat answers u + v.  The left side is evaluated before the right
+   one (par 2.3).  C leaves the order of a call's arguments open, and
+   m9_utf_cat (res, L, R, err) ran R first under gcc on Linux:
+   $'${Hit ()} ${Hit ()}' printed `3 2' there and `2 3' on a Mac
+   (genforms GfInterp, 2026-11-19).  So where the right side holds a
+   call, the left is put in a temporary of its own first.  A right
+   side without one has nothing to be out of order with. *)
 PROCEDURE UtfCat (e: PTR Ast.Node) : UTF =
-VAR l, r : UTF ;
+VAR l, r, w : UTF ;
 BEGIN
   l := UtfSide (e.kids[0]) ;
   r := UtfSide (e.kids[1]) ;
+  IF SideCalls (e.kids[1]) THEN
+    w := NewTmp () ;
+    RETURN S7 ('({ m9_sl_UTF8 ', w, ' = ', l,
+               S3 ('; m9_utf_cat (err->res, ', w, ', '), r, ', err); })')
+  END ;
   RETURN S5 ('m9_utf_cat (err->res, ', l, ', ', r, ', err)')
 END UtfCat ;
 
@@ -3153,7 +3315,7 @@ BEGIN
             IF IsAggregate (cd.kids[0]) THEN
               AddAgg (cd.au, cd.kids[0])
             ELSE
-              MAdd (consts, cd.au, FoldStr (cd.kids[0]), '')
+              MAdd (consts, cd.au, FoldStr (ConstExpand (cd.kids[0], '')), '')
             END
           END
         END
@@ -3250,7 +3412,7 @@ BEGIN
       ELSIF d.kind = Ast.NConstSection THEN
         FOR j := 0 TO d.nkids - 1 DO
           IF d.kids[j] IS SOME cd THEN
-            MAdd (extConsts, Text.Keep (gpool, S3 (u.au, '.', cd.au)), cd.kids[0], '')
+            MAdd (extConsts, Text.Keep (gpool, S3 (u.au, '.', cd.au)), ConstExpand (cd.kids[0], u.au), '')
           END
         END
       END
@@ -4569,6 +4731,41 @@ BEGIN
           RETURN S7 ('(', l, ' *) m9_pool_alloc (', r,
             ', sizeof (', l, '), 1, err)')
         END
+    | Ast.NHole : RETURN HoleC (e)
+    | Ast.NAggregate :
+        (* [e1, ..., en] as an argument (par 2.2.5) is a slice in the
+           arena, as a frame NEW's.  The checker typed it a SLICE OF a
+           builtin type or of strings, and those slices have names
+           without a declaration.  The elements are stored only when
+           the allocation succeeded. *)
+        lt := Ast.TyStrAt (e.id) ;
+        IF NOT Text.StartsWith (lt, 'SLICE OF ') THEN
+          ErrAt (e, 'a slice in brackets has no type here') ;
+          RETURN '0'
+        END ;
+        rt := SLICE (lt, 9, Text.BLen (lt) - 9) ;
+        IF Text.Eq (rt, 'SLICE OF <u8>') THEN
+          l := 'm9_sl_UTF8' ;
+          tg := StrSliceTy () ;
+          cop := 'UTF'
+        ELSE
+          l := BuiltinC (rt) ;
+          tg := S2 ('m9_sl_', rt) ;
+          cop := rt
+        END ;
+        w := NewTmp () ;
+        d2 := DynStr.New (gpool) ;
+        DynStr.Append (d2, S9 ('({ ', tg, ' ', w, ' = M9_POOL_SL (', tg, ', ', l, ', err->res, ')) ;
+        DynStr.Append (d2, S2 (ItoA (e.nkids), ', err); if (!err->exc) { ')) ;
+        FOR jj := 0 TO e.nkids - 1 DO
+          (* a raising element was made a temporary (LowerWalk) *)
+          rk := -1 ;
+          IF e.kids[jj] IS SOME el THEN rk := MFind (lowered, IrKey (el.id, 0)) END ;
+          IF rk >= 0 THEN a1 := lowered.es[rk].t ELSE a1 := EX (e.kids[jj], cop) END ;
+          DynStr.Append (d2, S7 (w, '.p[', ItoA (jj), '] = ', a1, '; ', ''))
+        END ;
+        DynStr.Append (d2, S3 ('} ', w, '; })')) ;
+        RETURN DynStr.ViewIn (gpool, d2)
     | Ast.NGridOf :
         (* GRID (s, n0, ..., nR) lays a grid of the slice's element
            type over its storage, row-major.  m9_gridof holds the
@@ -4768,6 +4965,12 @@ BEGIN
         w := '' ;
         IF Text.Eq (lt, 'CHAR') OR Text.Eq (lt, 'STR1') THEN
           w := 'CHAR'
+        END ;
+        (* A BYTE compared with a character literal takes the literal's
+           code (par 2.1).  The checker let only an ASCII literal
+           through. *)
+        IF Text.Eq (lt, 'BYTE') THEN
+          IF Text.Eq (TagOfExpr (e.kids[1]), 'STR1') THEN w := 'CHAR' END
         END ;
         (* at single precision the literals must be single too, or C
            widens the whole expression and narrows once at the end *)
@@ -5154,6 +5357,7 @@ BEGIN
     | Ast.NCallExpr : RETURN CallRaises (e)
     | Ast.NCallSel : RETURN TRUE
     | Ast.NNewExpr, Ast.NGridOf, Ast.NSliceOf3 : RETURN TRUE
+    | Ast.NAggregate : RETURN TRUE     (* it allocates, par 2.2.5 *)
     | Ast.NBin :
         IF KidsRaise (e) THEN RETURN TRUE END ;
         lt := TagOfExpr (e.kids[0]) ;
@@ -5552,6 +5756,17 @@ BEGIN
   END
 END LowerHoistAddr ;
 
+(* AggWant answers what an element of a slice in brackets is emitted
+   as: its builtin type's name, or UTF for a string. *)
+PROCEDURE AggWant (e: PTR Ast.Node) : UTF =
+VAR t : UTF ;
+BEGIN
+  t := Ast.TyStrAt (e.id) ;
+  IF NOT Text.StartsWith (t, 'SLICE OF ') THEN RETURN '' END ;
+  IF Text.Eq (t, 'SLICE OF SLICE OF <u8>') THEN RETURN 'UTF' END ;
+  RETURN SLICE (t, 9, Text.BLen (t) - 9)
+END AggWant ;
+
 PROCEDURE LowerCall (dn: Ast.Kid ; argl: Ast.Kid ; ind: I64 ; VAR n: I64) =
 VAR k : I64 ;
 BEGIN
@@ -5581,6 +5796,14 @@ BEGIN
   IF k IS SOME e THEN
     CASE e.kind OF
     | Ast.NCallExpr : LowerCall (e.kids[0], e.kids[1], ind, n)
+    | Ast.NAggregate :
+        (* A raising element of a slice in brackets is a temporary of
+           its own, as a raising argument is.  So the elements after
+           it are not evaluated (par 2.2.5). *)
+        FOR i := 0 TO e.nkids - 1 DO
+          LowerWalk (e.kids[i], ind, n) ;
+          IF ExprRaises (e.kids[i]) THEN LowerHoist (e.kids[i], AggWant (e), ind, n) END
+        END
     | Ast.NBin :
         LowerWalk (e.kids[0], ind, n) ;
         IF NOT (Text.Eq (e.au, 'AND') OR Text.Eq (e.au, 'OR')) THEN
@@ -6886,6 +7109,8 @@ BEGIN
     IF e.kind = Ast.NNewExpr THEN
       IF Text.Eq (NewShape (e, tyk, ext0), 'frame') THEN RETURN TRUE END
     END ;
+    (* a slice in brackets is an argument, built in the arena (par 2.2.5) *)
+    IF e.kind = Ast.NAggregate THEN RETURN TRUE END ;
     IF e.kind = Ast.NCallExpr OR e.kind = Ast.NCallSel THEN
       IF Ast.TypeAt (e.id) IS SOME rt0 THEN
         IF HasPtr (SOME (rt0), 0) THEN RETURN TRUE END
@@ -8467,7 +8692,7 @@ BEGIN
           IF csec.kind = Ast.NConstSection THEN
             FOR cj2 := 0 TO csec.nkids - 1 DO
               IF csec.kids[cj2] IS SOME cdl THEN
-                MAdd (consts, cdl.au, FoldStr (cdl.kids[0]), '')
+                MAdd (consts, cdl.au, FoldStr (ConstExpand (cdl.kids[0], '')), '')
               END
             END
           END

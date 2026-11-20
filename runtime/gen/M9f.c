@@ -2184,13 +2184,13 @@ static m9_sl_UTF8 M9f_Comment9 (m9_sl_UTF8 text, bool lineEnd, m9_state *err)
   if (err->exc) { m9ln = 600; goto L_ret; };
   if (m9t3) {
     err->res = m9res;
-    m9ret = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s68, 2 }), m9_utf_slice (body, INT64_C(0), m9_sub_i64 (Text_BLen (body, err), INT64_C(1), err), err), err);
+    m9ret = ({ m9_sl_UTF8 m9t5 = ((m9_sl_UTF8){ (uint8_t *) m9s68, 2 }); m9_utf_cat (err->res, m9t5, m9_utf_slice (body, INT64_C(0), m9_sub_i64 (Text_BLen (body, err), INT64_C(1), err), err), err); });
     if (err->exc) { m9ln = 601; goto L_ret; };
     goto L_ret;
   }
-  bool m9t5 = Text_ContainsUtf (body, ((m9_sl_UTF8){ (uint8_t *) m9s69, 2 }), err);
+  bool m9t6 = Text_ContainsUtf (body, ((m9_sl_UTF8){ (uint8_t *) m9s69, 2 }), err);
   if (err->exc) { m9ln = 603; goto L_ret; };
-  if (m9t5) {
+  if (m9t6) {
     err->res = m9res;
     m9ret = text;
     goto L_ret;

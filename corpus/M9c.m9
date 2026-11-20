@@ -256,7 +256,7 @@ CONST
      compiler is the one artifact that cannot read its own package
      version, and a generated file would drag the build system into
      the bootstrap. *)
-  Version = '0.28.1' ;
+  Version = '0.29.0' ;
   (* StdInclude is where its runtime lives, which --help quotes so
      that the example a user copies out of it actually compiles. *)
   StdInclude = '/usr/include/m9' ;
@@ -2994,6 +2994,28 @@ BEGIN
   Io.WriteLine ('') ;
   Io.WriteLine ("A string has no escapes.  One that holds ' is written") ;
   Io.WriteLine ('in double quotes, and one that holds " in single ones.') ;
+  (* The forms and the library pieces of docs/agent-ergonomics-plan.md
+     (2026-11-20).  An agent that does not know of them writes the
+     long form, or the helper, again: the plan's step 0 measured 148
+     lines of a service lost that way. *)
+  Io.WriteLine ('') ;
+  Io.WriteLine ('What is short since 0.29, each with a probe that holds') ;
+  Io.WriteLine ('one of its limits:') ;
+  Io.WriteLine ('') ;
+  GuideLine ("a string with values: $'n=${n} x=${x:8.2}'", 'interp-no-text-form') ;
+  GuideLine ('a slice for one call: F ([a, b, c])', 'slice-lit-kept') ;
+  GuideLine ("an octet beside a character: b[i] = ','", 'byte-lit-not-ascii') ;
+  GuideLine ('a CONST over earlier ones: Cells = Cols * Rows', 'const-names-const') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('Before writing a helper, look in the library:') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('  Jobs: a queue of work for a crew, a failed job given out again') ;
+  Io.WriteLine ('  Pg.Ensure: a database connection made whole before each use') ;
+  Io.WriteLine ('  HttpServer.Query, Segments, ReplyError: a request read by name') ;
+  Io.WriteLine ('  HttpServer Config.tasks: for clients the server does not know') ;
+  Io.WriteLine ('  Json.Quote: a string as JSON, escaped') ;
+  Io.WriteLine ('  Time.ParseRfc3339: the strict date-time parser') ;
+  Io.WriteLine ('  Io.ErrLine and Logger: a log line, written when it happens') ;
   Io.WriteLine ('The language report is the specification.  Where a') ;
   Io.WriteLine ('guide and the report disagree, the report is right.') ;
   Io.WriteLine ('') ;

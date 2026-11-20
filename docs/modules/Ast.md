@@ -354,13 +354,13 @@ docs/proctype-plan.md, 2026-09-27.
 
 ### CONST NAggregate
 
-NAggregate is [ e1, ..., en ] as the value of
-a CONST.  Its kids are the elements, in order.
-Only a ConstDecl's kid is ever one: the parser
-reads `[' as an aggregate nowhere else.  So
-`[' stays what it was in an expression, a
-subscript.  docs/plan-0.14.md stage 2a,
-2026-10-01.
+NAggregate is [ e1, ..., en ]: the value of
+a CONST (docs/plan-0.14.md stage 2a), and
+since 2026-11-19 a whole argument of a call
+(report par 2.2.5).  Its kids are the
+elements, in order.  The parser reads `[' as
+one nowhere else, so inside an expression
+`[' stays a subscript.
 
 ### CONST NGridOf
 
@@ -396,6 +396,17 @@ NForIn is FOR x IN s DO ... END.  a holds the
 variable, kids[0] the designator iterated,
 kids[1] the body.  2026-10-11, cp-kernel's
 proposal.
+
+### CONST NHole
+
+NHole is a hole of an interpolation literal,
+${e} or ${e:8.2} (docs/interpolation-rfc.md).
+kids[0] is the expression.  f1 says a format
+was written, and a holds it.  A hole is an
+operand of the `+' chain the literal stands
+for, and a string: the checker and the
+generator turn its value into text.
+2026-11-19.
 
 ### TYPE Kid
 
@@ -501,6 +512,21 @@ _(documented with the group below)_
 ### ReadsOnlyAt (id: I64) : BOOL
 
 NONE is a legal child: absence with a position
+
+### HoleFormat (RO f: UTF ; VAR zero: BOOL ; VAR width, decimals: I64 ; VAR sci: BOOL) : BOOL
+
+HoleFormat reads the format of a hole, the text after its `:'
+(docs/interpolation-rfc.md, par 3.4):
+
+  [ "0" ] [ width ] [ "." decimals ] [ "e" ]
+
+width and decimals are digits, at most four.  A leading 0 that a
+digit follows asks for zeros as the fill; `0.2' is the width 0.
+HoleFormat answers FALSE for any other text.  It answers width 0
+when none is written and decimals -1 when none are.  The parser
+refuses a format by it, and the checker and the generator read
+the same fields from it, so the three cannot disagree.  The
+empty text is a format too: no width, no decimals.
 
 ### FoldInt (k: Kid ; VAR v: I64) : BOOL
 

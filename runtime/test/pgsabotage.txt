@@ -53,3 +53,66 @@
 @new
             r.cell[k] := DynStr.Chars (pool, b)
 @end
+
+# A service of the Red First game answered 503 for good after its
+# connections were cut (2026-11-19).  Ensure is the one line that
+# mends it, so a break of Ensure must be seen.
+@name Ensure does not reconnect
+@old
+  IF NOT Alive (c) THEN Reconnect (c) END
+@new
+  IF Alive (c) THEN Reconnect (c) END
+@end
+
+@name Alive does not read what the server sent
+@old
+    IF I64 (Consume (c.h)) = 0 THEN RETURN FALSE END
+@new
+@end
+
+# One read takes the terminated backend's message and leaves the close
+# unread.  The service of the game still answered 503 with that.
+@name Alive reads once
+@old
+  FOR i := 1 TO 2 DO
+    IF I64 (Consume
+@new
+  FOR i := 1 TO 1 DO
+    IF I64 (Consume
+@end
+
+# SetTimeout (2026-11-20).  PgTest's Timeout holds each half: the
+# server's own limit, the limit on a new connection, the wait that
+# ends for a server that says nothing, and 0 taking the limit away.
+@name SetTimeout does not tell the server
+@old
+  IF c.open THEN Script (c, 'SET statement_timeout = ' + Fmt.I64Str (ms)) END ;
+  c.ms := ms
+@new
+  c.ms := ms
+@end
+
+@name Reconnect forgets the limit
+@old
+  IF c.ms > 0 THEN Script (c, 'SET statement_timeout = ' + Fmt.I64Str (c.ms)) END
+@new
+  IF c.ms < 0 THEN Script (c, 'SET statement_timeout = ' + Fmt.I64Str (c.ms)) END
+@end
+
+@name a statement waits without a limit
+@old
+  IF c.ms > 0 THEN
+    how := NEW (scratch, BYTE, 1) ;
+    res := ExecTimed (c.h, ADR (sb), ADR (blk), C.Int (LEN (params)),
+@new
+  IF c.ms < 0 THEN
+    how := NEW (scratch, BYTE, 1) ;
+    res := ExecTimed (c.h, ADR (sb), ADR (blk), C.Int (LEN (params)),
+@end
+
+@name SetTimeout 0 leaves the server's limit
+@old
+  IF c.open THEN Script (c, 'SET statement_timeout = '
+@new
+  IF c.open AND (ms > 0) THEN Script (c, 'SET statement_timeout = '
+@end

@@ -1,0 +1,15 @@
+(* EXPECT: a BYTE in a hole is a number or a character: write ${I64 (b)} or ${CHR (I64 (b))} (par 2.3) *)
+(* An octet has two readings, its number and its character, and a
+   hole does not choose between them.  The program says which, by the
+   conversion it writes. *)
+MODULE m ;
+PROCEDURE Fine (RO b: SLICE OF BYTE) : STR RAISES IndexError, ValueRange =
+BEGIN
+  RETURN $'${I64 (b[0])} is ${CHR (I64 (b[0]))}'
+END Fine ;
+PROCEDURE Bad (RO b: SLICE OF BYTE) : STR RAISES IndexError =
+BEGIN
+  RETURN $'${b[0]}'
+END Bad ;
+BEGIN
+END m.

@@ -1,0 +1,14 @@
+(* The format of a hole is a width, then a dot and the decimals, then
+   e for the scientific form.  It is not printf's and not Pascal's:
+   there is no letter but e, and one colon. *)
+MODULE m ;
+PROCEDURE Fine (x: F64 ; n: I64) : STR =
+BEGIN
+  RETURN $'${x:8.2} ${x:.2} ${x:8.2e} ${x:e} ${n:8} ${n:08}'
+END Fine ;
+PROCEDURE Bad (x: F64) : STR =
+BEGIN
+  RETURN $'${x:8.2f} ${x:0:2} ${x:}'
+END Bad ;
+BEGIN
+END m.

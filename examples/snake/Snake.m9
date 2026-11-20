@@ -1,0 +1,149 @@
+DEFINITION MODULE Snake ;
+
+IMPORT Stats, Faults ;
+
+CONST
+  Cols = 24 ;
+  Rows = 24 ;
+  MaxLen = Cols * Rows ;
+  StartLen = 3 ;
+
+TYPE
+  Dir = (Up, Down, Left, Right) ;
+
+  State = RECORD
+    xs, ys : ARRAY MaxLen OF I64 ;  (* body, head at index 0 *)
+    len : I64 ;
+    dir, next : Dir ;               (* last moved / queued turn *)
+    fx, fy : I64 ;                  (* food cell *)
+    score : I64 ;
+    alive, started, won : BOOL ;
+    rng : Stats.Stream ;
+  END ;
+
+PROCEDURE Reset (VAR s: State ; seed: I64)
+  RAISES ValueRange, Faults.BadArg ;
+  (* Reset starts a game: a three-cell snake at the centre facing
+     right, and the first food placed from the seeded stream. Equal
+     seeds give equal games. *)
+
+PROCEDURE Turn (VAR s: State ; d: Dir) ;
+  (* Turn queues a direction for the next step. A reversal of the
+     last moved direction is ignored. *)
+
+PROCEDURE Step (VAR s: State) RAISES ValueRange, Faults.BadArg ;
+  (* Step advances the snake one cell. Walls and the snake's own body
+     end the game; food grows the snake and places the next cell. *)
+
+END Snake.
+
+IMPLEMENTATION MODULE Snake ;
+
+IMPORT Stats, Faults ;
+
+PROCEDURE PlaceFood (VAR s: State) RAISES ValueRange, Faults.BadArg =
+VAR
+  k, i, x, y : I64 ;
+  occupied : BOOL ;
+BEGIN
+  IF s.len >= MaxLen THEN
+    s.won := TRUE ; s.fx := -1 ; s.fy := -1 ;
+    RETURN
+  END ;
+  (* The k-th empty cell in row-major order is uniform over the empty
+     cells, and one draw places the food. A retry loop could spin. *)
+  k := Stats.UniformI (s.rng, 0, MaxLen - s.len - 1) ;
+  FOR y := 0 TO Rows - 1 DO
+    FOR x := 0 TO Cols - 1 DO
+      occupied := FALSE ;
+      FOR i := 0 TO s.len - 1 DO
+        IF s.xs[i] = x AND s.ys[i] = y THEN occupied := TRUE END
+      END ;
+      IF NOT occupied THEN
+        IF k = 0 THEN
+          s.fx := x ; s.fy := y ;
+          RETURN
+        END ;
+        k := k - 1
+      END
+    END
+  END
+END PlaceFood ;
+
+PROCEDURE Reset (VAR s: State ; seed: I64)
+  RAISES ValueRange, Faults.BadArg =
+VAR
+  i : I64 ;
+BEGIN
+  s.len := StartLen ;
+  FOR i := 0 TO StartLen - 1 DO
+    s.xs[i] := Cols DIV 2 - i ;
+    s.ys[i] := Rows DIV 2
+  END ;
+  s.dir := Dir.Right ; s.next := Dir.Right ;
+  s.score := 0 ;
+  s.alive := TRUE ; s.started := TRUE ; s.won := FALSE ;
+  s.rng := Stats.Seed (seed) ;
+  PlaceFood (s)
+END Reset ;
+
+PROCEDURE Turn (VAR s: State ; d: Dir) =
+VAR
+  opposite : BOOL ;
+BEGIN
+  (* The guard reads the last moved direction, not the queued one.
+     Two turns between steps must not reverse the snake. *)
+  CASE s.dir OF
+  | Up    : opposite := d = Dir.Down
+  | Down  : opposite := d = Dir.Up
+  | Left  : opposite := d = Dir.Right
+  | Right : opposite := d = Dir.Left
+  END ;
+  IF NOT opposite THEN s.next := d END
+END Turn ;
+
+PROCEDURE Step (VAR s: State) RAISES ValueRange, Faults.BadArg =
+VAR
+  nx, ny, i, n : I64 ;
+  eat : BOOL ;
+BEGIN
+  IF NOT s.alive OR s.won OR NOT s.started THEN RETURN END ;
+  s.dir := s.next ;
+  nx := s.xs[0] ; ny := s.ys[0] ;
+  CASE s.dir OF
+  | Up    : ny := ny - 1
+  | Down  : ny := ny + 1
+  | Left  : nx := nx - 1
+  | Right : nx := nx + 1
+  END ;
+  IF nx < 0 OR nx >= Cols OR ny < 0 OR ny >= Rows THEN
+    s.alive := FALSE ;
+    RETURN
+  END ;
+  eat := nx = s.fx AND ny = s.fy ;
+  (* The tail cell frees this step unless the snake eats, so the
+     collision scan skips it only when not eating. *)
+  n := s.len ;
+  IF NOT eat THEN n := n - 1 END ;
+  FOR i := 0 TO n - 1 DO
+    IF s.xs[i] = nx AND s.ys[i] = ny THEN
+      s.alive := FALSE ;
+      RETURN
+    END
+  END ;
+  IF eat THEN
+    FOR i := s.len TO 1 BY -1 DO
+      s.xs[i] := s.xs[i - 1] ; s.ys[i] := s.ys[i - 1]
+    END ;
+    s.len := s.len + 1 ;
+    s.score := s.score + 1
+  ELSE
+    FOR i := s.len - 1 TO 1 BY -1 DO
+      s.xs[i] := s.xs[i - 1] ; s.ys[i] := s.ys[i - 1]
+    END
+  END ;
+  s.xs[0] := nx ; s.ys[0] := ny ;
+  IF eat THEN PlaceFood (s) END
+END Step ;
+
+END Snake.

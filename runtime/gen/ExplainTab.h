@@ -6,9 +6,9 @@
 void ExplainTab_m9init (m9_state *err);
 
 
-#ifndef M9SL_m9_arr_320_m9_sl_UTF8
-#define M9SL_m9_arr_320_m9_sl_UTF8
-typedef struct { m9_sl_UTF8 v[320]; } m9_arr_320_m9_sl_UTF8;
+#ifndef M9SL_m9_arr_342_m9_sl_UTF8
+#define M9SL_m9_arr_342_m9_sl_UTF8
+typedef struct { m9_sl_UTF8 v[342]; } m9_arr_342_m9_sl_UTF8;
 #endif
 
 int64_t ExplainTab_Count (m9_state *err);

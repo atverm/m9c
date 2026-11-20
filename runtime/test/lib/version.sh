@@ -11,4 +11,7 @@
 # and changelog differ, and Release.m9's preflight says so too.
 set -e
 cd "$(dirname "$0")/../../.."
-sed -n "s/^ *Version *= *'\([0-9][0-9.]*\)'.*/\1/p" corpus/M9c.m9 | head -1
+# Between two releases the CONST carries a suffix, 0.29.0-dev, so that
+# a development compiler does not say it is the release before it
+# (2026-11-20: an agent could not tell the two apart).
+sed -n "s/^ *Version *= *'\([0-9][0-9.]*[-a-z]*\)'.*/\1/p" corpus/M9c.m9 | head -1

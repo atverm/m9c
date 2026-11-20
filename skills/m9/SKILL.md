@@ -59,9 +59,15 @@ heading with `m9c --json MODULE`):
 | "is s in this list" | `Text.IndexOf` / `Text.OneOf` over a constant table |
 | a lookup inside a loop (the quadratic scan) | `Dict` keyed by the string (a pair key: `a + 0C + b`), or `Sort.ArgStr` once then `Sort.FindStr` |
 | a JSON document | `Json.NewObj/NewArr/NewStr/NewI64/NewF64/NewRaw`, `Json.Set/Add`, `Json.Compact/CompactSorted/Pretty` |
+| a `FOR` over `Json.Item (arr, i)` of a long array (it is quadratic) | `c := Json.First (arr) ; WHILE c IS SOME item DO ... c := Json.After (item) END` (0.29) |
 | "every character is a digit / a-z / ..." | `Text.AllDigits/AllLower/AllUpper/AllAlnum`, `Text.AllIn (s, 'a-z-')` |
 | an instant with nanoseconds, ISO 8601 with an offset | `Time.Nanos`, `Time.ParseNanos`, `Time.IsoNanos` |
+| a check that a time is `YYYY-MM-DDThh:mm:ss[.f]` with `Z` or `+hh:mm` (RFC 3339, nothing looser) | `Time.ParseRfc3339`; it raises ValueRange for anything else |
+| a queue of work, a mailbox and a supervisor that gives a dead worker's job out again | `Jobs.Board`: `Jobs.Add`, `Take`, `Done`, `GiveBack` (to the back of the line), and `Failed (b, id)` to end a job that fails every time (the worker loop is in the module's header) |
 | an HTTP date | `Http.FormatDate (secs)` out |
+| a request's query parameter, or the parts of its path | `HttpServer.Query (req, 'from', value)` (BOOL: is it there), `HttpServer.Segments (req)`, both decoded |
+| a JSON error answer, or outside text inside JSON built with `+` | `HttpServer.ReplyError (404, 'no such batch')`; `'{"id":' + Json.Quote (id) + '}'` |
+| a handler that catches `Pg.PgError` and answers 503, and nothing else | `Pg.Ensure (conn)` as the first statement of every handler and every loop turn that uses a connection: a connection the server closed is opened again before the statement.  Without it the handler answers 503 until the program is started again |
 
 **One handler arm for several exceptions** (0.22): `| Bad, Worse (n)
 : ...` -- a binder only when they all have the same fields.
@@ -103,9 +109,54 @@ is in `docs/diagnose.md` with its probe):
 | `a FOR step is a constant` | a literal, a CONST or an expression of them, never 0; a run-time step is a WHILE |
 | `field k of E: cannot give X where Y is expected` (a RAISE) | the payload in the EXCEPTION's field order and types |
 
-**Still not in the language** (route around): no slice literal
-inside an expression (a module-level CONST table, or NEW and fill);
-a `NEW` of an unnamed nested slice type needs a TYPE name first.
+**A slice written where it is passed** (0.29,
+report par 2.2.5): `Pg.Query (pool, c, sql, [id, Fmt.I64Str (seq)])`,
+`Text.Join ([a, b, 'c'], ', ')`.  Do not declare a slice, `NEW` it and
+fill it line by line for one call.  The brackets are a WHOLE argument
+only, to an `RO` parameter that is not `KEPT`; the elements are
+strings, numbers, characters or booleans of one type (a literal
+adapts, an `I32` beside an `I64` is `I64 (w)`); there is no `[]`
+(`NEW (T, 0)`).  Anywhere else -- an assignment, a RETURN, a slice of
+records -- name a slice and fill it from `NEW`.
+
+**An octet is compared with a character literal** (0.29, report par 2.1): `b[i] = ','`, `'0' <= b[i]`, `b[i] = 0AC`,
+and `CASE b[i] OF | '0' .. '9' : ...`.  Do not write `b[i] = 44` or a
+`CONST Comma = 44`: a CONST that names the character works as the
+literal does, `CONST Comma = ','` then `b[i] = Comma`.  The character
+must be ASCII.  A CHAR variable still
+converts by name (`BYTE (ORD (c))`), and an assignment still takes the
+number.
+
+**A CONST is computed from the CONSTs before it** (0.29, report par 2.2.4): `Cells = Cols * Rows`, `Head = 'id' + Sep +
+'name'`, in a DEFINITION too.  Do not write `576` with the expression
+in a comment.  Declare the named CONST first; nothing converts
+(`Count * 1.5` needs a real `Count`); an imported `Mod.C` is not
+taken in a CONST.
+
+**A string with values in it is an interpolation literal** (0.29, report par 2.3.1): `$'worker ${k} died in batch
+${seq}: ${why}'`, not a chain of `+ Fmt.I64Str (x) +`.  A hole takes a
+string, a CHAR, an integer, a BOOL or a real as it is (a real is its
+shortest exact form).  A number may end in a format, checked against
+its type: `${n:8}`, `${id:08}`, `${x:.2}`, `${x:8.2}`, `${x:.3e}`,
+`${x:e}` (every digit).  A hole needs no import.  A hole holds ONE
+expression and NO string literal (name the
+value first); braces and a lone `$` are text, so JSON reads as it is.
+It does not escape: `"reason":${Json.Quote (why)}`.  It is never SQL
+values: those stay `$1` with `[id, ...]`.  A BYTE, an enumeration and
+a record are refused with the fix.
+
+**A server's log line goes through `Io.ErrLine` or `Logger`**, never
+`Io.WriteLine`: standard output to a file is written when its buffer
+fills, so the line about a crash is not in the log after the crash.
+**A server open to clients it does not know sets `cfg.tasks := TRUE`**
+(HttpServer): without it a few connections that send nothing hold
+every worker for `headerMs`.  `cfg.only4xx := TRUE` answers 400 where
+the RFC's code is 505 or 501.  **`Time.ParseRfc3339` is the strict
+parser** (capital T and Z, seconds written, 1 to 9 fraction digits,
+offset HH:MM): do not write your own.
+
+**Still not in the language** (route around): a
+`NEW` of an unnamed nested slice type needs a TYPE name first.
 
 **Comments, in .m9 and everywhere else** (decided 2026-10-30): start
 every comment sentence with a plain subject and verb; never a clause as

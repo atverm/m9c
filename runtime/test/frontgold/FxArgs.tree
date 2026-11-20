@@ -1,0 +1,24 @@
+MODULE FxArgs ;
+
+PROCEDURE Sum (RO v: SLICE OF I64) : I64 =
+BEGIN
+  RETURN LEN (v)
+END Sum ;
+
+PROCEDURE Show (RO sep: STR ; RO v: SLICE OF STR ; n: I64) =
+BEGIN
+END Show ;
+
+PROCEDURE Run (RO a, b: STR ; RO w: SLICE OF I64)
+  RAISES IndexError =
+VAR
+  n : I64 ;
+BEGIN
+  n := Sum ([1]) ;
+  n := Sum ([1, 2, 3]) + Sum ([n, w[0], Sum ([w[1], 4])]) ;
+  Show (', ', [a, b, 'c'], w[n]) ;
+  Show ('', [a + b], Sum ([n]))
+END Run ;
+
+BEGIN
+END FxArgs.

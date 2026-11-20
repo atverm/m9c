@@ -24,6 +24,7 @@ import email
 import email.policy
 import os
 import signal
+import socket
 import ssl
 import sys
 import threading
@@ -99,6 +100,22 @@ def serve(args):
                     enable_SMTPUTF8=False)
     for c in (c1, c2, c3, c4):
         c.start()
+    # a fifth server that accepts and says nothing: Smtp must not wait
+    # for it for ever (SetTimeout, 2026-11-20)
+    if len(args) > 7:
+        mute = socket.socket()
+        mute.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        mute.bind(("127.0.0.1", int(args[7])))
+        mute.listen(8)
+        held = []
+
+        def hold():
+            while True:
+                try:
+                    held.append(mute.accept()[0])
+                except OSError:
+                    return
+        threading.Thread(target=hold, daemon=True).start()
     print("smtpfix: serving", flush=True)
     stop = threading.Event()
     for sig in (signal.SIGTERM, signal.SIGINT):

@@ -1,0 +1,19 @@
+(* EXPECT: storage of this activation stored into module variable held *)
+(* A record value carries what its fields hold.  A record built over
+   a slice in brackets holds frame storage, and a module variable
+   outlives the frame.  The legal form keeps the record in a local. *)
+MODULE m ;
+TYPE Row = RECORD v : SLICE OF I64 END ;
+VAR held : Row ;
+PROCEDURE Fine () : I64 =
+VAR r : Row ;
+BEGIN
+  r := Row ([1, 2]) ;
+  RETURN LEN (r.v)
+END Fine ;
+PROCEDURE Bad () =
+BEGIN
+  held := Row ([1, 2])
+END Bad ;
+BEGIN
+END m.

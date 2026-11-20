@@ -632,7 +632,7 @@ m9_sl_UTF8 Explain_Hint (m9_pool *pool, m9_sl_UTF8 msg, m9_state *err)
       if (err->exc) { m9ln = 332; goto L_ret; };
     { __typeof__((*(int64_t *) m9_at (out.p, INT64_C(0), out.len, sizeof (int64_t), err))) m9a20 = (*(int64_t *) m9_at (out.p, INT64_C(0), out.len, sizeof (int64_t), err));
       if (err->exc) { m9ln = 332; goto L_ret; };
-    { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s2, 7 }), ExplainTab_Fix (m9a19, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s3, 17 }), err), ExplainTab_Name (m9a20, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s4, 1 }), err)) m9a21 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s2, 7 }), ExplainTab_Fix (m9a19, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s3, 17 }), err), ExplainTab_Name (m9a20, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s4, 1 }), err);
+    { __typeof__(m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t2 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s2, 7 }); m9_utf_cat (err->res, m9t1, ExplainTab_Fix (m9a19, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s3, 17 }), err); m9_utf_cat (err->res, m9t2, ExplainTab_Name (m9a20, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s4, 1 }), err)) m9a21 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t2 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s2, 7 }); m9_utf_cat (err->res, m9t1, ExplainTab_Fix (m9a19, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s3, 17 }), err); m9_utf_cat (err->res, m9t2, ExplainTab_Name (m9a20, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s4, 1 }), err);
       if (err->exc) { m9ln = 332; goto L_ret; };
     m9ret = Text_KeepUtf (pool, m9a21, err);
     if (err->exc) { m9ln = 332; goto L_ret; };
@@ -642,25 +642,25 @@ m9_sl_UTF8 Explain_Hint (m9_pool *pool, m9_sl_UTF8 msg, m9_state *err)
     goto L_ret;
   }
   s = ((m9_sl_UTF8){ (uint8_t *) m9s5, 24 });
-  { __typeof__(i) m9t1to;
+  { __typeof__(i) m9t3to;
   i = INT64_C(0);
-  m9t1to = m9_sub_i64 ((out).len, INT64_C(1), err);
+  m9t3to = m9_sub_i64 ((out).len, INT64_C(1), err);
   if (err->exc) { m9ln = 336; goto L_ret; };
-  if (i <= m9t1to) for (;;) {
+  if (i <= m9t3to) for (;;) {
     if ((i < n)) {
       { __typeof__((*(int64_t *) m9_at (out.p, i, out.len, sizeof (int64_t), err))) m9a22 = (*(int64_t *) m9_at (out.p, i, out.len, sizeof (int64_t), err));
         if (err->exc) { m9ln = 337; goto L_ret; };
-      { __typeof__(s) m9v = m9_utf_cat (err->res, m9_utf_cat (err->res, s, ((m9_sl_UTF8){ (uint8_t *) m9s6, 1 }), err), ExplainTab_Name (m9a22, err), err);
+      { __typeof__(s) m9v = ({ m9_sl_UTF8 m9t4 = m9_utf_cat (err->res, s, ((m9_sl_UTF8){ (uint8_t *) m9s6, 1 }), err); m9_utf_cat (err->res, m9t4, ExplainTab_Name (m9a22, err), err); });
         if (err->exc) { m9ln = 337; goto L_ret; };
         s = m9v;
       }
       }
     }
-    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   err->res = m9res;
-  { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, s, ((m9_sl_UTF8){ (uint8_t *) m9s7, 16 }), err), Explain_Count (n, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s8, 8 }), err)) m9a23 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, s, ((m9_sl_UTF8){ (uint8_t *) m9s7, 16 }), err), Explain_Count (n, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s8, 8 }), err);
+  { __typeof__(m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t5 = m9_utf_cat (err->res, s, ((m9_sl_UTF8){ (uint8_t *) m9s7, 16 }), err); m9_utf_cat (err->res, m9t5, Explain_Count (n, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s8, 8 }), err)) m9a23 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t5 = m9_utf_cat (err->res, s, ((m9_sl_UTF8){ (uint8_t *) m9s7, 16 }), err); m9_utf_cat (err->res, m9t5, Explain_Count (n, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s8, 8 }), err);
     if (err->exc) { m9ln = 339; goto L_ret; };
   m9ret = Text_KeepUtf (pool, m9a23, err);
   if (err->exc) { m9ln = 339; goto L_ret; };

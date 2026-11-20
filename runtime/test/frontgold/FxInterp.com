@@ -1,0 +1,2 @@
+3:1-9 (* FxInterp holds the interpolation literal (docs/interpolation-rfc.md,\n   2026-11-19): text and holes, a hole first and a hole last, a hole\n   alone, a format of every shape, the other quote, braces and a\n   dollar that are text, a call and an operator in a hole, and the\n   literal as an operand, an argument and a condition's part.  The\n   Pascal parser does not read the form, so the record is the M9\n   side's own. *)
+comments=1

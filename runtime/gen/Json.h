@@ -9,6 +9,7 @@ void Json_m9init (m9_state *err);
 
 typedef struct Json_Node Json_Node;
 typedef struct Json_Value Json_Value;
+typedef struct Json_ArrIx Json_ArrIx;
 typedef struct Json_Node Json_Node;
 typedef struct Json_Cursor Json_Cursor;
 
@@ -47,13 +48,13 @@ static const m9_sl_UTF8 __attribute__((__unused__)) Json_Value_names[] = {
 extern const m9_exc Json_ParseError;
 extern const m9_exc Json_TypeMismatch;
 
-#ifndef M9SL_m9_arr_32_uint8_t
-#define M9SL_m9_arr_32_uint8_t
-typedef struct { uint8_t v[32]; } m9_arr_32_uint8_t;
-#endif
 #ifndef M9SL_m9_sl_Json_Nodep
 #define M9SL_m9_sl_Json_Nodep
 typedef struct { Json_Node * *p; int64_t len; } m9_sl_Json_Nodep;
+#endif
+#ifndef M9SL_m9_arr_32_uint8_t
+#define M9SL_m9_arr_32_uint8_t
+typedef struct { uint8_t v[32]; } m9_arr_32_uint8_t;
 #endif
 #ifndef M9SL_m9_sl_m9_sl_UTF8
 #define M9SL_m9_sl_m9_sl_UTF8
@@ -63,6 +64,8 @@ typedef struct { m9_sl_UTF8 *p; int64_t len; } m9_sl_m9_sl_UTF8;
 Json_Node * Json_Parse (m9_sl_UTF8 src, m9_state *err);
 Json_Node * Json_Field (Json_Node * obj, m9_sl_UTF8 name, m9_state *err);
 Json_Node * Json_Item (Json_Node * arr, int64_t i, m9_state *err);
+Json_Node * Json_First (Json_Node * arr, m9_state *err);
+Json_Node * Json_After (Json_Node * item, m9_state *err);
 int64_t Json_Count (Json_Node * arr, m9_state *err);
 int64_t Json_MemberCount (Json_Node * obj, m9_state *err);
 m9_sl_UTF8 Json_NameAt (Json_Node * obj, int64_t i, m9_state *err);
@@ -80,6 +83,7 @@ m9_sl_UTF8 Json_Pretty (Json_Node * n, m9_state *err);
 m9_sl_UTF8 Json_ReprText (double r, m9_state *err);
 void Json_AppendF64 (DynStr_DString * *d, m9_pool *d_pool, double r, m9_state *err);
 m9_sl_UTF8 Json_NumText (Json_Node * n, m9_state *err);
+m9_sl_UTF8 Json_Quote (m9_sl_UTF8 t, m9_state *err);
 void Json_AppendJString (DynStr_DString * *d, m9_pool *d_pool, m9_sl_UTF8 t, m9_state *err);
 Json_Node * Json_NewObj (m9_state *err);
 Json_Node * Json_NewArr (m9_state *err);

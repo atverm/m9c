@@ -1,0 +1,4 @@
+parseprobes/interp-bad-format.m9:11:16: parse: the format 8.2f is not one: a width, then . and the decimals, then e for the scientific form, as in 8, 08, .2, 8.2, 8.2e and e (par 2.3)
+parseprobes/interp-bad-format.m9:11:26: parse: the format 0:2 is not one: a width, then . and the decimals, then e for the scientific form, as in 8, 08, .2, 8.2, 8.2e and e (par 2.3)
+parseprobes/interp-bad-format.m9:11:35: parse: a format is expected after the : of a hole, as in 8, 08, .2, 8.2, 8.2e and e (par 2.3)
+m9c: 3 parse errors in parseprobes/interp-bad-format.m9

@@ -51,5 +51,5 @@ echo "macround: $(sw_vers -productName) $(sw_vers -productVersion), $(uname -m),
 if [ $# -gt 0 ]; then exec tools/ci/lanes.sh "$@"; fi
 exec tools/ci/lanes.sh \
   "frontgold frontprop semcheck gendiff bootstrap fmt tutdiff genforms sanitize" \
-  "listdiff diagdiff guide paddle m9c docdiff reviewdiff threads mandiff run pkgcache scale gcconly lsp elide edit adopt release m9test regions arrowread toolcheck tasks m9f" \
+  "listdiff diagdiff guide paddle snake flock m9c docdiff reviewdiff threads mandiff run pkgcache scale gcconly lsp elide edit adopt release m9test regions arrowread toolcheck tasks m9f" \
   "soundfuzz"

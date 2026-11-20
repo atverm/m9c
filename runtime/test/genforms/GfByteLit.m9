@@ -1,0 +1,89 @@
+MODULE GfByteLit ;
+
+(* WANT: commas 2 digits 4 upper 1 lines 2 tabs 1 kinds d4 p2 s1 n2 o3 first TRUE named c2 d4 l2 case d4 p2 n2 *)
+
+(* An ASCII character literal where a BYTE is compared (par 2.1,
+   2026-11-19).  The literal stands for its code on either side of
+   every comparison, and as a label or a range of a CASE over a BYTE.
+   A hex literal names what cannot be typed: 0AC is the line feed
+   and 9C the tab. *)
+
+IMPORT Fmt ;
+IMPORT Io ;
+IMPORT Text ;
+
+PROCEDURE Count (RO b: SLICE OF BYTE) : STR RAISES IndexError =
+VAR
+  i, commas, digits, upper, lines, tabs : I64 ;
+  d, p, s, n, o : I64 ;
+BEGIN
+  commas := 0 ; digits := 0 ; upper := 0 ; lines := 0 ; tabs := 0 ;
+  d := 0 ; p := 0 ; s := 0 ; n := 0 ; o := 0 ;
+  FOR i := 0 TO LEN (b) - 1 DO
+    IF b[i] = ',' THEN commas := commas + 1 END ;
+    IF b[i] >= '0' AND '9' >= b[i] THEN digits := digits + 1 END ;
+    IF 'A' <= b[i] AND b[i] < '[' THEN upper := upper + 1 END ;
+    IF b[i] = 0AC THEN lines := lines + 1 END ;
+    IF 9C = b[i] THEN tabs := tabs + 1 END ;
+    CASE b[i] OF
+    | '0' .. '9' : d := d + 1
+    | ',', '.' : p := p + 1
+    | ' ' : s := s + 1
+    | 0AC : n := n + 1
+    ELSE o := o + 1
+    END
+  END ;
+  RETURN 'commas ' + Fmt.I64Str (commas) + ' digits ' + Fmt.I64Str (digits) +
+         ' upper ' + Fmt.I64Str (upper) + ' lines ' + Fmt.I64Str (lines) +
+         ' tabs ' + Fmt.I64Str (tabs) + ' kinds d' + Fmt.I64Str (d) +
+         ' p' + Fmt.I64Str (p) + ' s' + Fmt.I64Str (s) + ' n' + Fmt.I64Str (n) +
+         ' o' + Fmt.I64Str (o)
+END Count ;
+
+(* A CONST that names an ASCII character stands for it beside a BYTE
+   as the literal does (2026-11-20): on either side of a comparison,
+   as a label and as the ends of a range.  Named counts the same
+   octets Count does, by name. *)
+CONST
+  Lf = 0AC ;
+  Comma = ',' ;
+  Zero = '0' ;
+  Nine = '9' ;
+
+PROCEDURE Named (RO b: SLICE OF BYTE) : STR RAISES IndexError =
+VAR i, commas, digits, lines, d, p, n : I64 ;
+BEGIN
+  commas := 0 ; digits := 0 ; lines := 0 ; d := 0 ; p := 0 ; n := 0 ;
+  FOR i := 0 TO LEN (b) - 1 DO
+    IF b[i] = Comma THEN commas := commas + 1 END ;
+    IF Zero <= b[i] AND b[i] <= Nine THEN digits := digits + 1 END ;
+    IF Lf = b[i] THEN lines := lines + 1 END ;
+    CASE b[i] OF
+    | Zero .. Nine : d := d + 1
+    | Comma : p := p + 1
+    | Lf : n := n + 1
+    ELSE
+    END
+  END ;
+  RETURN 'named c' + Fmt.I64Str (commas) + ' d' + Fmt.I64Str (digits) + ' l' + Fmt.I64Str (lines) +
+         ' case d' + Fmt.I64Str (d) + ' p' + Fmt.I64Str (p) + ' n' + Fmt.I64Str (n)
+END Named ;
+
+PROCEDURE First (RO b: SLICE OF BYTE) : STR RAISES IndexError =
+BEGIN
+  IF b[0] # '2' AND NOT ('1' # b[0]) THEN RETURN 'TRUE' END ;
+  RETURN 'FALSE'
+END First ;
+
+PROCEDURE Run () RAISES IndexError =
+VAR s : STR ;
+BEGIN
+  s := '12,3 4,' + 9C + 'x' + 0AC + 'Z' + 0AC ;
+  Io.WriteLine (Count (OCTETS (s)) + ' first ' + First (OCTETS (s)) + ' ' + Named (OCTETS (s)))
+END Run ;
+
+BEGIN
+  Run ()
+EXCEPT
+| IndexError : Io.WriteLine ('IndexError')
+END GfByteLit.

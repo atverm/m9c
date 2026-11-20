@@ -1,12 +1,12 @@
-REVIEW Gen -- 244 procedures with a body, 181 of them functions; 39 headings in a DEFINITION
+REVIEW Gen -- 250 procedures with a body, 187 of them functions; 40 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path             181
-  assignments                                  1405
-  arguments                                    7849
-  RETURN values                                 751
-  operands of a comparison or an operator      1340
-  CASE labels                                   112
+  functions answering on every path             187
+  assignments                                  1440
+  arguments                                    8055
+  RETURN values                                 781
+  operands of a comparison or an operator      1370
+  CASE labels                                   116
   THREAD arguments                                0
   CASE over variants, proved total                0
 

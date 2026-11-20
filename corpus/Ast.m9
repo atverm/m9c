@@ -43,13 +43,13 @@ CONST
                         ProcDecl's head: [0] NParamList, [1] result
                         type or NONE, [2] NRaises or NONE.
                         docs/proctype-plan.md, 2026-09-27. *)
-  NAggregate = 84 ;  (* NAggregate is [ e1, ..., en ] as the value of
-                        a CONST.  Its kids are the elements, in order.
-                        Only a ConstDecl's kid is ever one: the parser
-                        reads `[' as an aggregate nowhere else.  So
-                        `[' stays what it was in an expression, a
-                        subscript.  docs/plan-0.14.md stage 2a,
-                        2026-10-01. *)
+  NAggregate = 84 ;  (* NAggregate is [ e1, ..., en ]: the value of
+                        a CONST (docs/plan-0.14.md stage 2a), and
+                        since 2026-11-19 a whole argument of a call
+                        (report par 2.2.5).  Its kids are the
+                        elements, in order.  The parser reads `[' as
+                        one nowhere else, so inside an expression
+                        `[' stays a subscript. *)
   NGridOf = 85 ;     (* NGridOf is GRID (s, n0, ..., nR): a grid of
                         rank R laid over a slice's storage (par
                         2.2.1).  kids[0] is the slice and the rest are
@@ -73,6 +73,14 @@ CONST
                         variable, kids[0] the designator iterated,
                         kids[1] the body.  2026-10-11, cp-kernel's
                         proposal. *)
+  NHole = 89 ;       (* NHole is a hole of an interpolation literal,
+                        ${e} or ${e:8.2} (docs/interpolation-rfc.md).
+                        kids[0] is the expression.  f1 says a format
+                        was written, and a holds it.  A hole is an
+                        operand of the `+' chain the literal stands
+                        for, and a string: the checker and the
+                        generator turn its value into text.
+                        2026-11-19. *)
 
 TYPE
   Kid = OPT PTR Node ;               (* Kid is named so NEW can
@@ -181,6 +189,21 @@ PROCEDURE NoWritesAt (id: I64) : BOOL ;
 PROCEDURE SetReadsOnly (id: I64) ;
 PROCEDURE ReadsOnlyAt (id: I64) : BOOL ;
   (* NONE is a legal child: absence with a position *)
+
+PROCEDURE HoleFormat (RO f: UTF ; VAR zero: BOOL ; VAR width, decimals: I64 ;
+                      VAR sci: BOOL) : BOOL ;
+  (* HoleFormat reads the format of a hole, the text after its `:'
+     (docs/interpolation-rfc.md, par 3.4):
+
+       [ "0" ] [ width ] [ "." decimals ] [ "e" ]
+
+     width and decimals are digits, at most four.  A leading 0 that a
+     digit follows asks for zeros as the fill; `0.2' is the width 0.
+     HoleFormat answers FALSE for any other text.  It answers width 0
+     when none is written and decimals -1 when none are.  The parser
+     refuses a format by it, and the checker and the generator read
+     the same fields from it, so the three cannot disagree.  The
+     empty text is a format too: no width, no decimals. *)
 
 PROCEDURE FoldInt (k: Kid ; VAR v: I64) : BOOL ;
   (* FoldInt answers the value of an integer CONSTANT EXPRESSION:
@@ -454,6 +477,53 @@ BEGIN
 EXCEPT
 | Overflow : RETURN FALSE
 END FoldInt ;
+
+PROCEDURE HoleFormat (RO f: UTF ; VAR zero: BOOL ; VAR width, decimals: I64 ;
+                      VAR sci: BOOL) : BOOL =
+VAR
+  o : SLICE OF BYTE ;         (* a format is ASCII octets *)
+  i, n, c, digits : I64 ;
+BEGIN
+  zero := FALSE ;
+  width := 0 ;
+  decimals := -1 ;
+  sci := FALSE ;
+  o := OCTETS (f) ;
+  n := LEN (o) ;
+  i := 0 ;
+  IF n >= 2 AND I64 (o[0]) = 48 AND I64 (o[1]) >= 48 AND I64 (o[1]) <= 57 THEN
+    zero := TRUE ;
+    i := 1
+  END ;
+  digits := 0 ;
+  WHILE i < n AND I64 (o[i]) >= 48 AND I64 (o[i]) <= 57 DO
+    width := width * 10 + I64 (o[i]) - 48 ;
+    digits := digits + 1 ;
+    i := i + 1
+  END ;
+  IF digits > 4 THEN RETURN FALSE END ;
+  IF i < n AND I64 (o[i]) = 46 THEN
+    i := i + 1 ;
+    decimals := 0 ;
+    digits := 0 ;
+    WHILE i < n AND I64 (o[i]) >= 48 AND I64 (o[i]) <= 57 DO
+      decimals := decimals * 10 + I64 (o[i]) - 48 ;
+      digits := digits + 1 ;
+      i := i + 1
+    END ;
+    IF digits = 0 OR digits > 4 THEN RETURN FALSE END
+  END ;
+  IF i < n THEN
+    c := I64 (o[i]) ;
+    IF c = 101 THEN
+      sci := TRUE ;
+      i := i + 1
+    END
+  END ;
+  RETURN i = n
+EXCEPT
+| IndexError : RETURN FALSE
+END HoleFormat ;
 
 PROCEDURE CharCode (RO lit: STR) : I64 =
 VAR

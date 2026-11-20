@@ -1,0 +1,23 @@
+(* EXPECT: argument 1 of Fill: a slice written in brackets can be lent only to an RO parameter (par 2.4) *)
+(* A slice written in brackets has no name.  Nobody could read what
+   a callee wrote into it, so it is lent read-only.  The legal form
+   comes first. *)
+MODULE m ;
+PROCEDURE Sum (RO v: SLICE OF I64) : I64 RAISES IndexError =
+BEGIN
+  RETURN v[0] + v[1]
+END Sum ;
+PROCEDURE Fill (v: SLICE OF I64) RAISES IndexError =
+BEGIN
+  v[0] := 1
+END Fill ;
+PROCEDURE Fine () : I64 RAISES IndexError =
+BEGIN
+  RETURN Sum ([1, 2])
+END Fine ;
+PROCEDURE Bad () RAISES IndexError =
+BEGIN
+  Fill ([1, 2])
+END Bad ;
+BEGIN
+END m.

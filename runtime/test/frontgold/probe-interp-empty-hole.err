@@ -1,0 +1,2 @@
+parseprobes/interp-empty-hole.m9:11:14: parse: an empty hole: ${} holds no expression (par 2.3)
+m9c: 1 parse errors in parseprobes/interp-empty-hole.m9

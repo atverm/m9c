@@ -60,6 +60,11 @@ plain, then STARTTLS before anything
 else is said, 587; refused if the
 server does not offer it
 
+### CONST ReplyMs
+
+how long a reply may take, by
+default: a minute
+
 ### TYPE Message
 
 opaque; lives in a POOL
@@ -99,6 +104,19 @@ SetId takes the Message-ID without its angle brackets.
 
 Attach adds a part: Content-Type ctype, Content-Disposition
 attachment with the file name, base64.
+
+### SetTimeout (VAR m: PTR Message ; ms: I64)
+
+SetTimeout says how long the server may take over one reply
+when Send sends this message, in milliseconds.  0 or less is the
+default, ReplyMs.  A server silent for longer ends Send with an
+Error of code 0.  SendText and SendOctets wait ReplyMs.
+
+Until 2026-11-20 a read had no limit, so a mail server that
+accepted the connection and said nothing held the caller, and
+the request it served, for as long as the server liked.  The
+connect itself is the system's: it gives up after its own
+time.
 
 ### Wire (m: PTR Message) : STR RAISES ValueRange
 
@@ -178,5 +196,13 @@ _(undocumented)_
 _(undocumented)_
 
 ### TlsClose (h: C.Int) : C.Int [REENTRANT]
+
+_(undocumented)_
+
+### RcvTimeo (fd: C.Int ; ms: C.SSizeT) : C.Int [REENTRANT]
+
+_(undocumented)_
+
+### TlsRcvTimeo (h: C.Int ; ms: C.SSizeT) : C.Int [REENTRANT]
 
 _(undocumented)_

@@ -1,0 +1,25 @@
+(* EXPECT: argument 1 of Keep: a KEPT parameter cannot take a slice written in brackets -- it dies with this frame (par 4.1) *)
+(* A slice written in brackets is built in the frame of the call.  A
+   KEPT parameter stores what it is given, so it would hold the slice
+   after the frame is gone.  The legal form comes first: the same
+   slice lent to a parameter that only reads it. *)
+MODULE m ;
+VAR held : SLICE OF STR ;
+PROCEDURE Count (RO v: SLICE OF STR) : I64 =
+BEGIN
+  RETURN LEN (v)
+END Count ;
+PROCEDURE Keep (RO KEPT v: SLICE OF STR) =
+BEGIN
+  held := v
+END Keep ;
+PROCEDURE Fine (RO a, b: STR) : I64 =
+BEGIN
+  RETURN Count ([a, b])
+END Fine ;
+PROCEDURE Bad (RO a, b: STR) =
+BEGIN
+  Keep ([a, b])
+END Bad ;
+BEGIN
+END m.

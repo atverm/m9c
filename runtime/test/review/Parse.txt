@@ -1,11 +1,11 @@
-REVIEW Parse -- 57 procedures with a body, 46 of them functions; 9 headings in a DEFINITION
+REVIEW Parse -- 61 procedures with a body, 50 of them functions; 10 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              46
-  assignments                                   221
-  arguments                                    1864
-  RETURN values                                 142
-  operands of a comparison or an operator       271
+  functions answering on every path              50
+  assignments                                   270
+  arguments                                    1979
+  RETURN values                                 148
+  operands of a comparison or an operator       321
   CASE labels                                    37
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -16,8 +16,8 @@ CAN TRAP AT RUN TIME -- a byte cut a character can straddle
 DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
   local pools                                     0
-  pool parameters                                38   Nn, PQualident, PIdentList, PArgList, DesigToQual, PNew, +32 more
-  KEPT parameters                                32   PArgList, PNew, PFactor, PTerm, PSimple, PRel, +26 more
+  pool parameters                                42   Nn, PQualident, PIdentList, PArg, PExprList, PArgList, +36 more
+  KEPT parameters                                36   PArg, PExprList, PArgList, PNew, PHoleExpr, PInterp, +30 more
   HEAP named                                      1   ErrAt
   NEW (OWN, T)                                    0
   DISPOSE                                         0
@@ -40,7 +40,7 @@ TRUSTED -- outside what the checker can see
 COUNTED -- how much there was to check
   CASE statements                                 3
   RAISE statements                                0
-  handlers                                        0
+  handlers                                        1
   NEW in the frame                                0
   NEW in a named pool                             1
   calls of a STR form with a UTF twin             0

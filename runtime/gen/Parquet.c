@@ -2632,7 +2632,7 @@ static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Fr
     i += 1;
   } }
   if ((((((*o).codec != Parquet_CodecNone) && ((*o).codec != Parquet_CodecSnappy)) && ((*o).codec != Parquet_CodecGzip)) && ((*o).codec != Parquet_CodecZstd))) {
-    { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s25, 6 }), Parquet_I64Text ((*o).codec, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s26, 48 }), err)) m9t4 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s25, 6 }), Parquet_I64Text ((*o).codec, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s26, 48 }), err); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
+    { __typeof__(m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t4 = ((m9_sl_UTF8){ (uint8_t *) m9s25, 6 }); m9_utf_cat (err->res, m9t4, Parquet_I64Text ((*o).codec, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s26, 48 }), err)) m9t5 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t4 = ((m9_sl_UTF8){ (uint8_t *) m9s25, 6 }); m9_utf_cat (err->res, m9t4, Parquet_I64Text ((*o).codec, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s26, 48 }), err); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     m9_raise (err, &Faults_BadArg);
     m9_site (err, 922, m9pn);
     goto L_ret;
@@ -2674,11 +2674,11 @@ static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Fr
     if (err->exc) { m9ln = 933; goto L_ret; };
     opt = m9v;
   }
-  { __typeof__(c) m9t5to;
+  { __typeof__(c) m9t6to;
   c = INT64_C(0);
-  m9t5to = m9_sub_i64 (nc, INT64_C(1), err);
+  m9t6to = m9_sub_i64 (nc, INT64_C(1), err);
   if (err->exc) { m9ln = 934; goto L_ret; };
-  if (c <= m9t5to) for (;;) {
+  if (c <= m9t6to) for (;;) {
     M9_YCHK ();
     { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, c, names.len, sizeof (m9_sl_UTF8), err))) m9v = Frame_NameAt (f, c, err);
       if (err->exc) { m9ln = 935; goto L_ret; };
@@ -2698,9 +2698,9 @@ static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Fr
       (*(bool *) m9_at (opt.p, c, opt.len, sizeof (bool), err)) = m9v;
       if (err->exc) { m9ln = 940; goto L_ret; };
     }
-    bool m9t6 = (*(bool *) m9_at (opt.p, c, opt.len, sizeof (bool), err));
+    bool m9t7 = (*(bool *) m9_at (opt.p, c, opt.len, sizeof (bool), err));
     if (err->exc) { m9ln = 941; goto L_ret; };
-    if (m9t6) {
+    if (m9t7) {
       { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, c, names.len, sizeof (m9_sl_UTF8), err))) m9a67 = (*(m9_sl_UTF8 *) m9_at (names.p, c, names.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) { m9ln = 942; goto L_ret; };
       { __typeof__((*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err))) m9a68 = (*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err));
@@ -2719,9 +2719,9 @@ static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Fr
     }
     { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, c, names.len, sizeof (m9_sl_UTF8), err))) m9a69 = (*(m9_sl_UTF8 *) m9_at (names.p, c, names.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 946; goto L_ret; };
-    bool m9t7 = Parquet_InList (m9a69, (*o).i8Cols, err);
+    bool m9t8 = Parquet_InList (m9a69, (*o).i8Cols, err);
     if (err->exc) { m9ln = 946; goto L_ret; };
-    if (m9t7) {
+    if (m9t8) {
       { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, c, names.len, sizeof (m9_sl_UTF8), err))) m9a70 = (*(m9_sl_UTF8 *) m9_at (names.p, c, names.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) { m9ln = 947; goto L_ret; };
       { __typeof__((*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err))) m9a71 = (*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err));
@@ -2748,12 +2748,12 @@ static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Fr
     }
     (*(Parquet_Buf *) m9_at (pages.p, c, pages.len, sizeof (Parquet_Buf), err)) = page;
     if (err->exc) { m9ln = 951; goto L_ret; };
-    { __typeof__(({ __auto_type m9t8 = page.b; int64_t m9t8a = INT64_C(0), m9t8n = page.n; int64_t m9t8o = m9_chk_slice (m9t8a, m9t8n, m9t8.len, err); (__typeof__(m9t8)){ m9t8.p + m9t8o, err->exc ? 0 : m9t8n }; })) m9a75 = ({ __auto_type m9t8 = page.b; int64_t m9t8a = INT64_C(0), m9t8n = page.n; int64_t m9t8o = m9_chk_slice (m9t8a, m9t8n, m9t8.len, err); (__typeof__(m9t8)){ m9t8.p + m9t8o, err->exc ? 0 : m9t8n }; });
+    { __typeof__(({ __auto_type m9t9 = page.b; int64_t m9t9a = INT64_C(0), m9t9n = page.n; int64_t m9t9o = m9_chk_slice (m9t9a, m9t9n, m9t9.len, err); (__typeof__(m9t9)){ m9t9.p + m9t9o, err->exc ? 0 : m9t9n }; })) m9a75 = ({ __auto_type m9t9 = page.b; int64_t m9t9a = INT64_C(0), m9t9n = page.n; int64_t m9t9o = m9_chk_slice (m9t9a, m9t9n, m9t9.len, err); (__typeof__(m9t9)){ m9t9.p + m9t9o, err->exc ? 0 : m9t9n }; });
       if (err->exc) { m9ln = 952; goto L_ret; };
     Parquet_PBytes (pool, &(out), err->res, m9a75, err);
     if (err->exc) { m9ln = 952; goto L_ret; };
     }
-    if ((uint64_t) m9t5to - (uint64_t) c < (uint64_t) 1) break;
+    if ((uint64_t) m9t6to - (uint64_t) c < (uint64_t) 1) break;
     c += 1;
   } }
   { __typeof__(meta) m9v = Parquet_NewBuf (pool, INT64_C(1024), err);
@@ -2775,11 +2775,11 @@ static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Fr
   if (err->exc) { m9ln = 962; goto L_ret; };
   Parquet_P8 (pool, &(meta), err->res, Parquet_CtStop, err);
   if (err->exc) { m9ln = 963; goto L_ret; };
-  { __typeof__(c) m9t9to;
+  { __typeof__(c) m9t10to;
   c = INT64_C(0);
-  m9t9to = m9_sub_i64 (nc, INT64_C(1), err);
+  m9t10to = m9_sub_i64 (nc, INT64_C(1), err);
   if (err->exc) { m9ln = 964; goto L_ret; };
-  if (c <= m9t9to) for (;;) {
+  if (c <= m9t10to) for (;;) {
     M9_YCHK ();
     { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, c, names.len, sizeof (m9_sl_UTF8), err))) m9a77 = (*(m9_sl_UTF8 *) m9_at (names.p, c, names.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 965; goto L_ret; };
@@ -2810,7 +2810,7 @@ static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Fr
     }
     }
     }
-    if ((uint64_t) m9t9to - (uint64_t) c < (uint64_t) 1) break;
+    if ((uint64_t) m9t10to - (uint64_t) c < (uint64_t) 1) break;
     c += 1;
   } }
   { __typeof__(Frame_Rows (f, err)) m9a86 = Frame_Rows (f, err);
@@ -2823,11 +2823,11 @@ static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Fr
   lastRg = INT64_C(0);
   Parquet_PListF (pool, &(meta), err->res, &(lastRg), INT64_C(1), Parquet_CtStruct, nc, err);
   if (err->exc) { m9ln = 972; goto L_ret; };
-  { __typeof__(c) m9t10to;
+  { __typeof__(c) m9t11to;
   c = INT64_C(0);
-  m9t10to = m9_sub_i64 (nc, INT64_C(1), err);
+  m9t11to = m9_sub_i64 (nc, INT64_C(1), err);
   if (err->exc) { m9ln = 973; goto L_ret; };
-  if (c <= m9t10to) for (;;) {
+  if (c <= m9t11to) for (;;) {
     M9_YCHK ();
     lastCc = INT64_C(0);
     { __typeof__((*(int64_t *) m9_at (offs.p, c, offs.len, sizeof (int64_t), err))) m9a87 = (*(int64_t *) m9_at (offs.p, c, offs.len, sizeof (int64_t), err));
@@ -2891,7 +2891,7 @@ static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Fr
     if (err->exc) { m9ln = 989; goto L_ret; };
     Parquet_P8 (pool, &(meta), err->res, Parquet_CtStop, err);
     if (err->exc) { m9ln = 990; goto L_ret; };
-    if ((uint64_t) m9t10to - (uint64_t) c < (uint64_t) 1) break;
+    if ((uint64_t) m9t11to - (uint64_t) c < (uint64_t) 1) break;
     c += 1;
   } }
   { __typeof__(m9_sub_i64 (out.n, INT64_C(4), err)) m9a97 = m9_sub_i64 (out.n, INT64_C(4), err);
@@ -2907,7 +2907,7 @@ static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Fr
   Parquet_P8 (pool, &(meta), err->res, Parquet_CtStop, err);
   if (err->exc) { m9ln = 994; goto L_ret; };
   if ((((*o).kvK).len != ((*o).kvV).len)) {
-    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s28, 52 })) m9t11 = ((m9_sl_UTF8){ (uint8_t *) m9s28, 52 }); err->s[0].p = m9t11.p; err->s[0].len = m9t11.len; m9_pay_keep (err, 0, sizeof (*m9t11.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s28, 52 })) m9t12 = ((m9_sl_UTF8){ (uint8_t *) m9s28, 52 }); err->s[0].p = m9t12.p; err->s[0].len = m9t12.len; m9_pay_keep (err, 0, sizeof (*m9t12.p)); }
     m9_raise (err, &Faults_BadArg);
     m9_site (err, 996, m9pn);
     goto L_ret;
@@ -2946,11 +2946,11 @@ static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Fr
       if (err->exc) { m9ln = 1008; goto L_ret; };
       }
     }
-    { __typeof__(i) m9t12to;
+    { __typeof__(i) m9t13to;
     i = INT64_C(0);
-    m9t12to = m9_sub_i64 (((*o).kvK).len, INT64_C(1), err);
+    m9t13to = m9_sub_i64 (((*o).kvK).len, INT64_C(1), err);
     if (err->exc) { m9ln = 1010; goto L_ret; };
-    if (i <= m9t12to) for (;;) {
+    if (i <= m9t13to) for (;;) {
       M9_YCHK ();
       { __typeof__((*(m9_sl_UTF8 *) m9_at ((*o).kvK.p, i, (*o).kvK.len, sizeof (m9_sl_UTF8), err))) m9a103 = (*(m9_sl_UTF8 *) m9_at ((*o).kvK.p, i, (*o).kvK.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) { m9ln = 1011; goto L_ret; };
@@ -2960,13 +2960,13 @@ static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Fr
       if (err->exc) { m9ln = 1011; goto L_ret; };
       }
       }
-      if ((uint64_t) m9t12to - (uint64_t) i < (uint64_t) 1) break;
+      if ((uint64_t) m9t13to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
     } }
   }
   Parquet_P8 (pool, &(meta), err->res, Parquet_CtStop, err);
   if (err->exc) { m9ln = 1014; goto L_ret; };
-  { __typeof__(({ __auto_type m9t13 = meta.b; int64_t m9t13a = INT64_C(0), m9t13n = meta.n; int64_t m9t13o = m9_chk_slice (m9t13a, m9t13n, m9t13.len, err); (__typeof__(m9t13)){ m9t13.p + m9t13o, err->exc ? 0 : m9t13n }; })) m9a105 = ({ __auto_type m9t13 = meta.b; int64_t m9t13a = INT64_C(0), m9t13n = meta.n; int64_t m9t13o = m9_chk_slice (m9t13a, m9t13n, m9t13.len, err); (__typeof__(m9t13)){ m9t13.p + m9t13o, err->exc ? 0 : m9t13n }; });
+  { __typeof__(({ __auto_type m9t14 = meta.b; int64_t m9t14a = INT64_C(0), m9t14n = meta.n; int64_t m9t14o = m9_chk_slice (m9t14a, m9t14n, m9t14.len, err); (__typeof__(m9t14)){ m9t14.p + m9t14o, err->exc ? 0 : m9t14n }; })) m9a105 = ({ __auto_type m9t14 = meta.b; int64_t m9t14a = INT64_C(0), m9t14n = meta.n; int64_t m9t14o = m9_chk_slice (m9t14a, m9t14n, m9t14.len, err); (__typeof__(m9t14)){ m9t14.p + m9t14o, err->exc ? 0 : m9t14n }; });
     if (err->exc) { m9ln = 1016; goto L_ret; };
   Parquet_PBytes (pool, &(out), err->res, m9a105, err);
   if (err->exc) { m9ln = 1016; goto L_ret; };
@@ -2979,7 +2979,7 @@ static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Fr
   if (err->exc) { m9ln = 1018; goto L_ret; };
   }
   err->res = m9res;
-  m9ret = ({ __auto_type m9t14 = out.b; int64_t m9t14a = INT64_C(0), m9t14n = out.n; int64_t m9t14o = m9_chk_slice (m9t14a, m9t14n, m9t14.len, err); (__typeof__(m9t14)){ m9t14.p + m9t14o, err->exc ? 0 : m9t14n }; });
+  m9ret = ({ __auto_type m9t15 = out.b; int64_t m9t15a = INT64_C(0), m9t15n = out.n; int64_t m9t15o = m9_chk_slice (m9t15a, m9t15n, m9t15.len, err); (__typeof__(m9t15)){ m9t15.p + m9t15o, err->exc ? 0 : m9t15n }; });
   if (err->exc) { m9ln = 1019; goto L_ret; };
   goto L_ret;
 L_ret: ;

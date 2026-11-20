@@ -40,7 +40,7 @@ static m9_pool m9mframe = {0};
 
 static const uint8_t m9s0[31] = { 83, 117, 112, 46, 80, 111, 108, 105, 99, 121, 32, 97, 102, 116, 101, 114, 32, 97, 32, 99, 104, 105, 108, 100, 32, 106, 111, 105, 110, 101, 100 };
 static const uint8_t m9s1[48] = { 83, 117, 112, 46, 80, 111, 108, 105, 99, 121, 58, 32, 116, 104, 101, 32, 112, 111, 108, 105, 99, 121, 32, 105, 115, 32, 79, 110, 101, 70, 111, 114, 79, 110, 101, 32, 111, 114, 32, 65, 108, 108, 70, 111, 114, 79, 110, 101 };
-static const uint8_t m9s2[58] = { 83, 117, 112, 46, 80, 111, 108, 105, 99, 121, 58, 32, 109, 97, 120, 82, 101, 115, 116, 97, 114, 116, 115, 32, 62, 61, 32, 48, 44, 32, 119, 105, 110, 100, 111, 119, 77, 115, 32, 62, 61, 32, 49, 44, 32, 100, 105, 114, 116, 121, 77, 97, 120, 32, 62, 61, 32, 49 };
+static const uint8_t m9s2[69] = { 83, 117, 112, 46, 80, 111, 108, 105, 99, 121, 58, 32, 109, 97, 120, 82, 101, 115, 116, 97, 114, 116, 115, 32, 62, 61, 32, 48, 32, 111, 114, 32, 70, 111, 114, 101, 118, 101, 114, 44, 32, 119, 105, 110, 100, 111, 119, 77, 115, 32, 62, 61, 32, 49, 44, 32, 100, 105, 114, 116, 121, 77, 97, 120, 32, 62, 61, 32, 49 };
 static const uint8_t m9s3[33] = { 83, 117, 112, 46, 80, 111, 108, 105, 99, 121, 58, 32, 119, 105, 110, 100, 111, 119, 77, 115, 32, 111, 117, 116, 32, 111, 102, 32, 114, 97, 110, 103, 101 };
 static const uint8_t m9s4[40] = { 83, 117, 112, 46, 74, 111, 105, 110, 58, 32, 109, 111, 114, 101, 32, 116, 104, 97, 110, 32, 77, 97, 120, 67, 104, 105, 108, 100, 114, 101, 110, 32, 99, 104, 105, 108, 100, 114, 101, 110 };
 static const uint8_t m9s5[17] = { 83, 117, 112, 46, 74, 111, 105, 110, 58, 32, 110, 111, 32, 115, 101, 97, 116 };
@@ -66,19 +66,19 @@ void Sup_Policy (Sup_Board *b, int64_t policy, int64_t maxRestarts, int64_t wind
   if (((*b).n > INT64_C(0))) {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s0, 31 })) m9t3 = ((m9_sl_UTF8){ (uint8_t *) m9s0, 31 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Faults_BadArg);
-    m9_site (err, 162, m9pn);
+    m9_site (err, 174, m9pn);
     goto L_hdl_m9t1;
   }
   if (((policy != Sup_OneForOne) && (policy != Sup_AllForOne))) {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s1, 48 })) m9t4 = ((m9_sl_UTF8){ (uint8_t *) m9s1, 48 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Faults_BadArg);
-    m9_site (err, 164, m9pn);
+    m9_site (err, 176, m9pn);
     goto L_hdl_m9t1;
   }
-  if ((((maxRestarts < INT64_C(0)) || (windowMs < INT64_C(1))) || (dirtyMax < INT64_C(1)))) {
-    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s2, 58 })) m9t5 = ((m9_sl_UTF8){ (uint8_t *) m9s2, 58 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
+  if ((((maxRestarts < Sup_Forever) || (windowMs < INT64_C(1))) || (dirtyMax < INT64_C(1)))) {
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s2, 69 })) m9t5 = ((m9_sl_UTF8){ (uint8_t *) m9s2, 69 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     m9_raise (err, &Faults_BadArg);
-    m9_site (err, 167, m9pn);
+    m9_site (err, 179, m9pn);
     goto L_hdl_m9t1;
   }
   (*b).set = true;
@@ -92,7 +92,7 @@ L_hdl_m9t1: ;
     err->exc = NULL;
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s3, 33 })) m9t6 = ((m9_sl_UTF8){ (uint8_t *) m9s3, 33 }); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
     m9_raise (err, &Faults_BadArg);
-    m9_site (err, 175, m9pn);
+    m9_site (err, 187, m9pn);
     goto L_ret;
     goto L_dn_m9t2;
   }
@@ -122,12 +122,12 @@ Sup_Seat Sup_Join (Sup_Board *b, m9_state *err)
   if (((*b).n >= Sup_MaxChildren)) {
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s4, 40 })) m9t3 = ((m9_sl_UTF8){ (uint8_t *) m9s4, 40 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Faults_BadArg);
-    m9_site (err, 181, m9pn);
+    m9_site (err, 193, m9pn);
     goto L_hdl_m9t1;
   }
   if ((!(*b).started)) {
     { __typeof__((*b).start) m9v = Time_Now (err);
-      if (err->exc) { m9ln = 183; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 195; goto L_hdl_m9t1; };
       (*b).start = m9v;
     }
     (*b).started = true;
@@ -135,11 +135,11 @@ Sup_Seat Sup_Join (Sup_Board *b, m9_state *err)
   s.id = (*b).n;
   s.run = INT64_C(0);
   (*(int64_t *) m9_at ((*b).order.v, s.id, INT64_C(64), sizeof (int64_t), err)) = INT64_C(1);
-  if (err->exc) { m9ln = 188; goto L_hdl_m9t1; };
+  if (err->exc) { m9ln = 200; goto L_hdl_m9t1; };
   (*(int64_t *) m9_at ((*b).state.v, s.id, INT64_C(64), sizeof (int64_t), err)) = Sup_Waiting;
-  if (err->exc) { m9ln = 189; goto L_hdl_m9t1; };
+  if (err->exc) { m9ln = 201; goto L_hdl_m9t1; };
   { __typeof__((*b).n) m9v = m9_add_i64 ((*b).n, INT64_C(1), err);
-    if (err->exc) { m9ln = 190; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 202; goto L_hdl_m9t1; };
     (*b).n = m9v;
   }
   m9_mon_signal (&((*b)).m9mon);
@@ -152,7 +152,7 @@ L_hdl_m9t1: ;
     err->exc = NULL;
     { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s5, 17 })) m9t4 = ((m9_sl_UTF8){ (uint8_t *) m9s5, 17 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Faults_BadArg);
-    m9_site (err, 194, m9pn);
+    m9_site (err, 206, m9pn);
     goto L_ret;
     goto L_dn_m9t2;
   }
@@ -180,7 +180,7 @@ bool Sup_Run (Sup_Board *b, Sup_Seat *s, m9_state *err)
   if (m9_mon_poisoned (&(*b).m9mon)) { m9_raise (err, &m9_exc_Poisoned); goto L_ret; }
   for (;;) {
     bool m9t3 = ((!(*b).stop) && ((*(int64_t *) m9_at ((*b).order.v, (*s).id, INT64_C(64), sizeof (int64_t), err)) <= (*s).run));
-    if (err->exc) { m9ln = 199; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 211; goto L_hdl_m9t1; };
     if (!(m9t3)) break;
     m9_mon_wait (&((*b)).m9mon);
   }
@@ -190,11 +190,11 @@ bool Sup_Run (Sup_Board *b, Sup_Seat *s, m9_state *err)
     goto L_ret;
   }
   { __typeof__((*s).run) m9v = (*(int64_t *) m9_at ((*b).order.v, (*s).id, INT64_C(64), sizeof (int64_t), err));
-    if (err->exc) { m9ln = 201; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 213; goto L_hdl_m9t1; };
     (*s).run = m9v;
   }
   (*(int64_t *) m9_at ((*b).state.v, (*s).id, INT64_C(64), sizeof (int64_t), err)) = Sup_Running;
-  if (err->exc) { m9ln = 202; goto L_hdl_m9t1; };
+  if (err->exc) { m9ln = 214; goto L_hdl_m9t1; };
   err->res = m9res;
   m9ret = true;
   goto L_ret;
@@ -229,10 +229,10 @@ void Sup_Done (Sup_Board *b, Sup_Seat *s, m9_state *err)
   m9_mon_enter (&(*b).m9mon);
   if (m9_mon_poisoned (&(*b).m9mon)) { m9_raise (err, &m9_exc_Poisoned); goto L_ret; }
   bool m9t3 = ((*(int64_t *) m9_at ((*b).order.v, (*s).id, INT64_C(64), sizeof (int64_t), err)) == (*s).run);
-  if (err->exc) { m9ln = 210; goto L_hdl_m9t1; };
+  if (err->exc) { m9ln = 222; goto L_hdl_m9t1; };
   if (m9t3) {
     (*(int64_t *) m9_at ((*b).state.v, (*s).id, INT64_C(64), sizeof (int64_t), err)) = Sup_Finished;
-    if (err->exc) { m9ln = 210; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 222; goto L_hdl_m9t1; };
   }
   m9_mon_signal (&((*b)).m9mon);
   goto L_dn_m9t2;
@@ -263,10 +263,10 @@ void Sup_Failed (Sup_Board *b, Sup_Seat *s, m9_sl_UTF8 why, m9_state *err)
   m9_mon_enter (&(*b).m9mon);
   if (m9_mon_poisoned (&(*b).m9mon)) { m9_raise (err, &m9_exc_Poisoned); goto L_ret; }
   bool m9t3 = ((*(int64_t *) m9_at ((*b).order.v, (*s).id, INT64_C(64), sizeof (int64_t), err)) == (*s).run);
-  if (err->exc) { m9ln = 218; goto L_hdl_m9t1; };
+  if (err->exc) { m9ln = 230; goto L_hdl_m9t1; };
   if (m9t3) {
     (*(int64_t *) m9_at ((*b).state.v, (*s).id, INT64_C(64), sizeof (int64_t), err)) = Sup_Failing;
-    if (err->exc) { m9ln = 218; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 230; goto L_hdl_m9t1; };
   }
   m9_mon_signal (&((*b)).m9mon);
   goto L_dn_m9t2;
@@ -298,33 +298,33 @@ void Sup_Crashed (Sup_Board *b, Sup_Seat *s, m9_sl_UTF8 why, m9_state *err)
   int64_t most = 0; (void) most;
   if (m9_mon_poisoned (&(*b).m9mon)) { m9_raise (err, &m9_exc_Poisoned); goto L_ret; }
   { __typeof__((*(int64_t *) m9_at ((*b).dirty.v, (*s).id, INT64_C(64), sizeof (int64_t), err))) m9v = m9_add_i64 ((*(int64_t *) m9_at ((*b).dirty.v, (*s).id, INT64_C(64), sizeof (int64_t), err)), INT64_C(1), err);
-    if (err->exc) { m9ln = 227; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 239; goto L_hdl_m9t1; };
     (*(int64_t *) m9_at ((*b).dirty.v, (*s).id, INT64_C(64), sizeof (int64_t), err)) = m9v;
-    if (err->exc) { m9ln = 227; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 239; goto L_hdl_m9t1; };
   }
   { __typeof__(most) m9v = Sup_Or ((*b).set, (*b).dirtyMax, INT64_C(3), err);
-    if (err->exc) { m9ln = 228; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 240; goto L_hdl_m9t1; };
     most = m9v;
   }
   bool m9t3 = ((*(int64_t *) m9_at ((*b).dirty.v, (*s).id, INT64_C(64), sizeof (int64_t), err)) >= most);
-  if (err->exc) { m9ln = 229; goto L_hdl_m9t1; };
+  if (err->exc) { m9ln = 241; goto L_hdl_m9t1; };
   if (m9t3) {
     { __typeof__((*(int64_t *) m9_at ((*b).dirty.v, (*s).id, INT64_C(64), sizeof (int64_t), err))) m9a1 = (*(int64_t *) m9_at ((*b).dirty.v, (*s).id, INT64_C(64), sizeof (int64_t), err));
-      if (err->exc) { m9ln = 232; goto L_hdl_m9t1; };
-    { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s6, 15 }), Fmt_I64Str ((*s).id, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s7, 9 }), err), Fmt_I64Str (m9a1, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s8, 29 }), err), why, err), ((m9_sl_UTF8){ (uint8_t *) m9s9, 19 }), err)) m9a2 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s6, 15 }), Fmt_I64Str ((*s).id, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s7, 9 }), err), Fmt_I64Str (m9a1, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s8, 29 }), err), why, err), ((m9_sl_UTF8){ (uint8_t *) m9s9, 19 }), err);
-      if (err->exc) { m9ln = 232; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 244; goto L_hdl_m9t1; };
+    { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t5 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t4 = ((m9_sl_UTF8){ (uint8_t *) m9s6, 15 }); m9_utf_cat (err->res, m9t4, Fmt_I64Str ((*s).id, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s7, 9 }), err); m9_utf_cat (err->res, m9t5, Fmt_I64Str (m9a1, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s8, 29 }), err), why, err), ((m9_sl_UTF8){ (uint8_t *) m9s9, 19 }), err)) m9a2 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t5 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t4 = ((m9_sl_UTF8){ (uint8_t *) m9s6, 15 }); m9_utf_cat (err->res, m9t4, Fmt_I64Str ((*s).id, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s7, 9 }), err); m9_utf_cat (err->res, m9t5, Fmt_I64Str (m9a1, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s8, 29 }), err), why, err), ((m9_sl_UTF8){ (uint8_t *) m9s9, 19 }), err);
+      if (err->exc) { m9ln = 244; goto L_hdl_m9t1; };
     Io_ErrLineUtf (m9a2, err);
-    if (err->exc) { m9ln = 232; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 244; goto L_hdl_m9t1; };
     }
     }
     Io_Halt (INT64_C(1), err);
-    if (err->exc) { m9ln = 234; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 246; goto L_hdl_m9t1; };
   }
-  bool m9t4 = ((*(int64_t *) m9_at ((*b).order.v, (*s).id, INT64_C(64), sizeof (int64_t), err)) == (*s).run);
-  if (err->exc) { m9ln = 236; goto L_hdl_m9t1; };
-  if (m9t4) {
+  bool m9t6 = ((*(int64_t *) m9_at ((*b).order.v, (*s).id, INT64_C(64), sizeof (int64_t), err)) == (*s).run);
+  if (err->exc) { m9ln = 248; goto L_hdl_m9t1; };
+  if (m9t6) {
     (*(int64_t *) m9_at ((*b).state.v, (*s).id, INT64_C(64), sizeof (int64_t), err)) = Sup_Crashing;
-    if (err->exc) { m9ln = 236; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 248; goto L_hdl_m9t1; };
   }
   m9_mon_signal (&((*b)).m9mon);
   goto L_dn_m9t2;
@@ -357,7 +357,7 @@ bool Sup_Asked (Sup_Board *b, Sup_Seat *s, m9_state *err)
   if (m9_mon_poisoned (&(*b).m9mon)) { m9_raise (err, &m9_exc_Poisoned); goto L_ret; }
   err->res = m9res;
   m9ret = ((*b).stop || ((*(int64_t *) m9_at ((*b).order.v, (*s).id, INT64_C(64), sizeof (int64_t), err)) > (*s).run));
-  if (err->exc) { m9ln = 244; goto L_hdl_m9t1; };
+  if (err->exc) { m9ln = 256; goto L_hdl_m9t1; };
   goto L_ret;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -398,7 +398,7 @@ void Sup_Watch (Sup_Board *b, int64_t children, m9_state *err)
   bool giveUp = false; (void) giveUp;
   if (m9_mon_poisoned (&(*b).m9mon)) { m9_raise (err, &m9_exc_Poisoned); goto L_ret; }
   { __typeof__(most) m9v = Sup_Or ((*b).set, (*b).maxRestarts, INT64_C(3), err);
-    if (err->exc) { m9ln = 266; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 279; goto L_hdl_m9t1; };
     most = m9v;
   }
   window = 5.0;
@@ -412,76 +412,76 @@ void Sup_Watch (Sup_Board *b, int64_t children, m9_state *err)
     { __typeof__(k) m9t3to;
     k = INT64_C(0);
     m9t3to = m9_sub_i64 ((*b).n, INT64_C(1), err);
-    if (err->exc) { m9ln = 272; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 285; goto L_hdl_m9t1; };
     if (k <= m9t3to) for (;;) {
       bool m9t4 = ((*(int64_t *) m9_at ((*b).state.v, k, INT64_C(64), sizeof (int64_t), err)) == Sup_Finished);
-      if (err->exc) { m9ln = 273; goto L_hdl_m9t1; };
+      if (err->exc) { m9ln = 286; goto L_hdl_m9t1; };
       if (m9t4) {
         { __typeof__(finished) m9v = m9_add_i64 (finished, INT64_C(1), err);
-          if (err->exc) { m9ln = 274; goto L_hdl_m9t1; };
+          if (err->exc) { m9ln = 287; goto L_hdl_m9t1; };
           finished = m9v;
         }
       } else {
         bool m9t5 = (((*(int64_t *) m9_at ((*b).state.v, k, INT64_C(64), sizeof (int64_t), err)) == Sup_Failing) || ((*(int64_t *) m9_at ((*b).state.v, k, INT64_C(64), sizeof (int64_t), err)) == Sup_Crashing));
-        if (err->exc) { m9ln = 274; goto L_hdl_m9t1; };
+        if (err->exc) { m9ln = 287; goto L_hdl_m9t1; };
         if (m9t5) {
           { __typeof__(clean) m9v = ((*(int64_t *) m9_at ((*b).state.v, k, INT64_C(64), sizeof (int64_t), err)) == Sup_Failing);
-            if (err->exc) { m9ln = 276; goto L_hdl_m9t1; };
+            if (err->exc) { m9ln = 289; goto L_hdl_m9t1; };
             clean = m9v;
           }
           if (clean) {
             { __typeof__(Time_Now (err)) m9a3 = Time_Now (err);
-              if (err->exc) { m9ln = 278; goto L_hdl_m9t1; };
+              if (err->exc) { m9ln = 291; goto L_hdl_m9t1; };
             { __typeof__(t) m9v = Time_Elapsed ((*b).start, m9a3, err);
-              if (err->exc) { m9ln = 278; goto L_hdl_m9t1; };
+              if (err->exc) { m9ln = 291; goto L_hdl_m9t1; };
               t = m9v;
             }
             }
             bool m9t6 = Sup_TooMany (&((*b).times), (*b).restarts, most, window, t, err);
-            if (err->exc) { m9ln = 279; goto L_hdl_m9t1; };
+            if (err->exc) { m9ln = 292; goto L_hdl_m9t1; };
             if (m9t6) {
               giveUp = true;
             } else {
               (*(double *) m9_at ((*b).times.v, m9_mod_i64 ((*b).restarts, INT64_C(64), err), INT64_C(64), sizeof (double), err)) = t;
-              if (err->exc) { m9ln = 282; goto L_hdl_m9t1; };
+              if (err->exc) { m9ln = 295; goto L_hdl_m9t1; };
               { __typeof__((*b).restarts) m9v = m9_add_i64 ((*b).restarts, INT64_C(1), err);
-                if (err->exc) { m9ln = 283; goto L_hdl_m9t1; };
+                if (err->exc) { m9ln = 296; goto L_hdl_m9t1; };
                 (*b).restarts = m9v;
               }
             }
           } else {
             { __typeof__((*b).dirtyRestarts) m9v = m9_add_i64 ((*b).dirtyRestarts, INT64_C(1), err);
-              if (err->exc) { m9ln = 286; goto L_hdl_m9t1; };
+              if (err->exc) { m9ln = 299; goto L_hdl_m9t1; };
               (*b).dirtyRestarts = m9v;
             }
           }
           if ((!giveUp)) {
             bool m9t7 = (Sup_Or ((*b).set, (*b).policy, Sup_OneForOne, err) == Sup_AllForOne);
-            if (err->exc) { m9ln = 289; goto L_hdl_m9t1; };
+            if (err->exc) { m9ln = 302; goto L_hdl_m9t1; };
             if (m9t7) {
               { __typeof__(j) m9t8to;
               j = INT64_C(0);
               m9t8to = m9_sub_i64 ((*b).n, INT64_C(1), err);
-              if (err->exc) { m9ln = 290; goto L_hdl_m9t1; };
+              if (err->exc) { m9ln = 303; goto L_hdl_m9t1; };
               if (j <= m9t8to) for (;;) {
                 { __typeof__((*(int64_t *) m9_at ((*b).order.v, j, INT64_C(64), sizeof (int64_t), err))) m9v = m9_add_i64 ((*(int64_t *) m9_at ((*b).order.v, j, INT64_C(64), sizeof (int64_t), err)), INT64_C(1), err);
-                  if (err->exc) { m9ln = 291; goto L_hdl_m9t1; };
+                  if (err->exc) { m9ln = 304; goto L_hdl_m9t1; };
                   (*(int64_t *) m9_at ((*b).order.v, j, INT64_C(64), sizeof (int64_t), err)) = m9v;
-                  if (err->exc) { m9ln = 291; goto L_hdl_m9t1; };
+                  if (err->exc) { m9ln = 304; goto L_hdl_m9t1; };
                 }
                 (*(int64_t *) m9_at ((*b).state.v, j, INT64_C(64), sizeof (int64_t), err)) = Sup_Waiting;
-                if (err->exc) { m9ln = 292; goto L_hdl_m9t1; };
+                if (err->exc) { m9ln = 305; goto L_hdl_m9t1; };
                 if ((uint64_t) m9t8to - (uint64_t) j < (uint64_t) 1) break;
                 j += 1;
               } }
             } else {
               { __typeof__((*(int64_t *) m9_at ((*b).order.v, k, INT64_C(64), sizeof (int64_t), err))) m9v = m9_add_i64 ((*(int64_t *) m9_at ((*b).order.v, k, INT64_C(64), sizeof (int64_t), err)), INT64_C(1), err);
-                if (err->exc) { m9ln = 295; goto L_hdl_m9t1; };
+                if (err->exc) { m9ln = 308; goto L_hdl_m9t1; };
                 (*(int64_t *) m9_at ((*b).order.v, k, INT64_C(64), sizeof (int64_t), err)) = m9v;
-                if (err->exc) { m9ln = 295; goto L_hdl_m9t1; };
+                if (err->exc) { m9ln = 308; goto L_hdl_m9t1; };
               }
               (*(int64_t *) m9_at ((*b).state.v, k, INT64_C(64), sizeof (int64_t), err)) = Sup_Waiting;
-              if (err->exc) { m9ln = 296; goto L_hdl_m9t1; };
+              if (err->exc) { m9ln = 309; goto L_hdl_m9t1; };
             }
           }
       } }
@@ -492,7 +492,7 @@ void Sup_Watch (Sup_Board *b, int64_t children, m9_state *err)
       (*b).stop = true;
       m9_mon_signal (&((*b)).m9mon);
       m9_raise (err, &Sup_GaveUp);
-      m9_site (err, 304, m9pn);
+      m9_site (err, 317, m9pn);
       goto L_hdl_m9t1;
     }
     if ((((*b).n >= children) && (finished == (*b).n))) {
@@ -576,6 +576,11 @@ static bool Sup_TooMany (m9_arr_64_double *times, int64_t nt, int64_t most, doub
   static const char m9pn[] = "Sup.TooMany"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
+  if ((most < INT64_C(0))) {
+    err->res = m9res;
+    m9ret = false;
+    goto L_ret;
+  }
   if ((most == INT64_C(0))) {
     err->res = m9res;
     m9ret = true;
@@ -588,7 +593,7 @@ static bool Sup_TooMany (m9_arr_64_double *times, int64_t nt, int64_t most, doub
   }
   err->res = m9res;
   m9ret = ((t - (*(double *) m9_at ((*times).v, m9_mod_i64 ((m9_sub_i64 (nt, most, err)), INT64_C(64), err), INT64_C(64), sizeof (double), err))) <= window);
-  if (err->exc) { m9ln = 257; goto L_ret; };
+  if (err->exc) { m9ln = 270; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);

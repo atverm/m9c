@@ -1,0 +1,20 @@
+(* EXPECT: element 2 of the slice in brackets: cannot give I32 where I64 is expected *)
+(* The elements of a slice in brackets have one type, that of the
+   first element that is not a numeric literal.  A literal adapts to
+   it, as in the legal form.  Nothing else converts: an I32 beside an
+   I64 is written I64 (w). *)
+MODULE m ;
+PROCEDURE Sum (RO v: SLICE OF I64) : I64 =
+BEGIN
+  RETURN LEN (v)
+END Sum ;
+PROCEDURE Fine (n: I64 ; w: I32) : I64 =
+BEGIN
+  RETURN Sum ([1, n, 3]) + Sum ([n, I64 (w)])
+END Fine ;
+PROCEDURE Bad (n: I64 ; w: I32) : I64 =
+BEGIN
+  RETURN Sum ([n, w])
+END Bad ;
+BEGIN
+END m.

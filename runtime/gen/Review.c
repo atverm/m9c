@@ -484,7 +484,7 @@ m9_sl_UTF8 Review_Page (Ast_Node * root, m9_sl_UTF8 modName, bool checked, m9_sl
     M9_YCHK ();
     { __typeof__((*(m9_sl_UTF8 *) m9_at (deps.p, i, deps.len, sizeof (m9_sl_UTF8), err))) m9a9 = (*(m9_sl_UTF8 *) m9_at (deps.p, i, deps.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 856; goto L_ret; };
-    { __typeof__((*(m9_sl_UTF8 *) m9_at (sl.p, i, sl.len, sizeof (m9_sl_UTF8), err))) m9v = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s48, 2 }), Review_DepSite (m9a9, err), err);
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (sl.p, i, sl.len, sizeof (m9_sl_UTF8), err))) m9v = ({ m9_sl_UTF8 m9t12 = ((m9_sl_UTF8){ (uint8_t *) m9s48, 2 }); m9_utf_cat (err->res, m9t12, Review_DepSite (m9a9, err), err); });
       if (err->exc) { m9ln = 856; goto L_ret; };
       (*(m9_sl_UTF8 *) m9_at (sl.p, i, sl.len, sizeof (m9_sl_UTF8), err)) = m9v;
       if (err->exc) { m9ln = 856; goto L_ret; };
@@ -1396,7 +1396,7 @@ static void Review_Walk (Review_Counts *c, DynStr_DString * *log_, m9_pool *log_
           if (err->exc) { m9ln = 446; goto L_ret; };
           (*c).cuts = m9v;
         }
-        { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, proc, ((m9_sl_UTF8){ (uint8_t *) m9s67, 8 }), err), Review_CutRewrite (n, err), err)) m9a24 = m9_utf_cat (err->res, m9_utf_cat (err->res, proc, ((m9_sl_UTF8){ (uint8_t *) m9s67, 8 }), err), Review_CutRewrite (n, err), err);
+        { __typeof__(({ m9_sl_UTF8 m9t7 = m9_utf_cat (err->res, proc, ((m9_sl_UTF8){ (uint8_t *) m9s67, 8 }), err); m9_utf_cat (err->res, m9t7, Review_CutRewrite (n, err), err); })) m9a24 = ({ m9_sl_UTF8 m9t7 = m9_utf_cat (err->res, proc, ((m9_sl_UTF8){ (uint8_t *) m9s67, 8 }), err); m9_utf_cat (err->res, m9t7, Review_CutRewrite (n, err), err); });
           if (err->exc) { m9ln = 447; goto L_ret; };
         Review_Site (log_, log__pool, 89u, n->line, m9a24, err);
         if (err->exc) { m9ln = 447; goto L_ret; };
@@ -1406,18 +1406,18 @@ static void Review_Walk (Review_Counts *c, DynStr_DString * *log_, m9_pool *log_
     default: {
     } break;
     } }
-    { __typeof__(i) m9t7to;
+    { __typeof__(i) m9t8to;
     i = INT64_C(0);
-    m9t7to = m9_sub_i64 (n->nkids, INT64_C(1), err);
+    m9t8to = m9_sub_i64 (n->nkids, INT64_C(1), err);
     if (err->exc) { m9ln = 451; goto L_ret; };
-    if (i <= m9t7to) for (;;) {
+    if (i <= m9t8to) for (;;) {
       M9_YCHK ();
       { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err))) m9a25 = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) { m9ln = 451; goto L_ret; };
       Review_Walk (c, log_, log__pool, root, m9a25, proc, err);
       if (err->exc) { m9ln = 451; goto L_ret; };
       }
-      if ((uint64_t) m9t7to - (uint64_t) i < (uint64_t) 1) break;
+      if ((uint64_t) m9t8to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
     } }
   } }

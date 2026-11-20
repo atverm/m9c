@@ -127,6 +127,7 @@ CONST
   TkLParen = 214 ; TkRParen = 215 ; TkLBrack = 216 ; TkRBrack = 217 ;
   TkComma = 218 ; TkSemi = 219 ; TkColon = 220 ; TkDot = 221 ;
   TkDotDot = 222 ; TkBar = 223 ; TkCaret = 224 ;
+  TkInterp = 225 ;
 
   (* These are stop-set ids.  M9 has no set type, so each distinct
      stop set is a named predicate case. *)
@@ -413,7 +414,22 @@ BEGIN
   RETURN n
 END PIdentList ;
 
-PROCEDURE PArgList (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
+PROCEDURE PAggregate (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node ;
+
+(* PArg parses one argument.  An argument that opens with a bracket is
+   a slice written in place, [e1, ..., en] (report par 2.2.5).  No
+   expression opens with a bracket, so nothing else is read
+   differently, and the slice is the whole argument: after its closing
+   bracket the list goes on or ends. *)
+PROCEDURE PArg (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
+BEGIN
+  IF p.cur.kind = TkLBrack THEN RETURN PAggregate (pool, p) END ;
+  RETURN PExpr (pool, p)
+END PArg ;
+
+(* PExprList parses the fields of a RAISE.  They are expressions: a
+   slice in brackets is an argument of a call only. *)
+PROCEDURE PExprList (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR n : PTR Ast.Node ;
 BEGIN
   n := Nn (pool, p, Ast.NArgList) ;
@@ -421,6 +437,18 @@ BEGIN
   WHILE p.cur.kind = TkComma DO
     Bump (p) ;
     Ast.Add (pool, n, SOME (PExpr (pool, p)))
+  END ;
+  RETURN n
+END PExprList ;
+
+PROCEDURE PArgList (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
+VAR n : PTR Ast.Node ;
+BEGIN
+  n := Nn (pool, p, Ast.NArgList) ;
+  Ast.Add (pool, n, SOME (PArg (pool, p))) ;
+  WHILE p.cur.kind = TkComma DO
+    Bump (p) ;
+    Ast.Add (pool, n, SOME (PArg (pool, p)))
   END ;
   RETURN n
 END PArgList ;
@@ -508,6 +536,153 @@ BEGIN
          k = TkFINALLY OR k = TkTO OR k = TkBY OR k = TkEOF
 END Closes ;
 
+(* PHoleExpr parses the expression of a hole.  The text is a slice of
+   the source, so the parser's own lexer is pointed at it for the
+   time, with the line and column the text has in the file, and put
+   back afterwards.  What follows the expression in the hole is an
+   error: the hole is one expression. *)
+PROCEDURE PHoleExpr (VAR pool: POOL ; VAR KEPT p: Parser ; RO text: UTF ;
+                     line, col: I64) : PTR Ast.Node =
+VAR
+  keepLx : Lex.Lexer ;
+  keepCur, keepPeek : Lex.Token ;
+  keepPeeked : BOOL ;
+  e : PTR Ast.Node ;
+BEGIN
+  keepLx := p.lx ;
+  keepCur := p.cur ;
+  keepPeek := p.peekTok ;
+  keepPeeked := p.peeked ;
+  Lex.InitUtf (p.lx, text) ;
+  p.lx.line := line ;
+  p.lx.col := col ;
+  p.peeked := FALSE ;
+  Bump (p) ;
+  e := PExpr (pool, p) ;
+  IF p.cur.kind # TkEOF THEN
+    Rerr (p, 'a hole holds one expression: ' + UTF (Lex.KindName (p.cur.kind)) +
+             ' cannot follow it (par 2.3)')
+  END ;
+  p.lx := keepLx ;
+  p.cur := keepCur ;
+  p.peekTok := keepPeek ;
+  p.peeked := keepPeeked ;
+  RETURN e
+END PHoleExpr ;
+
+(* PInterp reads an interpolation literal, $'text ${e} text ${e:8.2}'
+   (docs/interpolation-rfc.md).  It answers the concatenation the
+   literal stands for: a chain of `+' over NString nodes for the text
+   and NHole nodes for the holes.  Every rule for a concatenation
+   then holds the literal without a change.
+
+   An NHole has the hole's expression as its kid and the format, the
+   text after the `:', in a.  f1 says a `:' was written.  The chain's
+   `+' nodes carry `$' in b, so that the printer writes the literal
+   back as one.  A literal that is one hole and no text is '' + the
+   hole: it is a concatenation too, a new string, and not the value
+   of the hole itself.
+
+   An M9 expression holds no `:', so the first one in a hole starts
+   the format.  The offsets are of octets.  The columns are of
+   characters, counted from the token's own. *)
+PROCEDURE PInterp (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
+VAR
+  body, inner, expr, fmt : UTF ;
+  o : SLICE OF BYTE ;
+  n, i, from, close, colon, k, holes, line, col, hcol, w, dec : I64 ;
+  chain, part, hole, plus : PTR Ast.Node ;
+  have, zero, sci : BOOL ;
+BEGIN
+  chain := Nn (pool, p, Ast.NString) ;   (* '', until text or a hole comes *)
+  body := p.cur.text ;
+  line := p.cur.line ;
+  col := p.cur.col + 2 ;        (* past the $ and the quote *)
+  o := OCTETS (body) ;
+  n := LEN (o) ;
+  have := FALSE ;
+  holes := 0 ;
+  i := 0 ;
+  from := 0 ;
+  BEGIN
+  WHILE i <= n DO
+    IF i = n OR (i + 1 < n AND I64 (o[i]) = 36 AND I64 (o[i + 1]) = 123) THEN
+      (* the text up to here *)
+      IF i > from THEN
+        part := Nn (pool, p, Ast.NString) ;
+        Ast.SetAUtf (pool, part, SLICE (body, from, i - from)) ;
+        IF have THEN
+          plus := Nn (pool, p, Ast.NBin) ;
+          Ast.SetA (pool, plus, '+') ;
+          Ast.SetB (pool, plus, '$') ;
+          Ast.Add (pool, plus, SOME (chain)) ;
+          Ast.Add (pool, plus, SOME (part)) ;
+          chain := plus
+        ELSE
+          chain := part ;
+          have := TRUE
+        END
+      END ;
+      IF i = n THEN EXIT END ;
+      (* a hole: ${ ... } *)
+      close := i + 2 ;
+      WHILE close < n AND I64 (o[close]) # 125 DO close := close + 1 END ;
+      colon := -1 ;
+      FOR k := i + 2 TO close - 1 DO
+        IF colon < 0 AND I64 (o[k]) = 58 THEN colon := k END
+      END ;
+      hcol := col + Text.CpCount (SLICE (body, 0, i + 2)) ;
+      IF colon < 0 THEN
+        expr := SLICE (body, i + 2, close - i - 2) ;
+        fmt := ''
+      ELSE
+        expr := SLICE (body, i + 2, colon - i - 2) ;
+        fmt := SLICE (body, colon + 1, close - colon - 1)
+      END ;
+      inner := Text.TrimUtf (expr) ;
+      hole := Ast.NewNode (pool, Ast.NHole, line, hcol) ;
+      IF Text.BLen (inner) = 0 THEN
+        ErrAt (p, line, hcol, 'an empty hole: ${} holds no expression (par 2.3)')
+      ELSE
+        Ast.Add (pool, hole, SOME (PHoleExpr (pool, p, expr, line, hcol)))
+      END ;
+      IF colon >= 0 THEN
+        hole.f1 := TRUE ;
+        Ast.SetAUtf (pool, hole, fmt) ;
+        IF Text.BLen (fmt) = 0 THEN
+          ErrAt (p, line, col + Text.CpCount (SLICE (body, 0, colon + 1)),
+                 'a format is expected after the : of a hole, as in 8, 08, .2, 8.2, 8.2e and e (par 2.3)')
+        ELSIF NOT Ast.HoleFormat (fmt, zero, w, dec, sci) THEN
+          ErrAt (p, line, col + Text.CpCount (SLICE (body, 0, colon + 1)),
+                 'the format ' + fmt + ' is not one: a width, then . and the decimals, then e for the scientific form, as in 8, 08, .2, 8.2, 8.2e and e (par 2.3)')
+        END
+      END ;
+      plus := Nn (pool, p, Ast.NBin) ;
+      Ast.SetA (pool, plus, '+') ;
+      Ast.SetB (pool, plus, '$') ;
+      Ast.Add (pool, plus, SOME (chain)) ;
+      Ast.Add (pool, plus, SOME (hole)) ;
+      chain := plus ;
+      have := TRUE ;
+      holes := holes + 1 ;
+      i := close + 1 ;
+      from := i
+    ELSE
+      i := i + 1
+    END
+  END
+  EXCEPT
+  | IndexError :
+      Rerr (p, 'an interpolation literal could not be read (par 2.3)') ;
+      holes := 1
+  END ;
+  IF holes = 0 THEN
+    Rerr (p, 'an interpolation literal needs a hole: write a plain string (par 2.3)')
+  END ;
+  Bump (p) ;
+  RETURN chain
+END PInterp ;
+
 PROCEDURE PFactor (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR n, d, cs : PTR Ast.Node ;
 BEGIN
@@ -520,6 +695,8 @@ BEGIN
     n := Nn (pool, p, Ast.NChar) ; Ast.SetA (pool, n, p.cur.text) ; Bump (p)
   ELSIF p.cur.kind = TkStr THEN
     n := Nn (pool, p, Ast.NString) ; Ast.SetA (pool, n, p.cur.text) ; Bump (p)
+  ELSIF p.cur.kind = TkInterp THEN
+    n := PInterp (pool, p)
   ELSIF p.cur.kind = TkTRUE THEN
     n := Nn (pool, p, Ast.NTrue) ; Bump (p)
   ELSIF p.cur.kind = TkFALSE THEN
@@ -594,7 +771,11 @@ BEGIN
       n := d
     END
   ELSE
-    Rerr (p, 'expression expected, found ' + UTF (Lex.KindName (p.cur.kind))) ;
+    IF p.cur.kind = TkLBrack THEN
+      Rerr (p, 'a slice is written in brackets only as a whole argument of a call, or as the value of a CONST (par 2.2.5)')
+    ELSE
+      Rerr (p, 'expression expected, found ' + UTF (Lex.KindName (p.cur.kind)))
+    END ;
     n := Nn (pool, p, Ast.NInt) ;
     Ast.SetA (pool, n, '0') ;
     (* A token that ends a statement or a construct is left for
@@ -1270,7 +1451,7 @@ BEGIN
     Ast.Add (pool, n, SOME (PQualident (pool, p))) ;
     IF p.cur.kind = TkLParen THEN
       Bump (p) ;
-      Ast.Add (pool, n, SOME (PArgList (pool, p))) ;
+      Ast.Add (pool, n, SOME (PExprList (pool, p))) ;
       Expect (p, TkRParen)
     ELSE
       Ast.Add (pool, n, NONE)
@@ -1540,8 +1721,8 @@ BEGIN
   RETURN n
 END PProcDecl ;
 
-(* PAggregate parses Aggregate = "[" ConstExpr { "," ConstExpr } "]":
-   the value of a CONST and nothing else (report par 10).  The
+(* PAggregate parses Aggregate = "[" Expr { "," Expr } "]": the value
+   of a CONST (report par 10), and a whole argument (PArg).  The
    elements are parsed as expressions.  The checker says, with a
    position, whether they are constants and of one type.  An empty
    list is a parse error: an aggregate with no element has no element
@@ -1551,6 +1732,11 @@ VAR n : PTR Ast.Node ;
 BEGIN
   n := Nn (pool, p, Ast.NAggregate) ;
   Bump (p) ;                                       (* consume '[' *)
+  IF p.cur.kind = TkRBrack THEN
+    Rerr (p, 'a slice in brackets needs an element: its type is the type of its elements -- NEW (T, 0) is the empty slice') ;
+    Bump (p) ;
+    RETURN n
+  END ;
   Ast.Add (pool, n, SOME (PExpr (pool, p))) ;
   WHILE p.cur.kind = TkComma DO
     Bump (p) ;

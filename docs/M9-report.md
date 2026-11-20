@@ -202,6 +202,27 @@ negative -- and `1.0e400` was an infinity.  Parse probes
 `literal-beyond-i64`.  Not yet: a real literal adapting to `F32`
 beyond its range is still an infinity.)*
 
+**A character literal beside a `BYTE` stands for its code.**  `b[i] =
+','`, `'0' <= b[i] AND b[i] <= '9'`, `b[i] = 0AC`, and in a `CASE`
+over a `BYTE` the labels `| '0' .. '9' :` and `| ',', ';' :`.  The
+literal is on either side of any of the six comparisons.  It must be
+ASCII: a character past `7FC` is two or more octets in UTF-8, no
+single `BYTE` equals it, and the checker refuses the comparison
+instead of answering FALSE forever.  A `CONST` that names such a
+character stands for it too: `CONST Lf = 0AC` and `b[i] = Lf`, a
+label `| Lf :`, a range `| Zero .. Nine :`, an imported `Mod.Comma`.
+This is a rule for what the checker can read.  A `CHAR` variable
+beside a `BYTE` is still refused, and converts by name: `BYTE (ORD
+(c))`, which raises `ValueRange`.  A
+`BYTE` takes no character in an assignment either: `b[i] := 44`, as
+before.  *(Since 2026-11-19.  Observed need: a service that read CSV
+octets wrote `Comma = 44` and `b[p] = 90`, and a reader needed the
+ASCII table to follow it.  The CONST was left out at first; an
+agent in a blind trial wrote `CONST LF = 0AC` and `b = LF` the next
+day, as a reader would, and was refused six times, so it is taken
+since 2026-11-20.  Genforms `GfByteLit`; probes
+`byte-lit-not-ascii`, `byte-lit-char-variable`.)*
+
 There are **no implicit conversions**, including widenings.
 `F64(i)`, `I32(x) RAISES ValueRange` — every conversion is written,
 and every narrowing to an integer, and every float-to-int conversion,
@@ -608,10 +629,47 @@ expression is FOLDED with the runtime's arithmetic — checked, `DIV`
 and `MOD` truncating — so `N = 2 * 3 + 1` is the literal 7, and one
 that overflows or divides by zero is refused where it is declared; a
 real one is the C expression of its literals, evaluated in double.
-Anything else — a name, a call, a comparison — is refused by name:
-compute it in a procedure.  *(Built 2026-10-09: until then the checker
-accepted a `CONST` over an expression and the generator refused it,
-"const form unsupported yet", which reads as a compiler fault.)*
+Anything else — a call, a comparison — is refused by name: compute it
+in a procedure.  *(Built 2026-10-09: until then the checker accepted
+a `CONST` over an expression and the generator refused it, "const
+form unsupported yet", which reads as a compiler fault.)*
+
+**A `CONST` names the `CONST`s declared before it.**
+
+```
+CONST
+  Cols = 24 ;
+  Rows = 24 ;
+  Cells = Cols * Rows ;          (* 576 *)
+  Sep = ',' ;
+  Head = 'id' + Sep + 'name' ;   (* one string *)
+```
+
+The name stands for its value, and the rules above then hold the
+whole expression: an integer one is folded and checked for overflow,
+nothing converts (`Count * 1.5` over an integer `Count` is refused),
+and the result is an `ARRAY` count or a `CASE` label as a literal
+is.
+
+- **Order.**  Only a CONST declared BEFORE is known.  A later one is
+  refused by the general message, so the order of the declarations is
+  the order of the computation and no cycle can be written.
+- **Which names.**  A bare name of a scalar CONST: a number, a
+  string, a character, a BOOL.  A DEFINITION's CONST names the
+  DEFINITION's earlier ones, and an importer reads the folded value.
+  An implementation's CONST names its own and its DEFINITION's, and a
+  procedure's CONST names the module's too.
+- **Not taken.**  An imported `Mod.C` in a CONST, a table or a record
+  CONST in an expression, and a call.
+
+*(Since 2026-11-19.  Observed need, three times in two days: an
+agent's Snake wrote `MaxLen = Cols * Rows` and was refused, and wrote
+`576` with the expression in a comment; an agent's service wrote
+`SupConn = NHttp + NWorkers` and wrote `13`.  A number in a comment
+is the drift this language exists to refuse.  Genforms
+`GfConstOverConst`; `examples/snake` holds the exported case; probes
+`const-names-const`, `const-over-const-overflow`,
+`const-over-const-kinds`.)*
 
 ```
 CONST
@@ -709,6 +767,60 @@ exported by a DEFINITION, and an EXTENDED record, aggregate or not
 field). A parameter or a
 local named like a `CONST` is the parameter or the local; the checker
 used to read it as the constant.
+
+### 2.2.5 A slice written in brackets — a whole argument
+
+```
+r := Pg.Query (pool, c, 'SELECT status FROM batches WHERE id = $1', [id]) ;
+Io.WriteLine (Text.Join ([name, Fmt.I64Str (n), 'done'], ' ')) ;
+total := Sum ([1, n, 3]) ;
+```
+
+An argument written `[ e1, ..., en ]` is a **slice built for the
+call**: a `SLICE OF T` of `n` elements, in the frame.  It stands for
+the three or more statements that declared a slice, allocated it and
+filled it, where the slice had no other use than this one call.
+
+- **Where.**  The brackets are read as a slice only as a WHOLE
+  argument of a call.  On the right of an assignment, in a `RETURN`,
+  as a field of a `RAISE` or inside a larger expression they are a
+  parse error that says so.  There a slice has a name and is filled
+  from `NEW`.
+- **The type.**  `T` is the type of the first element that is not a
+  numeric literal.  Numeric literals alone make `I64`, or `F64` when
+  the first is a real.  Every element must fit `T` as a value
+  assigned to a `T` does: a literal adapts, and nothing else
+  converts, so an `I32` beside an `I64` is written `I64 (w)`.  The
+  elements are expressions, not only literals.  That is the
+  difference from the constant table of §2.2.4, which is data.
+- **The elements.**  `T` is a string type or a builtin scalar type: a
+  number, a `CHAR`, a `BOOL`, a `BYTE`.  A slice of records or of
+  pointers is filled from `NEW`, where each element has a name the
+  ownership rules can follow.
+- **No empty form.**  `[]` has no element to take a type from.  The
+  empty slice is `NEW (T, 0)`.
+- **Read-only.**  The slice has no name, so nobody could read what a
+  callee wrote into it.  It is lent to an `RO` parameter only (§2.4),
+  and the refusal names it.
+- **It dies with the frame.**  It is frame storage, as a `NEW (T, n)`
+  without a pool is.  A `KEPT` parameter refuses it (§4.1).  A view
+  of it that a function answers may not be stored in a module
+  variable or anywhere that outlives the frame, and a record built
+  over it carries the same rule.  Written in a `RETURN`'s expression
+  it is built in the caller's arena, as a `NEW` there is.
+- **Order and exceptions.**  The elements are evaluated left to
+  right.  An element that raises ends the statement: the elements
+  after it are not evaluated, and the call does not run.
+- **Cost.**  One allocation in the frame's arena.  A statement that
+  only lends it is released with the statement, as one that
+  concatenates is (§2.3).
+
+*(Observed need, 2026-11-19: a service written by an agent took a
+line for every parameter of every SQL statement, 26 lines in 858,
+because a slice could not be written where it is passed.  The Scala
+service of the same specification wrote them in place.  The same
+service with this form is 19 lines shorter, passes both gates of the
+trial and fails under each of its 36 planted faults.)*
 
 ### 2.3 `+` concatenates strings, into the procedure's frame
 
@@ -902,6 +1014,93 @@ too -- `Json.Set (obj, name, v)` on two fresh nodes links storage of
 one lifetime to storage of the same lifetime.  Still not seen: an
 answer stored into a field of a local, and a call through a procedure
 value (no body to read).
+
+### 2.3.1 The interpolation literal — the chain, written as its text
+
+```
+Io.ErrLine ($'worker ${w.k} died in batch ${seq}: ${why}') ;
+body := $'{"id":"${id}","rows":${n}}' ;
+Io.WriteLine ($'${name}: ${mean:8.2} ${sd:.3e} n=${n:6} id ${id:08}') ;
+```
+
+`$'...'` or `$"..."` is an **interpolation literal**.  `${ e }` in it
+is a **hole**, and `e` is an expression.  The literal IS the
+concatenation it replaces: `$'a${x}b'` is `'a' + X + 'b'`, where `X`
+is the text of `x`.  So it has no rule of its own.  Its type is
+`STR`.  It is built in the frame and released with the statement
+that only consumes it, the holes are evaluated left to right, a hole
+that raises ends the statement, and a `KEPT` parameter refuses it as
+it refuses the chain (§2.3 above, §4.1).
+
+- **The text.**  Every character is itself, except the two
+  characters `${`.  A `$` that no `{` follows is a dollar sign and a
+  brace outside a hole is a brace, so JSON is written as it reads.
+  There is no escape: the text `${` is joined by a `+`.
+- **A hole holds one expression, and no string literal.**  The
+  quotes of a line then pair the way the eye pairs them.  A value
+  that needs a literal gets a name first.
+- **What a hole takes as it is:**
+
+  | the type of `e` | its text |
+  |---|---|
+  | `STR` | itself |
+  | `CHAR` | the character |
+  | an integer, `I8` to `U64` | its decimal digits |
+  | `BOOL` | `TRUE` or `FALSE` |
+  | `F32`, `F64` | the shortest decimal that reads back to exactly the value (`Fmt.Short`) |
+
+- **A format**, after a `:` in the hole, for a number:
+
+  | written | the type | text | it is |
+  |---|---|---|---|
+  | `${i:8}` | an integer | right-aligned in 8, blanks | `Fmt.I64Pad (i, 8, FALSE)` |
+  | `${i:08}` | an integer | the same, zeros after the sign | `Fmt.I64Pad (i, 8, TRUE)` |
+  | `${x:.2}`, `${x:0.2}` | a real | 2 decimals | `Fmt.Fixed (x, 2)` |
+  | `${x:8.2}` | a real | 2 decimals, right-aligned in 8 | `Fmt.FixedPad (x, 8, 2)` |
+  | `${x:8}` | a real | the shortest exact form, in 8 | `Fmt.Short (x)`, padded |
+  | `${x:.2e}`, `${x:8.2e}` | a real | scientific | `Fmt.Sci`, `Fmt.SciPad` |
+  | `${x:e}` | a real | scientific with every digit, 16 decimals | `Fmt.Sci (x, 16)` |
+
+  The format is `[ "0" ] [ width ] [ "." decimals ] [ "e" ]`, written
+  with a dot, in one spelling.  A value wider than its field is not
+  cut.  The text is the `Fmt` call's of the last column to the
+  character: `genforms/GfInterp` holds each form to its twin.
+- **The format is checked where the program is compiled.**  An
+  integer takes no decimals and no `e`.  The zero fill is an
+  integer's.  The decimals are 0 to 17, so a hole with a format
+  raises nothing at run time.  A string, a `CHAR` and a `BOOL` take
+  no format.  Width and decimals are literals: a width from a
+  variable is `${Fmt.I64Pad (i, w, FALSE)}`, by name.
+- **A hole needs no import.**  The runtime writes every value, a
+  real with the digits `Fmt` writes.  *(For a day a real in a hole
+  asked for `IMPORT Fmt`.  The author, 2026-11-20: "add Fmt to the
+  runtime".)*
+- **Refused, each by name and with the fix:** a `BYTE` (a number or
+  a character: `${I64 (b)}`), an enumeration, a record, a slice, a
+  pointer (no text form: a function that answers one), a `SLICE OF
+  CHAR` (`UTF (s)`), a call that answers nothing, an empty hole, and
+  a literal with no hole, which is a plain string.
+- **It is not a constant.**  A `CONST` is built with `+` over
+  literals and the CONSTs before it (§2.2.4).
+
+What it does NOT do, and must not be taken for:
+
+- **It does not escape.**  `$'{"reason":"${why}"}'` is as wrong as
+  the chain was when `why` holds a quote.  The line is
+  `$'{"reason":${Json.Quote (why)}}'`.
+- **It does not make SQL safe.**  `$'... WHERE id = ${id}'` is an
+  injection, exactly as the chain is.  A statement's values stay
+  `$1` with the values in brackets (§2.2.5).
+
+*(Since 2026-11-19, by `docs/interpolation-rfc.md`.  Observed need:
+a service of 534 lines held 15 statements that built a string from
+values, with 17 calls of `Fmt.I64Str`, and the library about 120.
+The text and the values alternate in a chain, each change costs a
+quote, a `+` and a space, and a reader puts the sentence together
+again.  The first draft refused every format in a hole.  The author:
+"a rule is only good if it does not go against common sense"; a
+column of numbers is the common case.  Probes `interp-*`, nine of the
+checker's and five of the parser's; fixture `FxInterp`.)*
 
 ### 2.4 Read-only borrow is a parameter mode
 
@@ -2575,10 +2774,12 @@ features:
 
 ## 10. Grammar (complete, in Wirth's own EBNF)
 
-Seventy-four productions; the ceiling is one hundred, and past it a
+Seventy-nine productions; the ceiling is one hundred, and past it a
 feature dies.  (The seventy-third is `Aggregate`, 2026-10-01: a
-bracketed list is the value of a `CONST` and of nothing else, so `[`
-in an expression is still only a subscript.)  Sixty-three keywords: the fifty-eight the language was
+bracketed list is the value of a `CONST`.  `ArgList` and `Arg`,
+2026-11-19, make it a whole argument too (§2.2.5).  No expression
+opens with a bracket, so `[` inside an expression is still only a
+subscript.)  Sixty-three keywords: the fifty-eight the language was
 designed with, plus RO, GRID, KEPT, LINK and TASK (2026-11-01), each appended to the table
 rather than inserted into it, because a token code that moves is a
 code no one can rely on. A source may nest at most 1000 levels -- each
@@ -2608,7 +2809,7 @@ Import      = "FROM" ident "IMPORT" IdentList ";"
 Declaration = "CONST" { ConstDecl } | "TYPE" { TypeDecl }
             | "VAR" { VarDecl } | "EXCEPTION" { ExcDecl } | ProcDecl .
 ConstDecl   = ident [ Attrib ] "=" ( ConstExpr | Aggregate ) ";" .
-Aggregate   = "[" ConstExpr { "," ConstExpr } "]" .
+Aggregate   = "[" Expr { "," Expr } "]" .
 TypeDecl    = ident [ "=" Type ] ";" .
 ExcDecl     = ident [ "(" FieldSeq ")" ] ";" .
 VarDecl     = IdentList ":" Type ";" .
@@ -2650,7 +2851,7 @@ Statement   = Assign | ProcCall | If | While | For | Loop | "EXIT"
             | Case | Return | Raise | Dispose | Block
             | ThreadStmt | WaitStmt | SignalStmt | TransferStmt .
 Assign      = Designator ":=" Expr .
-ProcCall    = Designator [ "(" [ ExprList ] ")" ] .
+ProcCall    = Designator [ "(" [ ArgList ] ")" ] .
 If          = "IF" Expr "THEN" StmtSeq
               { "ELSIF" Expr "THEN" StmtSeq }
               [ "ELSE" StmtSeq ] "END" .
@@ -2683,11 +2884,14 @@ SimpleExpr  = [ "+" | "-" ] Term { AddOp Term } .
 AddOp       = "+" | "-" | "+%" | "-%" .
 Term        = Factor { MulOp Factor } .
 MulOp       = "*" | "/" | "*%" | "DIV" | "MOD" .
-Factor      = number | string | "TRUE" | "FALSE" | "NONE"
+Factor      = number | string | Interp | "TRUE" | "FALSE" | "NONE"
             | "SOME" "(" Expr ")" | "SHARED" "(" Expr ")"
             | NewExpr | SliceExpr | GridExpr
-            | Designator [ "(" [ ExprList ] ")" { "." ident | "[" Expr "]" } ]
+            | Designator [ "(" [ ArgList ] ")" { "." ident | "[" Expr "]" } ]
             | "(" Expr ")" | "NOT" Factor .
+Interp      = "$" quote { character | Hole } quote .
+Hole        = "${" Expr [ ":" Format ] "}" .
+Format      = [ "0" ] [ digits ] [ "." digits ] [ "e" ] .
 NewExpr     = "NEW" "(" ( "OWN" "," Qualident | Designator { "," Expr } ) ")" .
 SliceExpr   = "SLICE" "(" Expr "," Expr "," Expr ")" .
 GridExpr    = "GRID" "(" Expr { "," Expr } ")" .
@@ -2697,6 +2901,8 @@ Qualident   = ident [ "." ident ] .
 QualidentList = Qualident { "," Qualident } .
 IdentList   = ident { "," ident } .
 ExprList    = Expr { "," Expr } .
+ArgList     = Arg { "," Arg } .
+Arg         = Expr | Aggregate .
 ConstExpr   = Expr .
 ```
 

@@ -1,0 +1,2 @@
+parseprobes/interp-string-in-hole.m9:14:33: parse: lex: a hole holds no string literal: give the value a name, or join it with +
+m9c: 1 parse errors in parseprobes/interp-string-in-hole.m9

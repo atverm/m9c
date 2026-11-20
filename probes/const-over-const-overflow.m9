@@ -1,0 +1,14 @@
+(* EXPECT: CONST Cube: the expression overflows I64 or divides by zero (par 2.2.4) *)
+(* A CONST over earlier CONSTs is folded with the runtime's checked
+   arithmetic, as one over literals is.  The checker refuses here the
+   overflow the program would raise at run time.  The legal form
+   comes first. *)
+MODULE m ;
+CONST
+  Big = 3000000000 ;
+  Square = Big * Big ;
+  Cube = Square * Big ;
+VAR x : I64 ;
+BEGIN
+  x := Square
+END m.

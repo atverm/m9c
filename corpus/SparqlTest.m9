@@ -24,6 +24,7 @@ IMPORT Http ;
 IMPORT Io ;
 IMPORT Rdf ;
 IMPORT Sparql ;
+IMPORT Time ;
 
 VAR
   t : Check.T ;
@@ -256,11 +257,68 @@ BEGIN
   END
 END Live ;
 
+(* ParseSecs builds a result of rows rows, parses it, and answers the
+   seconds the parse took.  It checks the first and the last row. *)
+PROCEDURE ParseSecs (rows: I64) : F64 =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+  r : PTR Sparql.Results IN scratch ;
+  i : I64 ;
+  began, took : F64 ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  DynStr.Append (d, '{"head":{"vars":["s","n"]},"results":{"bindings":[') ;
+  FOR i := 0 TO rows - 1 DO
+    IF i > 0 THEN DynStr.Append (d, ',') END ;
+    DynStr.Append (d, '{"s":{"type":"uri","value":"http://example.org/s') ;
+    DynStr.AppendI64 (d, i) ;
+    DynStr.Append (d, '"},"n":{"type":"literal","value":"') ;
+    DynStr.AppendI64 (d, i * 7) ;
+    DynStr.Append (d, '"}}')
+  END ;
+  DynStr.Append (d, ']}}') ;
+  began := Time.Now ().t ;
+  r := Sparql.Parse (scratch, DynStr.View (d)) ;
+  took := Time.Now ().t - began ;
+  Check.EqI64 (t, 'many: every row is read', Sparql.Rows (r), rows) ;
+  Check.EqStr (t, 'many: the first row', Sparql.Value (r, 0, 1), '0') ;
+  Check.EqStr (t, 'many: the last row', Sparql.Value (r, rows - 1, 0),
+               'http://example.org/s' + Fmt.I64Str (rows - 1)) ;
+  RETURN took
+EXCEPT
+| Sparql.FormatError (m) : Check.That (t, 'many: FormatError ' + m, FALSE) ; RETURN 0.0
+| IndexError : Check.That (t, 'many: IndexError', FALSE) ; RETURN 0.0
+| ValueRange : Check.That (t, 'many: ValueRange', FALSE) ; RETURN 0.0
+END ParseSecs ;
+
+(* Many holds that Parse walks its rows once.  Read by position, row i
+   cost i steps, so n rows cost n * n / 2: an application's 97,000
+   rows took 109 s (2026-11-19).  The check is a RATIO, not a time:
+   four times the rows must cost less than eight times the time, and
+   a tenth of a second for the clock.  A walk costs four times, a
+   read by position sixteen.  A bound in seconds was the first form
+   of this check: 100,000 rows under 5 s.  It passed on two machines
+   and failed under the sanitizers on a slower one, at 7.2 s, with
+   the parse still a walk. *)
+PROCEDURE Many () =
+VAR small, large : F64 ;
+BEGIN
+  small := ParseSecs (20000) ;
+  large := ParseSecs (80000) ;
+  Check.That (t, 'many: 80,000 rows cost less than 8 times 20,000 (' +
+              Fmt.Fixed (small, 3) + ' s and ' + Fmt.Fixed (large, 3) + ' s)',
+              large < 8.0 * small + 0.1)
+EXCEPT
+| ValueRange : Check.That (t, 'many: ValueRange', FALSE)
+END Many ;
+
 BEGIN
   BEGIN
     gold := Check.GoldPath ('Sparql.gold') ;
     Offline () ;
     Refusals () ;
+    Many () ;
     endpoint := Io.Env (pool, 'SPARQL_ENDPOINT') ;
     IF Text.BLen (endpoint) > 0 THEN
       Live ()

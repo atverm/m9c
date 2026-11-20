@@ -1,0 +1,19 @@
+(* EXPECT: unknown name: Down -- a member is named by its type: Dir.Down (bare only as a CASE label) *)
+(* A member of an enumeration is reached through its type: Dir.Down.
+   The bare name is legal only as a CASE label.  The checker said only
+   `unknown name: Down' until 2026-11-18, and an agent's first Snake had to
+   find the rule elsewhere (2026-11-18).  The legal forms come first. *)
+MODULE m ;
+TYPE
+  Dir = ( Up, Down ) ;
+VAR
+  d : Dir ;
+  opposite : BOOL ;
+BEGIN
+  d := Dir.Up ;
+  CASE d OF
+  | Up   : opposite := d = Dir.Down
+  | Down : opposite := d = Dir.Up
+  END ;
+  opposite := d = Down
+END m.

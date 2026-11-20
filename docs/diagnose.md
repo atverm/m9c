@@ -34,8 +34,11 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `cannot assign to P -- P is a PROCEDURE, not a variable` | the target of := names a procedure; a procedure is a declaration, not storage -- until 2026-10-22 a bare one was refused as an unknown name and a qualified one reached the C compiler (par 3 rule 7) | call it (P ()), or hold a procedure value in a variable of procedure type: VAR a : OPT Act ; a := SOME (P) | `assign-to-procedure` |
 | `unknown name: x` | a bare name on the left of := is declared nowhere -- not a local, parameter, module variable, or a CONST (writing a CONST is its own refusal); until 2026-10-08 only the generator said so, as `gen: unknown name' | declare it (VAR in the procedure or at module level), or spell the name as declared -- names are case sensitive | `assign-to-undeclared` |
 | `only [DEPRECATED] carries a text; [PURE] takes none` | only [DEPRECATED] carries a text (par 3.9); every other attribute is a bare name, and a text on it would be read by nothing | drop the text, or write the note as a comment beside the heading | `attribute-text-not-deprecated` |
+| `unknown name: Down -- a member is named by its type: Dir.Down (bare only as a CASE label)` | a member of an enumeration or a case record is written bare where a value is read.  A member has no name of its own outside a CASE label: it is reached through its type | write the type before the member, as the refusal spells it: d = Dir.Down.  The bare name stays in a CASE label: | Down : ... | `bare-enum-member` |
 | `x is declared twice in the binders of Two (par 2.2)` | a name given twice in one binder list -- a CASE arm over a variant, or a handler -- where each binder is a variable of the arm; the second would hide the first, and the C compiler refused the redefinition | give each binder its own name; a value the arm does not need still takes a name, one used nowhere | `binder-declared-twice` |
 | `BYTE is a raw octet: no arithmetic` | BYTE is a raw octet, not a number: no +, -, comparison as magnitude | convert with U8 (b) or I64 (b) first, and back with BYTE (x), each of which RAISES ValueRange | `byte-arithmetic` |
+| `cannot compare BYTE with CHAR` | a BYTE is compared with a CHAR variable; only a character LITERAL stands for its code beside a BYTE, because the checker can hold a literal to ASCII and cannot hold a variable to it | convert by name: b = BYTE (ORD (c)), which RAISES ValueRange for a character no octet holds; or write the literal where the character is known (par 2.1) | `byte-lit-char-variable` |
+| `a BYTE is compared with an ASCII character literal only: this character is past 7FC, so no single octet of UTF-8 holds it (par 2.1)` | a BYTE is compared with a character literal past 7FC; that character is two or more octets in UTF-8, so no single BYTE equals it and the comparison could never be TRUE | compare the text, not one octet: decode with UTF (b) and use Text.IndexOf or FOR c IN u; or compare the octets by number, one at a time (par 2.1) | `byte-lit-not-ascii` |
 | `ByteSize needs a slice, not I64` | ByteSize answers the bytes a slice's elements occupy, so its argument must be a slice | for a scalar or record use SizeOf (x); for the data behind a slice, ByteSize (s) = LEN (s) * SizeOf (element) | `bytesize-not-slice` |
 | `unhandled RAISES ValueRange from C.Int conversion -- add it to this procedure's RAISES, or handle it: EXCEPT \| ValueRange : ...` | a C.* conversion that narrows -- C.Int of an I64, C.SizeT of a signed integer, C.Float of an F64 -- raises ValueRange like I32 (x), and nothing declares or handles it (par 2.1) | declare RAISES ValueRange, or handle it where the value cannot be out of range (a descriptor C handed out, an id): map it to the module error, or to what the C call refuses (-1) | `c-conversion-narrows` |
 | `cannot select from an answer of type I64: a field needs a record, a subscript a slice, array or grid` | a call's answer is selected from -- F (x).f, F (x)[i] -- and its declared type has no such field or subscript (an I64, a pointer to a non-record); or (`a procedure value') the call goes through a variable, which has no declaration to read the answer's type from | select only what the answer has; for a call through a procedure variable, assign the answer to a variable of its type first, then select (par 10) | `call-select-not-composite` |
@@ -56,6 +59,9 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `argument 1 of Bump: the CONST Pi cannot be passed to a VAR or OWN parameter` | a CONST is passed to a VAR or OWN parameter, which exists to be written through; there is nothing to write | pass a variable holding the value, or make the parameter by-value or RO if the callee only reads | `const-as-var-argument` |
 | `a CONST takes only the attribute [DEPRECATED 'text']` | a CONST takes one attribute, [DEPRECATED 'text'], written before its = (par 3.9); [PURE] and the others say something about a procedure or a record | drop the attribute, or write [DEPRECATED 'what to write instead'] | `const-attribute-not-deprecated` |
 | `CONST Big: the expression overflows I64 or divides by zero (par 2.2.4)` | an integer CONST expression is folded with the run-time arithmetic, and this one overflows I64 or divides by zero (or a CONST is a form no generator writes: a name, a call, a comparison) | compute the value in a procedure, or split the expression so each part fits I64 | `const-expression-overflow` |
+| `CONST Cells: a constant is a literal, a negated number, or an expression over literals and CONSTs declared before it -- compute anything else in a procedure (par 2.2.4)` | a CONST names a CONST that is declared AFTER it: Cells = Cols * Rows with Rows below.  A CONST is computed from literals and from the CONSTs before it, in the order written | move the CONST it names above it: Rows = 24 ; Cells = Cols * Rows.  A value that is not a constant expression is computed in a procedure | `const-names-const` |
+| `CONST Wide: a constant is a literal, a negated number, or an expression over literals and CONSTs declared before it -- compute anything else in a procedure (par 2.2.4)` | a CONST mixes an integer CONST with a real literal: the name stands for its value, so Count * 1.5 is 3 * 1.5, and nothing converts in a constant either | declare the constant in the kind the expression needs: CountF = 3.0 beside Count = 3 (par 2.2.4) | `const-over-const-kinds` |
+| `CONST Cube: the expression overflows I64 or divides by zero (par 2.2.4)` | a CONST over earlier CONSTs overflows I64 when it is folded: the names stand for their values, and the product of the values does not fit | compute the value in a procedure, or keep each CONST within I64 (par 2.2.4) | `const-over-const-overflow` |
 | `argument 1 of Up: the CONST Names can be lent only to an RO parameter` | a string CONST, or an element of a constant table, is passed to a by-value slice parameter that is not RO; a constant is read-only data | declare the parameter RO, or copy the constant into a variable first (par 2.4) | `const-string-to-writable` |
 | `the CONST table Primes can only be indexed, measured with LEN, gone over by FOR IN, or lent to an RO parameter` | a constant table is named bare where its value would be aliased -- assigned to a slice, cut with SLICE, RETURNed -- and whatever held the alias could write the constant | index it (X[i]), measure it (LEN (X)), or lend it whole to an RO parameter; those three are everything a table does (par 2.2.4) | `const-table-aliased` |
 | `argument 1 of Fill: the CONST table Primes can be lent only to an RO parameter` | a constant table is passed to a parameter that is not RO; a slice parameter can be written through, and the table is read-only data | declare the parameter RO if the callee only reads; if it writes, it needs a variable, not a constant (par 2.2.4) | `const-table-lent-writable` |
@@ -148,6 +154,15 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `an INRANGE claim is a BOOL, not an integer literal` | FOR [INRANGE b] is the author's claim that every subscript in the loop is in range, read once before the loop: TRUE runs the body unchecked, FALSE runs it as any loop.  So b is a BOOL | write a condition: ok := lo >= 0 AND hi < LEN (s) ; FOR [INRANGE ok] i := lo TO hi DO | `inrange-not-bool` |
 | `cannot assign an integer literal to F64` | an integer literal fits any integer type but not a float | write 0.0, 1.0E-6; a <real> literal adapts to F32 or F64 | `int-literal-to-float` |
 | `float division; integers use DIV` | / is float division | DIV for integers | `int-slash-division` |
+| `a BYTE in a hole is a number or a character: write ${I64 (b)} or ${CHR (I64 (b))} (par 2.3)` | a hole holds a BYTE; an octet has two readings, its number and its character, and a hole does not choose | say which reading is meant: ${I64 (b)} for the number, ${CHR (I64 (b))} for the character (par 2.3) | `interp-byte` |
+| `a hole takes a string, not SLICE OF CHAR: UTF (s) converts (par 2.3)` | a hole holds a SLICE OF CHAR, which is characters edited in place and no string; nothing converts it silently | write ${UTF (cs)}, which makes the string and RAISES ValueRange for a character no text holds (par 2.3) | `interp-char-array` |
+| `the format .25 asks for more decimals than a real has: 0 to 17 (par 2.3)` | the format of a hole asks for more than 17 decimals; the decimals are a literal, and the checker holds them to what Fmt takes so that the hole raises nothing at run time | ask for 0 to 17 decimals; ${x:e} gives every digit a real has (par 2.3) | `interp-decimals-past-17` |
+| `an integer in a hole takes a width and no decimals: write ${n:8}, or ${F64 (n):8.2} for a real (par 2.3)` | the format of a hole gives decimals or e to an integer; the format is checked against the type of the hole, and an integer takes a width only | drop the decimals, as in ${n:8}; or convert by name where a real is meant, ${F64 (n):8.2} (par 2.3) | `interp-integer-decimals` |
+| `argument 1 of Keep: a KEPT parameter cannot take a concatenation -- it dies with this frame (par 4.1); give it storage that outlives the call: a string through Text.Keep (pool, s), an allocation through NEW (pool, T)` | an interpolation literal is the concatenation it stands for, built in this frame; a KEPT parameter would keep it past the frame, as it would a chain of + | copy what is kept: Text.Keep (pool, $"...") in a pool that lives as long as the keeper (par 4.1) | `interp-kept` |
+| `a value of type m.Colour has no text form in a hole: a hole takes a string, a CHAR, a number or a BOOL; for an enumeration answer a string from a CASE (par 2.3)` | a hole holds an enumeration, a record, a slice or a pointer; none of them has a text form nobody disputes | write a function with a CASE that answers the text, and call it in the hole; or put the fields in holes of their own (par 2.3) | `interp-no-text-form` |
+| `a string, a CHAR and a BOOL take no format: only a number is padded in a hole (par 2.3)` | the format of a hole gives a width to a string, a CHAR or a BOOL; a number is padded on the left and a name on the right, so a hole pads numbers only | write the string with no format; pad it by name before the hole where a column needs it (par 2.3) | `interp-string-format` |
+| `a hole holds a value: this call answers none (par 2.3)` | a hole holds a call of a procedure that answers nothing, so there is no value to write | call a function that answers a value, or make the call a statement of its own before the literal (par 2.3) | `interp-void-call` |
+| `a real in a hole is padded with blanks: the zero fill is for an integer (par 2.3)` | the format of a hole asks for zeros as the fill of a real; the zero fill is Fmt.I64Pad and an integer has it, a real field is padded with blanks as Fmt.FixedPad pads it | drop the 0: ${x:8.2}; the zero fill is for an integer, ${id:08} (par 2.3) | `interp-zero-fill-real` |
 | `cannot assign PTR Lib.Node to I64 (no implicit conversions, par 2.1)` | an IS SOME binder on a call whose result type is another module's alias of an OPT (`Mk () : Lib.Kid') is typed in the module that declared the OPT since 2026-10-08, so what was passed over before is examined: here a pointer assigned to an integer | write what the binder is: a pointer to the declared record, read through its fields | `is-some-binder-through-alias` |
 | `argument 1 of Show: cannot pass PTR m.Point where m.Point is expected` | the binder of IS SOME over a CALL result carries the callee's declared payload type (PTR Point here), and the parameter wants something else | pass what the parameter asks for: read p.x for a record parameter, or declare the parameter as the pointer | `is-some-call-binder` |
 | `IS SOME needs an OPT operand` | `x IS SOME` or `x IS NONE` (no binder, a BOOL since 2026-10-09) was asked of a value that is not an OPT -- only an OPT can be absent | ask it of the OPT (the field, the variable, the call answering OPT), or drop the test: a value that is not OPT is always there | `is-some-expression` |
@@ -270,7 +285,14 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `use of q after it was consumed by SHARED` | a name used after SHARED consumed it, the argument written in parentheses (par 4.2) | use the handle SHARED answered, not the name it consumed | `shared-paren-move` |
 | `SHARED cannot consume through a selector of b: a move takes a name that owns its pointer, and ownership is not followed into a field or an element (par 4.2)` | SHARED (x) of a field or an element: SHARED consumes an owned pointer, and the field still names what the last handle frees (par 4.2) | make the handle from a local or an OWN parameter that owns the pointer: SHARED (q), parentheses or not | `shared-through-field` |
 | `signature differs from definition` | the IMPLEMENTATION's procedure heading is not the DEFINITION's, printed canonically (modes, types, RAISES all count) | copy the definition's heading exactly; the IMPLEMENTATION adds only '=' | `signature-differs-from-definition` |
+| `a slice written in brackets holds strings, numbers, characters or booleans, not m.Row` | a slice in brackets holds records or pointers; the form is for values with no owner to follow: strings, numbers, characters and booleans | fill a slice from NEW (T, n) and pass it by name (par 2.2.5) | `slice-lit-element` |
+| `storage of this activation stored into module variable held` | a record built over a slice in brackets is stored in a module variable; the record carries the slice, and the slice dies with the frame | keep the record in a local, or build its slice with NEW (pool, T, n) in a pool that lives as long as the module variable (par 4) | `slice-lit-in-record` |
+| `argument 1 of Keep: a KEPT parameter cannot take a slice written in brackets -- it dies with this frame (par 4.1)` | a slice written in brackets is handed to a KEPT parameter; it is built in the frame of the call, and the keeper would hold it after the frame is gone | build the slice where it may stay: NEW (pool, T, n) in a pool that outlives the call, filled element by element (par 2.2.5, par 4.1) | `slice-lit-kept` |
+| `element 2 of the slice in brackets: cannot give I32 where I64 is expected` | the elements of a slice in brackets do not have one type; a numeric literal adapts to the others, and nothing else converts | convert the element by name, I64 (w), or write the literal in the type of the others (par 2.2.5) | `slice-lit-mixed` |
+| `a view of a slice written in brackets dies with this frame; it cannot be stored in module variable keep` | a function answers a view of the slice in brackets it was lent, and the answer is stored in a module variable, which outlives the frame the slice is in | copy what is kept: Text.Keep (pool, s) for a string, or build the slice in a module pool and pass it by name (par 2.3) | `slice-lit-view-stored` |
+| `argument 1 of Fill: a slice written in brackets can be lent only to an RO parameter (par 2.4)` | a slice written in brackets is handed to a parameter that is not RO; it has no name, so nobody could read what the callee wrote into it | declare the parameter RO if the callee only reads; if it writes, give it a variable: NEW (T, n), filled, then passed by name (par 2.2.5) | `slice-lit-writable` |
 | `a SLICE of an array no variable holds: the array is gone at the end of the statement -- name it first: a := F (...) ; SLICE (a, ...)` | SLICE over an ARRAY that a call answers (or a field of one): an array is a value, held in a temporary that is gone at the end of the statement, and the slice would point into it (par 2.2.1) | assign the answer to a variable first, a := F (x), and slice the variable; a function answering a SLICE OF T can be sliced as it is | `slice-of-call-array` |
+| `TASK (Fly): the argument is a m.Sky, a record: a thread is handed a pointer or a monitor -- hand it the PTR the record is reached through (par 6)` | a THREAD or a TASK is handed a record that is not a monitor, such as a VAR parameter of the procedure that starts it; a thread takes one word, a pointer or a monitor by its address | hand the thread the PTR the record is reached through: start it where that pointer is, or pass the pointer down to the procedure that starts it (par 6) | `task-argument-record` |
 | `TASK (Work): cannot pass I64 where PTR m.Rec is expected` | a TASK hands its argument to the target, as a THREAD does, and this one is not of the type the target takes: the checker holds TASK by THREAD's own code (docs/task-plan.md) | pass what the target declares, as for THREAD: a PTR T or SHARED PTR T for a `VAR r: T` or `p: PTR T` parameter, or a monitor by name (par 6) | `task-argument-type` |
 | `use of p after it was moved into a TASK running Work` | a bare owned pointer handed to a TASK is MOVED, as one handed to a THREAD is: the task owns it now, and tasks run on more than one carrier from stage 2 of docs/task-plan.md | hand the task a MONITOR or a record marked [SHARABLE], or do not touch the owned value again after the TASK (par 6, par 4.2) | `task-moves-its-argument` |
 | `TASK (Work): both threads hold the m.Job handed over, and it is neither a MONITOR nor a RECORD marked [SHARABLE]` | a TASK is handed a record it does not own -- a pool pointer, a VAR parameter, a module variable -- so it and its starter both hold it, and the record is neither a MONITOR nor marked [SHARABLE] (par 6; the rule is THREAD's) | as for THREAD: end the record END [SHARABLE] if the writes are disjoint, put what is shared in a MONITOR, or move an owned value in | `task-sharable` |
@@ -723,6 +745,31 @@ BEGIN
 END m.
 ```
 
+### bare-enum-member
+
+`unknown name: Down -- a member is named by its type: Dir.Down (bare only as a CASE label)`
+
+```
+(* A member of an enumeration is reached through its type: Dir.Down.
+   The bare name is legal only as a CASE label.  The checker said only
+   `unknown name: Down' until 2026-11-18, and an agent's first Snake had to
+   find the rule elsewhere (2026-11-18).  The legal forms come first. *)
+MODULE m ;
+TYPE
+  Dir = ( Up, Down ) ;
+VAR
+  d : Dir ;
+  opposite : BOOL ;
+BEGIN
+  d := Dir.Up ;
+  CASE d OF
+  | Up   : opposite := d = Dir.Down
+  | Down : opposite := d = Dir.Up
+  END ;
+  opposite := d = Down
+END m.
+```
+
 ### binder-declared-twice
 
 `x is declared twice in the binders of Two (par 2.2)`
@@ -768,6 +815,56 @@ END m.
 MODULE m ;
 VAR a, b : BYTE ; c : I64 ;
 PROCEDURE F () = BEGIN c := I64 (a + b) END F ;
+END m.
+```
+
+### byte-lit-char-variable
+
+`cannot compare BYTE with CHAR`
+
+```
+(* A character LITERAL beside a BYTE stands for its code, because the
+   checker reads the code and holds it to ASCII.  A CHAR variable has
+   no code the checker can read, so it still converts by name, and
+   the conversion raises ValueRange for a character no octet holds.
+   The legal forms come first. *)
+MODULE m ;
+PROCEDURE Fine (RO b: SLICE OF BYTE ; c: CHAR) : BOOL RAISES IndexError, ValueRange =
+BEGIN
+  RETURN b[0] = ';' OR b[0] = BYTE (ORD (c))
+END Fine ;
+PROCEDURE Bad (RO b: SLICE OF BYTE ; c: CHAR) : BOOL RAISES IndexError =
+BEGIN
+  RETURN b[0] = c
+END Bad ;
+BEGIN
+END m.
+```
+
+### byte-lit-not-ascii
+
+`a BYTE is compared with an ASCII character literal only: this character is past 7FC, so no single octet of UTF-8 holds it (par 2.1)`
+
+```
+(* A character literal beside a BYTE stands for its code, and the
+   code must be ASCII.  The letter refused here is two octets in
+   UTF-8, so no BYTE of a text ever equals it.  The legal forms come
+   first: a typed character, a hex literal, and a label of a CASE. *)
+MODULE m ;
+PROCEDURE Fine (RO b: SLICE OF BYTE) : I64 RAISES IndexError =
+BEGIN
+  IF b[0] = ',' OR b[0] = 0AC OR '0' <= b[0] AND b[0] <= '9' THEN RETURN 1 END ;
+  CASE b[1] OF
+  | 'a' .. 'z' : RETURN 2
+  | 7FC : RETURN 3
+  ELSE RETURN 4
+  END
+END Fine ;
+PROCEDURE Bad (RO b: SLICE OF BYTE) : BOOL RAISES IndexError =
+BEGIN
+  RETURN b[0] = 'é'
+END Bad ;
+BEGIN
 END m.
 ```
 
@@ -1217,6 +1314,72 @@ CONST
   R = 1.5 * 2.0 ;
   Big = 9223372036854775807 + 1 ;
 BEGIN
+END m.
+```
+
+### const-names-const
+
+`CONST Cells: a constant is a literal, a negated number, or an expression over literals and CONSTs declared before it -- compute anything else in a procedure (par 2.2.4)`
+
+```
+(* A CONST is computed from literals and from CONSTs declared BEFORE
+   it (since 2026-11-19; an agent's first Snake wrote Cols * Rows and
+   was refused, 2026-11-18).  A CONST declared after it is not known
+   yet where the value is read, so the order of the declarations is
+   the order of the computation.  The legal forms come first. *)
+MODULE m ;
+CONST
+  Cols = 24 ;
+  Twice = 2 * Cols ;
+  Half = Twice DIV 4 ;
+  Cells = Cols * Rows ;
+  Rows = 24 ;
+VAR
+  board : ARRAY Cols * Rows OF I64 ;
+BEGIN
+  board[0] := Twice + Half
+END m.
+```
+
+### const-over-const-kinds
+
+`CONST Wide: a constant is a literal, a negated number, or an expression over literals and CONSTs declared before it -- compute anything else in a procedure (par 2.2.4)`
+
+```
+(* A CONST's name stands for its value, and nothing converts in a
+   constant either.  An integer CONST beside a real literal is the
+   expression 3 * 1.5, which no CONST holds.  The legal form writes
+   the count as a real.  A table is not a scalar, and a CONST does
+   not name one in an expression. *)
+MODULE m ;
+CONST
+  Count = 3 ;
+  CountF = 3.0 ;
+  Fine = CountF * 1.5 ;
+  Wide = Count * 1.5 ;
+VAR x : F64 ;
+BEGIN
+  x := Fine
+END m.
+```
+
+### const-over-const-overflow
+
+`CONST Cube: the expression overflows I64 or divides by zero (par 2.2.4)`
+
+```
+(* A CONST over earlier CONSTs is folded with the runtime's checked
+   arithmetic, as one over literals is.  The checker refuses here the
+   overflow the program would raise at run time.  The legal form
+   comes first. *)
+MODULE m ;
+CONST
+  Big = 3000000000 ;
+  Square = Big * Big ;
+  Cube = Square * Big ;
+VAR x : I64 ;
+BEGIN
+  x := Square
 END m.
 ```
 
@@ -3482,6 +3645,222 @@ END m.
 MODULE m ;
 VAR a, b : I64 ;
 PROCEDURE F () = BEGIN a := b / b END F ;
+END m.
+```
+
+### interp-byte
+
+`a BYTE in a hole is a number or a character: write ${I64 (b)} or ${CHR (I64 (b))} (par 2.3)`
+
+```
+(* An octet has two readings, its number and its character, and a
+   hole does not choose between them.  The program says which, by the
+   conversion it writes. *)
+MODULE m ;
+PROCEDURE Fine (RO b: SLICE OF BYTE) : STR RAISES IndexError, ValueRange =
+BEGIN
+  RETURN $'${I64 (b[0])} is ${CHR (I64 (b[0]))}'
+END Fine ;
+PROCEDURE Bad (RO b: SLICE OF BYTE) : STR RAISES IndexError =
+BEGIN
+  RETURN $'${b[0]}'
+END Bad ;
+BEGIN
+END m.
+```
+
+### interp-char-array
+
+`a hole takes a string, not SLICE OF CHAR: UTF (s) converts (par 2.3)`
+
+```
+(* A SLICE OF CHAR is characters a program edits in place, and no
+   string.  Nothing converts it silently, in a hole as beside a `+'.
+   UTF (s) makes the string. *)
+MODULE m ;
+PROCEDURE Fine (RO cs: SLICE OF CHAR) : STR RAISES ValueRange =
+BEGIN
+  RETURN $'word ${UTF (cs)}'
+END Fine ;
+PROCEDURE Bad (RO cs: SLICE OF CHAR) : STR =
+BEGIN
+  RETURN $'word ${cs}'
+END Bad ;
+BEGIN
+END m.
+```
+
+### interp-decimals-past-17
+
+`the format .25 asks for more decimals than a real has: 0 to 17 (par 2.3)`
+
+```
+(* The decimals of a hole are a literal, so the checker holds them to
+   what Fmt takes, 0 to 17.  A hole with a format then raises nothing
+   when the program runs. *)
+MODULE m ;
+PROCEDURE Fine (x: F64) : STR =
+BEGIN
+  RETURN $'${x:.17} ${x:.0} ${x:e}'
+END Fine ;
+PROCEDURE Bad (x: F64) : STR =
+BEGIN
+  RETURN $'${x:.25}'
+END Bad ;
+BEGIN
+END m.
+```
+
+### interp-integer-decimals
+
+`an integer in a hole takes a width and no decimals: write ${n:8}, or ${F64 (n):8.2} for a real (par 2.3)`
+
+```
+(* The format of a hole is checked against the hole's type.  An
+   integer takes a width, with zeros as the fill when the format says
+   so.  Decimals are a real's, and the conversion that makes a real
+   of the integer is written, as everywhere. *)
+MODULE m ;
+PROCEDURE Fine (n: I64) : STR RAISES ValueRange =
+BEGIN
+  RETURN $'${n} ${n:8} ${n:08} ${F64 (n):8.2}'
+END Fine ;
+PROCEDURE Bad (n: I64) : STR =
+BEGIN
+  RETURN $'${n:8.2}'
+END Bad ;
+BEGIN
+END m.
+```
+
+### interp-kept
+
+`argument 1 of Keep: a KEPT parameter cannot take a concatenation -- it dies with this frame (par 4.1); give it storage that outlives the call: a string through Text.Keep (pool, s), an allocation through NEW (pool, T)`
+
+```
+(* An interpolation literal IS the concatenation it stands for, and
+   has no rule of its own for storage.  So a KEPT parameter refuses
+   it exactly as it refuses the chain of `+', with the same advice.
+   The legal form lends it to a parameter that keeps nothing. *)
+MODULE m ;
+VAR last : STR ;
+PROCEDURE Show (RO s: STR) =
+BEGIN
+END Show ;
+PROCEDURE Keep (RO KEPT s: STR) =
+BEGIN
+  last := s
+END Keep ;
+PROCEDURE Fine (n: I64) =
+BEGIN
+  Show ($'n is ${n}')
+END Fine ;
+PROCEDURE Bad (n: I64) =
+BEGIN
+  Keep ($'n is ${n}')
+END Bad ;
+BEGIN
+END m.
+```
+
+### interp-no-text-form
+
+`a value of type m.Colour has no text form in a hole: a hole takes a string, a CHAR, a number or a BOOL; for an enumeration answer a string from a CASE (par 2.3)`
+
+```
+(* A hole takes what has a text form nobody disputes.  An enumeration
+   has none: its member's name is the program's own, and printing it
+   would make a rename change the output.  A CASE that answers a
+   string says the text.  A record, a slice and a pointer are refused
+   by the same message. *)
+MODULE m ;
+TYPE Colour = (Red, Green) ;
+PROCEDURE Name (c: Colour) : STR =
+BEGIN
+  CASE c OF
+  | Red : RETURN 'red'
+  | Green : RETURN 'green'
+  END
+END Name ;
+PROCEDURE Fine (c: Colour) : STR =
+BEGIN
+  RETURN $'the light is ${Name (c)}'
+END Fine ;
+PROCEDURE Bad (c: Colour) : STR =
+BEGIN
+  RETURN $'the light is ${c}'
+END Bad ;
+BEGIN
+END m.
+```
+
+### interp-string-format
+
+`a string, a CHAR and a BOOL take no format: only a number is padded in a hole (par 2.3)`
+
+```
+(* A number is padded on the left and a name on the right, so one
+   width for both would be wrong for one of them.  A hole pads
+   numbers only.  A string is padded by name, where the side is
+   said. *)
+MODULE m ;
+PROCEDURE Fine (RO name: STR ; n: I64) : STR =
+BEGIN
+  RETURN $'${name} ${n:10}'
+END Fine ;
+PROCEDURE Bad (RO name: STR ; n: I64) : STR =
+BEGIN
+  RETURN $'${name:10} ${n:10}'
+END Bad ;
+BEGIN
+END m.
+```
+
+### interp-void-call
+
+`a hole holds a value: this call answers none (par 2.3)`
+
+```
+(* A hole holds an expression with a value.  A call of a procedure
+   that answers nothing has none to write. *)
+MODULE m ;
+PROCEDURE Count () : I64 =
+BEGIN
+  RETURN 3
+END Count ;
+PROCEDURE Log () =
+BEGIN
+END Log ;
+PROCEDURE Fine () : STR =
+BEGIN
+  RETURN $'count ${Count ()}'
+END Fine ;
+PROCEDURE Bad () : STR =
+BEGIN
+  RETURN $'count ${Log ()}'
+END Bad ;
+BEGIN
+END m.
+```
+
+### interp-zero-fill-real
+
+`a real in a hole is padded with blanks: the zero fill is for an integer (par 2.3)`
+
+```
+(* The zero fill is Fmt.I64Pad's, and an integer's.  A real field is
+   padded with blanks, as Fmt.FixedPad pads it.  The legal form shows
+   both. *)
+MODULE m ;
+PROCEDURE Fine (id: I64 ; x: F64) : STR =
+BEGIN
+  RETURN $'${id:08} ${x:8.2}'
+END Fine ;
+PROCEDURE Bad (x: F64) : STR =
+BEGIN
+  RETURN $'${x:08.2}'
+END Bad ;
+BEGIN
 END m.
 ```
 
@@ -6804,6 +7183,177 @@ PROCEDURE F (a: F64) : I64 = BEGIN RETURN 0 END F ;
 END m.
 ```
 
+### slice-lit-element
+
+`a slice written in brackets holds strings, numbers, characters or booleans, not m.Row`
+
+```
+(* A slice in brackets holds values with no owner to follow: strings,
+   numbers, characters and booleans.  A slice of records or pointers
+   is filled from NEW, where each element has a name. *)
+MODULE m ;
+TYPE Row = RECORD a : I64 END ;
+PROCEDURE Count (RO v: SLICE OF Row) : I64 =
+BEGIN
+  RETURN LEN (v)
+END Count ;
+PROCEDURE Fine () : I64 RAISES IndexError =
+VAR v : SLICE OF Row ;
+BEGIN
+  v := NEW (Row, 2) ;
+  v[0] := Row (1) ;
+  v[1] := Row (2) ;
+  RETURN Count (v)
+END Fine ;
+PROCEDURE Bad () : I64 =
+BEGIN
+  RETURN Count ([Row (1), Row (2)])
+END Bad ;
+BEGIN
+END m.
+```
+
+### slice-lit-in-record
+
+`storage of this activation stored into module variable held`
+
+```
+(* A record value carries what its fields hold.  A record built over
+   a slice in brackets holds frame storage, and a module variable
+   outlives the frame.  The legal form keeps the record in a local. *)
+MODULE m ;
+TYPE Row = RECORD v : SLICE OF I64 END ;
+VAR held : Row ;
+PROCEDURE Fine () : I64 =
+VAR r : Row ;
+BEGIN
+  r := Row ([1, 2]) ;
+  RETURN LEN (r.v)
+END Fine ;
+PROCEDURE Bad () =
+BEGIN
+  held := Row ([1, 2])
+END Bad ;
+BEGIN
+END m.
+```
+
+### slice-lit-kept
+
+`argument 1 of Keep: a KEPT parameter cannot take a slice written in brackets -- it dies with this frame (par 4.1)`
+
+```
+(* A slice written in brackets is built in the frame of the call.  A
+   KEPT parameter stores what it is given, so it would hold the slice
+   after the frame is gone.  The legal form comes first: the same
+   slice lent to a parameter that only reads it. *)
+MODULE m ;
+VAR held : SLICE OF STR ;
+PROCEDURE Count (RO v: SLICE OF STR) : I64 =
+BEGIN
+  RETURN LEN (v)
+END Count ;
+PROCEDURE Keep (RO KEPT v: SLICE OF STR) =
+BEGIN
+  held := v
+END Keep ;
+PROCEDURE Fine (RO a, b: STR) : I64 =
+BEGIN
+  RETURN Count ([a, b])
+END Fine ;
+PROCEDURE Bad (RO a, b: STR) =
+BEGIN
+  Keep ([a, b])
+END Bad ;
+BEGIN
+END m.
+```
+
+### slice-lit-mixed
+
+`element 2 of the slice in brackets: cannot give I32 where I64 is expected`
+
+```
+(* The elements of a slice in brackets have one type, that of the
+   first element that is not a numeric literal.  A literal adapts to
+   it, as in the legal form.  Nothing else converts: an I32 beside an
+   I64 is written I64 (w). *)
+MODULE m ;
+PROCEDURE Sum (RO v: SLICE OF I64) : I64 =
+BEGIN
+  RETURN LEN (v)
+END Sum ;
+PROCEDURE Fine (n: I64 ; w: I32) : I64 =
+BEGIN
+  RETURN Sum ([1, n, 3]) + Sum ([n, I64 (w)])
+END Fine ;
+PROCEDURE Bad (n: I64 ; w: I32) : I64 =
+BEGIN
+  RETURN Sum ([n, w])
+END Bad ;
+BEGIN
+END m.
+```
+
+### slice-lit-view-stored
+
+`a view of a slice written in brackets dies with this frame; it cannot be stored in module variable keep`
+
+```
+(* First answers a view of its parameter.  Lent a slice in brackets,
+   its answer views the frame, and a module variable outlives the
+   frame.  The legal form reads the answer and keeps nothing. *)
+MODULE m ;
+VAR keep : STR ;
+PROCEDURE Len (RO s: STR) : I64 =
+BEGIN
+  RETURN 7
+END Len ;
+PROCEDURE First (RO v: SLICE OF STR) : RO STR RAISES IndexError =
+BEGIN
+  RETURN v[0]
+END First ;
+PROCEDURE Fine (RO a, b: STR) : I64 RAISES IndexError =
+BEGIN
+  RETURN Len (First ([a, b]))
+END Fine ;
+PROCEDURE Bad (RO a, b: STR) RAISES IndexError =
+BEGIN
+  keep := First ([a, b])
+END Bad ;
+BEGIN
+END m.
+```
+
+### slice-lit-writable
+
+`argument 1 of Fill: a slice written in brackets can be lent only to an RO parameter (par 2.4)`
+
+```
+(* A slice written in brackets has no name.  Nobody could read what
+   a callee wrote into it, so it is lent read-only.  The legal form
+   comes first. *)
+MODULE m ;
+PROCEDURE Sum (RO v: SLICE OF I64) : I64 RAISES IndexError =
+BEGIN
+  RETURN v[0] + v[1]
+END Sum ;
+PROCEDURE Fill (v: SLICE OF I64) RAISES IndexError =
+BEGIN
+  v[0] := 1
+END Fill ;
+PROCEDURE Fine () : I64 RAISES IndexError =
+BEGIN
+  RETURN Sum ([1, 2])
+END Fine ;
+PROCEDURE Bad () RAISES IndexError =
+BEGIN
+  Fill ([1, 2])
+END Bad ;
+BEGIN
+END m.
+```
+
 ### slice-of-call-array
 
 `a SLICE of an array no variable holds: the array is gone at the end of the statement -- name it first: a := F (...) ; SLICE (a, ...)`
@@ -6833,6 +7383,40 @@ BEGIN
   s := SLICE (a, 0, 2) ;
   s := SLICE (Nums (5), 1, 3) ;
   s := SLICE (Mk (), 0, 2)
+END m.
+```
+
+### task-argument-record
+
+`TASK (Fly): the argument is a m.Sky, a record: a thread is handed a pointer or a monitor -- hand it the PTR the record is reached through (par 6)`
+
+```
+(* A THREAD or a TASK is handed one word: a pointer, or a monitor by
+   its address.  A record that reached this procedure as a VAR
+   parameter has no pointer here: the caller holds it.  The legal
+   form hands the pointer on.  The generator refused this after a
+   clean check until 2026-11-20. *)
+MODULE m ;
+TYPE
+  Sky = RECORD
+    birds : I64 ;
+  END [SHARABLE] ;
+VAR
+  pool : POOL ;
+  sky : PTR Sky ;
+PROCEDURE Fly (VAR s: Sky) =
+BEGIN
+END Fly ;
+PROCEDURE Fine () RAISES OutOfMemory =
+BEGIN
+  TASK (Fly, sky)
+END Fine ;
+PROCEDURE Bad (VAR s: Sky) RAISES OutOfMemory =
+BEGIN
+  TASK (Fly, s)
+END Bad ;
+BEGIN
+  sky := NEW (pool, Sky)
 END m.
 ```
 

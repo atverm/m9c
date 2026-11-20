@@ -1,0 +1,25 @@
+(* EXPECT: a value of type m.Colour has no text form in a hole: a hole takes a string, a CHAR, a number or a BOOL; for an enumeration answer a string from a CASE (par 2.3) *)
+(* A hole takes what has a text form nobody disputes.  An enumeration
+   has none: its member's name is the program's own, and printing it
+   would make a rename change the output.  A CASE that answers a
+   string says the text.  A record, a slice and a pointer are refused
+   by the same message. *)
+MODULE m ;
+TYPE Colour = (Red, Green) ;
+PROCEDURE Name (c: Colour) : STR =
+BEGIN
+  CASE c OF
+  | Red : RETURN 'red'
+  | Green : RETURN 'green'
+  END
+END Name ;
+PROCEDURE Fine (c: Colour) : STR =
+BEGIN
+  RETURN $'the light is ${Name (c)}'
+END Fine ;
+PROCEDURE Bad (c: Colour) : STR =
+BEGIN
+  RETURN $'the light is ${c}'
+END Bad ;
+BEGIN
+END m.

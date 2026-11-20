@@ -11944,7 +11944,7 @@ m9_sl_UTF8 Text_LowerUtf (m9_sl_UTF8 s, m9_state *err)
     if (((c >= 65u) && (c <= 90u))) {
       { __typeof__(m9_sub_i64 ((int64_t)(c), INT64_C(65), err)) m9a18 = m9_sub_i64 ((int64_t)(c), INT64_C(65), err);
         if (err->exc) { m9ln = 2443; goto L_ret; };
-      { __typeof__(r) m9v = m9_utf_cat (err->res, r, m9_utf_of_char (err->res, Text_CpAt (((m9_sl_UTF8){ (uint8_t *) m9s0, 26 }), m9a18, err), err), err);
+      { __typeof__(r) m9v = ({ m9_sl_UTF8 m9t2 = r; m9_utf_cat (err->res, m9t2, m9_utf_of_char (err->res, Text_CpAt (((m9_sl_UTF8){ (uint8_t *) m9s0, 26 }), m9a18, err), err), err); });
         if (err->exc) { m9ln = 2443; goto L_ret; };
         r = m9v;
       }
@@ -11966,17 +11966,17 @@ m9_sl_UTF8 Text_LowerUtf (m9_sl_UTF8 s, m9_state *err)
           r = m9v;
         }
       } else {
-        { __typeof__(j) m9t2to;
+        { __typeof__(j) m9t3to;
         j = (*(int64_t *) m9_at ((*LowAt).v, k, INT64_C(1461), sizeof (int64_t), err));
-        m9t2to = m9_sub_i64 ((*(int64_t *) m9_at ((*LowAt).v, m9_add_i64 (k, INT64_C(1), err), INT64_C(1461), sizeof (int64_t), err)), INT64_C(1), err);
+        m9t3to = m9_sub_i64 ((*(int64_t *) m9_at ((*LowAt).v, m9_add_i64 (k, INT64_C(1), err), INT64_C(1461), sizeof (int64_t), err)), INT64_C(1), err);
         if (err->exc) { m9ln = 2451; goto L_ret; };
-        if (j <= m9t2to) for (;;) {
+        if (j <= m9t3to) for (;;) {
           M9_YCHK ();
-          { __typeof__(r) m9v = m9_utf_cat (err->res, r, m9_utf_of_char (err->res, Text_CpAt (((m9_sl_UTF8){ (uint8_t *) m9s1, 4145 }), j, err), err), err);
+          { __typeof__(r) m9v = ({ m9_sl_UTF8 m9t4 = r; m9_utf_cat (err->res, m9t4, m9_utf_of_char (err->res, Text_CpAt (((m9_sl_UTF8){ (uint8_t *) m9s1, 4145 }), j, err), err), err); });
             if (err->exc) { m9ln = 2451; goto L_ret; };
             r = m9v;
           }
-          if ((uint64_t) m9t2to - (uint64_t) j < (uint64_t) 1) break;
+          if ((uint64_t) m9t3to - (uint64_t) j < (uint64_t) 1) break;
           j += 1;
         } }
       }
@@ -12013,7 +12013,7 @@ m9_sl_UTF8 Text_UpperUtf (m9_sl_UTF8 s, m9_state *err)
     if (((c >= 97u) && (c <= 122u))) {
       { __typeof__(m9_sub_i64 ((int64_t)(c), INT64_C(97), err)) m9a19 = m9_sub_i64 ((int64_t)(c), INT64_C(97), err);
         if (err->exc) { m9ln = 2467; goto L_ret; };
-      { __typeof__(r) m9v = m9_utf_cat (err->res, r, m9_utf_of_char (err->res, Text_CpAt (((m9_sl_UTF8){ (uint8_t *) m9s2, 26 }), m9a19, err), err), err);
+      { __typeof__(r) m9v = ({ m9_sl_UTF8 m9t2 = r; m9_utf_cat (err->res, m9t2, m9_utf_of_char (err->res, Text_CpAt (((m9_sl_UTF8){ (uint8_t *) m9s2, 26 }), m9a19, err), err), err); });
         if (err->exc) { m9ln = 2467; goto L_ret; };
         r = m9v;
       }
@@ -12035,17 +12035,17 @@ m9_sl_UTF8 Text_UpperUtf (m9_sl_UTF8 s, m9_state *err)
           r = m9v;
         }
       } else {
-        { __typeof__(j) m9t2to;
+        { __typeof__(j) m9t3to;
         j = (*(int64_t *) m9_at ((*UpAt).v, k, INT64_C(1553), sizeof (int64_t), err));
-        m9t2to = m9_sub_i64 ((*(int64_t *) m9_at ((*UpAt).v, m9_add_i64 (k, INT64_C(1), err), INT64_C(1553), sizeof (int64_t), err)), INT64_C(1), err);
+        m9t3to = m9_sub_i64 ((*(int64_t *) m9_at ((*UpAt).v, m9_add_i64 (k, INT64_C(1), err), INT64_C(1553), sizeof (int64_t), err)), INT64_C(1), err);
         if (err->exc) { m9ln = 2475; goto L_ret; };
-        if (j <= m9t2to) for (;;) {
+        if (j <= m9t3to) for (;;) {
           M9_YCHK ();
-          { __typeof__(r) m9v = m9_utf_cat (err->res, r, m9_utf_of_char (err->res, Text_CpAt (((m9_sl_UTF8){ (uint8_t *) m9s3, 4582 }), j, err), err), err);
+          { __typeof__(r) m9v = ({ m9_sl_UTF8 m9t4 = r; m9_utf_cat (err->res, m9t4, m9_utf_of_char (err->res, Text_CpAt (((m9_sl_UTF8){ (uint8_t *) m9s3, 4582 }), j, err), err), err); });
             if (err->exc) { m9ln = 2475; goto L_ret; };
             r = m9v;
           }
-          if ((uint64_t) m9t2to - (uint64_t) j < (uint64_t) 1) break;
+          if ((uint64_t) m9t3to - (uint64_t) j < (uint64_t) 1) break;
           j += 1;
         } }
       }

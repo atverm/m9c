@@ -57,6 +57,7 @@ Time_Instant Time_Add (Time_Instant t, Time_Span s, m9_state *err);
 m9_sl_UTF8 Time_Iso (Time_Instant t, int64_t decimals, m9_state *err);
 Time_Instant Time_ParseIso (m9_sl_UTF8 s, m9_state *err);
 Time_Nanos Time_ParseNanos (m9_sl_UTF8 s, m9_state *err);
+Time_Nanos Time_ParseRfc3339 (m9_sl_UTF8 s, m9_state *err);
 m9_sl_UTF8 Time_IsoNanos (Time_Nanos t, m9_state *err);
 bool Time_NanosBefore (Time_Nanos a, Time_Nanos b, m9_state *err);
 Time_Instant Time_Now (m9_state *err);

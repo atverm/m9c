@@ -152,7 +152,8 @@ PROCEDURE Parse (VAR pool: POOL ; RO doc: STR) : PTR Results IN pool
   RAISES FormatError, ValueRange =
 VAR
   scratch : POOL ;
-  root, head, vars, bindings, row : PTR Json.Node IN scratch ;
+  root, head, vars, bindings : PTR Json.Node IN scratch ;
+  cur : OPT PTR Json.Node ;
   r : PTR Results IN pool ;
   i, j, total : I64 ;
 BEGIN
@@ -185,15 +186,22 @@ BEGIN
     END ;
     total := r.nrows * r.nvars ;
     r.cells := NEW (pool, Term, total) ;
-    FOR i := 0 TO r.nrows - 1 DO
-      row := Json.Item (bindings, i) ;
+    (* The rows are walked once.  Json.Item (bindings, i) counts from
+       the first row every time, and reading n rows by it cost n * n
+       / 2 steps: 109 s for 97,000 rows (found 2026-11-19 in an
+       application's export). *)
+    cur := Json.First (bindings) ;
+    i := 0 ;
+    WHILE cur IS SOME rw DO
       FOR j := 0 TO r.nvars - 1 DO
-        IF Json.Field (row, r.vars[j]) IS SOME b THEN
+        IF Json.Field (rw, r.vars[j]) IS SOME b THEN
           ReadTerm (pool, b, r.cells[i * r.nvars + j])
         ELSE
           Unbind (r.cells[i * r.nvars + j])
         END
-      END
+      END ;
+      i := i + 1 ;
+      cur := Json.After (rw)
     END
   EXCEPT
   | Json.TypeMismatch (m) :

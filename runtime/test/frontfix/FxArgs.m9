@@ -1,0 +1,28 @@
+MODULE FxArgs ;
+
+(* FxArgs holds the argument that is a slice in brackets (report par
+   2.2.5, 2026-11-19): alone, among other arguments, nested in a call
+   that is itself an element, and in a call statement.  A subscript
+   stays a subscript beside it.  The Pascal parser does not read the
+   form, so the record is the M9 side's own. *)
+
+PROCEDURE Sum (RO v: SLICE OF I64) : I64 =
+BEGIN
+  RETURN LEN (v)
+END Sum ;
+
+PROCEDURE Show (RO sep: STR ; RO v: SLICE OF STR ; n: I64) =
+BEGIN
+END Show ;
+
+PROCEDURE Run (RO a, b: STR ; RO w: SLICE OF I64) RAISES IndexError =
+VAR n : I64 ;
+BEGIN
+  n := Sum ([1]) ;
+  n := Sum ([1, 2, 3]) + Sum ([n, w[0], Sum ([w[1], 4])]) ;
+  Show (', ', [a, b, 'c'], w[n]) ;
+  Show ('', [a + b], Sum ([n]))
+END Run ;
+
+BEGIN
+END FxArgs.

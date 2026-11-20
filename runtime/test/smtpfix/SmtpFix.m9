@@ -16,6 +16,7 @@ IMPORT Fmt ;
 IMPORT Io ;
 IMPORT Smtp ;
 IMPORT Text ;
+IMPORT Time ;
 
 CONST
   Host = 'localhost' ;
@@ -23,7 +24,7 @@ CONST
 
 VAR
   pool : POOL ;
-  plain, login, tls, starttls : I64 ;
+  plain, login, tls, starttls, silent : I64 ;
   np, nl, nt, ns : I64 ;
 
 PROCEDURE Int (RO s: STR) : I64 =
@@ -208,6 +209,35 @@ EXCEPT
     Io.WriteLine ('FAIL ' + name + ': ValueRange')
 END TryReply ;
 
+PROCEDURE TrySilent () =
+  (* TrySilent sends to a server that accepts the connection and says
+     nothing.  Send must end with an Error of code 0 soon after the
+     0.7 s it was told to wait, and not hold the caller.  It prints
+     the refusal line, and a FAIL line when the wait was long. *)
+VAR
+  m : PTR Smtp.Message IN pool ;
+  why : STR ;
+  c : I64 ;
+  began : F64 ;
+BEGIN
+  began := Time.Now ().t ;
+  m := Simple ('to a silent server', 'b@test.org') ;
+  Smtp.SetTimeout (m, 700) ;
+  Smtp.Send (Host, silent, Smtp.Plain, '', '', m) ;
+  Io.WriteLine ('FAIL silent: sent')
+EXCEPT
+| Smtp.Error (msg, code) :
+    why := msg ;
+    c := code ;
+    Io.WriteLine ('refused silent ' + Fmt.I64Str (c) + ' -- ' + why) ;
+    IF Time.Now ().t - began > 10.0 THEN
+      Io.WriteLine ('FAIL silent: Send came back only after ' +
+                    Fmt.Short (Time.Now ().t - began) + ' s, told to wait 0.7 s')
+    END
+| ValueRange :
+    Io.WriteLine ('FAIL silent: ValueRange')
+END TrySilent ;
+
 PROCEDURE Run () RAISES ValueRange, IndexError =
 VAR
   m : PTR Smtp.Message IN pool ;
@@ -308,7 +338,9 @@ BEGIN
   (* replies beyond ASCII: UTF-8 octets read as UTF-8, Latin-1 octets
      one character per octet; both read as the server's text *)
   TryReply ('utfreply', 'utf8@test.org', '' + 2603C + ' ' + 0E9C) ;
-  TryReply ('latinreply', 'latin1@test.org', '' + 0E9C)
+  TryReply ('latinreply', 'latin1@test.org', '' + 0E9C) ;
+  (* a server that accepts and says nothing *)
+  IF silent > 0 THEN TrySilent () END
 END Run ;
 
 BEGIN
@@ -325,6 +357,8 @@ BEGIN
     login := Int (Io.Arg (pool, 2)) ;
     tls := Int (Io.Arg (pool, 3)) ;
     starttls := Int (Io.Arg (pool, 4)) ;
+    silent := 0 ;
+    IF Io.ArgCount () > 5 THEN silent := Int (Io.Arg (pool, 5)) END ;
     Run ()
   EXCEPT
   | ValueRange, IndexError :

@@ -1164,6 +1164,55 @@ ck(all(g_[6] != "-1" for g_ in ms_ if g_[0] != "-"),
    "access log: every answer from a handler names its worker")
 ck(len(set(g_[6] for g_ in ms_ if g_[6] != "-1")) > 1, "access log: more than one worker wrote")
 
+# ---- 4xx only, and a body that takes the memory of what arrived --------
+# Config.only4xx answers 400 where the RFC's code is 505 or 501: a
+# service whose contract allows no 5xx for what a client sent.  The
+# default, held above, is the RFC's.
+P11 = BASE + 10
+b11 = Server(P11, "--only4xx", "--bodymax=67108864", "--workers=8", "--headerms=8000")
+for what, req, method in [
+        ("HTTP/2.0", b"GET /hello HTTP/2.0\r\n" + H + b"\r\n", "GET"),
+        ("unknown method", b"BREW /hello HTTP/1.1\r\n" + H + b"\r\n", "GET"),
+        ("a transfer coding other than chunked",
+         b"POST /echo HTTP/1.1\r\n" + H + b"Transfer-Encoding: gzip, chunked\r\n\r\n", "POST")]:
+    statuses(P11, req, [method], "only4xx: " + what, [400])
+# a body past the first buffer, by length and in chunks of an odd size:
+# the buffer grows with the octets, and none is lost on the way
+g = statuses(P11, b"POST /echo HTTP/1.1\r\n" + H + b"Content-Length: 300000\r\n\r\n" + DATA,
+             ["POST"], "a 300 KB body by length", [200], wait=4.0)
+if g:
+    ck(g[0][2] == DATA, f"a 300 KB body by length: echoed whole ({len(g[0][2])} octets)")
+pieces = b"".join(b"%x\r\n" % len(DATA[k:k + 7001]) + DATA[k:k + 7001] + b"\r\n"
+                  for k in range(0, len(DATA), 7001)) + b"0\r\n\r\n"
+g = statuses(P11, b"POST /echo HTTP/1.1\r\n" + H + b"Transfer-Encoding: chunked\r\n\r\n" + pieces,
+             ["POST"], "a 300 KB body in chunks", [200], wait=4.0)
+if g:
+    ck(g[0][2] == DATA, f"a 300 KB body in chunks: echoed whole ({len(g[0][2])} octets)")
+# A CLAIM ALLOCATES NOTHING.  Six connections each announce a 64 MB
+# body, three by length and three by a chunk's size line, and send
+# none of it.  Until 2026-11-20 each took 64 MB at once.
+if os.path.exists(f"/proc/{b11.pid()}/status"):
+    m0 = rss_kb(b11.pid())
+    held = []
+    for k in range(6):
+        sk = socket.create_connection(("127.0.0.1", P11), timeout=5)
+        if k % 2 == 0:
+            sk.sendall(b"POST /echo HTTP/1.1\r\n" + H + b"Content-Length: 67108864\r\n\r\n")
+        else:
+            sk.sendall(b"POST /echo HTTP/1.1\r\n" + H + b"Transfer-Encoding: chunked\r\n\r\n4000000\r\n")
+        held.append(sk)
+    time.sleep(1.0)
+    m1 = rss_kb(b11.pid())
+    for sk in held:
+        sk.close()
+    ck(m1 - m0 < 16384,
+       f"six announced 64 MB bodies that never came take no memory: peak RSS {m0} -> {m1} KB")
+    print(f"srvfix: six announced 64 MB bodies: peak RSS {m0} -> {m1} KB", file=sys.stderr)
+else:
+    print("srvfix: SKIP the memory check of an announced body (no /proc)", file=sys.stderr)
+g = statuses(P11, b"GET /hello HTTP/1.1\r\n" + H + b"\r\n", ["GET"], "after the announced bodies", [200])
+b11.stop()
+
 ck(not thread_errors, f"no client thread raised: {thread_errors[:2]}")
 
 print(f"srvfix: {'PASS' if not fails else 'FAIL'} "

@@ -1,0 +1,21 @@
+(* EXPECT: a BYTE is compared with an ASCII character literal only: this character is past 7FC, so no single octet of UTF-8 holds it (par 2.1) *)
+(* A character literal beside a BYTE stands for its code, and the
+   code must be ASCII.  The letter refused here is two octets in
+   UTF-8, so no BYTE of a text ever equals it.  The legal forms come
+   first: a typed character, a hex literal, and a label of a CASE. *)
+MODULE m ;
+PROCEDURE Fine (RO b: SLICE OF BYTE) : I64 RAISES IndexError =
+BEGIN
+  IF b[0] = ',' OR b[0] = 0AC OR '0' <= b[0] AND b[0] <= '9' THEN RETURN 1 END ;
+  CASE b[1] OF
+  | 'a' .. 'z' : RETURN 2
+  | 7FC : RETURN 3
+  ELSE RETURN 4
+  END
+END Fine ;
+PROCEDURE Bad (RO b: SLICE OF BYTE) : BOOL RAISES IndexError =
+BEGIN
+  RETURN b[0] = 'é'
+END Bad ;
+BEGIN
+END m.

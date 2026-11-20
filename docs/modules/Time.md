@@ -115,6 +115,38 @@ It holds the date and time to the calendar (no 24:00, no 60th
 second, no 30 February).  A year has four digits.  Anything else
 raises ValueRange.
 
+### ParseRfc3339 (RO s: STR) : Nanos RAISES ValueRange
+
+ParseRfc3339 is the STRICT parser: use it for text a program
+must check.  It reads the one form RFC 3339 gives a date-time,
+and is held to the RFC's grammar and Go's Time.UnmarshalText on
+640 strings.
+
+It TAKES exactly this:
+
+  yyyy-MM-ddTHH:mm:ss          a capital T, the seconds written
+  then, optionally, a point and 1 to 9 digits
+  then Z, or +HH:MM, or -HH:MM, the offset up to 23:59
+
+It REFUSES, each with ValueRange:
+
+  a lowercase t or z
+  a missing seconds field
+  a point with no digit after it, and a tenth digit
+  an offset that is not HH:MM, or past 23:59
+  a date or a time the calendar does not have
+  a 60th second
+  anything before or after the form, a blank included
+
+ParseNanos is the lenient one, for text java.time wrote: it
+takes what this refuses in the first two lines, and it refuses
+an offset beyond 18 hours, which this takes.
+
+Two agents read this comment as a list of what the parser
+ACCEPTS and wrote their own (2026-11-19 and 20).  It said
+"differs from ParseNanos in what it refuses: a lowercase t ..."
+in one sentence.  It is two lists now.
+
 ### IsoNanos (t: Nanos) : STR RAISES ValueRange
 
 IsoNanos writes as java.time.Instant.toString does: always Z,

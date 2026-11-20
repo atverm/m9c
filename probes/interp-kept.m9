@@ -1,0 +1,24 @@
+(* EXPECT: argument 1 of Keep: a KEPT parameter cannot take a concatenation -- it dies with this frame (par 4.1); give it storage that outlives the call: a string through Text.Keep (pool, s), an allocation through NEW (pool, T) *)
+(* An interpolation literal IS the concatenation it stands for, and
+   has no rule of its own for storage.  So a KEPT parameter refuses
+   it exactly as it refuses the chain of `+', with the same advice.
+   The legal form lends it to a parameter that keeps nothing. *)
+MODULE m ;
+VAR last : STR ;
+PROCEDURE Show (RO s: STR) =
+BEGIN
+END Show ;
+PROCEDURE Keep (RO KEPT s: STR) =
+BEGIN
+  last := s
+END Keep ;
+PROCEDURE Fine (n: I64) =
+BEGIN
+  Show ($'n is ${n}')
+END Fine ;
+PROCEDURE Bad (n: I64) =
+BEGIN
+  Keep ($'n is ${n}')
+END Bad ;
+BEGIN
+END m.

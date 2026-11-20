@@ -39,6 +39,36 @@ before use.
 the M2 version answered NIL for "not an array"; M9 has no NIL
 to hide behind, so the confusion is named in the signature.
 
+### First (arr: PTR Node) : OPT PTR Node RAISES TypeMismatch
+
+_(documented with the group below)_
+
+### After (item: PTR Node) : OPT PTR Node
+
+First and After walk an array once, in order:
+
+  c := Json.First (arr) ;
+  WHILE c IS SOME item DO
+    ... item ... ;
+    c := Json.After (item)
+  END
+
+First answers the first element, NONE for an empty array.  After
+answers the element that follows item in its array, NONE after
+the last.  The walk is one step an element.
+
+WALK A LONG ARRAY THIS WAY, NOT BY Item (arr, i).  An array is a
+list, so Item counts from the first element every time, and a
+FOR over Item costs n * n / 2 steps.  Sparql.Parse read its rows
+that way until 2026-11-19: 97,000 rows took 109 s in an
+application, and 2 s once it asked in slices.  Item is right for
+one element, and for a short array.
+
+  item -- an element of an array, as First, After or Item
+          answered it.  After of a member of an object answers
+          the next member's value; after of a root answers
+          NONE.
+
 ### Count (arr: PTR Node) : I64 RAISES TypeMismatch
 
 Count answers how many elements an array has, so a walk is a FOR
@@ -171,6 +201,13 @@ row emitter wants.
 NumText answers the number as Python str() renders it: the
 digits for an integer, repr for a float.  It raises TypeMismatch
 when n is not Num.
+
+### Quote (RO t: STR) : STR
+
+Quote answers t as a JSON string literal, quotes included, with
+the escaping Compact uses.  It is for a document built with `+'
+from text that comes from outside:
+'{"error":' + Json.Quote (why) + '}'.
 
 ### AppendJString (VAR d: PTR DynStr.DString ; RO t: STR) RAISES ValueRange
 

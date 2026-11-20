@@ -1,0 +1,139 @@
+MODULE SnakeTest ;
+IMPORT Io, Check, Snake, Faults ;
+
+VAR
+  t : Check.T ;
+  s, s2 : Snake.State ;
+  want : ARRAY 8 OF I64 ;
+  i : I64 ;
+
+BEGIN
+  (* Reset: exact starting body, and a food cell off the snake. *)
+  Snake.Reset (s, 42) ;
+  Check.EqI64 (t, 'reset len', s.len, 3) ;
+  Check.EqI64 (t, 'reset head x', s.xs[0], 12) ;
+  Check.EqI64 (t, 'reset head y', s.ys[0], 12) ;
+  want[0] := 12 ; want[1] := 11 ; want[2] := 10 ;
+  Check.EqI64s (t, 'reset body xs', SLICE (s.xs, 0, s.len),
+                SLICE (want, 0, 3)) ;
+  Check.That (t, 'reset dir right', s.dir = Snake.Dir.Right) ;
+  Check.EqI64 (t, 'reset score', s.score, 0) ;
+  Check.That (t, 'reset alive', s.alive) ;
+  Check.That (t, 'reset started', s.started) ;
+  Check.That (t, 'reset food in bounds',
+              s.fx >= 0 AND s.fx < Snake.Cols
+              AND s.fy >= 0 AND s.fy < Snake.Rows) ;
+  FOR i := 0 TO s.len - 1 DO
+    Check.That (t, 'reset food off body',
+                s.fx # s.xs[i] OR s.fy # s.ys[i])
+  END ;
+
+  (* Equal seeds give equal games, through turns and steps. *)
+  Snake.Reset (s2, 42) ;
+  Check.EqI64 (t, 'same seed food x', s2.fx, s.fx) ;
+  Check.EqI64 (t, 'same seed food y', s2.fy, s.fy) ;
+  Snake.Turn (s, Snake.Dir.Up) ; Snake.Turn (s2, Snake.Dir.Up) ;
+  Snake.Step (s) ; Snake.Step (s2) ;
+  Snake.Step (s) ; Snake.Step (s2) ;
+  Check.EqI64 (t, 'same play head x', s2.xs[0], s.xs[0]) ;
+  Check.EqI64 (t, 'same play head y', s2.ys[0], s.ys[0]) ;
+  Check.EqI64 (t, 'same play food x', s2.fx, s.fx) ;
+  Check.EqI64 (t, 'same play food y', s2.fy, s.fy) ;
+
+  (* Step moves the head one cell and drops the tail. *)
+  Snake.Reset (s, 42) ;
+  Snake.Step (s) ;
+  Check.EqI64 (t, 'step len', s.len, 3) ;
+  want[0] := 13 ; want[1] := 12 ; want[2] := 11 ;
+  Check.EqI64s (t, 'step body xs', SLICE (s.xs, 0, s.len),
+                SLICE (want, 0, 3)) ;
+  Check.EqI64 (t, 'step head y', s.ys[0], 12) ;
+
+  (* A turn applies at the next step; a reversal is ignored. *)
+  Snake.Reset (s, 42) ;
+  Snake.Turn (s, Snake.Dir.Up) ;
+  Snake.Step (s) ;
+  Check.EqI64 (t, 'turn head x', s.xs[0], 12) ;
+  Check.EqI64 (t, 'turn head y', s.ys[0], 11) ;
+  Snake.Reset (s, 42) ;
+  Snake.Turn (s, Snake.Dir.Left) ;
+  Check.That (t, 'reversal ignored', s.next = Snake.Dir.Right) ;
+  (* Two turns between steps cannot reverse through the queue. *)
+  Snake.Turn (s, Snake.Dir.Up) ;
+  Snake.Turn (s, Snake.Dir.Left) ;
+  Check.That (t, 'queue keeps first turn', s.next = Snake.Dir.Up) ;
+  Snake.Step (s) ;
+  Check.EqI64 (t, 'queue head y', s.ys[0], 11) ;
+
+  (* Eating grows the snake, keeps the tail, and moves the food. *)
+  Snake.Reset (s, 42) ;
+  s.fx := 13 ; s.fy := 12 ;
+  Snake.Step (s) ;
+  Check.EqI64 (t, 'eat len', s.len, 4) ;
+  Check.EqI64 (t, 'eat score', s.score, 1) ;
+  want[0] := 13 ; want[1] := 12 ; want[2] := 11 ; want[3] := 10 ;
+  Check.EqI64s (t, 'eat body xs', SLICE (s.xs, 0, s.len),
+                SLICE (want, 0, 4)) ;
+  Check.That (t, 'eat food in bounds',
+              s.fx >= 0 AND s.fx < Snake.Cols
+              AND s.fy >= 0 AND s.fy < Snake.Rows) ;
+  FOR i := 0 TO s.len - 1 DO
+    Check.That (t, 'eat food off body',
+                s.fx # s.xs[i] OR s.fy # s.ys[i])
+  END ;
+
+  (* A wall ends the game. *)
+  Snake.Reset (s, 42) ;
+  s.xs[0] := Snake.Cols - 1 ;
+  Snake.Step (s) ;
+  Check.That (t, 'wall kills', NOT s.alive) ;
+  Check.EqI64 (t, 'wall keeps score', s.score, 0) ;
+
+  (* The snake's own body ends the game. *)
+  Snake.Reset (s, 42) ;
+  s.len := 5 ;
+  s.xs[0] := 12 ; s.ys[0] := 12 ;
+  s.xs[1] := 11 ; s.ys[1] := 12 ;
+  s.xs[2] := 11 ; s.ys[2] := 11 ;
+  s.xs[3] := 12 ; s.ys[3] := 11 ;
+  s.xs[4] := 13 ; s.ys[4] := 11 ;
+  s.fx := 0 ; s.fy := 0 ;
+  Snake.Turn (s, Snake.Dir.Up) ;
+  Snake.Step (s) ;
+  Check.That (t, 'self kills', NOT s.alive) ;
+
+  (* The tail cell frees this step, so following it is legal. *)
+  Snake.Reset (s, 42) ;
+  s.len := 4 ;
+  s.xs[0] := 12 ; s.ys[0] := 12 ;
+  s.xs[1] := 11 ; s.ys[1] := 12 ;
+  s.xs[2] := 11 ; s.ys[2] := 11 ;
+  s.xs[3] := 12 ; s.ys[3] := 11 ;
+  s.fx := 0 ; s.fy := 0 ;
+  Snake.Turn (s, Snake.Dir.Up) ;
+  Snake.Step (s) ;
+  Check.That (t, 'tail follow lives', s.alive) ;
+  Check.EqI64 (t, 'tail follow head y', s.ys[0], 11) ;
+
+  (* A full board wins; further steps do nothing. *)
+  Snake.Reset (s, 42) ;
+  FOR i := 0 TO Snake.MaxLen - 1 DO
+    s.xs[i] := -1 ; s.ys[i] := -1
+  END ;
+  s.xs[0] := 12 ; s.ys[0] := 12 ;
+  s.len := Snake.MaxLen - 1 ;
+  s.fx := 13 ; s.fy := 12 ;
+  Snake.Step (s) ;
+  Check.That (t, 'full board wins', s.won) ;
+  Check.EqI64 (t, 'win len', s.len, Snake.MaxLen) ;
+  Check.EqI64 (t, 'win score', s.score, 1) ;
+  Snake.Step (s) ;
+  Check.EqI64 (t, 'win steps stop', s.len, Snake.MaxLen) ;
+
+  Io.Halt (Check.Done (t, 'Snake'))
+EXCEPT
+| ValueRange :
+  Io.ErrLine ('unexpected ValueRange') ; Io.Halt (1)
+| Faults.BadArg :
+  Io.ErrLine ('unexpected BadArg') ; Io.Halt (1)
+END SnakeTest.

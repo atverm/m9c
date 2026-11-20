@@ -1,0 +1,15 @@
+(* EXPECT: a hole takes a string, not SLICE OF CHAR: UTF (s) converts (par 2.3) *)
+(* A SLICE OF CHAR is characters a program edits in place, and no
+   string.  Nothing converts it silently, in a hole as beside a `+'.
+   UTF (s) makes the string. *)
+MODULE m ;
+PROCEDURE Fine (RO cs: SLICE OF CHAR) : STR RAISES ValueRange =
+BEGIN
+  RETURN $'word ${UTF (cs)}'
+END Fine ;
+PROCEDURE Bad (RO cs: SLICE OF CHAR) : STR =
+BEGIN
+  RETURN $'word ${cs}'
+END Bad ;
+BEGIN
+END m.

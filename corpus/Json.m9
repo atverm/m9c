@@ -43,6 +43,33 @@ PROCEDURE Item (arr: PTR Node ; i: I64) : PTR Node
   (* the M2 version answered NIL for "not an array"; M9 has no NIL
      to hide behind, so the confusion is named in the signature.       *)
 
+PROCEDURE First (arr: PTR Node) : OPT PTR Node
+  RAISES TypeMismatch ;
+PROCEDURE After (item: PTR Node) : OPT PTR Node ;
+  (* First and After walk an array once, in order:
+
+       c := Json.First (arr) ;
+       WHILE c IS SOME item DO
+         ... item ... ;
+         c := Json.After (item)
+       END
+
+     First answers the first element, NONE for an empty array.  After
+     answers the element that follows item in its array, NONE after
+     the last.  The walk is one step an element.
+
+     WALK A LONG ARRAY THIS WAY, NOT BY Item (arr, i).  An array is a
+     list, so Item counts from the first element every time, and a
+     FOR over Item costs n * n / 2 steps.  Sparql.Parse read its rows
+     that way until 2026-11-19: 97,000 rows took 109 s in an
+     application, and 2 s once it asked in slices.  Item is right for
+     one element, and for a short array.
+
+       item -- an element of an array, as First, After or Item
+               answered it.  After of a member of an object answers
+               the next member's value; after of a root answers
+               NONE. *)
+
 PROCEDURE Count (arr: PTR Node) : I64
   RAISES TypeMismatch ;
   (* Count answers how many elements an array has, so a walk is a FOR
@@ -174,6 +201,12 @@ PROCEDURE NumText (n: PTR Node) : STR
      when n is not Num.                                              *)
 
 (* ---- building a document ------------------------------------- *)
+
+PROCEDURE Quote (RO t: STR) : STR ;
+  (* Quote answers t as a JSON string literal, quotes included, with
+     the escaping Compact uses.  It is for a document built with `+'
+     from text that comes from outside:
+     '{"error":' + Json.Quote (why) + '}'. *)
 
 PROCEDURE AppendJString (VAR d: PTR DynStr.DString ;
                          RO t: STR)
@@ -393,11 +426,22 @@ FROM cjrepr IMPORT ReprF64, StrToD ;
 IMPORT DynStr ;
 
 TYPE
+  Elem = OPT PTR Node ;
+
+  (* ArrIx is an array's index (MakeIx): its elements by position,
+     and the last of them. *)
+  ArrIx = RECORD
+    at : SLICE OF Elem ;       (* at[0 .. n - 1] are the elements *)
+    n : I64 ;
+    last : OPT PTR Node ;
+  END ;
+
   Node = RECORD
     v    : Value ;
     RO name : STR ;    (* member name inside Object *)
     next : OPT PTR Node ;
     RO raw : STR ;     (* a Num's text as NewRaw was given it; '' else *)
+    ix : OPT PTR ArrIx ;   (* an array's index, or NONE *)
   END ;
 
   Cursor = RECORD
@@ -529,12 +573,49 @@ BEGIN
   RETURN n
 END ParseObject ;
 
+(* MakeIx fills an array's index x from the list that starts at head:
+   the elements by position, in x.at, which the caller made long
+   enough, and the last one.  The caller allocates x and x.at in the
+   array's own pool and hangs x on the array.  Item then answers
+   element i in one step and Add appends in one.
+
+   An array was a list and nothing else until 2026-11-20.  Item
+   counted from the first element every time and Add walked to the
+   last, so a FOR over Item and a build by Add each cost n * n / 2
+   steps.  Sparql.Parse was rewritten as a walk for that the day
+   before; the JSON-LD code reads and builds arrays in some twenty
+   more places.  The index mends every one of them here.
+
+   The index is storage of the array's own pool, as its elements
+   are.  It costs a pointer in every node, and eight octets an
+   element.  An index whose n is not the array's count is not
+   believed: Item and Add then walk, as they did. *)
+PROCEDURE MakeIx (VAR x: PTR ArrIx ; KEPT head: OPT PTR Node) =
+VAR
+  cur : OPT PTR Node ;
+  i : I64 ;
+BEGIN
+  x.last := NONE ;
+  cur := head ;
+  i := 0 ;
+  WHILE cur IS SOME p DO
+    IF i < LEN (x.at) THEN x.at[i] := SOME (p) END ;
+    x.last := SOME (p) ;
+    i := i + 1 ;
+    cur := p.next
+  END ;
+  x.n := i
+EXCEPT
+| IndexError : x.n := -1
+END MakeIx ;
+
 PROCEDURE ParseArray (VAR c: PTR Cursor) : PTR Node
   RAISES ParseError =
 VAR
   n, child   : PTR Node ;
   head, last : OPT PTR Node ;
   k          : I64 ;
+  x          : PTR ArrIx ;
 BEGIN
   Bump (c) ;                                       (* consume '[' *)
   Skip (c) ;
@@ -556,6 +637,10 @@ BEGIN
   END ;
   n := NEW (c, Node) ;
   n.v := Value.Arr (head, k) ;
+  x := NEW (c, ArrIx) ;
+  x.at := NEW (c, Elem, k) ;
+  MakeIx (x, head) ;
+  n.ix := SOME (x) ;
   RETURN n
 END ParseArray ;
 
@@ -713,6 +798,12 @@ BEGIN
   CASE arr.v OF
   | Arr (first, count) :
       IF i < 0 OR i >= count THEN RAISE IndexError (i, count) END ;
+      (* by the index, when the array has one that agrees *)
+      IF arr.ix IS SOME x THEN
+        IF x.n = count THEN
+          IF x.at[i] IS SOME p THEN RETURN p END
+        END
+      END ;
       c := first ;
       j := i ;
       WHILE c IS SOME p DO
@@ -726,6 +817,20 @@ BEGIN
     RAISE TypeMismatch ('array expected')
   END
 END Item ;
+
+PROCEDURE First (arr: PTR Node) : OPT PTR Node
+  RAISES TypeMismatch =
+BEGIN
+  CASE arr.v OF
+  | Arr (first, count) : RETURN first
+  ELSE RAISE TypeMismatch ('array expected')
+  END
+END First ;
+
+PROCEDURE After (item: PTR Node) : OPT PTR Node =
+BEGIN
+  RETURN item.next
+END After ;
 
 PROCEDURE Count (arr: PTR Node) : I64
   RAISES TypeMismatch =
@@ -903,6 +1008,7 @@ VAR
   cc : PTR Node ;
   cur, head, last : OPT PTR Node ;
   k : I64 ;
+  x : PTR ArrIx ;
 BEGIN
   CASE n.v OF
   | Object (first) :
@@ -930,7 +1036,11 @@ BEGIN
         k := k + 1 ;
         cur := p.next
       END ;
-      c.v := Value.Arr (head, k)
+      c.v := Value.Arr (head, k) ;
+      x := NEW (root, ArrIx) ;
+      x.at := NEW (root, Elem, k) ;
+      MakeIx (x, head) ;
+      c.ix := SOME (x)
   | Str (t) :
       (* THE PAYLOAD IS COPIED, and that is the difference between a
          clone and a share.  A Str's `s` is a VIEW: of document text
@@ -955,6 +1065,20 @@ BEGIN
       c.v := Value.Null
   END
 END CopyInto ;
+
+(* EscapeBody raises ValueRange only from HexDigit, for a digit above
+   15, and it gives none.  So Quote handles it where it cannot happen. *)
+PROCEDURE Quote (RO t: STR) : STR =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  EmitJStr (d, t) ;
+  RETURN DynStr.View (d)
+EXCEPT
+| ValueRange : RETURN '""'
+END Quote ;
 
 PROCEDURE AppendJString (VAR d: PTR DynStr.DString ; RO t: STR)
   RAISES ValueRange =
@@ -1644,27 +1768,58 @@ END Set ;
 PROCEDURE Add (VAR arr: PTR Node ; VAR KEPT v: PTR Node)
   RAISES TypeMismatch =
 VAR
-  cur, prev, head : OPT PTR Node ;
-  k : I64 ;
+  head, xo : OPT PTR Node ;
+  ix : OPT PTR ArrIx ;
+  bigger : SLICE OF Elem ;
+  nx : PTR ArrIx ;
+  k, i : I64 ;
+  sound : BOOL ;
 BEGIN
   (* The head is read out HERE.  A rebuilt variant with the new count
      is the only way to store it, and CASE is the only way back in. *)
   CASE arr.v OF
-  | Arr (first, count) : head := first ; cur := first ; k := count
+  | Arr (first, count) : head := first ; k := count
   ELSE RAISE TypeMismatch ('Add on a node that is not an array')
   END ;
   v.next := NONE ;
-  prev := NONE ;
-  WHILE cur IS SOME p DO
-    prev := SOME (p) ;
-    cur := p.next
+  IF k = 0 THEN
+    arr.v := Value.Arr (SOME (v), 1) ;
+    nx := NEW (arr, ArrIx) ;
+    nx.at := NEW (arr, Elem, 8) ;
+    nx.at[0] := SOME (v) ;
+    nx.last := SOME (v) ;
+    nx.n := 1 ;
+    arr.ix := SOME (nx) ;
+    RETURN
   END ;
-  IF prev IS SOME q THEN
-    q.next := SOME (v) ;
-    arr.v := Value.Arr (head, k + 1)
-  ELSE
-    arr.v := Value.Arr (SOME (v), k + 1)
-  END
+  (* The index says where the list ends.  One that does not agree
+     with the count is made again, by one walk. *)
+  sound := FALSE ;
+  ix := arr.ix ;
+  IF ix IS SOME x THEN sound := x.n = k END ;
+  IF NOT sound THEN
+    nx := NEW (arr, ArrIx) ;
+    nx.at := NEW (arr, Elem, 2 * k + 8) ;
+    MakeIx (nx, head) ;
+    arr.ix := SOME (nx) ;
+    ix := arr.ix
+  END ;
+  xo := NONE ;
+  IF ix IS SOME x THEN
+    xo := x.last ;
+    IF k >= LEN (x.at) THEN
+      bigger := NEW (arr, Elem, 2 * k + 8) ;
+      FOR i := 0 TO k - 1 DO bigger[i] := x.at[i] END ;
+      x.at := bigger
+    END ;
+    x.at[k] := SOME (v) ;
+    x.last := SOME (v) ;
+    x.n := k + 1
+  END ;
+  IF xo IS SOME q THEN q.next := SOME (v) END ;
+  arr.v := Value.Arr (head, k + 1)
+EXCEPT
+| IndexError : arr.ix := NONE
 END Add ;
 
 END Json.

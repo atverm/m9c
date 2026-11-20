@@ -139,9 +139,9 @@
 
 @name the message body sent one octet per character
 @old
-            OCTETS (Stuffed (Wire (m)) + '.' + 0DC + 0AC))
+            OCTETS (Stuffed (Wire (m)) + '.' + 0DC + 0AC), m.replyMs)
 @new
-            DynStr.Bytes (scratch, Stuffed (Wire (m)) + '.' + 0DC + 0AC, FALSE))
+            DynStr.Bytes (scratch, Stuffed (Wire (m)) + '.' + 0DC + 0AC, FALSE), m.replyMs)
 @end
 
 @name SMTPUTF8 never named on MAIL FROM
@@ -193,4 +193,12 @@ END NeedsUtf8 ;
     RAISE Error ('smtp: ' + stage + ': ' + Text.Trim (text), code)
 @new
     RAISE Error ('smtp: ' + stage + ': ' + Text.Trim (text), 0)
+@end
+
+# 2026-11-20: a silent server does not hold Send
+@name the message's reply timeout is ignored
+@old
+  IF h <= 0 THEN h := ReplyMs END ;
+@new
+  h := 15000 ;
 @end

@@ -399,6 +399,7 @@ BEGIN
        service and queue waiting are maxOpen, so a full server still
        answers the third connection 503. *)
     cfg.tasks := System.Flag ('--tasks') ;
+    cfg.only4xx := System.Flag ('--only4xx') ;
     cfg.maxOpen := Int (System.Value ('--maxopen', ''), cfg.workers + cfg.queue) ;
     Io.WriteLine ('listening on ' + Fmt.I64Str (cfg.port)) ;
     Io.Flush () ;

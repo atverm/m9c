@@ -15,7 +15,7 @@
 COMPILERC=$(sed -n 's/^COMPILER="\(.*\)"/\1/p' ../../build.sh | tr ' ' '\n' | sed '/^$/d; s#^#../gen/#; s#$#.c#' | tr '\n' ' ')
 [ -n "$COMPILERC" ] || { echo "lib/mods.sh: no COMPILER line in build.sh" >&2; exit 1; }
 
-MODS="DynStr Faults Mat Stats System Frame Parquet NbCells NbShow Json JsonUtf Chars DynUtf Tsk Chan Sup Http HttpServer OpenApi ApiSpec Arrow ZarrStore Zarr Plot Lex M9f Ast Print Parse Dict Fmt Io Time Text Math Bits Sort Seq Check Arrays Numeric NumpyExact Csv Delim Zip Png Pg Sparql Regex Xml Rdf Hash Smtp Rsa Map NetCDF Grib Syslog Logger Hello Concat Narrow ProcUse AggUse ShareUse ExportDef ExportUse Gen Sem Doc Review ExplainTab Explain M9c Diag"
+MODS="DynStr Faults Mat Stats System Frame Parquet NbCells NbShow Json JsonUtf Chars DynUtf Tsk Chan Jobs Sup Http HttpServer OpenApi ApiSpec Arrow ZarrStore Zarr Plot Lex M9f Ast Print Parse Dict Fmt Io Time Text Math Bits Sort Seq Check Arrays Numeric NumpyExact Csv Delim Zip Png Pg Sparql Regex Xml Rdf Hash Smtp Rsa Map NetCDF Grib Syslog Logger Hello Concat Narrow ProcUse AggUse ShareUse ExportDef ExportUse Gen Sem Doc Review ExplainTab Explain M9c Diag"
 deps_of () {
   case $1 in
     Json)          echo DynStr Text ;;
@@ -41,7 +41,7 @@ deps_of () {
     Png)           echo Faults Zip Math DynStr Text ;;
     Stats)         echo Math Bits Faults Sort ;;
     System)        echo Io DynStr Text ;;
-    HttpServer)    echo DynStr Http Io Logger Zip Text ;;
+    HttpServer)    echo DynStr Http Io Json Logger Zip Text ;;
     OpenApi)       echo HttpServer DynStr Text ;;
     ZarrStore)     echo DynStr Json Http Io Text ;;
     Pg)            echo DynStr Fmt Time Text ;;
@@ -68,7 +68,7 @@ deps_of () {
     Grib)          echo DynStr Faults ;;
     Ast)           echo Text ;;
     Dict)          echo Text ;;
-    Syslog|Chan)   echo ;;
+    Syslog|Chan|Jobs)   echo ;;
     Logger)        echo DynStr Fmt Io Syslog Time Text ;;
     Hello)         echo Io DynStr ;;
     Concat)        echo Io DynStr Text ;;

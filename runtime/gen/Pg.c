@@ -16,9 +16,11 @@ extern int64_t m9_utf_cpcount_p (const void *, int64_t);
 extern int64_t m9_utf_find (const void *, int64_t, const void *, int64_t, int64_t);
 extern void * PQconnectdb (const void *);
 extern int PQstatus (void *);
+extern int PQconsumeInput (void *);
 extern void PQfinish (void *);
 extern const void * PQerrorMessage (void *);
 extern void * m9_pq_exec (void *, const void *, const void *, int);
+extern void * m9_pq_exec_timed (void *, const void *, const void *, int, int, void *);
 extern void * PQexec (void *, const void *);
 extern int PQresultStatus (void *);
 extern const void * PQresultErrorMessage (void *);
@@ -37,6 +39,7 @@ struct Pg_Conn {
   void * h;
   m9_sl_UTF8 info;
   bool open;
+  int64_t ms;
 };
 
 struct Pg_Result {
@@ -49,20 +52,25 @@ struct Pg_Result {
 
 static m9_pool m9mframe = {0};
 
-static const uint8_t m9s0[24] = { 116, 104, 101, 32, 99, 111, 110, 110, 101, 99, 116, 105, 111, 110, 32, 105, 115, 32, 99, 108, 111, 115, 101, 100 };
-static const uint8_t m9s1[31] = { 116, 104, 101, 32, 115, 99, 114, 105, 112, 116, 32, 99, 111, 117, 108, 100, 32, 110, 111, 116, 32, 98, 101, 32, 101, 110, 99, 111, 100, 101, 100 };
-static const uint8_t m9s2[5] = { 66, 69, 71, 73, 78 };
-static const uint8_t m9s3[6] = { 67, 79, 77, 77, 73, 84 };
-static const uint8_t m9s4[8] = { 82, 79, 76, 76, 66, 65, 67, 75 };
-static const uint8_t m9s5[3] = { 78, 97, 78 };
-static const uint8_t m9s6[8] = { 73, 110, 102, 105, 110, 105, 116, 121 };
-static const uint8_t m9s7[9] = { 45, 73, 110, 102, 105, 110, 105, 116, 121 };
-static const uint8_t m9s8[1] = { 116 };
-static const uint8_t m9s9[1] = { 102 };
-static const uint8_t m9s10[29] = { 99, 111, 110, 110, 105, 110, 102, 111, 32, 99, 111, 117, 108, 100, 32, 110, 111, 116, 32, 98, 101, 32, 101, 110, 99, 111, 100, 101, 100 };
-static const uint8_t m9s11[37] = { 108, 105, 98, 112, 113, 32, 99, 111, 117, 108, 100, 32, 110, 111, 116, 32, 97, 108, 108, 111, 99, 97, 116, 101, 32, 97, 32, 99, 111, 110, 110, 101, 99, 116, 105, 111, 110 };
-static const uint8_t m9s12[24] = { 116, 104, 101, 32, 99, 111, 110, 110, 101, 99, 116, 105, 111, 110, 32, 105, 115, 32, 99, 108, 111, 115, 101, 100 };
-static const uint8_t m9s13[19] = { 116, 111, 111, 32, 109, 97, 110, 121, 32, 112, 97, 114, 97, 109, 101, 116, 101, 114, 115 };
+static const uint8_t m9s0[24] = { 83, 69, 84, 32, 115, 116, 97, 116, 101, 109, 101, 110, 116, 95, 116, 105, 109, 101, 111, 117, 116, 32, 61, 32 };
+static const uint8_t m9s1[25] = { 97, 32, 116, 105, 109, 101, 111, 117, 116, 32, 105, 115, 32, 48, 32, 109, 115, 32, 111, 114, 32, 109, 111, 114, 101 };
+static const uint8_t m9s2[24] = { 83, 69, 84, 32, 115, 116, 97, 116, 101, 109, 101, 110, 116, 95, 116, 105, 109, 101, 111, 117, 116, 32, 61, 32 };
+static const uint8_t m9s3[24] = { 116, 104, 101, 32, 99, 111, 110, 110, 101, 99, 116, 105, 111, 110, 32, 105, 115, 32, 99, 108, 111, 115, 101, 100 };
+static const uint8_t m9s4[31] = { 116, 104, 101, 32, 115, 99, 114, 105, 112, 116, 32, 99, 111, 117, 108, 100, 32, 110, 111, 116, 32, 98, 101, 32, 101, 110, 99, 111, 100, 101, 100 };
+static const uint8_t m9s5[5] = { 66, 69, 71, 73, 78 };
+static const uint8_t m9s6[6] = { 67, 79, 77, 77, 73, 84 };
+static const uint8_t m9s7[8] = { 82, 79, 76, 76, 66, 65, 67, 75 };
+static const uint8_t m9s8[3] = { 78, 97, 78 };
+static const uint8_t m9s9[8] = { 73, 110, 102, 105, 110, 105, 116, 121 };
+static const uint8_t m9s10[9] = { 45, 73, 110, 102, 105, 110, 105, 116, 121 };
+static const uint8_t m9s11[1] = { 116 };
+static const uint8_t m9s12[1] = { 102 };
+static const uint8_t m9s13[29] = { 99, 111, 110, 110, 105, 110, 102, 111, 32, 99, 111, 117, 108, 100, 32, 110, 111, 116, 32, 98, 101, 32, 101, 110, 99, 111, 100, 101, 100 };
+static const uint8_t m9s14[37] = { 108, 105, 98, 112, 113, 32, 99, 111, 117, 108, 100, 32, 110, 111, 116, 32, 97, 108, 108, 111, 99, 97, 116, 101, 32, 97, 32, 99, 111, 110, 110, 101, 99, 116, 105, 111, 110 };
+static const uint8_t m9s15[32] = { 115, 116, 97, 116, 101, 109, 101, 110, 116, 32, 116, 105, 109, 101, 111, 117, 116, 58, 32, 110, 111, 32, 97, 110, 115, 119, 101, 114, 32, 105, 110, 32 };
+static const uint8_t m9s16[29] = { 32, 109, 115, 59, 32, 116, 104, 101, 32, 99, 111, 110, 110, 101, 99, 116, 105, 111, 110, 32, 105, 115, 32, 99, 108, 111, 115, 101, 100 };
+static const uint8_t m9s17[24] = { 116, 104, 101, 32, 99, 111, 110, 110, 101, 99, 116, 105, 111, 110, 32, 105, 115, 32, 99, 108, 111, 115, 101, 100 };
+static const uint8_t m9s18[19] = { 116, 111, 111, 32, 109, 97, 110, 121, 32, 112, 97, 114, 97, 109, 101, 116, 101, 114, 115 };
 
 static void * Pg_Null (m9_state *err);
 static bool Pg_IsNil (void * p, m9_state *err);
@@ -70,6 +78,7 @@ static m9_sl_UTF8 Pg_CText (m9_pool *pool, const void * p, m9_state *err);
 static m9_sl_BYTE Pg_CStr (m9_pool *pool, m9_sl_UTF8 s, m9_state *err);
 static void * Pg_Open (m9_pool *scratch, m9_sl_UTF8 info, m9_sl_UTF8 *msg, m9_state *err);
 static m9_sl_BYTE Pg_ParamBlock (m9_pool *pool, m9_sl_m9_sl_UTF8 params, m9_state *err);
+static m9_sl_UTF8 Pg_Silent (int64_t ms, m9_state *err);
 static void * Pg_Run (m9_pool *scratch, Pg_Conn * c, m9_sl_UTF8 sql, m9_sl_m9_sl_UTF8 params, m9_state *err);
 static int64_t Pg_Count (m9_sl_UTF8 s, m9_state *err);
 static int64_t Pg_At (Pg_Result * r, int64_t row, int64_t col, m9_state *err);
@@ -92,24 +101,25 @@ Pg_Conn * Pg_Connect (m9_pool *pool, m9_sl_UTF8 conninfo, m9_state *err)
   m9_sl_UTF8 msg = {0}; (void) msg;
   msg = ((m9_sl_UTF8){ NULL, 0 });
   { __typeof__(h) m9v = Pg_Open (&(scratch), conninfo, &(msg), err);
-    if (err->exc) { m9ln = 334; goto L_ret; };
+    if (err->exc) { m9ln = 409; goto L_ret; };
     h = m9v;
   }
   bool m9t1 = Pg_IsNil (h, err);
-  if (err->exc) { m9ln = 335; goto L_ret; };
+  if (err->exc) { m9ln = 410; goto L_ret; };
   if (m9t1) {
     { __typeof__(msg) m9t2 = msg; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Pg_PgError);
-    m9_site (err, 335, m9pn);
+    m9_site (err, 410, m9pn);
     goto L_ret;
   }
   { __typeof__(c) m9v = (Pg_Conn *) m9_pool_alloc (&((*pool)), sizeof (Pg_Conn), 1, err);
-    if (err->exc) { m9ln = 336; goto L_ret; };
+    if (err->exc) { m9ln = 411; goto L_ret; };
     c = m9v;
   }
   c->h = h;
   c->info = conninfo;
   c->open = true;
+  c->ms = INT64_C(0);
   err->res = m9res;
   m9ret = c;
   goto L_ret;
@@ -139,19 +149,29 @@ void Pg_Reconnect (Pg_Conn * *c, m9_pool *c_pool, m9_state *err)
   }
   msg = ((m9_sl_UTF8){ NULL, 0 });
   { __typeof__(h) m9v = Pg_Open (&(scratch), ({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->info, &(msg), err);
-    if (err->exc) { m9ln = 354; goto L_ret; };
+    if (err->exc) { m9ln = 430; goto L_ret; };
     h = m9v;
   }
   bool m9t2 = Pg_IsNil (h, err);
-  if (err->exc) { m9ln = 355; goto L_ret; };
+  if (err->exc) { m9ln = 431; goto L_ret; };
   if (m9t2) {
     { __typeof__(msg) m9t3 = msg; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Pg_PgError);
-    m9_site (err, 355, m9pn);
+    m9_site (err, 431, m9pn);
     goto L_ret;
   }
   ({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->h = h;
   ({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->open = true;
+  if ((({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ms > INT64_C(0))) {
+    { __typeof__(({ __auto_type m9n = ((*c)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a1 = ({ __auto_type m9n = ((*c)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+      if (err->exc) { m9ln = 435; goto L_ret; };
+    { __typeof__(({ m9_sl_UTF8 m9t4 = ((m9_sl_UTF8){ (uint8_t *) m9s0, 24 }); m9_utf_cat (err->res, m9t4, Fmt_I64Str (({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ms, err), err); })) m9a2 = ({ m9_sl_UTF8 m9t4 = ((m9_sl_UTF8){ (uint8_t *) m9s0, 24 }); m9_utf_cat (err->res, m9t4, Fmt_I64Str (({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ms, err), err); });
+      if (err->exc) { m9ln = 435; goto L_ret; };
+    Pg_Script (m9a1, m9a2, err);
+    if (err->exc) { m9ln = 435; goto L_ret; };
+    }
+    }
+  }
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
@@ -170,11 +190,24 @@ bool Pg_Alive (Pg_Conn * c, m9_state *err)
   static const char m9pn[] = "Pg.Alive"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
+  int64_t i = 0; (void) i;
   if ((!c->open)) {
     err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
+  { __typeof__(i) m9t1to;
+  i = INT64_C(1);
+  m9t1to = INT64_C(2);
+  if (i <= m9t1to) for (;;) {
+    if (((int64_t)(PQconsumeInput (c->h)) == INT64_C(0))) {
+      err->res = m9res;
+      m9ret = false;
+      goto L_ret;
+    }
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
+  } }
   err->res = m9res;
   m9ret = ((int64_t)(PQstatus (c->h)) == Pg_ConnOk);
   goto L_ret;
@@ -183,6 +216,30 @@ L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
+}
+
+void Pg_Ensure (Pg_Conn * *c, m9_pool *c_pool, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  static const char m9pn[] = "Pg.Ensure"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
+  { __typeof__(({ __auto_type m9n = ((*c)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a3 = ({ __auto_type m9n = ((*c)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+    if (err->exc) { m9ln = 453; goto L_ret; };
+  bool m9t1 = (!Pg_Alive (m9a3, err));
+  if (err->exc) { m9ln = 453; goto L_ret; };
+  if (m9t1) {
+    Pg_Reconnect (c, c_pool, err);
+    if (err->exc) { m9ln = 453; goto L_ret; };
+  } }
+L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
+  err->res = m9res;
+  m9_adopt_if (&m9frame, c_pool, (*c));
+  m9_pool_free (&m9frame);
+  return;
 }
 
 void Pg_Close (Pg_Conn * *c, m9_pool *c_pool, m9_state *err)
@@ -198,6 +255,39 @@ void Pg_Close (Pg_Conn * *c, m9_pool *c_pool, m9_state *err)
   }
   ({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->open = false;
   PQfinish (({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->h);
+L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
+  err->res = m9res;
+  m9_adopt_if (&m9frame, c_pool, (*c));
+  m9_pool_free (&m9frame);
+  return;
+}
+
+void Pg_SetTimeout (Pg_Conn * *c, m9_pool *c_pool, int64_t ms, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  static const char m9pn[] = "Pg.SetTimeout"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
+  if ((ms < INT64_C(0))) {
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s1, 25 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s1, 25 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
+    m9_raise (err, &Pg_PgError);
+    m9_site (err, 661, m9pn);
+    goto L_ret;
+  }
+  if (({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->open) {
+    { __typeof__(({ __auto_type m9n = ((*c)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a4 = ({ __auto_type m9n = ((*c)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+      if (err->exc) { m9ln = 664; goto L_ret; };
+    { __typeof__(({ m9_sl_UTF8 m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s2, 24 }); m9_utf_cat (err->res, m9t2, Fmt_I64Str (ms, err), err); })) m9a5 = ({ m9_sl_UTF8 m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s2, 24 }); m9_utf_cat (err->res, m9t2, Fmt_I64Str (ms, err), err); });
+      if (err->exc) { m9ln = 664; goto L_ret; };
+    Pg_Script (m9a4, m9a5, err);
+    if (err->exc) { m9ln = 664; goto L_ret; };
+    }
+    }
+  }
+  ({ __auto_type m9g = ((*c)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ms = ms;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
@@ -226,54 +316,54 @@ Pg_Result * Pg_Query (m9_pool *pool, Pg_Conn * c, m9_sl_UTF8 sql, m9_sl_m9_sl_UT
   int64_t total = 0; (void) total;
   Pg_Result * r = NULL; (void) r;
   { __typeof__(res) m9v = Pg_Run (&(scratch), c, sql, params, err);
-    if (err->exc) { m9ln = 441; goto L_ret; };
+    if (err->exc) { m9ln = 546; goto L_ret; };
     res = m9v;
   }
   bool m9t1 = false; (void) m9t1;
   { __typeof__(r) m9v = (Pg_Result *) m9_pool_alloc (&((*pool)), sizeof (Pg_Result), 1, err);
-    if (err->exc) { m9ln = 443; goto L_fin_m9t2; };
+    if (err->exc) { m9ln = 548; goto L_fin_m9t2; };
     r = m9v;
   }
   r->rows = (int64_t)(PQntuples (res));
   r->cols = (int64_t)(PQnfields (res));
   { __typeof__(total) m9v = m9_mul_i64 (r->rows, r->cols, err);
-    if (err->exc) { m9ln = 446; goto L_fin_m9t2; };
+    if (err->exc) { m9ln = 551; goto L_fin_m9t2; };
     total = m9v;
   }
   if ((total < INT64_C(1))) {
     total = INT64_C(1);
   }
   { __typeof__(r->cell) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), total, err);
-    if (err->exc) { m9ln = 448; goto L_fin_m9t2; };
+    if (err->exc) { m9ln = 553; goto L_fin_m9t2; };
     r->cell = m9v;
   }
   { __typeof__(r->isNull) m9v = M9_POOL_SL (m9_sl_BOOL, bool, &((*pool)), total, err);
-    if (err->exc) { m9ln = 449; goto L_fin_m9t2; };
+    if (err->exc) { m9ln = 554; goto L_fin_m9t2; };
     r->isNull = m9v;
   }
   if ((r->cols > INT64_C(0))) {
     { __typeof__(r->name) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), r->cols, err);
-      if (err->exc) { m9ln = 451; goto L_fin_m9t2; };
+      if (err->exc) { m9ln = 556; goto L_fin_m9t2; };
       r->name = m9v;
     }
   } else {
     { __typeof__(r->name) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), INT64_C(1), err);
-      if (err->exc) { m9ln = 453; goto L_fin_m9t2; };
+      if (err->exc) { m9ln = 558; goto L_fin_m9t2; };
       r->name = m9v;
     }
   }
   { __typeof__(j) m9t5to;
   j = INT64_C(0);
   m9t5to = m9_sub_i64 (r->cols, INT64_C(1), err);
-  if (err->exc) { m9ln = 455; goto L_fin_m9t2; };
+  if (err->exc) { m9ln = 560; goto L_fin_m9t2; };
   if (j <= m9t5to) for (;;) {
     M9_YCHK ();
-    { __typeof__(({ __auto_type m9_fam9t6 = (res); __auto_type m9_fam9t7 = (((int) m9_i32 (j, err))); if (err->exc) { m9ln = 456; goto L_fin_m9t2; }; PQfname (m9_fam9t6, m9_fam9t7); })) m9a1 = ({ __auto_type m9_fam9t6 = (res); __auto_type m9_fam9t7 = (((int) m9_i32 (j, err))); if (err->exc) { m9ln = 456; goto L_fin_m9t2; }; PQfname (m9_fam9t6, m9_fam9t7); });
-      if (err->exc) { m9ln = 456; goto L_fin_m9t2; };
-    { __typeof__((*(m9_sl_UTF8 *) m9_at (r->name.p, j, r->name.len, sizeof (m9_sl_UTF8), err))) m9v = Pg_CText (pool, m9a1, err);
-      if (err->exc) { m9ln = 456; goto L_fin_m9t2; };
+    { __typeof__(({ __auto_type m9_fam9t6 = (res); __auto_type m9_fam9t7 = (((int) m9_i32 (j, err))); if (err->exc) { m9ln = 561; goto L_fin_m9t2; }; PQfname (m9_fam9t6, m9_fam9t7); })) m9a6 = ({ __auto_type m9_fam9t6 = (res); __auto_type m9_fam9t7 = (((int) m9_i32 (j, err))); if (err->exc) { m9ln = 561; goto L_fin_m9t2; }; PQfname (m9_fam9t6, m9_fam9t7); });
+      if (err->exc) { m9ln = 561; goto L_fin_m9t2; };
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (r->name.p, j, r->name.len, sizeof (m9_sl_UTF8), err))) m9v = Pg_CText (pool, m9a6, err);
+      if (err->exc) { m9ln = 561; goto L_fin_m9t2; };
       (*(m9_sl_UTF8 *) m9_at (r->name.p, j, r->name.len, sizeof (m9_sl_UTF8), err)) = m9v;
-      if (err->exc) { m9ln = 456; goto L_fin_m9t2; };
+      if (err->exc) { m9ln = 561; goto L_fin_m9t2; };
     }
     }
     if ((uint64_t) m9t5to - (uint64_t) j < (uint64_t) 1) break;
@@ -283,50 +373,50 @@ Pg_Result * Pg_Query (m9_pool *pool, Pg_Conn * c, m9_sl_UTF8 sql, m9_sl_m9_sl_UT
   { __typeof__(i) m9t8to;
   i = INT64_C(0);
   m9t8to = m9_sub_i64 (r->rows, INT64_C(1), err);
-  if (err->exc) { m9ln = 459; goto L_fin_m9t2; };
+  if (err->exc) { m9ln = 564; goto L_fin_m9t2; };
   if (i <= m9t8to) for (;;) {
     M9_YCHK ();
     { __typeof__(j) m9t9to;
     j = INT64_C(0);
     m9t9to = m9_sub_i64 (r->cols, INT64_C(1), err);
-    if (err->exc) { m9ln = 460; goto L_fin_m9t2; };
+    if (err->exc) { m9ln = 565; goto L_fin_m9t2; };
     if (j <= m9t9to) for (;;) {
       M9_YCHK ();
-      bool m9t13 = ((int64_t)(({ __auto_type m9_fam9t10 = (res); __auto_type m9_fam9t11 = (((int) m9_i32 (i, err))); if (err->exc) { m9ln = 461; goto L_fin_m9t2; }; __auto_type m9_fam9t12 = (((int) m9_i32 (j, err))); if (err->exc) { m9ln = 461; goto L_fin_m9t2; }; PQgetisnull (m9_fam9t10, m9_fam9t11, m9_fam9t12); })) != INT64_C(0));
-      if (err->exc) { m9ln = 461; goto L_fin_m9t2; };
+      bool m9t13 = ((int64_t)(({ __auto_type m9_fam9t10 = (res); __auto_type m9_fam9t11 = (((int) m9_i32 (i, err))); if (err->exc) { m9ln = 566; goto L_fin_m9t2; }; __auto_type m9_fam9t12 = (((int) m9_i32 (j, err))); if (err->exc) { m9ln = 566; goto L_fin_m9t2; }; PQgetisnull (m9_fam9t10, m9_fam9t11, m9_fam9t12); })) != INT64_C(0));
+      if (err->exc) { m9ln = 566; goto L_fin_m9t2; };
       if (m9t13) {
         (*(m9_sl_UTF8 *) m9_at (r->cell.p, k, r->cell.len, sizeof (m9_sl_UTF8), err)) = ((m9_sl_UTF8){ NULL, 0 });
-        if (err->exc) { m9ln = 462; goto L_fin_m9t2; };
+        if (err->exc) { m9ln = 567; goto L_fin_m9t2; };
         (*(bool *) m9_at (r->isNull.p, k, r->isNull.len, sizeof (bool), err)) = true;
-        if (err->exc) { m9ln = 463; goto L_fin_m9t2; };
+        if (err->exc) { m9ln = 568; goto L_fin_m9t2; };
       } else {
-        { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t14 = (res); __auto_type m9_fam9t15 = (((int) m9_i32 (i, err))); if (err->exc) { m9ln = 465; goto L_fin_m9t2; }; __auto_type m9_fam9t16 = (((int) m9_i32 (j, err))); if (err->exc) { m9ln = 465; goto L_fin_m9t2; }; PQgetlength (m9_fam9t14, m9_fam9t15, m9_fam9t16); }));
-          if (err->exc) { m9ln = 465; goto L_fin_m9t2; };
+        { __typeof__(n) m9v = (int64_t)(({ __auto_type m9_fam9t14 = (res); __auto_type m9_fam9t15 = (((int) m9_i32 (i, err))); if (err->exc) { m9ln = 570; goto L_fin_m9t2; }; __auto_type m9_fam9t16 = (((int) m9_i32 (j, err))); if (err->exc) { m9ln = 570; goto L_fin_m9t2; }; PQgetlength (m9_fam9t14, m9_fam9t15, m9_fam9t16); }));
+          if (err->exc) { m9ln = 570; goto L_fin_m9t2; };
           n = m9v;
         }
         if ((n == INT64_C(0))) {
           (*(m9_sl_UTF8 *) m9_at (r->cell.p, k, r->cell.len, sizeof (m9_sl_UTF8), err)) = ((m9_sl_UTF8){ NULL, 0 });
-          if (err->exc) { m9ln = 467; goto L_fin_m9t2; };
+          if (err->exc) { m9ln = 572; goto L_fin_m9t2; };
         } else {
           { __typeof__(b) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), n, err);
-            if (err->exc) { m9ln = 469; goto L_fin_m9t2; };
+            if (err->exc) { m9ln = 574; goto L_fin_m9t2; };
             b = m9v;
           }
-          { __typeof__(q) m9v = ({ __auto_type m9_fam9t17 = (((void *)(b).p)); __auto_type m9_fam9t21 = (({ __auto_type m9_fam9t18 = (res); __auto_type m9_fam9t19 = (((int) m9_i32 (i, err))); if (err->exc) { m9ln = 470; goto L_fin_m9t2; }; __auto_type m9_fam9t20 = (((int) m9_i32 (j, err))); if (err->exc) { m9ln = 470; goto L_fin_m9t2; }; PQgetvalue (m9_fam9t18, m9_fam9t19, m9_fam9t20); })); if (err->exc) { m9ln = 470; goto L_fin_m9t2; }; __auto_type m9_fam9t22 = (((size_t) m9_u64 (n, err))); if (err->exc) { m9ln = 470; goto L_fin_m9t2; }; memcpy (m9_fam9t17, m9_fam9t21, m9_fam9t22); });
-            if (err->exc) { m9ln = 470; goto L_fin_m9t2; };
+          { __typeof__(q) m9v = ({ __auto_type m9_fam9t17 = (((void *)(b).p)); __auto_type m9_fam9t21 = (({ __auto_type m9_fam9t18 = (res); __auto_type m9_fam9t19 = (((int) m9_i32 (i, err))); if (err->exc) { m9ln = 575; goto L_fin_m9t2; }; __auto_type m9_fam9t20 = (((int) m9_i32 (j, err))); if (err->exc) { m9ln = 575; goto L_fin_m9t2; }; PQgetvalue (m9_fam9t18, m9_fam9t19, m9_fam9t20); })); if (err->exc) { m9ln = 575; goto L_fin_m9t2; }; __auto_type m9_fam9t22 = (((size_t) m9_u64 (n, err))); if (err->exc) { m9ln = 575; goto L_fin_m9t2; }; memcpy (m9_fam9t17, m9_fam9t21, m9_fam9t22); });
+            if (err->exc) { m9ln = 575; goto L_fin_m9t2; };
             q = m9v;
           }
           { __typeof__((*(m9_sl_UTF8 *) m9_at (r->cell.p, k, r->cell.len, sizeof (m9_sl_UTF8), err))) m9v = DynStr_Decoded (pool, b, err);
-            if (err->exc) { m9ln = 473; goto L_fin_m9t2; };
+            if (err->exc) { m9ln = 578; goto L_fin_m9t2; };
             (*(m9_sl_UTF8 *) m9_at (r->cell.p, k, r->cell.len, sizeof (m9_sl_UTF8), err)) = m9v;
-            if (err->exc) { m9ln = 473; goto L_fin_m9t2; };
+            if (err->exc) { m9ln = 578; goto L_fin_m9t2; };
           }
         }
         (*(bool *) m9_at (r->isNull.p, k, r->isNull.len, sizeof (bool), err)) = false;
-        if (err->exc) { m9ln = 475; goto L_fin_m9t2; };
+        if (err->exc) { m9ln = 580; goto L_fin_m9t2; };
       }
       { __typeof__(k) m9v = m9_add_i64 (k, INT64_C(1), err);
-        if (err->exc) { m9ln = 477; goto L_fin_m9t2; };
+        if (err->exc) { m9ln = 582; goto L_fin_m9t2; };
         k = m9v;
       }
       if ((uint64_t) m9t9to - (uint64_t) j < (uint64_t) 1) break;
@@ -340,7 +430,7 @@ L_fin_m9t2: ;
   PQclear (res);
   m9_fin_restore (err, &m9t1f);
   if (m9t1) goto L_ret;
-  if (err->exc) { m9ln = 481; goto L_ret; };
+  if (err->exc) { m9ln = 586; goto L_ret; };
   err->res = m9res;
   m9ret = r;
   goto L_ret;
@@ -366,14 +456,14 @@ int64_t Pg_Exec (Pg_Conn * c, m9_sl_UTF8 sql, m9_sl_m9_sl_UTF8 params, m9_state 
   void * res = NULL; (void) res;
   int64_t n = 0; (void) n;
   { __typeof__(res) m9v = Pg_Run (&(scratch), c, sql, params, err);
-    if (err->exc) { m9ln = 507; goto L_ret; };
+    if (err->exc) { m9ln = 612; goto L_ret; };
     res = m9v;
   }
   bool m9t1 = false; (void) m9t1;
-  { __typeof__(Pg_CText (&(scratch), PQcmdTuples (res), err)) m9a2 = Pg_CText (&(scratch), PQcmdTuples (res), err);
-    if (err->exc) { m9ln = 509; goto L_fin_m9t2; };
-  { __typeof__(n) m9v = Pg_Count (m9a2, err);
-    if (err->exc) { m9ln = 509; goto L_fin_m9t2; };
+  { __typeof__(Pg_CText (&(scratch), PQcmdTuples (res), err)) m9a7 = Pg_CText (&(scratch), PQcmdTuples (res), err);
+    if (err->exc) { m9ln = 614; goto L_fin_m9t2; };
+  { __typeof__(n) m9v = Pg_Count (m9a7, err);
+    if (err->exc) { m9ln = 614; goto L_fin_m9t2; };
     n = m9v;
   }
   }
@@ -382,7 +472,7 @@ L_fin_m9t2: ;
   PQclear (res);
   m9_fin_restore (err, &m9t1f);
   if (m9t1) goto L_ret;
-  if (err->exc) { m9ln = 511; goto L_ret; };
+  if (err->exc) { m9ln = 616; goto L_ret; };
   err->res = m9res;
   m9ret = n;
   goto L_ret;
@@ -408,44 +498,44 @@ m9_sl_UTF8 Pg_ArrayLiteral (m9_sl_m9_sl_UTF8 items, m9_state *err)
   int64_t i = 0; (void) i;
   uint32_t c = 0; (void) c;
   { __typeof__(d) m9v = DynStr_New (&(scratch), err);
-    if (err->exc) { m9ln = 586; goto L_ret; };
+    if (err->exc) { m9ln = 709; goto L_ret; };
     d = m9v;
   }
   DynStr_AppendChar (&(d), &(scratch), 123u, err);
-  if (err->exc) { m9ln = 587; goto L_ret; };
+  if (err->exc) { m9ln = 710; goto L_ret; };
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((items).len, INT64_C(1), err);
-  if (err->exc) { m9ln = 588; goto L_ret; };
+  if (err->exc) { m9ln = 711; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     M9_YCHK ();
     if ((i > INT64_C(0))) {
       DynStr_AppendChar (&(d), &(scratch), 44u, err);
-      if (err->exc) { m9ln = 589; goto L_ret; };
+      if (err->exc) { m9ln = 712; goto L_ret; };
     }
     DynStr_AppendChar (&(d), &(scratch), 34u, err);
-    if (err->exc) { m9ln = 590; goto L_ret; };
+    if (err->exc) { m9ln = 713; goto L_ret; };
     { __typeof__((*(m9_sl_UTF8 *) m9_at (items.p, i, items.len, sizeof (m9_sl_UTF8), err))) m9t2s = (*(m9_sl_UTF8 *) m9_at (items.p, i, items.len, sizeof (m9_sl_UTF8), err));
-    if (err->exc) { m9ln = 592; goto L_ret; };
+    if (err->exc) { m9ln = 715; goto L_ret; };
     for (int64_t m9t2i = 0; m9t2i < m9t2s.len; ) { c = m9_utf_next (m9t2s, &m9t2i);
       M9_YCHK ();
       if (((c == 34u) || (c == 92u))) {
         DynStr_AppendChar (&(d), &(scratch), 92u, err);
-        if (err->exc) { m9ln = 593; goto L_ret; };
+        if (err->exc) { m9ln = 716; goto L_ret; };
       }
       DynStr_AppendChar (&(d), &(scratch), c, err);
-      if (err->exc) { m9ln = 594; goto L_ret; };
+      if (err->exc) { m9ln = 717; goto L_ret; };
     } }
     DynStr_AppendChar (&(d), &(scratch), 34u, err);
-    if (err->exc) { m9ln = 596; goto L_ret; };
+    if (err->exc) { m9ln = 719; goto L_ret; };
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   DynStr_AppendChar (&(d), &(scratch), 125u, err);
-  if (err->exc) { m9ln = 598; goto L_ret; };
+  if (err->exc) { m9ln = 721; goto L_ret; };
   err->res = m9res;
   m9ret = DynStr_View (d, err);
-  if (err->exc) { m9ln = 599; goto L_ret; };
+  if (err->exc) { m9ln = 722; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -467,54 +557,74 @@ void Pg_Script (Pg_Conn * c, m9_sl_UTF8 sql, m9_state *err)
   int32_t m9ln = 0; (void) m9ln;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE sb = {0}; (void) sb;
+  m9_sl_BYTE how = {0}; (void) how;
   void * res = NULL; (void) res;
   int64_t st = 0; (void) st;
   m9_sl_UTF8 msg = {0}; (void) msg;
   if ((!c->open)) {
-    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s0, 24 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s0, 24 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s3, 24 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s3, 24 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Pg_PgError);
-    m9_site (err, 524, m9pn);
+    m9_site (err, 629, m9pn);
     goto L_ret;
   }
   { __typeof__(sb) m9v = Pg_CStr (&(scratch), sql, err);
-    if (err->exc) { m9ln = 526; goto L_hdl_m9t2; };
+    if (err->exc) { m9ln = 631; goto L_hdl_m9t2; };
     sb = m9v;
   }
   goto L_dn_m9t3;
 L_hdl_m9t2: ;
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s1, 31 })) m9t4 = ((m9_sl_UTF8){ (uint8_t *) m9s1, 31 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s4, 31 })) m9t4 = ((m9_sl_UTF8){ (uint8_t *) m9s4, 31 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Pg_PgError);
-    m9_site (err, 529, m9pn);
+    m9_site (err, 634, m9pn);
     goto L_ret;
     goto L_dn_m9t3;
   }
   goto L_ret;
 L_dn_m9t3: ;
-  res = PQexec (c->h, ((void *)(sb).p));
-  bool m9t7 = Pg_IsNil (res, err);
-  if (err->exc) { m9ln = 532; goto L_ret; };
-  if (m9t7) {
+  if ((c->ms > INT64_C(0))) {
+    { __typeof__(how) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), INT64_C(1), err);
+      if (err->exc) { m9ln = 639; goto L_ret; };
+      how = m9v;
+    }
+    { __typeof__(res) m9v = ({ __auto_type m9_fam9t5 = (c->h); __auto_type m9_fam9t6 = (((void *)(sb).p)); __auto_type m9_fam9t7 = (((void *)(sb).p)); __auto_type m9_fam9t8 = (((int)(m9_neg_i64 (INT64_C(1), err)))); if (err->exc) { m9ln = 640; goto L_ret; }; __auto_type m9_fam9t9 = (((int) m9_i32 (m9_add_i64 (c->ms, Pg_TimeoutGrace, err), err))); if (err->exc) { m9ln = 640; goto L_ret; }; __auto_type m9_fam9t10 = (((void *)(how).p)); m9_pq_exec_timed (m9_fam9t5, m9_fam9t6, m9_fam9t7, m9_fam9t8, m9_fam9t9, m9_fam9t10); });
+      if (err->exc) { m9ln = 640; goto L_ret; };
+      res = m9v;
+    }
+    bool m9t11 = (Pg_IsNil (res, err) && (((int64_t)((*(uint8_t *) m9_at (how.p, INT64_C(0), how.len, sizeof (uint8_t), err))) == INT64_C(2))));
+    if (err->exc) { m9ln = 642; goto L_ret; };
+    if (m9t11) {
+      { __typeof__(Pg_Silent (c->ms, err)) m9t12 = Pg_Silent (c->ms, err); err->s[0].p = m9t12.p; err->s[0].len = m9t12.len; m9_pay_keep (err, 0, sizeof (*m9t12.p)); }
+      m9_raise (err, &Pg_PgError);
+      m9_site (err, 642, m9pn);
+      goto L_ret;
+    }
+  } else {
+    res = PQexec (c->h, ((void *)(sb).p));
+  }
+  bool m9t15 = Pg_IsNil (res, err);
+  if (err->exc) { m9ln = 646; goto L_ret; };
+  if (m9t15) {
     { __typeof__(msg) m9v = Pg_CText (&(scratch), PQerrorMessage (c->h), err);
-      if (err->exc) { m9ln = 533; goto L_ret; };
+      if (err->exc) { m9ln = 647; goto L_ret; };
       msg = m9v;
     }
-    { __typeof__(msg) m9t9 = msg; err->s[0].p = m9t9.p; err->s[0].len = m9t9.len; m9_pay_keep (err, 0, sizeof (*m9t9.p)); }
+    { __typeof__(msg) m9t17 = msg; err->s[0].p = m9t17.p; err->s[0].len = m9t17.len; m9_pay_keep (err, 0, sizeof (*m9t17.p)); }
     m9_raise (err, &Pg_PgError);
-    m9_site (err, 534, m9pn);
+    m9_site (err, 648, m9pn);
     goto L_ret;
   }
   st = (int64_t)(PQresultStatus (res));
   if ((((st != Pg_TuplesOk)) && ((st != Pg_CommandOk)))) {
     { __typeof__(msg) m9v = Pg_CText (&(scratch), PQresultErrorMessage (res), err);
-      if (err->exc) { m9ln = 538; goto L_ret; };
+      if (err->exc) { m9ln = 652; goto L_ret; };
       msg = m9v;
     }
     PQclear (res);
-    { __typeof__(msg) m9t13 = msg; err->s[0].p = m9t13.p; err->s[0].len = m9t13.len; m9_pay_keep (err, 0, sizeof (*m9t13.p)); }
+    { __typeof__(msg) m9t21 = msg; err->s[0].p = m9t21.p; err->s[0].len = m9t21.len; m9_pay_keep (err, 0, sizeof (*m9t21.p)); }
     m9_raise (err, &Pg_PgError);
-    m9_site (err, 540, m9pn);
+    m9_site (err, 654, m9pn);
     goto L_ret;
   }
   PQclear (res);
@@ -534,8 +644,8 @@ void Pg_Begin (Pg_Conn * c, m9_state *err)
   err->res = &m9frame;
   static const char m9pn[] = "Pg.Begin"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
-  Pg_Script (c, ((m9_sl_UTF8){ (uint8_t *) m9s2, 5 }), err);
-  if (err->exc) { m9ln = 547; goto L_ret; };
+  Pg_Script (c, ((m9_sl_UTF8){ (uint8_t *) m9s5, 5 }), err);
+  if (err->exc) { m9ln = 670; goto L_ret; };
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
@@ -551,8 +661,8 @@ void Pg_Commit (Pg_Conn * c, m9_state *err)
   err->res = &m9frame;
   static const char m9pn[] = "Pg.Commit"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
-  Pg_Script (c, ((m9_sl_UTF8){ (uint8_t *) m9s3, 6 }), err);
-  if (err->exc) { m9ln = 552; goto L_ret; };
+  Pg_Script (c, ((m9_sl_UTF8){ (uint8_t *) m9s6, 6 }), err);
+  if (err->exc) { m9ln = 675; goto L_ret; };
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
@@ -568,8 +678,8 @@ void Pg_Rollback (Pg_Conn * c, m9_state *err)
   err->res = &m9frame;
   static const char m9pn[] = "Pg.Rollback"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
-  Pg_Script (c, ((m9_sl_UTF8){ (uint8_t *) m9s4, 8 }), err);
-  if (err->exc) { m9ln = 557; goto L_ret; };
+  Pg_Script (c, ((m9_sl_UTF8){ (uint8_t *) m9s7, 8 }), err);
+  if (err->exc) { m9ln = 680; goto L_ret; };
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
   err->res = m9res;
@@ -626,7 +736,7 @@ m9_sl_UTF8 Pg_Cell (Pg_Result * r, int64_t row, int64_t col, m9_state *err)
   m9_sl_UTF8 m9ret = {0};
   err->res = m9res;
   m9ret = (*(m9_sl_UTF8 *) m9_at (r->cell.p, Pg_At (r, row, col, err), r->cell.len, sizeof (m9_sl_UTF8), err));
-  if (err->exc) { m9ln = 604; goto L_ret; };
+  if (err->exc) { m9ln = 727; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -647,7 +757,7 @@ bool Pg_IsNull (Pg_Result * r, int64_t row, int64_t col, m9_state *err)
   bool m9ret = false;
   err->res = m9res;
   m9ret = (*(bool *) m9_at (r->isNull.p, Pg_At (r, row, col, err), r->isNull.len, sizeof (bool), err));
-  if (err->exc) { m9ln = 609; goto L_ret; };
+  if (err->exc) { m9ln = 732; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -669,12 +779,12 @@ m9_sl_UTF8 Pg_Name (Pg_Result * r, int64_t col, m9_state *err)
     err->i[0] = col;
     err->i[1] = r->cols;
     m9_raise (err, &m9_exc_IndexError);
-    m9_site (err, 614, m9pn);
+    m9_site (err, 737, m9pn);
     goto L_ret;
   }
   err->res = m9res;
   m9ret = (*(m9_sl_UTF8 *) m9_at (r->name.p, col, r->name.len, sizeof (m9_sl_UTF8), err));
-  if (err->exc) { m9ln = 615; goto L_ret; };
+  if (err->exc) { m9ln = 738; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -697,13 +807,13 @@ int64_t Pg_Column (Pg_Result * r, m9_sl_UTF8 name, m9_state *err)
   { __typeof__(j) m9t1to;
   j = INT64_C(0);
   m9t1to = m9_sub_i64 (r->cols, INT64_C(1), err);
-  if (err->exc) { m9ln = 621; goto L_ret; };
+  if (err->exc) { m9ln = 744; goto L_ret; };
   if (j <= m9t1to) for (;;) {
     M9_YCHK ();
-    { __typeof__((*(m9_sl_UTF8 *) m9_at (r->name.p, j, r->name.len, sizeof (m9_sl_UTF8), err))) m9a3 = (*(m9_sl_UTF8 *) m9_at (r->name.p, j, r->name.len, sizeof (m9_sl_UTF8), err));
-      if (err->exc) { m9ln = 622; goto L_ret; };
-    bool m9t2 = Text_EqUtf (m9a3, name, err);
-    if (err->exc) { m9ln = 622; goto L_ret; };
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (r->name.p, j, r->name.len, sizeof (m9_sl_UTF8), err))) m9a8 = (*(m9_sl_UTF8 *) m9_at (r->name.p, j, r->name.len, sizeof (m9_sl_UTF8), err));
+      if (err->exc) { m9ln = 745; goto L_ret; };
+    bool m9t2 = Text_EqUtf (m9a8, name, err);
+    if (err->exc) { m9ln = 745; goto L_ret; };
     if (m9t2) {
       err->res = m9res;
       m9ret = j;
@@ -714,7 +824,7 @@ int64_t Pg_Column (Pg_Result * r, m9_sl_UTF8 name, m9_state *err)
   } }
   err->res = m9res;
   m9ret = m9_neg_i64 (INT64_C(1), err);
-  if (err->exc) { m9ln = 624; goto L_ret; };
+  if (err->exc) { m9ln = 747; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -738,58 +848,58 @@ int64_t Pg_I64Cell (Pg_Result * r, int64_t row, int64_t col, m9_state *err)
   int64_t d = 0; (void) d;
   bool neg = false; (void) neg;
   { __typeof__(s) m9v = Pg_Present (r, row, col, err);
-    if (err->exc) { m9ln = 644; goto L_ret; };
+    if (err->exc) { m9ln = 767; goto L_ret; };
     s = m9v;
   }
   bool m9t1 = (Text_BLen (s, err) == INT64_C(0));
-  if (err->exc) { m9ln = 645; goto L_ret; };
+  if (err->exc) { m9ln = 768; goto L_ret; };
   if (m9t1) {
     m9_raise (err, &m9_exc_ValueRange);
-    m9_site (err, 645, m9pn);
+    m9_site (err, 768, m9pn);
     goto L_ret;
   }
   i = INT64_C(0);
   neg = false;
   bool m9t2 = Text_BIs (s, INT64_C(0), 45u, err);
-  if (err->exc) { m9ln = 648; goto L_ret; };
+  if (err->exc) { m9ln = 771; goto L_ret; };
   if (m9t2) {
     neg = true;
     i = INT64_C(1);
   } else {
     bool m9t3 = Text_BIs (s, INT64_C(0), 43u, err);
-    if (err->exc) { m9ln = 648; goto L_ret; };
+    if (err->exc) { m9ln = 771; goto L_ret; };
     if (m9t3) {
       i = INT64_C(1);
   } }
   bool m9t4 = (i == Text_BLen (s, err));
-  if (err->exc) { m9ln = 651; goto L_ret; };
+  if (err->exc) { m9ln = 774; goto L_ret; };
   if (m9t4) {
     m9_raise (err, &m9_exc_ValueRange);
-    m9_site (err, 651, m9pn);
+    m9_site (err, 774, m9pn);
     goto L_ret;
   }
   v = INT64_C(0);
   for (;;) {
     bool m9t5 = (i < Text_BLen (s, err));
-    if (err->exc) { m9ln = 653; goto L_ret; };
+    if (err->exc) { m9ln = 776; goto L_ret; };
     if (!(m9t5)) break;
     bool m9t6 = (((int64_t)(Text_BAt (s, i, err)) < (int64_t)(48u)) || ((int64_t)(Text_BAt (s, i, err)) > (int64_t)(57u)));
-    if (err->exc) { m9ln = 654; goto L_ret; };
+    if (err->exc) { m9ln = 777; goto L_ret; };
     if (m9t6) {
       m9_raise (err, &m9_exc_ValueRange);
-      m9_site (err, 654, m9pn);
+      m9_site (err, 777, m9pn);
       goto L_ret;
     }
     { __typeof__(d) m9v = m9_sub_i64 ((int64_t)(Text_BAt (s, i, err)), (int64_t)(48u), err);
-      if (err->exc) { m9ln = 655; goto L_ret; };
+      if (err->exc) { m9ln = 778; goto L_ret; };
       d = m9v;
     }
     { __typeof__(v) m9v = m9_sub_i64 (m9_mul_i64 (v, INT64_C(10), err), d, err);
-      if (err->exc) { m9ln = 658; goto L_ret; };
+      if (err->exc) { m9ln = 781; goto L_ret; };
       v = m9v;
     }
     { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-      if (err->exc) { m9ln = 659; goto L_ret; };
+      if (err->exc) { m9ln = 782; goto L_ret; };
       i = m9v;
     }
   }
@@ -800,7 +910,7 @@ int64_t Pg_I64Cell (Pg_Result * r, int64_t row, int64_t col, m9_state *err)
   }
   err->res = m9res;
   m9ret = m9_neg_i64 (v, err);
-  if (err->exc) { m9ln = 662; goto L_ret; };
+  if (err->exc) { m9ln = 785; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -820,25 +930,25 @@ double Pg_F64Cell (Pg_Result * r, int64_t row, int64_t col, m9_state *err)
   double m9ret = 0;
   m9_sl_UTF8 s = {0}; (void) s;
   { __typeof__(s) m9v = Pg_Present (r, row, col, err);
-    if (err->exc) { m9ln = 673; goto L_ret; };
+    if (err->exc) { m9ln = 796; goto L_ret; };
     s = m9v;
   }
-  bool m9t1 = Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s5, 3 }), err);
-  if (err->exc) { m9ln = 674; goto L_ret; };
+  bool m9t1 = Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s8, 3 }), err);
+  if (err->exc) { m9ln = 797; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
     m9ret = NAN;
     goto L_ret;
   }
-  bool m9t2 = Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s6, 8 }), err);
-  if (err->exc) { m9ln = 675; goto L_ret; };
+  bool m9t2 = Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s9, 8 }), err);
+  if (err->exc) { m9ln = 798; goto L_ret; };
   if (m9t2) {
     err->res = m9res;
     m9ret = (1.0E308 * 10.0);
     goto L_ret;
   }
-  bool m9t3 = Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s7, 9 }), err);
-  if (err->exc) { m9ln = 676; goto L_ret; };
+  bool m9t3 = Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s10, 9 }), err);
+  if (err->exc) { m9ln = 799; goto L_ret; };
   if (m9t3) {
     err->res = m9res;
     m9ret = (- (1.0E308 * 10.0));
@@ -846,7 +956,7 @@ double Pg_F64Cell (Pg_Result * r, int64_t row, int64_t col, m9_state *err)
   }
   err->res = m9res;
   m9ret = Fmt_ParseF64Utf (s, err);
-  if (err->exc) { m9ln = 677; goto L_ret; };
+  if (err->exc) { m9ln = 800; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -866,25 +976,25 @@ bool Pg_BoolCell (Pg_Result * r, int64_t row, int64_t col, m9_state *err)
   bool m9ret = false;
   m9_sl_UTF8 s = {0}; (void) s;
   { __typeof__(s) m9v = Pg_Present (r, row, col, err);
-    if (err->exc) { m9ln = 684; goto L_ret; };
+    if (err->exc) { m9ln = 807; goto L_ret; };
     s = m9v;
   }
-  bool m9t1 = Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s8, 1 }), err);
-  if (err->exc) { m9ln = 685; goto L_ret; };
+  bool m9t1 = Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s11, 1 }), err);
+  if (err->exc) { m9ln = 808; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
     m9ret = true;
     goto L_ret;
   }
-  bool m9t2 = Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s9, 1 }), err);
-  if (err->exc) { m9ln = 686; goto L_ret; };
+  bool m9t2 = Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s12, 1 }), err);
+  if (err->exc) { m9ln = 809; goto L_ret; };
   if (m9t2) {
     err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
   m9_raise (err, &m9_exc_ValueRange);
-  m9_site (err, 687, m9pn);
+  m9_site (err, 810, m9pn);
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -911,169 +1021,169 @@ Time_Instant Pg_TimeCell (Pg_Result * r, int64_t row, int64_t col, m9_state *err
   int64_t sign = 0; (void) sign;
   int64_t off = 0; (void) off;
   { __typeof__(s) m9v = Pg_Present (r, row, col, err);
-    if (err->exc) { m9ln = 715; goto L_ret; };
+    if (err->exc) { m9ln = 838; goto L_ret; };
     s = m9v;
   }
   bool m9t1 = ((((((Text_BLen (s, err) < INT64_C(22)) || (!Text_BIs (s, INT64_C(4), 45u, err))) || (!Text_BIs (s, INT64_C(7), 45u, err))) || (!Text_BIs (s, INT64_C(10), 32u, err))) || (!Text_BIs (s, INT64_C(13), 58u, err))) || (!Text_BIs (s, INT64_C(16), 58u, err)));
-  if (err->exc) { m9ln = 716; goto L_ret; };
+  if (err->exc) { m9ln = 839; goto L_ret; };
   if (m9t1) {
     m9_raise (err, &m9_exc_ValueRange);
-    m9_site (err, 718, m9pn);
+    m9_site (err, 841, m9pn);
     goto L_ret;
   }
   { __typeof__(cv.year) m9v = Pg_Num (s, INT64_C(0), INT64_C(4), err);
-    if (err->exc) { m9ln = 720; goto L_ret; };
+    if (err->exc) { m9ln = 843; goto L_ret; };
     cv.year = m9v;
   }
   { __typeof__(cv.month) m9v = Pg_Num (s, INT64_C(5), INT64_C(2), err);
-    if (err->exc) { m9ln = 721; goto L_ret; };
+    if (err->exc) { m9ln = 844; goto L_ret; };
     cv.month = m9v;
   }
   { __typeof__(cv.day) m9v = Pg_Num (s, INT64_C(8), INT64_C(2), err);
-    if (err->exc) { m9ln = 722; goto L_ret; };
+    if (err->exc) { m9ln = 845; goto L_ret; };
     cv.day = m9v;
   }
   { __typeof__(cv.hour) m9v = Pg_Num (s, INT64_C(11), INT64_C(2), err);
-    if (err->exc) { m9ln = 723; goto L_ret; };
+    if (err->exc) { m9ln = 846; goto L_ret; };
     cv.hour = m9v;
   }
   { __typeof__(cv.minute) m9v = Pg_Num (s, INT64_C(14), INT64_C(2), err);
-    if (err->exc) { m9ln = 724; goto L_ret; };
+    if (err->exc) { m9ln = 847; goto L_ret; };
     cv.minute = m9v;
   }
   { __typeof__(cv.second) m9v = (double)(Pg_Num (s, INT64_C(17), INT64_C(2), err));
-    if (err->exc) { m9ln = 725; goto L_ret; };
+    if (err->exc) { m9ln = 848; goto L_ret; };
     cv.second = m9v;
   }
   i = INT64_C(19);
   bool m9t2 = Text_BIs (s, i, 46u, err);
-  if (err->exc) { m9ln = 727; goto L_ret; };
+  if (err->exc) { m9ln = 850; goto L_ret; };
   if (m9t2) {
     { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-      if (err->exc) { m9ln = 728; goto L_ret; };
+      if (err->exc) { m9ln = 851; goto L_ret; };
       i = m9v;
     }
     frac = INT64_C(0);
     scale = INT64_C(1);
     for (;;) {
       bool m9t3 = (((i < Text_BLen (s, err)) && ((int64_t)(Text_BAt (s, i, err)) >= (int64_t)(48u))) && ((int64_t)(Text_BAt (s, i, err)) <= (int64_t)(57u)));
-      if (err->exc) { m9ln = 731; goto L_ret; };
+      if (err->exc) { m9ln = 854; goto L_ret; };
       if (!(m9t3)) break;
       { __typeof__(frac) m9v = m9_sub_i64 (m9_add_i64 (m9_mul_i64 (frac, INT64_C(10), err), (int64_t)(Text_BAt (s, i, err)), err), (int64_t)(48u), err);
-        if (err->exc) { m9ln = 732; goto L_ret; };
+        if (err->exc) { m9ln = 855; goto L_ret; };
         frac = m9v;
       }
       { __typeof__(scale) m9v = m9_mul_i64 (scale, INT64_C(10), err);
-        if (err->exc) { m9ln = 733; goto L_ret; };
+        if (err->exc) { m9ln = 856; goto L_ret; };
         scale = m9v;
       }
       { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-        if (err->exc) { m9ln = 734; goto L_ret; };
+        if (err->exc) { m9ln = 857; goto L_ret; };
         i = m9v;
       }
     }
     if ((scale == INT64_C(1))) {
       m9_raise (err, &m9_exc_ValueRange);
-      m9_site (err, 736, m9pn);
+      m9_site (err, 859, m9pn);
       goto L_ret;
     }
     cv.second = (cv.second + ((double)(frac) / (double)(scale)));
   }
   bool m9t4 = (i >= Text_BLen (s, err));
-  if (err->exc) { m9ln = 739; goto L_ret; };
+  if (err->exc) { m9ln = 862; goto L_ret; };
   if (m9t4) {
     m9_raise (err, &m9_exc_ValueRange);
-    m9_site (err, 739, m9pn);
+    m9_site (err, 862, m9pn);
     goto L_ret;
   }
   bool m9t5 = Text_BIs (s, i, 43u, err);
-  if (err->exc) { m9ln = 740; goto L_ret; };
+  if (err->exc) { m9ln = 863; goto L_ret; };
   if (m9t5) {
     sign = INT64_C(1);
   } else {
     bool m9t6 = Text_BIs (s, i, 45u, err);
-    if (err->exc) { m9ln = 740; goto L_ret; };
+    if (err->exc) { m9ln = 863; goto L_ret; };
     if (m9t6) {
       { __typeof__(sign) m9v = m9_neg_i64 (INT64_C(1), err);
-        if (err->exc) { m9ln = 741; goto L_ret; };
+        if (err->exc) { m9ln = 864; goto L_ret; };
         sign = m9v;
       }
   } else {
     m9_raise (err, &m9_exc_ValueRange);
-    m9_site (err, 742, m9pn);
+    m9_site (err, 865, m9pn);
     goto L_ret;
   } }
-  { __typeof__(m9_add_i64 (i, INT64_C(1), err)) m9a4 = m9_add_i64 (i, INT64_C(1), err);
-    if (err->exc) { m9ln = 744; goto L_ret; };
-  { __typeof__(off) m9v = m9_mul_i64 (Pg_Num (s, m9a4, INT64_C(2), err), INT64_C(3600), err);
-    if (err->exc) { m9ln = 744; goto L_ret; };
+  { __typeof__(m9_add_i64 (i, INT64_C(1), err)) m9a9 = m9_add_i64 (i, INT64_C(1), err);
+    if (err->exc) { m9ln = 867; goto L_ret; };
+  { __typeof__(off) m9v = m9_mul_i64 (Pg_Num (s, m9a9, INT64_C(2), err), INT64_C(3600), err);
+    if (err->exc) { m9ln = 867; goto L_ret; };
     off = m9v;
   }
   }
   { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(3), err);
-    if (err->exc) { m9ln = 745; goto L_ret; };
+    if (err->exc) { m9ln = 868; goto L_ret; };
     i = m9v;
   }
   bool m9t7 = (i < Text_BLen (s, err));
-  if (err->exc) { m9ln = 746; goto L_ret; };
+  if (err->exc) { m9ln = 869; goto L_ret; };
   if (m9t7) {
     bool m9t8 = (!Text_BIs (s, i, 58u, err));
-    if (err->exc) { m9ln = 747; goto L_ret; };
+    if (err->exc) { m9ln = 870; goto L_ret; };
     if (m9t8) {
       m9_raise (err, &m9_exc_ValueRange);
-      m9_site (err, 747, m9pn);
+      m9_site (err, 870, m9pn);
       goto L_ret;
     }
-    { __typeof__(m9_add_i64 (i, INT64_C(1), err)) m9a5 = m9_add_i64 (i, INT64_C(1), err);
-      if (err->exc) { m9ln = 748; goto L_ret; };
-    { __typeof__(off) m9v = m9_add_i64 (off, m9_mul_i64 (Pg_Num (s, m9a5, INT64_C(2), err), INT64_C(60), err), err);
-      if (err->exc) { m9ln = 748; goto L_ret; };
+    { __typeof__(m9_add_i64 (i, INT64_C(1), err)) m9a10 = m9_add_i64 (i, INT64_C(1), err);
+      if (err->exc) { m9ln = 871; goto L_ret; };
+    { __typeof__(off) m9v = m9_add_i64 (off, m9_mul_i64 (Pg_Num (s, m9a10, INT64_C(2), err), INT64_C(60), err), err);
+      if (err->exc) { m9ln = 871; goto L_ret; };
       off = m9v;
     }
     }
     { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(3), err);
-      if (err->exc) { m9ln = 749; goto L_ret; };
+      if (err->exc) { m9ln = 872; goto L_ret; };
       i = m9v;
     }
     bool m9t9 = (i < Text_BLen (s, err));
-    if (err->exc) { m9ln = 750; goto L_ret; };
+    if (err->exc) { m9ln = 873; goto L_ret; };
     if (m9t9) {
       bool m9t10 = (!Text_BIs (s, i, 58u, err));
-      if (err->exc) { m9ln = 751; goto L_ret; };
+      if (err->exc) { m9ln = 874; goto L_ret; };
       if (m9t10) {
         m9_raise (err, &m9_exc_ValueRange);
-        m9_site (err, 751, m9pn);
+        m9_site (err, 874, m9pn);
         goto L_ret;
       }
-      { __typeof__(m9_add_i64 (i, INT64_C(1), err)) m9a6 = m9_add_i64 (i, INT64_C(1), err);
-        if (err->exc) { m9ln = 752; goto L_ret; };
-      { __typeof__(off) m9v = m9_add_i64 (off, Pg_Num (s, m9a6, INT64_C(2), err), err);
-        if (err->exc) { m9ln = 752; goto L_ret; };
+      { __typeof__(m9_add_i64 (i, INT64_C(1), err)) m9a11 = m9_add_i64 (i, INT64_C(1), err);
+        if (err->exc) { m9ln = 875; goto L_ret; };
+      { __typeof__(off) m9v = m9_add_i64 (off, Pg_Num (s, m9a11, INT64_C(2), err), err);
+        if (err->exc) { m9ln = 875; goto L_ret; };
         off = m9v;
       }
       }
       { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(3), err);
-        if (err->exc) { m9ln = 753; goto L_ret; };
+        if (err->exc) { m9ln = 876; goto L_ret; };
         i = m9v;
       }
     }
   }
   bool m9t11 = (i != Text_BLen (s, err));
-  if (err->exc) { m9ln = 756; goto L_ret; };
+  if (err->exc) { m9ln = 879; goto L_ret; };
   if (m9t11) {
     m9_raise (err, &m9_exc_ValueRange);
-    m9_site (err, 756, m9pn);
+    m9_site (err, 879, m9pn);
     goto L_ret;
   }
   { __typeof__(t) m9v = Time_FromCivil (cv, err);
-    if (err->exc) { m9ln = 757; goto L_ret; };
+    if (err->exc) { m9ln = 880; goto L_ret; };
     t = m9v;
   }
   err->res = m9res;
-  { __typeof__((double)(m9_neg_i64 (m9_mul_i64 (sign, off, err), err))) m9a7 = (double)(m9_neg_i64 (m9_mul_i64 (sign, off, err), err));
-    if (err->exc) { m9ln = 758; goto L_ret; };
-  m9ret = Time_AddSeconds (t, m9a7, err);
-  if (err->exc) { m9ln = 758; goto L_ret; };
+  { __typeof__((double)(m9_neg_i64 (m9_mul_i64 (sign, off, err), err))) m9a12 = (double)(m9_neg_i64 (m9_mul_i64 (sign, off, err), err));
+    if (err->exc) { m9ln = 881; goto L_ret; };
+  m9ret = Time_AddSeconds (t, m9a12, err);
+  if (err->exc) { m9ln = 881; goto L_ret; };
   }
   goto L_ret;
 L_ret: ;
@@ -1113,7 +1223,7 @@ static bool Pg_IsNil (void * p, m9_state *err)
   bool m9ret = false;
   err->res = m9res;
   m9ret = (((int64_t)(p)) == ((int64_t)(Pg_Null (err))));
-  if (err->exc) { m9ln = 242; goto L_ret; };
+  if (err->exc) { m9ln = 317; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -1136,7 +1246,7 @@ static m9_sl_UTF8 Pg_CText (m9_pool *pool, const void * p, m9_state *err)
   m9_sl_BYTE b = {0}; (void) b;
   void * q = NULL; (void) q;
   bool m9t1 = (((int64_t)(p)) == ((int64_t)(Pg_Null (err))));
-  if (err->exc) { m9ln = 259; goto L_ret; };
+  if (err->exc) { m9ln = 334; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
     m9ret = ((m9_sl_UTF8){ NULL, 0 });
@@ -1151,26 +1261,26 @@ static m9_sl_UTF8 Pg_CText (m9_pool *pool, const void * p, m9_state *err)
   k = n;
   if ((k > Pg_MaxMsg)) {
     { __typeof__(k) m9v = m9_add_i64 (Pg_MaxMsg, INT64_C(1), err);
-      if (err->exc) { m9ln = 263; goto L_ret; };
+      if (err->exc) { m9ln = 338; goto L_ret; };
       k = m9v;
     }
   }
   { __typeof__(b) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), m9_add_i64 (k, INT64_C(1), err), err);
-    if (err->exc) { m9ln = 264; goto L_ret; };
+    if (err->exc) { m9ln = 339; goto L_ret; };
     b = m9v;
   }
-  { __typeof__(q) m9v = ({ __auto_type m9_fam9t3 = (((void *)(b).p)); __auto_type m9_fam9t4 = (p); __auto_type m9_fam9t5 = (((size_t) m9_u64 (k, err))); if (err->exc) { m9ln = 265; goto L_ret; }; memcpy (m9_fam9t3, m9_fam9t4, m9_fam9t5); });
-    if (err->exc) { m9ln = 265; goto L_ret; };
+  { __typeof__(q) m9v = ({ __auto_type m9_fam9t3 = (((void *)(b).p)); __auto_type m9_fam9t4 = (p); __auto_type m9_fam9t5 = (((size_t) m9_u64 (k, err))); if (err->exc) { m9ln = 340; goto L_ret; }; memcpy (m9_fam9t3, m9_fam9t4, m9_fam9t5); });
+    if (err->exc) { m9ln = 340; goto L_ret; };
     q = m9v;
   }
   if ((n > Pg_MaxMsg)) {
     n = Pg_MaxMsg;
     for (;;) {
       bool m9t6 = (((n > INT64_C(0)) && ((int64_t)((*(uint8_t *) m9_at (b.p, n, b.len, sizeof (uint8_t), err))) >= INT64_C(128))) && ((int64_t)((*(uint8_t *) m9_at (b.p, n, b.len, sizeof (uint8_t), err))) < INT64_C(192)));
-      if (err->exc) { m9ln = 272; goto L_ret; };
+      if (err->exc) { m9ln = 347; goto L_ret; };
       if (!(m9t6)) break;
       { __typeof__(n) m9v = m9_sub_i64 (n, INT64_C(1), err);
-        if (err->exc) { m9ln = 273; goto L_ret; };
+        if (err->exc) { m9ln = 348; goto L_ret; };
         n = m9v;
       }
     }
@@ -1181,18 +1291,18 @@ static m9_sl_UTF8 Pg_CText (m9_pool *pool, const void * p, m9_state *err)
     goto L_ret;
   }
   bool m9t7 = ((*(uint8_t *) m9_at (b.p, m9_sub_i64 (n, INT64_C(1), err), b.len, sizeof (uint8_t), err)) == INT64_C(10));
-  if (err->exc) { m9ln = 278; goto L_ret; };
+  if (err->exc) { m9ln = 353; goto L_ret; };
   if (m9t7) {
     { __typeof__(n) m9v = m9_sub_i64 (n, INT64_C(1), err);
-      if (err->exc) { m9ln = 278; goto L_ret; };
+      if (err->exc) { m9ln = 353; goto L_ret; };
       n = m9v;
     }
   }
   err->res = m9res;
-  { __typeof__(({ __auto_type m9t8 = b; int64_t m9t8a = INT64_C(0), m9t8n = n; int64_t m9t8o = m9_chk_slice (m9t8a, m9t8n, m9t8.len, err); (__typeof__(m9t8)){ m9t8.p + m9t8o, err->exc ? 0 : m9t8n }; })) m9a8 = ({ __auto_type m9t8 = b; int64_t m9t8a = INT64_C(0), m9t8n = n; int64_t m9t8o = m9_chk_slice (m9t8a, m9t8n, m9t8.len, err); (__typeof__(m9t8)){ m9t8.p + m9t8o, err->exc ? 0 : m9t8n }; });
-    if (err->exc) { m9ln = 279; goto L_ret; };
-  m9ret = DynStr_Decoded (pool, m9a8, err);
-  if (err->exc) { m9ln = 279; goto L_ret; };
+  { __typeof__(({ __auto_type m9t8 = b; int64_t m9t8a = INT64_C(0), m9t8n = n; int64_t m9t8o = m9_chk_slice (m9t8a, m9t8n, m9t8.len, err); (__typeof__(m9t8)){ m9t8.p + m9t8o, err->exc ? 0 : m9t8n }; })) m9a13 = ({ __auto_type m9t8 = b; int64_t m9t8a = INT64_C(0), m9t8n = n; int64_t m9t8o = m9_chk_slice (m9t8a, m9t8n, m9t8.len, err); (__typeof__(m9t8)){ m9t8.p + m9t8o, err->exc ? 0 : m9t8n }; });
+    if (err->exc) { m9ln = 354; goto L_ret; };
+  m9ret = DynStr_Decoded (pool, m9a13, err);
+  if (err->exc) { m9ln = 354; goto L_ret; };
   }
   goto L_ret;
 L_ret: ;
@@ -1217,18 +1327,18 @@ static m9_sl_BYTE Pg_CStr (m9_pool *pool, m9_sl_UTF8 s, m9_state *err)
   int64_t i = 0; (void) i;
   u = m9_utf_octets (s);
   { __typeof__(b) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), m9_add_i64 ((u).len, INT64_C(1), err), err);
-    if (err->exc) { m9ln = 292; goto L_ret; };
+    if (err->exc) { m9ln = 367; goto L_ret; };
     b = m9v;
   }
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((u).len, INT64_C(1), err);
-  if (err->exc) { m9ln = 293; goto L_ret; };
+  if (err->exc) { m9ln = 368; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     { __typeof__((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (u.p, i, u.len, sizeof (uint8_t), err));
-      if (err->exc) { m9ln = 293; goto L_ret; };
+      if (err->exc) { m9ln = 368; goto L_ret; };
       (*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)) = m9v;
-      if (err->exc) { m9ln = 293; goto L_ret; };
+      if (err->exc) { m9ln = 368; goto L_ret; };
     }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
@@ -1256,17 +1366,17 @@ static void * Pg_Open (m9_pool *scratch, m9_sl_UTF8 info, m9_sl_UTF8 *msg, m9_st
   m9_sl_BYTE cb = {0}; (void) cb;
   void * h = NULL; (void) h;
   { __typeof__(cb) m9v = Pg_CStr (scratch, info, err);
-    if (err->exc) { m9ln = 306; goto L_hdl_m9t1; };
+    if (err->exc) { m9ln = 381; goto L_hdl_m9t1; };
     cb = m9v;
   }
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    (*msg) = ((m9_sl_UTF8){ (uint8_t *) m9s10, 29 });
+    (*msg) = ((m9_sl_UTF8){ (uint8_t *) m9s13, 29 });
     err->res = m9res;
     m9ret = Pg_Null (err);
-    if (err->exc) { m9ln = 310; goto L_ret; };
+    if (err->exc) { m9ln = 385; goto L_ret; };
     goto L_ret;
     goto L_dn_m9t2;
   }
@@ -1274,23 +1384,23 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
   h = PQconnectdb (((void *)(cb).p));
   bool m9t4 = Pg_IsNil (h, err);
-  if (err->exc) { m9ln = 313; goto L_ret; };
+  if (err->exc) { m9ln = 388; goto L_ret; };
   if (m9t4) {
-    (*msg) = ((m9_sl_UTF8){ (uint8_t *) m9s11, 37 });
+    (*msg) = ((m9_sl_UTF8){ (uint8_t *) m9s14, 37 });
     err->res = m9res;
     m9ret = Pg_Null (err);
-    if (err->exc) { m9ln = 315; goto L_ret; };
+    if (err->exc) { m9ln = 390; goto L_ret; };
     goto L_ret;
   }
   if (((int64_t)(PQstatus (h)) != Pg_ConnOk)) {
     { __typeof__((*msg)) m9v = Pg_CText (scratch, PQerrorMessage (h), err);
-      if (err->exc) { m9ln = 318; goto L_ret; };
+      if (err->exc) { m9ln = 393; goto L_ret; };
       (*msg) = m9v;
     }
     PQfinish (h);
     err->res = m9res;
     m9ret = Pg_Null (err);
-    if (err->exc) { m9ln = 320; goto L_ret; };
+    if (err->exc) { m9ln = 395; goto L_ret; };
     goto L_ret;
   }
   err->res = m9res;
@@ -1323,53 +1433,53 @@ static m9_sl_BYTE Pg_ParamBlock (m9_pool *pool, m9_sl_m9_sl_UTF8 params, m9_stat
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((params).len, INT64_C(1), err);
-  if (err->exc) { m9ln = 383; goto L_ret; };
+  if (err->exc) { m9ln = 473; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     { __typeof__(u) m9v = m9_utf_octets ((*(m9_sl_UTF8 *) m9_at (params.p, i, params.len, sizeof (m9_sl_UTF8), err)));
-      if (err->exc) { m9ln = 384; goto L_ret; };
+      if (err->exc) { m9ln = 474; goto L_ret; };
       u = m9v;
     }
     { __typeof__(total) m9v = m9_add_i64 (m9_add_i64 (total, (u).len, err), INT64_C(1), err);
-      if (err->exc) { m9ln = 385; goto L_ret; };
+      if (err->exc) { m9ln = 475; goto L_ret; };
       total = m9v;
     }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   { __typeof__(blk) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), total, err);
-    if (err->exc) { m9ln = 387; goto L_ret; };
+    if (err->exc) { m9ln = 477; goto L_ret; };
     blk = m9v;
   }
   pos = INT64_C(0);
   { __typeof__(i) m9t2to;
   i = INT64_C(0);
   m9t2to = m9_sub_i64 ((params).len, INT64_C(1), err);
-  if (err->exc) { m9ln = 389; goto L_ret; };
+  if (err->exc) { m9ln = 479; goto L_ret; };
   if (i <= m9t2to) for (;;) {
     M9_YCHK ();
     { __typeof__(u) m9v = m9_utf_octets ((*(m9_sl_UTF8 *) m9_at (params.p, i, params.len, sizeof (m9_sl_UTF8), err)));
-      if (err->exc) { m9ln = 390; goto L_ret; };
+      if (err->exc) { m9ln = 480; goto L_ret; };
       u = m9v;
     }
     { __typeof__(j) m9t3to;
     j = INT64_C(0);
     m9t3to = m9_sub_i64 ((u).len, INT64_C(1), err);
-    if (err->exc) { m9ln = 391; goto L_ret; };
+    if (err->exc) { m9ln = 481; goto L_ret; };
     if (j <= m9t3to) for (;;) {
       { __typeof__((*(uint8_t *) m9_at (blk.p, pos, blk.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (u.p, j, u.len, sizeof (uint8_t), err));
-        if (err->exc) { m9ln = 392; goto L_ret; };
+        if (err->exc) { m9ln = 482; goto L_ret; };
         (*(uint8_t *) m9_at (blk.p, pos, blk.len, sizeof (uint8_t), err)) = m9v;
-        if (err->exc) { m9ln = 392; goto L_ret; };
+        if (err->exc) { m9ln = 482; goto L_ret; };
       }
       { __typeof__(pos) m9v = m9_add_i64 (pos, INT64_C(1), err);
-        if (err->exc) { m9ln = 393; goto L_ret; };
+        if (err->exc) { m9ln = 483; goto L_ret; };
         pos = m9v;
       }
       if ((uint64_t) m9t3to - (uint64_t) j < (uint64_t) 1) break;
       j += 1;
     } }
     { __typeof__(pos) m9v = m9_add_i64 (pos, INT64_C(1), err);
-      if (err->exc) { m9ln = 395; goto L_ret; };
+      if (err->exc) { m9ln = 485; goto L_ret; };
       pos = m9v;
     }
     if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
@@ -1386,6 +1496,30 @@ L_ret: ;
   return m9ret;
 }
 
+static m9_sl_UTF8 Pg_Silent (int64_t ms, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  static const char m9pn[] = "Pg.Silent"; (void) m9pn;
+  int32_t m9ln = 0; (void) m9ln;
+  m9_sl_UTF8 m9ret = {0};
+  err->res = m9res;
+  { __typeof__(m9_add_i64 (ms, Pg_TimeoutGrace, err)) m9a14 = m9_add_i64 (ms, Pg_TimeoutGrace, err);
+    if (err->exc) { m9ln = 494; goto L_ret; };
+  m9ret = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s15, 32 }); m9_utf_cat (err->res, m9t1, Fmt_I64Str (m9a14, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s16, 29 }), err);
+  if (err->exc) { m9ln = 494; goto L_ret; };
+  }
+  goto L_ret;
+L_ret: ;
+  if (err->exc) m9_site (err, m9ln, m9pn);
+  err->res = m9res;
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
 static void * Pg_Run (m9_pool *scratch, Pg_Conn * c, m9_sl_UTF8 sql, m9_sl_m9_sl_UTF8 params, m9_state *err)
 {
   m9_pool m9frame = {0};
@@ -1397,55 +1531,75 @@ static void * Pg_Run (m9_pool *scratch, Pg_Conn * c, m9_sl_UTF8 sql, m9_sl_m9_sl
   void * m9ret = NULL;
   m9_sl_BYTE sb = {0}; (void) sb;
   m9_sl_BYTE blk = {0}; (void) blk;
+  m9_sl_BYTE how = {0}; (void) how;
   void * res = NULL; (void) res;
   int64_t st = 0; (void) st;
   m9_sl_UTF8 msg = {0}; (void) msg;
   if ((!c->open)) {
-    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s12, 24 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s12, 24 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s17, 24 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s17, 24 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Pg_PgError);
-    m9_site (err, 412, m9pn);
+    m9_site (err, 510, m9pn);
     goto L_ret;
   }
   if (((params).len > Pg_MaxParams)) {
-    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s13, 19 })) m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s13, 19 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s18, 19 })) m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s18, 19 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Pg_PgError);
-    m9_site (err, 413, m9pn);
+    m9_site (err, 511, m9pn);
     goto L_ret;
   }
   { __typeof__(sb) m9v = Pg_CStr (scratch, sql, err);
-    if (err->exc) { m9ln = 414; goto L_ret; };
+    if (err->exc) { m9ln = 512; goto L_ret; };
     sb = m9v;
   }
   { __typeof__(blk) m9v = Pg_ParamBlock (scratch, params, err);
-    if (err->exc) { m9ln = 415; goto L_ret; };
+    if (err->exc) { m9ln = 513; goto L_ret; };
     blk = m9v;
   }
-  { __typeof__(res) m9v = ({ __auto_type m9_fam9t3 = (c->h); __auto_type m9_fam9t4 = (((void *)(sb).p)); __auto_type m9_fam9t5 = (((void *)(blk).p)); __auto_type m9_fam9t6 = (((int) m9_i32 ((params).len, err))); if (err->exc) { m9ln = 416; goto L_ret; }; m9_pq_exec (m9_fam9t3, m9_fam9t4, m9_fam9t5, m9_fam9t6); });
-    if (err->exc) { m9ln = 416; goto L_ret; };
-    res = m9v;
+  if ((c->ms > INT64_C(0))) {
+    { __typeof__(how) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*scratch)), INT64_C(1), err);
+      if (err->exc) { m9ln = 515; goto L_ret; };
+      how = m9v;
+    }
+    { __typeof__(res) m9v = ({ __auto_type m9_fam9t3 = (c->h); __auto_type m9_fam9t4 = (((void *)(sb).p)); __auto_type m9_fam9t5 = (((void *)(blk).p)); __auto_type m9_fam9t6 = (((int) m9_i32 ((params).len, err))); if (err->exc) { m9ln = 516; goto L_ret; }; __auto_type m9_fam9t7 = (((int) m9_i32 (m9_add_i64 (c->ms, Pg_TimeoutGrace, err), err))); if (err->exc) { m9ln = 516; goto L_ret; }; __auto_type m9_fam9t8 = (((void *)(how).p)); m9_pq_exec_timed (m9_fam9t3, m9_fam9t4, m9_fam9t5, m9_fam9t6, m9_fam9t7, m9_fam9t8); });
+      if (err->exc) { m9ln = 516; goto L_ret; };
+      res = m9v;
+    }
+    bool m9t9 = (Pg_IsNil (res, err) && (((int64_t)((*(uint8_t *) m9_at (how.p, INT64_C(0), how.len, sizeof (uint8_t), err))) == INT64_C(2))));
+    if (err->exc) { m9ln = 518; goto L_ret; };
+    if (m9t9) {
+      { __typeof__(Pg_Silent (c->ms, err)) m9t10 = Pg_Silent (c->ms, err); err->s[0].p = m9t10.p; err->s[0].len = m9t10.len; m9_pay_keep (err, 0, sizeof (*m9t10.p)); }
+      m9_raise (err, &Pg_PgError);
+      m9_site (err, 518, m9pn);
+      goto L_ret;
+    }
+  } else {
+    { __typeof__(res) m9v = ({ __auto_type m9_fam9t11 = (c->h); __auto_type m9_fam9t12 = (((void *)(sb).p)); __auto_type m9_fam9t13 = (((void *)(blk).p)); __auto_type m9_fam9t14 = (((int) m9_i32 ((params).len, err))); if (err->exc) { m9ln = 520; goto L_ret; }; m9_pq_exec (m9_fam9t11, m9_fam9t12, m9_fam9t13, m9_fam9t14); });
+      if (err->exc) { m9ln = 520; goto L_ret; };
+      res = m9v;
+    }
   }
-  bool m9t7 = Pg_IsNil (res, err);
-  if (err->exc) { m9ln = 417; goto L_ret; };
-  if (m9t7) {
+  bool m9t15 = Pg_IsNil (res, err);
+  if (err->exc) { m9ln = 522; goto L_ret; };
+  if (m9t15) {
     { __typeof__(msg) m9v = Pg_CText (scratch, PQerrorMessage (c->h), err);
-      if (err->exc) { m9ln = 418; goto L_ret; };
+      if (err->exc) { m9ln = 523; goto L_ret; };
       msg = m9v;
     }
-    { __typeof__(msg) m9t9 = msg; err->s[0].p = m9t9.p; err->s[0].len = m9t9.len; m9_pay_keep (err, 0, sizeof (*m9t9.p)); }
+    { __typeof__(msg) m9t17 = msg; err->s[0].p = m9t17.p; err->s[0].len = m9t17.len; m9_pay_keep (err, 0, sizeof (*m9t17.p)); }
     m9_raise (err, &Pg_PgError);
-    m9_site (err, 419, m9pn);
+    m9_site (err, 524, m9pn);
     goto L_ret;
   }
   st = (int64_t)(PQresultStatus (res));
   if ((((st != Pg_TuplesOk)) && ((st != Pg_CommandOk)))) {
     { __typeof__(msg) m9v = Pg_CText (scratch, PQresultErrorMessage (res), err);
-      if (err->exc) { m9ln = 423; goto L_ret; };
+      if (err->exc) { m9ln = 528; goto L_ret; };
       msg = m9v;
     }
     PQclear (res);
-    { __typeof__(msg) m9t13 = msg; err->s[0].p = m9t13.p; err->s[0].len = m9t13.len; m9_pay_keep (err, 0, sizeof (*m9t13.p)); }
+    { __typeof__(msg) m9t21 = msg; err->s[0].p = m9t21.p; err->s[0].len = m9t21.len; m9_pay_keep (err, 0, sizeof (*m9t21.p)); }
     m9_raise (err, &Pg_PgError);
-    m9_site (err, 425, m9pn);
+    m9_site (err, 530, m9pn);
     goto L_ret;
   }
   err->res = m9res;
@@ -1473,13 +1627,13 @@ static int64_t Pg_Count (m9_sl_UTF8 s, m9_state *err)
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (Text_BLen (s, err), INT64_C(1), err);
-  if (err->exc) { m9ln = 492; goto L_ret; };
+  if (err->exc) { m9ln = 597; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     bool m9t2 = (((int64_t)(Text_BAt (s, i, err)) >= (int64_t)(48u)) && ((int64_t)(Text_BAt (s, i, err)) <= (int64_t)(57u)));
-    if (err->exc) { m9ln = 493; goto L_ret; };
+    if (err->exc) { m9ln = 598; goto L_ret; };
     if (m9t2) {
       { __typeof__(v) m9v = m9_sub_i64 (m9_add_i64 (m9_mul_i64 (v, INT64_C(10), err), (int64_t)(Text_BAt (s, i, err)), err), (int64_t)(48u), err);
-        if (err->exc) { m9ln = 494; goto L_ret; };
+        if (err->exc) { m9ln = 599; goto L_ret; };
         v = m9v;
       }
     }
@@ -1509,19 +1663,19 @@ static int64_t Pg_At (Pg_Result * r, int64_t row, int64_t col, m9_state *err)
     err->i[0] = row;
     err->i[1] = r->rows;
     m9_raise (err, &m9_exc_IndexError);
-    m9_site (err, 574, m9pn);
+    m9_site (err, 697, m9pn);
     goto L_ret;
   }
   if (((col < INT64_C(0)) || (col >= r->cols))) {
     err->i[0] = col;
     err->i[1] = r->cols;
     m9_raise (err, &m9_exc_IndexError);
-    m9_site (err, 575, m9pn);
+    m9_site (err, 698, m9pn);
     goto L_ret;
   }
   err->res = m9res;
   m9ret = m9_add_i64 (m9_mul_i64 (row, r->cols, err), col, err);
-  if (err->exc) { m9ln = 576; goto L_ret; };
+  if (err->exc) { m9ln = 699; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -1541,19 +1695,19 @@ static m9_sl_UTF8 Pg_Present (Pg_Result * r, int64_t row, int64_t col, m9_state 
   m9_sl_UTF8 m9ret = {0};
   int64_t k = 0; (void) k;
   { __typeof__(k) m9v = Pg_At (r, row, col, err);
-    if (err->exc) { m9ln = 632; goto L_ret; };
+    if (err->exc) { m9ln = 755; goto L_ret; };
     k = m9v;
   }
   bool m9t1 = (*(bool *) m9_at (r->isNull.p, k, r->isNull.len, sizeof (bool), err));
-  if (err->exc) { m9ln = 633; goto L_ret; };
+  if (err->exc) { m9ln = 756; goto L_ret; };
   if (m9t1) {
     m9_raise (err, &m9_exc_ValueRange);
-    m9_site (err, 633, m9pn);
+    m9_site (err, 756, m9pn);
     goto L_ret;
   }
   err->res = m9res;
   m9ret = (*(m9_sl_UTF8 *) m9_at (r->cell.p, k, r->cell.len, sizeof (m9_sl_UTF8), err));
-  if (err->exc) { m9ln = 634; goto L_ret; };
+  if (err->exc) { m9ln = 757; goto L_ret; };
   goto L_ret;
 L_ret: ;
   if (err->exc) m9_site (err, m9ln, m9pn);
@@ -1575,27 +1729,27 @@ static int64_t Pg_Num (m9_sl_UTF8 s, int64_t at, int64_t n, m9_state *err)
   int64_t i = 0; (void) i;
   int64_t v = 0; (void) v;
   bool m9t1 = (m9_add_i64 (at, n, err) > Text_BLen (s, err));
-  if (err->exc) { m9ln = 695; goto L_ret; };
+  if (err->exc) { m9ln = 818; goto L_ret; };
   if (m9t1) {
     m9_raise (err, &m9_exc_ValueRange);
-    m9_site (err, 695, m9pn);
+    m9_site (err, 818, m9pn);
     goto L_ret;
   }
   v = INT64_C(0);
   { __typeof__(i) m9t2to;
   i = at;
   m9t2to = m9_sub_i64 (m9_add_i64 (at, n, err), INT64_C(1), err);
-  if (err->exc) { m9ln = 697; goto L_ret; };
+  if (err->exc) { m9ln = 820; goto L_ret; };
   if (i <= m9t2to) for (;;) {
     bool m9t3 = (((int64_t)(Text_BAt (s, i, err)) < (int64_t)(48u)) || ((int64_t)(Text_BAt (s, i, err)) > (int64_t)(57u)));
-    if (err->exc) { m9ln = 698; goto L_ret; };
+    if (err->exc) { m9ln = 821; goto L_ret; };
     if (m9t3) {
       m9_raise (err, &m9_exc_ValueRange);
-      m9_site (err, 698, m9pn);
+      m9_site (err, 821, m9pn);
       goto L_ret;
     }
     { __typeof__(v) m9v = m9_sub_i64 (m9_add_i64 (m9_mul_i64 (v, INT64_C(10), err), (int64_t)(Text_BAt (s, i, err)), err), (int64_t)(48u), err);
-      if (err->exc) { m9ln = 699; goto L_ret; };
+      if (err->exc) { m9ln = 822; goto L_ret; };
       v = m9v;
     }
     if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;

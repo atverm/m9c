@@ -1,0 +1,233 @@
+MODULE JobsTest ;
+
+(* JobsTest holds Jobs.Board to its contract.  The line keeps its
+   order.  Add ignores a job that waits or is held, and takes it again
+   once it is Done.  GiveBack puts a job at the back and counts its
+   failures.  A full board
+   drops what Add brings and never a job given back.  Close ends every
+   Take.  Then a crew of tasks: 1,000 jobs, where every seventh fails
+   its worker once, and each job is finished exactly once. *)
+
+IMPORT Check ;
+IMPORT Io ;
+IMPORT Jobs ;
+
+CONST
+  Workers = 4 ;
+  Count = 1000 ;
+
+EXCEPTION
+  Refused ;
+
+TYPE
+  (* Gate counts, and wakes who waits for a count. *)
+  Gate = MONITOR RECORD
+    n : I64 ;
+  END ;
+
+  Crew = RECORD
+    board : Jobs.Board ;
+    finished : Gate ;           (* jobs finished *)
+    ended : Gate ;              (* workers that left their loop *)
+    tries : SLICE OF I64 ;      (* job k: how often a worker took it *)
+    dones : SLICE OF I64 ;      (* job k: how often it was finished *)
+  END [SHARABLE] ;
+
+VAR
+  t : Check.T ;
+  pool : POOL ;
+
+PROCEDURE Finish (VAR g: Gate) =
+BEGIN
+  g.n := g.n + 1 ;
+  SIGNAL (g)
+END Finish ;
+
+PROCEDURE Await (VAR g: Gate ; n: I64) =
+BEGIN
+  WHILE g.n < n DO WAIT (g) END
+END Await ;
+
+PROCEDURE NewCrew () : PTR Crew IN pool =
+VAR c : PTR Crew IN pool ;
+BEGIN
+  c := NEW (pool, Crew) ;
+  c.tries := NEW (pool, I64, Count) ;
+  c.dones := NEW (pool, I64, Count) ;
+  RETURN c
+END NewCrew ;
+
+(* ---- one task: the line ------------------------------------------- *)
+
+PROCEDURE Line () =
+VAR
+  c : PTR Crew IN pool ;
+  id : I64 ;
+  ok : BOOL ;
+BEGIN
+  c := NewCrew () ;
+  Check.EqI64 (t, 'a zeroed board has no job waiting', Jobs.Waiting (c.board), 0) ;
+  Jobs.Add (c.board, 7) ;
+  Jobs.Add (c.board, 8) ;
+  Jobs.Add (c.board, 9) ;
+  Jobs.Add (c.board, 8) ;
+  Check.EqI64 (t, 'Add ignores a job that waits', Jobs.Waiting (c.board), 3) ;
+  id := 0 ;
+  ok := Jobs.Take (c.board, id) ;
+  Check.That (t, 'the first job added is taken first', ok AND id = 7) ;
+  Check.EqI64 (t, 'and the board holds it', Jobs.Held (c.board), 1) ;
+  Jobs.Add (c.board, 7) ;
+  Check.EqI64 (t, 'Add ignores a job that is held', Jobs.Waiting (c.board), 2) ;
+  Check.EqI64 (t, 'a job taken the first time has not failed', Jobs.Failed (c.board, 7), 0) ;
+  Jobs.GiveBack (c.board, 7) ;
+  Check.EqI64 (t, 'GiveBack counts', Jobs.GivenBack (c.board), 1) ;
+  Check.EqI64 (t, 'and the board holds nothing', Jobs.Held (c.board), 0) ;
+  Check.EqI64 (t, 'the job waits again', Jobs.Waiting (c.board), 3) ;
+  ok := Jobs.Take (c.board, id) ;
+  Check.That (t, 'a job given back waits behind the others', ok AND id = 8) ;
+  Jobs.Done (c.board, 8) ;
+  ok := Jobs.Take (c.board, id) ;
+  Check.That (t, 'the line goes on in order', ok AND id = 9) ;
+  Jobs.Done (c.board, 9) ;
+  ok := Jobs.Take (c.board, id) ;
+  Check.That (t, 'and the job given back comes last', ok AND id = 7) ;
+  Check.EqI64 (t, 'with its one failure counted', Jobs.Failed (c.board, 7), 1) ;
+  Jobs.GiveBack (c.board, 7) ;
+  ok := Jobs.Take (c.board, id) ;
+  Check.That (t, 'alone in the line it is taken again', ok AND id = 7) ;
+  Check.EqI64 (t, 'and has failed twice', Jobs.Failed (c.board, 7), 2) ;
+  Check.EqI64 (t, 'a job nobody holds has no count', Jobs.Failed (c.board, 8), 0) ;
+  Jobs.Done (c.board, 7) ;
+  Jobs.Done (c.board, 7) ;
+  Jobs.GiveBack (c.board, 7) ;
+  Check.EqI64 (t, 'Done and GiveBack ignore a job that is not held', Jobs.Waiting (c.board), 0) ;
+  Check.EqI64 (t, 'and count nothing', Jobs.GivenBack (c.board), 2) ;
+  Jobs.Add (c.board, 7) ;
+  Check.EqI64 (t, 'a job that was Done can be added again', Jobs.Waiting (c.board), 1) ;
+  ok := Jobs.Take (c.board, id) ;
+  Check.That (t, 'and starts with no failure', ok AND id = 7 AND Jobs.Failed (c.board, 7) = 0) ;
+  Jobs.Done (c.board, 7) ;
+  Jobs.Add (c.board, 7) ;
+  Jobs.Close (c.board) ;
+  Jobs.Close (c.board) ;
+  id := 5 ;
+  Check.That (t, 'Take on a closed board answers FALSE', NOT Jobs.Take (c.board, id)) ;
+  Check.EqI64 (t, 'and leaves id as it was', id, 5) ;
+  Jobs.Add (c.board, 11) ;
+  Check.EqI64 (t, 'Add to a closed board does nothing', Jobs.Waiting (c.board), 1)
+END Line ;
+
+(* Full fills the board.  Add's part of the ring is MaxWaiting -
+   MaxHeld, and the rest is for jobs that come back. *)
+PROCEDURE Full () =
+VAR
+  c : PTR Crew IN pool ;
+  k, id, room : I64 ;
+  ok : BOOL ;
+BEGIN
+  c := NewCrew () ;
+  room := Jobs.MaxWaiting - Jobs.MaxHeld ;
+  (* turn the ring's head away from 0, so the fill wraps *)
+  FOR k := 1 TO 100 DO
+    Jobs.Add (c.board, -k) ;
+    ok := Jobs.Take (c.board, id) ;
+    Jobs.Done (c.board, id)
+  END ;
+  FOR k := 1 TO Jobs.MaxHeld DO Jobs.Add (c.board, k) END ;
+  ok := TRUE ;
+  FOR k := 1 TO Jobs.MaxHeld DO
+    IF NOT Jobs.Take (c.board, id) OR id # k THEN ok := FALSE END
+  END ;
+  Check.That (t, 'MaxHeld jobs are held at once', ok AND Jobs.Held (c.board) = Jobs.MaxHeld) ;
+  FOR k := 1 TO room + 10 DO Jobs.Add (c.board, 1000 + k) END ;
+  Check.EqI64 (t, 'a full board drops what Add brings', Jobs.Waiting (c.board), room) ;
+  FOR k := Jobs.MaxHeld TO 1 BY -1 DO Jobs.GiveBack (c.board, k) END ;
+  Check.EqI64 (t, 'and never a job given back', Jobs.Waiting (c.board), Jobs.MaxWaiting) ;
+  ok := TRUE ;
+  FOR k := 1 TO room DO
+    IF NOT Jobs.Take (c.board, id) OR id # 1000 + k THEN ok := FALSE END ;
+    Jobs.Done (c.board, id)
+  END ;
+  Check.That (t, 'the line comes first, in the order it was added, across the wrap', ok) ;
+  FOR k := Jobs.MaxHeld TO 1 BY -1 DO
+    IF NOT Jobs.Take (c.board, id) OR id # k OR Jobs.Failed (c.board, id) # 1 THEN ok := FALSE END ;
+    Jobs.Done (c.board, id)
+  END ;
+  Check.That (t, 'then the jobs given back, in the order they came back, each failed once', ok) ;
+  Check.EqI64 (t, 'and the board is empty', Jobs.Waiting (c.board) + Jobs.Held (c.board), 0)
+END Full ;
+
+(* ---- tasks -------------------------------------------------------- *)
+
+(* Work does job k.  Every seventh job fails the first time it is
+   taken.  A job is in one hand at a time, so its two counts are too. *)
+PROCEDURE Work (VAR c: Crew ; k: I64) RAISES Refused =
+BEGIN
+  c.tries[k] := c.tries[k] + 1 ;
+  IF k MOD 7 = 0 AND c.tries[k] = 1 THEN RAISE Refused END ;
+  c.dones[k] := c.dones[k] + 1
+EXCEPT
+| IndexError :
+END Work ;
+
+(* Worker is the loop of the module's header.  A turn of the outer
+   loop is a restart. *)
+PROCEDURE Worker (VAR c: Crew) =
+VAR id : I64 ;
+BEGIN
+  id := 0 ;
+  LOOP
+    BEGIN
+      WHILE Jobs.Take (c.board, id) DO
+        Work (c, id) ;
+        Jobs.Done (c.board, id) ;
+        Finish (c.finished)
+      END ;
+      EXIT
+    EXCEPT
+    | Refused : Jobs.GiveBack (c.board, id)
+    END
+  END ;
+  Finish (c.ended)
+END Worker ;
+
+PROCEDURE Crewed () =
+VAR
+  c : PTR Crew IN pool ;
+  k, once, twice, failing : I64 ;
+BEGIN
+  c := NewCrew () ;
+  (* each job from two sources, as a request and a scan would add it *)
+  FOR k := 0 TO Count - 1 DO Jobs.Add (c.board, k) END ;
+  FOR k := 0 TO Count - 1 DO Jobs.Add (c.board, k) END ;
+  Check.EqI64 (t, '1,000 jobs added twice wait once', Jobs.Waiting (c.board), Count) ;
+  FOR k := 1 TO Workers DO TASK (Worker, c) END ;
+  Await (c.finished, Count) ;
+  Jobs.Close (c.board) ;
+  Await (c.ended, Workers) ;
+  once := 0 ;
+  twice := 0 ;
+  failing := 0 ;
+  FOR k := 0 TO Count - 1 DO
+    IF c.dones[k] = 1 THEN once := once + 1 END ;
+    IF k MOD 7 = 0 THEN
+      failing := failing + 1 ;
+      IF c.tries[k] = 2 THEN twice := twice + 1 END
+    ELSIF c.tries[k] = 1 THEN
+      twice := twice + 1
+    END
+  END ;
+  Check.EqI64 (t, 'four workers finish 1,000 jobs, each once', once, Count) ;
+  Check.EqI64 (t, 'a failing job is taken twice and the others once', twice, Count) ;
+  Check.EqI64 (t, 'every failure was a job given back', Jobs.GivenBack (c.board), failing) ;
+  Check.EqI64 (t, 'and nothing waits or is held at the end', Jobs.Waiting (c.board) + Jobs.Held (c.board), 0)
+EXCEPT
+| IndexError : Check.That (t, 'Crewed: an index out of range', FALSE)
+END Crewed ;
+
+BEGIN
+  Line () ;
+  Full () ;
+  Crewed () ;
+  Io.Halt (Check.Done (t, 'Jobs'))
+END JobsTest.

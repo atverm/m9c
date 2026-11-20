@@ -368,6 +368,151 @@ BEGIN
   Zone (1, 'America/St_Johns')
 END Zones ;
 
+(* Cut ends this connection's own backend from a second connection.
+   It holds what a caller meets then: Alive answers FALSE with no
+   statement sent, and every statement fails until Ensure opens the
+   connection again.  The server waits up to five
+   seconds for the backend to go (PostgreSQL 14 on).  The TEMP table
+   of the fixture goes with the backend, so Cut runs last. *)
+PROCEDURE Cut () RAISES ValueRange =
+VAR
+  p : POOL ;
+  other : PTR Pg.Conn IN p ;
+  r : PTR Pg.Result IN p ;
+  pid : STR ;
+  i, fails : I64 ;
+BEGIN
+  r := Pg.Query (p, c, 'SELECT pg_backend_pid ()', NoParams ()) ;
+  pid := Pg.Cell (r, 0, 0) ;
+  Pg.Ensure (c) ;
+  r := Pg.Query (p, c, 'SELECT pg_backend_pid ()', NoParams ()) ;
+  Check.EqStr (t, 'Ensure leaves a live connection as it is', Pg.Cell (r, 0, 0), pid) ;
+  other := Pg.Connect (p, '') ;
+  r := Pg.Query (p, other, 'SELECT pg_terminate_backend ($1::int4, 5000)', Params1 (pid)) ;
+  Check.EqStr (t, 'the server ended the backend', Pg.Cell (r, 0, 0), 't') ;
+  Pg.Close (other) ;
+  (* The close travels a moment after the backend went.  Alive is
+     asked once: a second asking would read what the first left. *)
+  Time.Sleep (500) ;
+  Check.That (t, 'Alive answers FALSE after the cut, asked once, before any statement failed', NOT Pg.Alive (c)) ;
+  fails := 0 ;
+  FOR i := 1 TO 2 DO
+    BEGIN
+      r := Pg.Query (p, c, 'SELECT 1', NoParams ())
+    EXCEPT
+    | Pg.PgError (m) : fails := fails + 1
+    END
+  END ;
+  Check.EqI64 (t, 'a statement on a cut connection raises PgError, and the next one too', fails, 2) ;
+  Check.That (t, 'Alive answers FALSE after the failures', NOT Pg.Alive (c)) ;
+  Pg.Ensure (c) ;
+  Check.That (t, 'Alive answers TRUE after Ensure', Pg.Alive (c)) ;
+  r := Pg.Query (p, c, 'SELECT pg_backend_pid ()', NoParams ()) ;
+  Check.That (t, 'Ensure opened a new backend', NOT Text.Eq (Pg.Cell (r, 0, 0), pid)) ;
+  r := Pg.Query (p, c, 'SELECT 41 + 1', NoParams ()) ;
+  Check.EqI64 (t, 'and the connection answers again', Pg.I64Cell (r, 0, 0), 42)
+EXCEPT
+| Pg.PgError (m) :
+    Check.That (t, 'the cut case met a PgError it did not expect: ' + m, FALSE)
+| IndexError :
+    Check.That (t, 'the cut case met an IndexError', FALSE)
+END Cut ;
+
+(* SleepRaises runs a statement that sleeps `secs` seconds on o.  It
+   answers the PgError's message, or '' when the statement was
+   answered.  took is the time the call needed, in seconds. *)
+PROCEDURE SleepRaises (VAR p: POOL ; o: PTR Pg.Conn ; RO secs: STR ;
+                       script: BOOL ; VAR took: F64) : STR
+  RAISES ValueRange =
+VAR
+  r : PTR Pg.Result IN p ;
+  began : F64 ;
+  why : STR ;
+BEGIN
+  began := Time.Now ().t ;
+  why := '' ;
+  BEGIN
+    IF script THEN
+      Pg.Script (o, 'SELECT pg_sleep (' + secs + ')')
+    ELSE
+      r := Pg.Query (p, o, 'SELECT pg_sleep ($1::float8)', Params1 (secs))
+    END
+  EXCEPT
+  | Pg.PgError (m) : why := Text.Keep (p, m)
+  | IndexError : why := 'IndexError'
+  END ;
+  took := Time.Now ().t - began ;
+  RETURN why
+END SleepRaises ;
+
+(* Timeout holds Pg.SetTimeout on a connection of its own.
+
+   The server ends a statement over the time, and the connection is
+   the same one after it.  A statement under the time is answered.
+   Then the server's own limit is taken away behind Pg's back, which
+   makes this server one that does not answer in time.  The wait
+   ends after the time and its grace, the connection is closed, and
+   Ensure opens one that has the limit again. *)
+PROCEDURE Timeout () RAISES ValueRange =
+VAR
+  p : POOL ;
+  o : PTR Pg.Conn IN p ;
+  r : PTR Pg.Result IN p ;
+  pid, why : STR ;
+  took : F64 ;
+BEGIN
+  o := Pg.Connect (p, '') ;
+  r := Pg.Query (p, o, 'SELECT pg_backend_pid ()', NoParams ()) ;
+  pid := Pg.Cell (r, 0, 0) ;
+  Pg.SetTimeout (o, 300) ;
+
+  why := SleepRaises (p, o, '5', FALSE, took) ;
+  Check.That (t, 'a statement over the time raises PgError: ' + why,
+              Text.Contains (why, 'statement timeout')) ;
+  Check.That (t, 'by the server, which says it cancelled',
+              Text.Contains (why, 'cancel')) ;
+  Check.That (t, 'after the time and not after the sleep (' + Fmt.Fixed (took, 2) + ' s)',
+              (took >= 0.25) AND (took < 2.0)) ;
+  r := Pg.Query (p, o, 'SELECT pg_backend_pid ()', NoParams ()) ;
+  Check.EqStr (t, 'the connection is the same one after it', Pg.Cell (r, 0, 0), pid) ;
+
+  why := SleepRaises (p, o, '5', TRUE, took) ;
+  Check.That (t, 'a script over the time raises too: ' + why,
+              Text.Contains (why, 'statement timeout') AND (took < 2.0)) ;
+  why := SleepRaises (p, o, '0.05', FALSE, took) ;
+  Check.EqStr (t, 'a statement under the time is answered', why, '') ;
+  r := Pg.Query (p, o, 'SELECT $1::int8 + 1', Params1 ('41')) ;
+  Check.EqI64 (t, 'with its rows, parameters bound', Pg.I64Cell (r, 0, 0), 42) ;
+  Check.EqI64 (t, 'and Exec counts its rows under a time',
+               Pg.Exec (o, 'CREATE TEMP TABLE m9to AS SELECT 1 AS k UNION ALL SELECT 2', NoParams ()), 2) ;
+
+  (* The server's limit goes.  The server is silent for the sleep. *)
+  Pg.Script (o, 'SET statement_timeout = 0') ;
+  why := SleepRaises (p, o, '8', FALSE, took) ;
+  Check.That (t, 'a server that does not answer ends the wait: ' + why,
+              Text.Contains (why, 'statement timeout') AND
+              Text.Contains (why, 'the connection is closed')) ;
+  Check.That (t, 'after the time and its grace (' + Fmt.Fixed (took, 2) + ' s)',
+              (took >= 2.0) AND (took < 5.0)) ;
+  Check.That (t, 'Alive answers FALSE after it', NOT Pg.Alive (o)) ;
+  Pg.Ensure (o) ;
+  r := Pg.Query (p, o, 'SELECT pg_backend_pid ()', NoParams ()) ;
+  Check.That (t, 'Ensure opens a new connection', NOT Text.Eq (Pg.Cell (r, 0, 0), pid)) ;
+  why := SleepRaises (p, o, '5', FALSE, took) ;
+  Check.That (t, 'which has the limit again: ' + why,
+              Text.Contains (why, 'cancel') AND (took < 2.0)) ;
+
+  Pg.SetTimeout (o, 0) ;
+  why := SleepRaises (p, o, '0.6', FALSE, took) ;
+  Check.EqStr (t, 'SetTimeout 0 takes the limit away', why, '') ;
+  Pg.Close (o)
+EXCEPT
+| Pg.PgError (m) :
+    Check.That (t, 'the timeout case met a PgError it did not expect: ' + m, FALSE)
+| IndexError :
+    Check.That (t, 'the timeout case met an IndexError', FALSE)
+END Timeout ;
+
 PROCEDURE Fixture () : BOOL RAISES ValueRange =
 VAR
   p : POOL ;
@@ -409,6 +554,8 @@ BEGIN
       ArrayParam () ;
       Errors () ;
       Zones () ;
+      Timeout () ;
+      Cut () ;
       Pg.Close (c)
     ELSE
       Check.That (t, 'a server to test against', FALSE)

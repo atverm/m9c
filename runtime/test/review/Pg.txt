@@ -1,11 +1,11 @@
-REVIEW Pg -- 32 procedures with a body, 26 of them functions; 21 headings in a DEFINITION
+REVIEW Pg -- 35 procedures with a body, 27 of them functions; 23 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              26
-  assignments                                   113
-  arguments                                     248
-  RETURN values                                  39
-  operands of a comparison or an operator       107
+  functions answering on every path              27
+  assignments                                   119
+  arguments                                     274
+  RETURN values                                  41
+  operands of a comparison or an operator       117
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -30,19 +30,19 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
 
 TRUSTED -- outside what the checker can see
   UNSAFE units                                    2   cpq, Pg
-  foreign procedures                             18
+  foreign procedures                             20
     of them [SERIAL]                              0
-    of them [REENTRANT]                          18
+    of them [REENTRANT]                          20
   THREADs writing STATEFUL state                  0
-  ADR sites (C reading or writing M9 storage)     5   writes or reads in CText, writes or reads in Open, writes or reads in Run, writes or reads in Query, writes or reads in Script
+  ADR sites (C reading or writing M9 storage)     9   writes or reads in CText, writes or reads in Open, writes or reads in Run, writes or reads in Run, writes or reads in Run, writes or reads in Query, +3 more
     of them filling a descriptor ([FRESH])        0
 
 COUNTED -- how much there was to check
   CASE statements                                 0
-  RAISE statements                               27
+  RAISE statements                               30
   handlers                                        2
   NEW in the frame                                0
-  NEW in a named pool                            10
+  NEW in a named pool                            12
   calls of a STR form with a UTF twin             0
   STR subscripts, writes and LEN                  0
   uses of a deprecated name                       0

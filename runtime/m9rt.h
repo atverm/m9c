@@ -1331,6 +1331,24 @@ m9_sl_CHAR m9_utf_to_chars (m9_pool *pool, m9_sl_UTF8 u, m9_state *err);
 m9_sl_UTF8 m9_utf_cat (m9_pool *pool, m9_sl_UTF8 a, m9_sl_UTF8 b,
                        m9_state *err);
 m9_sl_UTF8 m9_utf_of_char (m9_pool *pool, uint32_t c, m9_state *err);
+/* The text of a hole of an interpolation literal, $'... ${e} ...'
+   (docs/interpolation-rfc.md, 2026-11-19).  An integer is written in
+   decimal, right-aligned in width, with blanks or zeros as the fill;
+   the sign stays before the zeros.  A value wider than the field is
+   never cut.  These are Fmt.I64Str and Fmt.I64Pad to the character,
+   and the genforms program GfInterp holds them to those.  A BOOL is
+   TRUE or FALSE.  m9_utf_pad right-aligns a string in width with
+   blanks: a real's shortest form in ${x:8}. */
+m9_sl_UTF8 m9_utf_of_i64 (m9_pool *pool, int64_t v, int64_t width, int zero,
+                          m9_state *err);
+m9_sl_UTF8 m9_utf_of_u64 (m9_pool *pool, uint64_t v, int64_t width, int zero,
+                          m9_state *err);
+m9_sl_UTF8 m9_utf_of_bool (int b);
+m9_sl_UTF8 m9_utf_pad (m9_pool *pool, m9_sl_UTF8 s, int64_t width,
+                       m9_state *err);
+/* A real in a hole: m9rt.c says how its digits are Fmt's. */
+m9_sl_UTF8 m9_utf_of_f64 (m9_pool *pool, double v, int64_t width,
+                          int64_t decimals, int sci, m9_state *err);
 /* OCTETS (u) answers the octets themselves, a view, no copy. */
 static inline m9_sl_BYTE m9_utf_octets (m9_sl_UTF8 u)
 {

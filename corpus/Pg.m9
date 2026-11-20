@@ -44,6 +44,7 @@ EXCEPTION
 
 CONST
   MaxParams = 64 ;                (* pgshim.c's pointer table *)
+  TimeoutGrace = 2000 ;           (* ms a silent server gets past SetTimeout's *)
 
 PROCEDURE Connect (VAR pool: POOL ; RO conninfo: STR) : PTR Conn IN pool
   RAISES PgError, ValueRange ;
@@ -58,11 +59,76 @@ PROCEDURE Reconnect (VAR c: PTR Conn) RAISES PgError, ValueRange ;
      gone (a server restart, an idle timeout).                     *)
 
 PROCEDURE Alive (c: PTR Conn) : BOOL RAISES ValueRange ;
-  (* Alive answers PQstatus = CONNECTION_OK.  It answers FALSE after
-     the server went away: the answer to "should I Reconnect before
-     retrying". *)
+  (* Alive answers whether the connection can carry a statement.  It
+     reads what the server has sent without waiting (PQconsumeInput)
+     and then asks PQstatus = CONNECTION_OK.  So it answers FALSE as
+     soon as the server's close has arrived: after a restart, an idle
+     timeout or a terminated backend, and before any statement has
+     failed.  It sends nothing and costs no round trip.  libpq
+     prints the server's parting message on stderr then.  A server
+     that is unreachable without having closed (a pulled cable) still
+     looks alive until a statement fails. *)
+
+PROCEDURE Ensure (VAR c: PTR Conn) RAISES PgError, ValueRange ;
+  (* Ensure reconnects when the connection is not Alive, and does
+     nothing when it is.  A handler calls it first, inside the block
+     that catches PgError:
+
+       BEGIN
+         Pg.Ensure (web[req.worker]) ;
+         r := Pg.Query (scratch, web[req.worker], sql, p) ;
+         ...
+       EXCEPT
+       | Pg.PgError (m) : RETURN HttpServer.ReplyError (503, 'database')
+       END
+
+     Alive sees a connection the server has closed, so the statement
+     after Ensure runs on a new one.  Only a statement under way at
+     the cut fails.  Without Ensure the connection stays dead and the
+     handler answers 503 until the program is started again.
+
+       raises PgError when the server cannot be reached; the
+                 connection stays closed and a later Ensure tries
+                 again.  A transaction and a TEMP table do not
+                 outlive the cut.                                    *)
 
 PROCEDURE Close (VAR c: PTR Conn) ;
+
+PROCEDURE SetTimeout (VAR c: PTR Conn ; ms: I64) RAISES PgError, ValueRange ;
+  (* SetTimeout says how long one statement on this connection may
+     take, in milliseconds, for Query, Exec, Script, Begin, Commit
+     and Rollback.  0 takes the limit away, and no limit is the
+     default: a migration may take an hour.  A server's worker
+     calls it once, after Connect.
+
+     Two things hold the limit.
+
+       The server ends a statement that runs longer.  SetTimeout
+       sets the session's statement_timeout, and Reconnect and
+       Ensure set it again on the connection they open.  The
+       statement raises PgError with the server's words, 'canceling
+       statement due to statement timeout'.  The connection is as
+       good as before, and an open transaction is aborted as after
+       any error.
+
+       A server that says nothing at all ends the wait.  The wait
+       is ms and a grace of TimeoutGrace more.  The statement raises
+       PgError ('statement timeout: no answer in N ms; the
+       connection is closed'): Alive answers FALSE and Ensure opens
+       a new one.  What the server did with the statement is not
+       known.
+
+     Both messages hold the words 'statement timeout'.
+
+     Until 2026-11-20 a statement had no limit, so one slow query
+     or a server that had stopped answering held a worker for as
+     long as it liked.  A connect has its own limit, libpq's:
+     'connect_timeout=5' in the conninfo, or PGCONNECT_TIMEOUT.
+
+       raises PgError for a negative ms, and when the server
+                 refuses the setting.  A SET inside a transaction
+                 that is rolled back is undone with it, so it is
+                 called outside one.                               *)
 
 PROCEDURE Query (VAR pool: POOL ; c: PTR Conn ; RO sql: STR ;
                  RO params: SLICE OF STR) : PTR Result IN pool
@@ -74,7 +140,11 @@ PROCEDURE Query (VAR pool: POOL ; c: PTR Conn ; RO sql: STR ;
        params -- at most MaxParams; an empty slice is fine.  Every
                  CHAR goes out as UTF-8 (the database's encoding).
        raises PgError for anything that is not PGRES_TUPLES_OK or
-                 PGRES_COMMAND_OK, with the server's message.      *)
+                 PGRES_COMMAND_OK, with the server's message.  The
+                 connection may be dead after it (a restart, a
+                 terminated backend).  Query does not open it again:
+                 Alive tells and Ensure mends, here and for Exec,
+                 Script, Begin, Commit and Rollback.               *)
 
 PROCEDURE Exec (c: PTR Conn ; RO sql: STR ; RO params: SLICE OF STR)
   : I64 RAISES PgError, ValueRange, IndexError ;
@@ -163,12 +233,16 @@ UNSAFE DEFINITION MODULE FOR "C" cpq LINK "pgshim.c", "-l:libpq.so.5" ;
 PROCEDURE ConnectDb = "PQconnectdb" (info: C.ConstPtr) : C.MutPtr
   [REENTRANT] ;
 PROCEDURE Status = "PQstatus" (c: C.MutPtr) : C.Int  [REENTRANT] ;
+PROCEDURE Consume = "PQconsumeInput" (c: C.MutPtr) : C.Int  [REENTRANT] ;
 PROCEDURE Finish = "PQfinish" (c: C.MutPtr)  [REENTRANT] ;
 PROCEDURE ErrMsg = "PQerrorMessage" (c: C.MutPtr) : C.ConstPtr
   [REENTRANT] ;
 PROCEDURE ExecBlock = "m9_pq_exec"
   (c: C.MutPtr ; sql: C.ConstPtr ; block: C.ConstPtr ; n: C.Int)
   : C.MutPtr  [REENTRANT] ;
+PROCEDURE ExecTimed = "m9_pq_exec_timed"
+  (c: C.MutPtr ; sql: C.ConstPtr ; block: C.ConstPtr ; n: C.Int ;
+   ms: C.Int ; how: C.MutPtr) : C.MutPtr  [REENTRANT] ;
 PROCEDURE ExecPlain = "PQexec" (c: C.MutPtr ; sql: C.ConstPtr) : C.MutPtr
   [REENTRANT] ;
 PROCEDURE ResStatus = "PQresultStatus" (r: C.MutPtr) : C.Int
@@ -207,7 +281,7 @@ IMPORT Text ;
 IMPORT DynStr ;
 IMPORT Fmt ;
 IMPORT Time ;
-FROM cpq IMPORT ConnectDb, Status, Finish, ErrMsg, ExecBlock, ExecPlain,
+FROM cpq IMPORT ConnectDb, Status, Consume, Finish, ErrMsg, ExecBlock, ExecTimed, ExecPlain,
                 ResStatus, ResErr, CmdTuples, NTuples, NFields, FName,
                 GetValue, GetLength, GetIsNull, Clear, CLen, CCopy ;
 
@@ -223,6 +297,7 @@ TYPE
     h : C.MutPtr ;
     info : STR ;
     open : BOOL ;
+    ms : I64 ;                    (* SetTimeout's limit; 0 is none *)
   END ;
 
   Result = RECORD
@@ -337,6 +412,7 @@ BEGIN
   c.h := h ;
   c.info := conninfo ;
   c.open := TRUE ;
+  c.ms := 0 ;
   RETURN c
 END Connect ;
 
@@ -354,14 +430,28 @@ BEGIN
   h := Open (scratch, c.info, msg) ;
   IF IsNil (h) THEN RAISE PgError (msg) END ;
   c.h := h ;
-  c.open := TRUE
+  c.open := TRUE ;
+  (* The limit was the old session's.  The new one gets it too. *)
+  IF c.ms > 0 THEN Script (c, 'SET statement_timeout = ' + Fmt.I64Str (c.ms)) END
 END Reconnect ;
 
 PROCEDURE Alive (c: PTR Conn) : BOOL RAISES ValueRange =
+VAR i : I64 ;
 BEGIN
   IF NOT c.open THEN RETURN FALSE END ;
+  (* PQconsumeInput answers 0 when the read met the server's close.
+     A terminated backend sends a message first.  The first read
+     takes the message and the second meets the close. *)
+  FOR i := 1 TO 2 DO
+    IF I64 (Consume (c.h)) = 0 THEN RETURN FALSE END
+  END ;
   RETURN I64 (Status (c.h)) = ConnOk
 END Alive ;
+
+PROCEDURE Ensure (VAR c: PTR Conn) RAISES PgError, ValueRange =
+BEGIN
+  IF NOT Alive (c) THEN Reconnect (c) END
+END Ensure ;
 
 PROCEDURE Close (VAR c: PTR Conn) =
 BEGIN
@@ -397,6 +487,14 @@ BEGIN
   RETURN blk
 END ParamBlock ;
 
+(* Silent answers the message of a statement that got no answer in
+   SetTimeout's ms and the grace. *)
+PROCEDURE Silent (ms: I64) : STR =
+BEGIN
+  RETURN 'statement timeout: no answer in ' + Fmt.I64Str (ms + TimeoutGrace)
+         + ' ms; the connection is closed'
+END Silent ;
+
 PROCEDURE Run (VAR scratch: POOL ; c: PTR Conn ; RO sql: STR ;
                RO params: SLICE OF STR) : C.MutPtr
   RAISES PgError, ValueRange, IndexError =
@@ -404,7 +502,7 @@ PROCEDURE Run (VAR scratch: POOL ; c: PTR Conn ; RO sql: STR ;
      it.  A status other than TUPLES_OK or COMMAND_OK is cleared here
      and raised with the server's message. *)
 VAR
-  sb, blk : SLICE OF BYTE ;
+  sb, blk, how : SLICE OF BYTE ;
   res : C.MutPtr ;
   st : I64 ;
   msg : STR ;
@@ -413,7 +511,14 @@ BEGIN
   IF LEN (params) > MaxParams THEN RAISE PgError ('too many parameters') END ;
   sb := CStr (scratch, sql) ;
   blk := ParamBlock (scratch, params) ;
-  res := ExecBlock (c.h, ADR (sb), ADR (blk), C.Int (LEN (params))) ;
+  IF c.ms > 0 THEN
+    how := NEW (scratch, BYTE, 1) ;
+    res := ExecTimed (c.h, ADR (sb), ADR (blk), C.Int (LEN (params)),
+                      C.Int (c.ms + TimeoutGrace), ADR (how)) ;
+    IF IsNil (res) AND (I64 (how[0]) = 2) THEN RAISE PgError (Silent (c.ms)) END
+  ELSE
+    res := ExecBlock (c.h, ADR (sb), ADR (blk), C.Int (LEN (params)))
+  END ;
   IF IsNil (res) THEN
     msg := CText (scratch, ErrMsg (c.h)) ;
     RAISE PgError (msg)
@@ -516,7 +621,7 @@ END Exec ;
 PROCEDURE Script (c: PTR Conn ; RO sql: STR) RAISES PgError, ValueRange =
 VAR
   scratch : POOL ;
-  sb : SLICE OF BYTE ;
+  sb, how : SLICE OF BYTE ;
   res : C.MutPtr ;
   st : I64 ;
   msg : STR ;
@@ -528,7 +633,16 @@ BEGIN
   | IndexError :
       RAISE PgError ('the script could not be encoded')
   END ;
-  res := ExecPlain (c.h, ADR (sb)) ;
+  IF c.ms > 0 THEN
+    (* n = -1 asks the shim for a script: several statements, no
+       parameters, as PQexec takes them. *)
+    how := NEW (scratch, BYTE, 1) ;
+    res := ExecTimed (c.h, ADR (sb), ADR (sb), C.Int (-1),
+                      C.Int (c.ms + TimeoutGrace), ADR (how)) ;
+    IF IsNil (res) AND (I64 (how[0]) = 2) THEN RAISE PgError (Silent (c.ms)) END
+  ELSE
+    res := ExecPlain (c.h, ADR (sb))
+  END ;
   IF IsNil (res) THEN
     msg := CText (scratch, ErrMsg (c.h)) ;
     RAISE PgError (msg)
@@ -541,6 +655,15 @@ BEGIN
   END ;
   Clear (res)
 END Script ;
+
+PROCEDURE SetTimeout (VAR c: PTR Conn ; ms: I64) RAISES PgError, ValueRange =
+BEGIN
+  IF ms < 0 THEN RAISE PgError ('a timeout is 0 ms or more') END ;
+  (* The server is told under the old limit.  The new one counts
+     from the next statement. *)
+  IF c.open THEN Script (c, 'SET statement_timeout = ' + Fmt.I64Str (ms)) END ;
+  c.ms := ms
+END SetTimeout ;
 
 PROCEDURE Begin (c: PTR Conn) RAISES PgError, ValueRange =
 BEGIN

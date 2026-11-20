@@ -431,3 +431,33 @@ END Stop ;
   for (size_t k = 0; k < n; k++) fputc (((const unsigned char *) buf)[k], stderr);
   fflush (stderr);
 @end
+
+# 2026-11-20: 4xx only, and a body that takes the memory of what arrived
+@name only4xx is ignored
+@old
+  IF w.s.cfg.only4xx THEN RETURN 400 END ;
+@new
+@end
+
+@name a chunked body takes the whole limit at once
+@old
+  q.body := NEW (scratch, BYTE, 0) ;
+  IF chunked THEN
+@new
+  q.body := NEW (scratch, BYTE, 0) ;
+  IF chunked THEN
+    q.body := NEW (scratch, BYTE, w.s.cfg.bodyMax) ;
+@end
+
+@name a body by length takes its whole length at once
+@old
+  Room (pool, body, 0, take, len) ;
+@new
+  Room (pool, body, 0, len, len) ;
+@end
+
+@name a grown buffer loses what it held
+@old
+  FOR i := 0 TO have - 1 DO bigger[i] := store[i] END ;
+@new
+@end

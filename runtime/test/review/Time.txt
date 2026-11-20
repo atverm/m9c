@@ -1,11 +1,11 @@
-REVIEW Time -- 24 procedures with a body, 22 of them functions; 17 headings in a DEFINITION
+REVIEW Time -- 25 procedures with a body, 23 of them functions; 18 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              22
-  assignments                                   126
-  arguments                                     258
-  RETURN values                                  31
-  operands of a comparison or an operator       268
+  functions answering on every path              23
+  assignments                                   150
+  arguments                                     327
+  RETURN values                                  32
+  operands of a comparison or an operator       312
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -39,7 +39,7 @@ TRUSTED -- outside what the checker can see
 
 COUNTED -- how much there was to check
   CASE statements                                 0
-  RAISE statements                               24
+  RAISE statements                               31
   handlers                                        0
   NEW in the frame                                0
   NEW in a named pool                             0

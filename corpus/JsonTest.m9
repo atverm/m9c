@@ -12,6 +12,7 @@ IMPORT Fmt ;
 IMPORT Io ;
 IMPORT Json ;
 IMPORT Text ;
+IMPORT Time ;
 
 CONST
   Raws = ['1.0E-5', '2.50', '-0.0', '1e400', '12345678901234567890', '0'] ;
@@ -94,10 +95,137 @@ EXCEPT
 | ValueRange : Check.That (t, 'Unicode: ValueRange', FALSE)
 END Unicode ;
 
+(* BuildAndRead builds an array of n numbers with Add and reads every
+   one back with Item, and answers the seconds the two took.  The sum
+   read must be the sum added. *)
+PROCEDURE BuildAndRead (n: I64) : F64 =
+VAR
+  scratch : POOL ;
+  arr, v : PTR Json.Node IN scratch ;
+  i, sum : I64 ;
+  began, took : F64 ;
+BEGIN
+  began := Time.Now ().t ;
+  arr := Json.NewArrIn (scratch) ;
+  FOR i := 0 TO n - 1 DO
+    v := Json.NewI64In (scratch, i) ;
+    Json.Add (arr, v)
+  END ;
+  sum := 0 ;
+  FOR i := 0 TO n - 1 DO sum := sum + Json.AsI64 (Json.Item (arr, i)) END ;
+  took := Time.Now ().t - began ;
+  Check.EqI64 (t, 'an array built by Add holds every element', Json.Count (arr), n) ;
+  Check.EqI64 (t, 'and Item answers each in its place', sum, n * (n - 1) DIV 2) ;
+  RETURN took
+EXCEPT
+| Json.TypeMismatch (m) : Check.That (t, 'BuildAndRead: mismatch', FALSE) ; RETURN 0.0
+| IndexError : Check.That (t, 'BuildAndRead: IndexError', FALSE) ; RETURN 0.0
+| ValueRange : Check.That (t, 'BuildAndRead: ValueRange', FALSE) ; RETURN 0.0
+END BuildAndRead ;
+
+(* Indexed holds an array's index (Json.MakeIx): Item by position and
+   Add at the end cost one step each.  An array that was parsed, one
+   built by Add, one parsed and then added to, and a clone must each
+   answer every element in its place.  The cost is held by a ratio,
+   as SparqlTest's is: four times the elements cost less than eight
+   times the time, where the list alone cost sixteen. *)
+PROCEDURE Indexed () =
+VAR
+  scratch : POOL ;
+  root, c, v : PTR Json.Node IN scratch ;
+  i, bad : I64 ;
+  small, large : F64 ;
+BEGIN
+  root := Json.ParseIn (scratch, '[0,1,2,3,4,5,6,7,8,9]') ;
+  bad := 0 ;
+  FOR i := 0 TO 9 DO
+    IF Json.AsI64 (Json.Item (root, i)) # i THEN bad := bad + 1 END
+  END ;
+  Check.EqI64 (t, 'a parsed array answers each element by Item', bad, 0) ;
+  FOR i := 10 TO 40 DO
+    v := Json.NewI64In (scratch, i) ;
+    Json.Add (root, v)
+  END ;
+  bad := 0 ;
+  FOR i := 0 TO 40 DO
+    IF Json.AsI64 (Json.Item (root, i)) # i THEN bad := bad + 1 END
+  END ;
+  Check.EqI64 (t, 'a parsed array that is added to still does', bad, 0) ;
+  Check.EqI64 (t, 'and counts what it holds', Json.Count (root), 41) ;
+  Check.EqStr (t, 'in the order of the list', Json.Compact (root),
+    '[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40]') ;
+  c := Json.CloneIn (scratch, root) ;
+  v := Json.NewI64In (scratch, 41) ;
+  Json.Add (c, v) ;
+  bad := 0 ;
+  FOR i := 0 TO 41 DO
+    IF Json.AsI64 (Json.Item (c, i)) # i THEN bad := bad + 1 END
+  END ;
+  Check.EqI64 (t, 'a clone that is added to answers each element too', bad, 0) ;
+  Check.EqI64 (t, 'and the array it came from is as it was', Json.Count (root), 41) ;
+  small := BuildAndRead (20000) ;
+  large := BuildAndRead (80000) ;
+  Check.That (t, '80,000 elements built and read cost less than 8 times 20,000 (' +
+              Fmt.Fixed (small, 3) + ' s and ' + Fmt.Fixed (large, 3) + ' s)',
+              large < 8.0 * small + 0.1)
+EXCEPT
+| Json.ParseError (m, l, k) : Check.That (t, 'Indexed: parse refused', FALSE)
+| Json.TypeMismatch (m) : Check.That (t, 'Indexed: mismatch', FALSE)
+| IndexError : Check.That (t, 'Indexed: IndexError', FALSE)
+| ValueRange : Check.That (t, 'Indexed: ValueRange', FALSE)
+END Indexed ;
+
+(* Walk holds First and After to Item: the same elements in the same
+   order, NONE for an empty array and after the last, and a refusal
+   for a value that is no array. *)
+PROCEDURE Walk () =
+VAR
+  root : PTR Json.Node ;
+  c : OPT PTR Json.Node ;
+  n, same : I64 ;
+  refused : BOOL ;
+BEGIN
+  root := Json.Parse ('{"a":[10,20,30,40],"e":[],"o":{"x":1}}') ;
+  IF Json.Field (root, 'a') IS SOME arr THEN
+    c := Json.First (arr) ;
+    n := 0 ;
+    same := 0 ;
+    WHILE c IS SOME item DO
+      IF Json.AsI64 (item) = Json.AsI64 (Json.Item (arr, n)) THEN same := same + 1 END ;
+      n := n + 1 ;
+      c := Json.After (item)
+    END ;
+    Check.EqI64 (t, 'a walk meets every element', n, 4) ;
+    Check.EqI64 (t, 'each is the one Item answers', same, 4) ;
+    Check.EqI64 (t, 'and the array still counts 4', Json.Count (arr), 4)
+  ELSE
+    Check.That (t, 'Walk: the array is there', FALSE)
+  END ;
+  IF Json.Field (root, 'e') IS SOME empty THEN
+    Check.That (t, 'First of an empty array is NONE', Json.First (empty) IS NONE)
+  END ;
+  refused := FALSE ;
+  IF Json.Field (root, 'o') IS SOME obj THEN
+    BEGIN
+      c := Json.First (obj)
+    EXCEPT
+    | Json.TypeMismatch (m) : refused := TRUE
+    END
+  END ;
+  Check.That (t, 'First of an object is refused', refused)
+EXCEPT
+| Json.ParseError (m, l, k) : Check.That (t, 'Walk: parse refused', FALSE)
+| Json.TypeMismatch (m) : Check.That (t, 'Walk: mismatch', FALSE)
+| IndexError : Check.That (t, 'Walk: IndexError', FALSE)
+| ValueRange : Check.That (t, 'Walk: ValueRange', FALSE)
+END Walk ;
+
 BEGIN
   FOR i := 0 TO LEN (Raws) - 1 DO Kept (Raws[i]) END ;
   Pooled () ;
   Unicode () ;
+  Walk () ;
+  Indexed () ;
   Check.That (t, 'NewRaw refuses what is no JSON: 1.', NotJson ('1.')) ;
   Check.That (t, 'and 0x10', NotJson ('0x10')) ;
   Check.That (t, 'and two numbers', NotJson ('1 2')) ;

@@ -1,0 +1,24 @@
+(* EXPECT: a slice written in brackets holds strings, numbers, characters or booleans, not m.Row *)
+(* A slice in brackets holds values with no owner to follow: strings,
+   numbers, characters and booleans.  A slice of records or pointers
+   is filled from NEW, where each element has a name. *)
+MODULE m ;
+TYPE Row = RECORD a : I64 END ;
+PROCEDURE Count (RO v: SLICE OF Row) : I64 =
+BEGIN
+  RETURN LEN (v)
+END Count ;
+PROCEDURE Fine () : I64 RAISES IndexError =
+VAR v : SLICE OF Row ;
+BEGIN
+  v := NEW (Row, 2) ;
+  v[0] := Row (1) ;
+  v[1] := Row (2) ;
+  RETURN Count (v)
+END Fine ;
+PROCEDURE Bad () : I64 =
+BEGIN
+  RETURN Count ([Row (1), Row (2)])
+END Bad ;
+BEGIN
+END m.

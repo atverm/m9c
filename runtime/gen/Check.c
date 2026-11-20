@@ -211,7 +211,7 @@ void Check_EqI64 (Check_T *t, m9_sl_UTF8 label, int64_t got, int64_t want, m9_st
     (*t).checks = m9v;
   }
   if ((got != want)) {
-    { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s0, 4 }), Fmt_I64Str (got, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s1, 7 }), err), Fmt_I64Str (want, err), err)) m9a1 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s0, 4 }), Fmt_I64Str (got, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s1, 7 }), err), Fmt_I64Str (want, err), err);
+    { __typeof__(({ m9_sl_UTF8 m9t2 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s0, 4 }); m9_utf_cat (err->res, m9t1, Fmt_I64Str (got, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s1, 7 }), err); m9_utf_cat (err->res, m9t2, Fmt_I64Str (want, err), err); })) m9a1 = ({ m9_sl_UTF8 m9t2 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s0, 4 }); m9_utf_cat (err->res, m9t1, Fmt_I64Str (got, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s1, 7 }), err); m9_utf_cat (err->res, m9t2, Fmt_I64Str (want, err), err); });
       if (err->exc) { m9ln = 266; goto L_ret; };
     Check_Bad (t, label, m9a1, err);
     if (err->exc) { m9ln = 266; goto L_ret; };
@@ -237,7 +237,7 @@ void Check_EqBool (Check_T *t, m9_sl_UTF8 label, bool got, bool want, m9_state *
     (*t).checks = m9v;
   }
   if ((got != want)) {
-    { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s2, 4 }), Check_BoolStr (got, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s3, 7 }), err), Check_BoolStr (want, err), err)) m9a2 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s2, 4 }), Check_BoolStr (got, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s3, 7 }), err), Check_BoolStr (want, err), err);
+    { __typeof__(({ m9_sl_UTF8 m9t2 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s2, 4 }); m9_utf_cat (err->res, m9t1, Check_BoolStr (got, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s3, 7 }), err); m9_utf_cat (err->res, m9t2, Check_BoolStr (want, err), err); })) m9a2 = ({ m9_sl_UTF8 m9t2 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s2, 4 }); m9_utf_cat (err->res, m9t1, Check_BoolStr (got, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s3, 7 }), err); m9_utf_cat (err->res, m9t2, Check_BoolStr (want, err), err); });
       if (err->exc) { m9ln = 275; goto L_ret; };
     Check_Bad (t, label, m9a2, err);
     if (err->exc) { m9ln = 275; goto L_ret; };
@@ -265,7 +265,7 @@ void Check_EqStr (Check_T *t, m9_sl_UTF8 label, m9_sl_UTF8 got, m9_sl_UTF8 want,
   bool m9t1 = (!Text_EqUtf (got, want, err));
   if (err->exc) { m9ln = 282; goto L_ret; };
   if (m9t1) {
-    { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s4, 4 }), Check_Quote (got, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s5, 7 }), err), Check_Quote (want, err), err)) m9a3 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s4, 4 }), Check_Quote (got, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s5, 7 }), err), Check_Quote (want, err), err);
+    { __typeof__(({ m9_sl_UTF8 m9t3 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s4, 4 }); m9_utf_cat (err->res, m9t2, Check_Quote (got, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s5, 7 }), err); m9_utf_cat (err->res, m9t3, Check_Quote (want, err), err); })) m9a3 = ({ m9_sl_UTF8 m9t3 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s4, 4 }); m9_utf_cat (err->res, m9t2, Check_Quote (got, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s5, 7 }), err); m9_utf_cat (err->res, m9t3, Check_Quote (want, err), err); });
       if (err->exc) { m9ln = 283; goto L_ret; };
     Check_Bad (t, label, m9a3, err);
     if (err->exc) { m9ln = 283; goto L_ret; };
@@ -293,7 +293,7 @@ void Check_EqF64 (Check_T *t, m9_sl_UTF8 label, double got, double want, m9_stat
   bool m9t1 = (!Check_SameF64 (got, want, err));
   if (err->exc) { m9ln = 290; goto L_ret; };
   if (m9t1) {
-    { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s6, 4 }), Check_Shown (got, want, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s7, 7 }), err), Check_Shown (want, got, err), err)) m9a4 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s6, 4 }), Check_Shown (got, want, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s7, 7 }), err), Check_Shown (want, got, err), err);
+    { __typeof__(({ m9_sl_UTF8 m9t3 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s6, 4 }); m9_utf_cat (err->res, m9t2, Check_Shown (got, want, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s7, 7 }), err); m9_utf_cat (err->res, m9t3, Check_Shown (want, got, err), err); })) m9a4 = ({ m9_sl_UTF8 m9t3 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s6, 4 }); m9_utf_cat (err->res, m9t2, Check_Shown (got, want, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s7, 7 }), err); m9_utf_cat (err->res, m9t3, Check_Shown (want, got, err), err); });
       if (err->exc) { m9ln = 291; goto L_ret; };
     Check_Bad (t, label, m9a4, err);
     if (err->exc) { m9ln = 291; goto L_ret; };
@@ -321,7 +321,7 @@ void Check_Near (Check_T *t, m9_sl_UTF8 label, double got, double want, double a
   bool m9t1 = (!Check_IsNear (got, want, absTol, relTol, err));
   if (err->exc) { m9ln = 300; goto L_ret; };
   if (m9t1) {
-    { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s8, 4 }), Check_Shown (got, want, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s9, 7 }), err), Check_Shown (want, got, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s10, 8 }), err), Check_Num (absTol, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s11, 3 }), err), Check_Num (relTol, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s12, 6 }), err)) m9a5 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s8, 4 }), Check_Shown (got, want, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s9, 7 }), err), Check_Shown (want, got, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s10, 8 }), err), Check_Num (absTol, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s11, 3 }), err), Check_Num (relTol, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s12, 6 }), err);
+    { __typeof__(m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t5 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t4 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t3 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s8, 4 }); m9_utf_cat (err->res, m9t2, Check_Shown (got, want, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s9, 7 }), err); m9_utf_cat (err->res, m9t3, Check_Shown (want, got, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s10, 8 }), err); m9_utf_cat (err->res, m9t4, Check_Num (absTol, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s11, 3 }), err); m9_utf_cat (err->res, m9t5, Check_Num (relTol, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s12, 6 }), err)) m9a5 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t5 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t4 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t3 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s8, 4 }); m9_utf_cat (err->res, m9t2, Check_Shown (got, want, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s9, 7 }), err); m9_utf_cat (err->res, m9t3, Check_Shown (want, got, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s10, 8 }), err); m9_utf_cat (err->res, m9t4, Check_Num (absTol, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s11, 3 }), err); m9_utf_cat (err->res, m9t5, Check_Num (relTol, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s12, 6 }), err);
       if (err->exc) { m9ln = 301; goto L_ret; };
     Check_Bad (t, label, m9a5, err);
     if (err->exc) { m9ln = 301; goto L_ret; };
@@ -629,7 +629,7 @@ void Check_Raises (Check_T *t, m9_sl_UTF8 label, Check_Action act, m9_sl_UTF8 wa
   bool m9t1 = (!Text_OneOfUtf (want, ((m9_sl_m9_sl_UTF8){ ((*Known)).v, INT64_C(3) }), err));
   if (err->exc) { m9ln = 438; goto L_ret; };
   if (m9t1) {
-    { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s13, 46 }), ((m9_sl_UTF8){ (uint8_t *) m9s14, 16 }), err), Check_Quote (want, err), err)) m9a28 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s13, 46 }), ((m9_sl_UTF8){ (uint8_t *) m9s14, 16 }), err), Check_Quote (want, err), err);
+    { __typeof__(({ m9_sl_UTF8 m9t2 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s13, 46 }), ((m9_sl_UTF8){ (uint8_t *) m9s14, 16 }), err); m9_utf_cat (err->res, m9t2, Check_Quote (want, err), err); })) m9a28 = ({ m9_sl_UTF8 m9t2 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s13, 46 }), ((m9_sl_UTF8){ (uint8_t *) m9s14, 16 }), err); m9_utf_cat (err->res, m9t2, Check_Quote (want, err), err); });
       if (err->exc) { m9ln = 439; goto L_ret; };
     Check_Bad (t, label, m9a28, err);
     if (err->exc) { m9ln = 439; goto L_ret; };
@@ -1067,7 +1067,7 @@ int64_t Check_Done (Check_T *t, m9_sl_UTF8 name, m9_state *err)
     goto L_ret;
   }
   if (((*t).failed > INT64_C(0))) {
-    { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s32, 7 }), Fmt_I64Str ((*t).failed, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s33, 4 }), err), Fmt_I64Str ((*t).checks, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s34, 4 }), err), name, err)) m9a38 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s32, 7 }), Fmt_I64Str ((*t).failed, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s33, 4 }), err), Fmt_I64Str ((*t).checks, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s34, 4 }), err), name, err);
+    { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t2 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s32, 7 }); m9_utf_cat (err->res, m9t1, Fmt_I64Str ((*t).failed, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s33, 4 }), err); m9_utf_cat (err->res, m9t2, Fmt_I64Str ((*t).checks, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s34, 4 }), err), name, err)) m9a38 = m9_utf_cat (err->res, m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t2 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s32, 7 }); m9_utf_cat (err->res, m9t1, Fmt_I64Str ((*t).failed, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s33, 4 }), err); m9_utf_cat (err->res, m9t2, Fmt_I64Str ((*t).checks, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s34, 4 }), err), name, err);
       if (err->exc) { m9ln = 646; goto L_ret; };
     Io_WriteLineUtf (m9a38, err);
     if (err->exc) { m9ln = 646; goto L_ret; };
@@ -1076,7 +1076,7 @@ int64_t Check_Done (Check_T *t, m9_sl_UTF8 name, m9_state *err)
     m9ret = INT64_C(1);
     goto L_ret;
   }
-  { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s35, 6 }), Fmt_I64Str ((*t).checks, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s36, 12 }), err), name, err)) m9a39 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s35, 6 }), Fmt_I64Str ((*t).checks, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s36, 12 }), err), name, err);
+  { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t3 = ((m9_sl_UTF8){ (uint8_t *) m9s35, 6 }); m9_utf_cat (err->res, m9t3, Fmt_I64Str ((*t).checks, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s36, 12 }), err), name, err)) m9a39 = m9_utf_cat (err->res, m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t3 = ((m9_sl_UTF8){ (uint8_t *) m9s35, 6 }); m9_utf_cat (err->res, m9t3, Fmt_I64Str ((*t).checks, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s36, 12 }), err), name, err);
     if (err->exc) { m9ln = 650; goto L_ret; };
   Io_WriteLineUtf (m9a39, err);
   if (err->exc) { m9ln = 650; goto L_ret; };
@@ -1193,7 +1193,7 @@ static m9_sl_UTF8 Check_Shown (double v, double other, m9_state *err)
   if (err->exc) { m9ln = 220; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
-    m9ret = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, Check_Num (v, err), ((m9_sl_UTF8){ (uint8_t *) m9s44, 7 }), err), Fmt_Bits (v, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s45, 1 }), err);
+    m9ret = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t2 = m9_utf_cat (err->res, Check_Num (v, err), ((m9_sl_UTF8){ (uint8_t *) m9s44, 7 }), err); m9_utf_cat (err->res, m9t2, Fmt_Bits (v, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s45, 1 }), err);
     if (err->exc) { m9ln = 221; goto L_ret; };
     goto L_ret;
   } } }
@@ -1325,7 +1325,7 @@ static void Check_Differ (Check_T *t, m9_sl_UTF8 label, int64_t n, int64_t total
   err->res = &m9frame;
   static const char m9pn[] = "Check.Differ"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
-  { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, Fmt_I64Str (n, err), ((m9_sl_UTF8){ (uint8_t *) m9s50, 4 }), err), Fmt_I64Str (total, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s51, 19 }), err), Fmt_I64Str (first, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s52, 7 }), err), got, err), ((m9_sl_UTF8){ (uint8_t *) m9s53, 7 }), err), want, err)) m9a44 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, Fmt_I64Str (n, err), ((m9_sl_UTF8){ (uint8_t *) m9s50, 4 }), err), Fmt_I64Str (total, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s51, 19 }), err), Fmt_I64Str (first, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s52, 7 }), err), got, err), ((m9_sl_UTF8){ (uint8_t *) m9s53, 7 }), err), want, err);
+  { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t2 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t1 = m9_utf_cat (err->res, Fmt_I64Str (n, err), ((m9_sl_UTF8){ (uint8_t *) m9s50, 4 }), err); m9_utf_cat (err->res, m9t1, Fmt_I64Str (total, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s51, 19 }), err); m9_utf_cat (err->res, m9t2, Fmt_I64Str (first, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s52, 7 }), err), got, err), ((m9_sl_UTF8){ (uint8_t *) m9s53, 7 }), err), want, err)) m9a44 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t2 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t1 = m9_utf_cat (err->res, Fmt_I64Str (n, err), ((m9_sl_UTF8){ (uint8_t *) m9s50, 4 }), err); m9_utf_cat (err->res, m9t1, Fmt_I64Str (total, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s51, 19 }), err); m9_utf_cat (err->res, m9t2, Fmt_I64Str (first, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s52, 7 }), err), got, err), ((m9_sl_UTF8){ (uint8_t *) m9s53, 7 }), err), want, err);
     if (err->exc) { m9ln = 312; goto L_ret; };
   Check_Bad (t, label, m9a44, err);
   if (err->exc) { m9ln = 312; goto L_ret; };
@@ -1351,7 +1351,7 @@ static bool Check_Lengths (Check_T *t, m9_sl_UTF8 label, int64_t got, int64_t wa
     m9ret = true;
     goto L_ret;
   }
-  { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s54, 7 }), Fmt_I64Str (got, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s55, 7 }), err), Fmt_I64Str (want, err), err)) m9a45 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s54, 7 }), Fmt_I64Str (got, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s55, 7 }), err), Fmt_I64Str (want, err), err);
+  { __typeof__(({ m9_sl_UTF8 m9t2 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s54, 7 }); m9_utf_cat (err->res, m9t1, Fmt_I64Str (got, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s55, 7 }), err); m9_utf_cat (err->res, m9t2, Fmt_I64Str (want, err), err); })) m9a45 = ({ m9_sl_UTF8 m9t2 = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s54, 7 }); m9_utf_cat (err->res, m9t1, Fmt_I64Str (got, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s55, 7 }), err); m9_utf_cat (err->res, m9t2, Fmt_I64Str (want, err), err); });
     if (err->exc) { m9ln = 320; goto L_ret; };
   Check_Bad (t, label, m9a45, err);
   if (err->exc) { m9ln = 320; goto L_ret; };
@@ -1586,7 +1586,7 @@ static m9_sl_m9_sl_UTF8 Check_GoldLine (Check_T *t, m9_pool *scratch, m9_sl_UTF8
           if (m9t7) {
             { __typeof__(m9_sub_i64 ((f).len, INT64_C(3), err)) m9a55 = m9_sub_i64 ((f).len, INT64_C(3), err);
               if (err->exc) { m9ln = 518; goto L_hdl_m9t1; };
-            { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s65, 5 }), (*(m9_sl_UTF8 *) m9_at (f.p, INT64_C(2), f.len, sizeof (m9_sl_UTF8), err)), err), ((m9_sl_UTF8){ (uint8_t *) m9s66, 18 }), err), Fmt_I64Str (m9a55, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s67, 4 }), err), path, err)) m9a56 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s65, 5 }), (*(m9_sl_UTF8 *) m9_at (f.p, INT64_C(2), f.len, sizeof (m9_sl_UTF8), err)), err), ((m9_sl_UTF8){ (uint8_t *) m9s66, 18 }), err), Fmt_I64Str (m9a55, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s67, 4 }), err), path, err);
+            { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t8 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s65, 5 }), (*(m9_sl_UTF8 *) m9_at (f.p, INT64_C(2), f.len, sizeof (m9_sl_UTF8), err)), err), ((m9_sl_UTF8){ (uint8_t *) m9s66, 18 }), err); m9_utf_cat (err->res, m9t8, Fmt_I64Str (m9a55, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s67, 4 }), err), path, err)) m9a56 = m9_utf_cat (err->res, m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t8 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s65, 5 }), (*(m9_sl_UTF8 *) m9_at (f.p, INT64_C(2), f.len, sizeof (m9_sl_UTF8), err)), err), ((m9_sl_UTF8){ (uint8_t *) m9s66, 18 }), err); m9_utf_cat (err->res, m9t8, Fmt_I64Str (m9a55, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s67, 4 }), err), path, err);
               if (err->exc) { m9ln = 518; goto L_hdl_m9t1; };
             Check_Fault (t, name, m9a56, err);
             if (err->exc) { m9ln = 518; goto L_hdl_m9t1; };

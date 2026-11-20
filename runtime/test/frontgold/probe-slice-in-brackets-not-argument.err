@@ -1,0 +1,3 @@
+parseprobes/slice-in-brackets-not-argument.m9:8:8: parse: a slice is written in brackets only as a whole argument of a call, or as the value of a CONST (par 2.2.5)
+parseprobes/slice-in-brackets-not-argument.m9:8:9: parse: ; or end of statement list expected, found IntLit
+m9c: 2 parse errors in parseprobes/slice-in-brackets-not-argument.m9

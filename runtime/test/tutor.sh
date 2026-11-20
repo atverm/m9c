@@ -67,7 +67,11 @@ sh "$REPO/tools/tutor/setup.sh" "$REPO" "$W" "$M9C" >/dev/null
     "$M9C" --make -I "$REPO/tools/tutor" \
     -o tutorm9 "$REPO/tools/tutor/TutorMain.m9" >/dev/null )
 
-"$B/tutorm9" $PORT 64 "$W/site" "$W" \
+# The server answers this many connections and ends.  The number is
+# well above what the gate makes.  It was 64 until 2026-11-20, and the
+# gate made 64: one more example to replay met a server that had
+# ended, and curl's exit 7 was all the gate said.
+"$B/tutorm9" $PORT 400 "$W/site" "$W" \
     "$REPO/docs/tutorial/examples/data" > "$B/tutor.log" 2>&1 &
 SRV=$!
 trap 'rc=$?; kill $SRV 2>/dev/null || :; exit $rc' EXIT

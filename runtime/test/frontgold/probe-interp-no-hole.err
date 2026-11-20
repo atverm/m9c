@@ -1,0 +1,2 @@
+parseprobes/interp-no-hole.m9:11:10: parse: an interpolation literal needs a hole: write a plain string (par 2.3)
+m9c: 1 parse errors in parseprobes/interp-no-hole.m9

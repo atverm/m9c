@@ -116,6 +116,25 @@ database connection per worker is still right.  A refusal before
 any handler ran logs worker=-1.  On Windows a TASK is a THREAD,
 so there tasks is for tests, not for 10,000 connections.
 
+SILENT CONNECTIONS HOLD THE WORKER THREADS.  Without tasks a
+connection has a worker thread from its accept to its close.  A
+client that connects and sends nothing holds that worker for
+headerMs, 10 s by default.  So `workers' silent connections make
+the server answer nobody for that long, /health included.  A
+server open to clients it does not know sets Config.tasks, where a
+silent connection parks and holds no worker, or stands behind a
+reverse proxy that reads the request first.  Four agents in two
+blind trials each found this by their own checks (2026-11-19 and
+20).
+
+A BODY TAKES THE MEMORY OF WHAT HAS ARRIVED.  The buffer of a
+request body starts at 64 KB or the body's length, whichever is
+less, and doubles as the octets come, up to bodyMax.  A
+Content-Length or a chunk size is a claim, and a claim allocates
+nothing.  Until 2026-11-20 a chunked body took bodyMax at once and
+a Content-Length its whole length: with a 64 MB limit two requests
+that sent no body took a service from 21 MB to 143 MB.
+
 ### EXCEPTION BindError
 
 _(documented with the group below)_
@@ -337,6 +356,34 @@ is written.
 Header answers the value of the request's header named name,
 compared without regard to case; '' when there is none.  It is
 Http.Header over req.headers.
+
+### Query (RO req: Request ; RO name: STR ; VAR value: STR) : BOOL
+
+Query answers whether the request's query has the parameter name,
+and gives its value.  The query is read as a browser's
+URLSearchParams reads it, with one difference: a `+' stays a `+',
+as in Http.UrlDecode.  The parts lie between `&'.  A part's name
+ends at its first `=', and a part with no `=' is a name with the
+value ''.  Of several parts with the name, the first counts.  The
+name and the value are decoded with Http.UrlDecode.  One that
+cannot be decoded is taken as it was sent, so a caller that
+checks the value refuses it there.  value is left as it was when
+the answer is FALSE.
+
+### Segments (RO req: Request) : SLICE OF STR
+
+Segments answers the parts of the request's path between its
+slashes, decoded as Query decodes: `/stations/Mace%20Head/hourly'
+is ['stations', 'Mace Head', 'hourly'].  The path is split first
+and decoded after, so a %2F stays inside its segment.  The empty
+part before the first slash is left out and no other: `/a//b'
+has three segments and `/a/' two.  The path `/' has none.
+
+### ReplyError (status: I64 ; RO message: STR) : Response
+
+ReplyError answers status and the JSON object {"error":message},
+as application/json.  The message is written as a JSON string,
+with its escapes (Json.Quote).
 
 ### Serve (r: PTR Router ; port: I64 ; maxRequests: I64) RAISES BindError, ValueRange
 

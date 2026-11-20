@@ -1,0 +1,24 @@
+(* EXPECT: a view of a slice written in brackets dies with this frame; it cannot be stored in module variable keep *)
+(* First answers a view of its parameter.  Lent a slice in brackets,
+   its answer views the frame, and a module variable outlives the
+   frame.  The legal form reads the answer and keeps nothing. *)
+MODULE m ;
+VAR keep : STR ;
+PROCEDURE Len (RO s: STR) : I64 =
+BEGIN
+  RETURN 7
+END Len ;
+PROCEDURE First (RO v: SLICE OF STR) : RO STR RAISES IndexError =
+BEGIN
+  RETURN v[0]
+END First ;
+PROCEDURE Fine (RO a, b: STR) : I64 RAISES IndexError =
+BEGIN
+  RETURN Len (First ([a, b]))
+END Fine ;
+PROCEDURE Bad (RO a, b: STR) RAISES IndexError =
+BEGIN
+  keep := First ([a, b])
+END Bad ;
+BEGIN
+END m.

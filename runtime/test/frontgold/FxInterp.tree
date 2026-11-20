@@ -1,0 +1,31 @@
+MODULE FxInterp ;
+
+IMPORT Fmt ;
+
+IMPORT Text ;
+
+PROCEDURE Show (RO s: STR) =
+BEGIN
+END Show ;
+
+PROCEDURE Run (RO name: STR ; n: I64 ; x: F64 ; c: CHAR ; ok: BOOL) : STR =
+VAR
+  s : STR ;
+BEGIN
+  s := $'worker ${n} died: ${name}' ;
+  s := $'${n} first and last ${x}' ;
+  s := $'${name}' ;
+  s := $"it's ${c} and ${ok}" ;
+  s := $'{"id":"${name}","n":${n}} costs $5' ;
+  s := $'[${n:8}][${n:08}][${x:.2}][${x:0.2}][${x:8.2}][${x:.3e}][${x:12.3e}][${x:e}][${x:8}]' ;
+  s := $'${Text.BLen (name) + n * 2} of ${Fmt.Hex (n, 4)}' ;
+  s := 'plain ' + $'and ${n}' + ' plain' ;
+  Show ($'shown ${n}') ;
+  IF Text.Eq (s, $'${n}') THEN
+    s := ''
+  END ;
+  RETURN $'${s}${name}'
+END Run ;
+
+BEGIN
+END FxInterp.

@@ -163,7 +163,7 @@ CONST
   NoBattery = ['Lex', 'Ast', 'Parse', 'Print', 'Sem', 'Gen', 'Doc', 'Diag',
                'M9c', 'Review', 'Check', 'Arrays', 'Numeric', 'Png', 'NbCells',
                'NbShow', 'ExportDef', 'ExportUse', 'Pg', 'Sparql', 'Rdf', 'Regex', 'Xml', 'Hash', 'Smtp', 'Rsa', 'Map',
-               'Parquet', 'Seq', 'JsonUtf', 'Chars', 'DynUtf', 'Chan', 'Sup', 'M9f', 'ExplainTab', 'Explain'] ;
+               'Parquet', 'Seq', 'JsonUtf', 'Chars', 'DynUtf', 'Chan', 'Jobs', 'Sup', 'M9f', 'ExplainTab', 'Explain'] ;
   NoBatteryWhy = ['lexdiff, comdiff and the token-count golden',
                   'parsediff (every node kind printed back)',
                   'parsediff and the parse probes',
@@ -197,6 +197,7 @@ CONST
                   'm9test (CharsTest, against Python str indexing)',
                   'm9test (DynUtfTest, against Python encode and join)',
                   'm9test (ChanTest) and tasks (ChanStress, exact counts)',
+                  'm9test (JobsTest, a crew where every seventh job fails once)',
                   'm9test (SupTest) and tasks (examples/supervision)',
                   'm9f (every tracked .m9 round-trips, a hand-written .m9f converts and checks)',
                   'diagdiff (MkDiagnose writes it, every probe finds its own entry)',

@@ -1,0 +1,18 @@
+(* EXPECT: CONST Cells: a constant is a literal, a negated number, or an expression over literals and CONSTs declared before it -- compute anything else in a procedure (par 2.2.4) *)
+(* A CONST is computed from literals and from CONSTs declared BEFORE
+   it (since 2026-11-19; an agent's first Snake wrote Cols * Rows and
+   was refused, 2026-11-18).  A CONST declared after it is not known
+   yet where the value is read, so the order of the declarations is
+   the order of the computation.  The legal forms come first. *)
+MODULE m ;
+CONST
+  Cols = 24 ;
+  Twice = 2 * Cols ;
+  Half = Twice DIV 4 ;
+  Cells = Cols * Rows ;
+  Rows = 24 ;
+VAR
+  board : ARRAY Cols * Rows OF I64 ;
+BEGIN
+  board[0] := Twice + Half
+END m.

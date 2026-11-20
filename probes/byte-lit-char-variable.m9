@@ -1,0 +1,17 @@
+(* EXPECT: cannot compare BYTE with CHAR *)
+(* A character LITERAL beside a BYTE stands for its code, because the
+   checker reads the code and holds it to ASCII.  A CHAR variable has
+   no code the checker can read, so it still converts by name, and
+   the conversion raises ValueRange for a character no octet holds.
+   The legal forms come first. *)
+MODULE m ;
+PROCEDURE Fine (RO b: SLICE OF BYTE ; c: CHAR) : BOOL RAISES IndexError, ValueRange =
+BEGIN
+  RETURN b[0] = ';' OR b[0] = BYTE (ORD (c))
+END Fine ;
+PROCEDURE Bad (RO b: SLICE OF BYTE ; c: CHAR) : BOOL RAISES IndexError =
+BEGIN
+  RETURN b[0] = c
+END Bad ;
+BEGIN
+END m.

@@ -287,6 +287,10 @@ TYPE
     cnVals : SLICE OF AKid ;      (* ... and their literal, for an
                                      array count's value (CountValue) *)
     ncns : I64 ;
+    defCnLo, defCnHi : I64 ;      (* The DEFINITION's CONSTs are entries
+                                     defCnLo .. defCnHi - 1.  The
+                                     implementation's own follow or
+                                     precede them (ConstExpand). *)
     exNames : SLICE OF UTF ;      (* EXCEPTION declarations *)
     exDecls : SLICE OF AKid ;     (* ... and their nodes, for a
                                      handler's binder types *)
@@ -1865,6 +1869,7 @@ BEGIN
     IF u.f2 THEN mods[m].stateful := TRUE END
   END ;
   IF u.kind = Ast.NImplementation THEN mods[m].hasImpl := TRUE END ;
+  IF u.kind = Ast.NDefinition THEN mods[m].defCnLo := mods[m].ncns END ;
 
   FOR i := 0 TO u.nkids - 1 DO
     IF u.kids[i] IS SOME d THEN
@@ -1931,7 +1936,7 @@ BEGIN
            does. *)
         FOR j := 0 TO d.nkids - 1 DO
           IF d.kids[j] IS SOME cd2 THEN
-            AddConst (m, cd2.au, Text.Keep (pool, LitType (cd2.kids[0])), cd2.kids[0]) ;
+            AddConstExpanded (m, cd2) ;
             IF u.kind = Ast.NDefinition AND cd2.nkids > 1 THEN
               DepAdd (mods[m].name, cd2.au, cd2.kids[1])
             END
@@ -1967,7 +1972,8 @@ BEGIN
         END
       END
     END
-  END
+  END ;
+  IF u.kind = Ast.NDefinition THEN mods[m].defCnHi := mods[m].ncns END
 END CollectUnit ;
 
 (* NanWalk handles NaN, the predeclared quiet NaN (report par 2.1;
@@ -2968,7 +2974,7 @@ BEGIN
                      cd.au))
             END ;
             CheckAggregate (cd, ctx, 2) ;
-            ConstAdd (cd.au, Text.Keep (pool, LitType (cd.kids[0])), cd.kids[0])
+            ConstAddExpanded (cd, TRUE)
           END
         END
       END
@@ -5296,6 +5302,8 @@ BEGIN
     IF e.kind = Ast.NNewExpr THEN
       IF NewIsFrame (e) THEN RETURN 'a frame allocation' END
     END ;
+    (* [a, b] as an argument is built in this frame (par 2.2.5) *)
+    IF e.kind = Ast.NAggregate THEN RETURN 'a slice written in brackets' END ;
     IF e.kind = Ast.NCallExpr THEN
       IF e.kids[0] IS SOME dn THEN
         nm := CallAnswersFrame (dn) ;
@@ -6763,6 +6771,22 @@ BEGIN
   RETURN consts[i].mode
 END ConstType ;
 
+(* NamesAny is TRUE for a constant expression that holds a name: a
+   designator under its operators and parentheses. *)
+PROCEDURE NamesAny (k: Ast.Kid) : BOOL =
+VAR j : I64 ;
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NDesignator THEN RETURN TRUE END ;
+    IF e.kind = Ast.NBin OR e.kind = Ast.NParen OR e.kind = Ast.NUn THEN
+      FOR j := 0 TO e.nkids - 1 DO
+        IF NamesAny (e.kids[j]) THEN RETURN TRUE END
+      END
+    END
+  END ;
+  RETURN FALSE
+END NamesAny ;
+
 (* IsConstHere asks whether this name, HERE, is a constant.  A
    parameter, a local or a module variable of the same name shadows
    it, as it does in the generated C.  The lookup that forgot that
@@ -6777,6 +6801,69 @@ BEGIN
   t := ConstType (nm, found) ;
   RETURN found
 END IsConstHere ;
+
+(* ConstExpand answers a CONST's value with every earlier CONST it
+   names replaced by that CONST's own value (par 2.2.4, 2026-11-19).
+   `Cells = Cols * Rows' becomes the tree of `24 * 24', and every
+   rule for an expression over literals then holds it: the type, the
+   overflow check, the fold.  Only a bare name of a scalar CONST
+   declared BEFORE this one is replaced.  A later CONST, an imported
+   one, a table or a record stays a name, and the caller refuses it.
+   The tree is built new: the program's own tree is not written.
+   ConstExpand answers k itself when it names nothing.
+     m -- -1 for the module being checked, whose CONSTs are in
+          consts; else the loaded module whose DEFINITION the CONST
+          is in, and the names are that module's exported CONSTs. *)
+PROCEDURE ConstExpand (k: Ast.Kid ; m: I64) : Ast.Kid =
+VAR
+  n : PTR Ast.Node IN pool ;
+  i, j, dm : I64 ;
+  t : UTF ;
+  v : Ast.Kid ;
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NDesignator AND e.nkids = 0 THEN
+      IF m < 0 THEN
+        IF Text.BLen (ScopeMode (e.au)) > 0 THEN RETURN k END ;
+        i := ConstAt (e.au) ;
+        IF i >= 0 THEN
+          t := consts[i].mode ;
+          v := consts[i].ty
+        ELSE
+          (* An implementation's CONST also names a CONST of its own
+             DEFINITION.  Those join consts only after the
+             implementation's own (AddDefConsts), so they are read
+             from the registry here. *)
+          dm := FindMod (curMod) ;
+          IF dm < 0 THEN RETURN k END ;
+          i := NxFind (mods[dm].cnIx, e.au) ;
+          IF i < mods[dm].defCnLo OR i >= mods[dm].defCnHi THEN RETURN k END ;
+          t := mods[dm].cnTypes[i] ;
+          v := mods[dm].cnVals[i]
+        END
+      ELSE
+        i := NxFind (mods[m].cnIx, e.au) ;
+        IF i < 0 OR i >= mods[m].ncns THEN RETURN k END ;
+        t := mods[m].cnTypes[i] ;
+        v := mods[m].cnVals[i]
+      END ;
+      IF IsStrLit (t) OR Text.Eq (t, '<int>') OR Text.Eq (t, '<real>') OR
+         Text.Eq (t, 'U64') OR Text.Eq (t, 'BOOL') THEN
+        RETURN v
+      END ;
+      RETURN k
+    END ;
+    IF (e.kind = Ast.NBin AND e.nkids = 2) OR
+       ((e.kind = Ast.NParen OR e.kind = Ast.NUn) AND e.nkids = 1) THEN
+      IF NOT NamesAny (k) THEN RETURN k END ;
+      n := Ast.NewNode (pool, e.kind, e.line, e.col) ;
+      Ast.SetAUtf (pool, n, e.au) ;
+      FOR j := 0 TO e.nkids - 1 DO Ast.Add (pool, n, ConstExpand (e.kids[j], m)) END ;
+      RETURN SOME (n)
+    END
+  END ;
+  RETURN k
+END ConstExpand ;
 
 (* This is the body of the FORWARD heading beside AdaptLit.  A CONST's
    recorded type is its literal's (LitType), so a string literal's is
@@ -6820,6 +6907,28 @@ BEGIN
   t := ConstType (nm, found) ;
   RETURN found AND Text.StartsWith (t, 'ARRAY ')
 END IsAggConst ;
+
+(* AddConstExpanded records a loaded module's CONST by its expanded
+   value.  An importer then reads `Snake.MaxLen' as the literals of
+   `Cols * Rows', as the module itself does. *)
+PROCEDURE AddConstExpanded (m: I64 ; KEPT cd: PTR Ast.Node) =
+VAR xv : Ast.Kid ;
+BEGIN
+  xv := ConstExpand (cd.kids[0], m) ;
+  AddConst (m, cd.au, Text.Keep (pool, LitType (xv)), xv)
+END AddConstExpanded ;
+
+(* ConstAddExpanded records a CONST by the value ConstExpand answers,
+   so that a later CONST, an ARRAY count and a CASE label read
+   literals.  A DEFINITION's CONST is recorded as written: there a
+   name is refused (CheckAggregate). *)
+PROCEDURE ConstAddExpanded (KEPT cd: PTR Ast.Node ; expand: BOOL) =
+VAR xv : Ast.Kid ;
+BEGIN
+  xv := cd.kids[0] ;
+  IF expand THEN xv := ConstExpand (xv, -1) END ;
+  ConstAdd (cd.au, Text.Keep (pool, LitType (xv)), xv)
+END ConstAddExpanded ;
 
 (* CheckAggregate checks what an aggregate CONST must be (par 2.2.4):
    literals of one type, at module level, in a module's own part.
@@ -6872,6 +6981,7 @@ PROCEDURE CheckAggregate (cd: PTR Ast.Node ; RO ctx: UTF ; where: I64) =
 VAR
   i, cv : I64 ;
   t0, t : UTF ;
+  xv : Ast.Kid ;
 BEGIN
   IF cd.kids[0] IS SOME rc THEN
     IF IsRecordCall (rc) THEN
@@ -6892,10 +7002,12 @@ BEGIN
   (* a form the generator cannot emit is refused HERE, by name: a
      generator error after a clean check reads as a compiler fault
      (cp-kernel's issue 1, 2026-10-09) *)
-  IF cd.kids[0] IS SOME ce THEN
+  xv := cd.kids[0] ;
+  xv := ConstExpand (xv, -1) ;
+  IF xv IS SOME ce THEN
     IF Text.BLen (LitType (SOME (ce))) = 0 THEN
       ErrN (cd, ctx, S3 ('CONST ', cd.au,
-        ': a constant is a literal, a negated number, or + over string and CHAR literals -- compute anything else in a procedure (par 2.2.4)'))
+        ': a constant is a literal, a negated number, or an expression over literals and CONSTs declared before it -- compute anything else in a procedure (par 2.2.4)'))
     ELSIF Text.Eq (LitType (SOME (ce)), '<int>') AND IsConstExpr (ce) THEN
       (* The generators fold this with the runtime's arithmetic.  So
          the checker refuses here what the program would raise at run
@@ -7106,6 +7218,9 @@ BEGIN
       IF Text.BLen (e.au) = 0 THEN RETURN '' END ;
       RETURN 'a string literal'
     END ;
+    (* [a, b] is lent read-only: nobody could read what a callee
+       wrote into it (par 2.2.5) *)
+    IF e.kind = Ast.NAggregate THEN RETURN 'a slice written in brackets' END ;
     IF e.kind = Ast.NSliceOf3 OR e.kind = Ast.NGridOf THEN
       RETURN RoWhatOf (e.kids[0])
     END ;
@@ -7291,6 +7406,7 @@ BEGIN
       IF Text.BLen (e.au) = 0 THEN RETURN '' END ;
       RETURN 'a string literal'
     END ;
+    IF e.kind = Ast.NAggregate THEN RETURN 'a slice written in brackets' END ;
     IF e.kind = Ast.NSliceOf3 OR e.kind = Ast.NGridOf THEN
       RETURN ModRoWhat (e.kids[0], scope)
     END ;
@@ -7608,6 +7724,8 @@ BEGIN
     IF an IS SOME a THEN
       IF a.kind = Ast.NString THEN
         what := 'a string literal'
+      ELSIF a.kind = Ast.NAggregate THEN
+        what := 'a slice written in brackets'
       ELSIF a.kind = Ast.NDesignator AND
             (Text.StartsWith (aTy, 'SLICE OF') OR
              Text.StartsWith (aTy, 'GRID ') OR Text.Eq (aTy, '<str1>')) THEN
@@ -7756,6 +7874,71 @@ BEGIN
   RETURN ''
 END CatHint ;
 
+(* CharCodeOf answers the code of a character the checker can read:
+   a character literal, 'x' or 0AC, or a CONST whose value is one,
+   this module's or an imported Mod.C.  It answers -1 for anything
+   else: a CHAR variable has no code to read. *)
+PROCEDURE CharCodeOf (k: Ast.Kid) : I64 =
+VAR
+  i, mi : I64 ;
+  v : Ast.Kid ;
+BEGIN
+  v := k ;
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NDesignator AND e.nkids = 0 THEN
+      IF NOT IsConstHere (e.au) THEN RETURN -1 END ;
+      i := ConstAt (e.au) ;
+      IF i < 0 THEN RETURN -1 END ;
+      v := consts[i].ty
+    ELSIF e.kind = Ast.NDesignator AND e.nkids = 1 THEN
+      IF Text.BLen (ScopeMode (e.au)) > 0 THEN RETURN -1 END ;
+      mi := FindMod (e.au) ;
+      IF mi < 0 THEN RETURN -1 END ;
+      IF e.kids[0] IS SOME sel THEN
+        IF sel.kind # Ast.NSelField THEN RETURN -1 END ;
+        i := NxFind (mods[mi].cnIx, sel.au) ;
+        IF i < 0 OR i >= mods[mi].ncns THEN RETURN -1 END ;
+        v := mods[mi].cnVals[i]
+      ELSE
+        RETURN -1
+      END
+    END
+  END ;
+  IF v IS SOME n THEN
+    IF n.kind = Ast.NChar THEN RETURN Ast.CharCode (STR (n.au)) END ;
+    IF n.kind = Ast.NString AND Text.CpCount (n.au) = 1 THEN
+      RETURN ORD (Text.CpAt (n.au, 0))
+    END
+  END ;
+  RETURN -1
+EXCEPT
+| IndexError : RETURN -1
+END CharCodeOf ;
+
+(* ByteLit is TRUE for a character that a BYTE is compared with or
+   that labels a CASE over a BYTE (par 2.1, 2026-11-19): a literal,
+   'x' or 0AC, or a CONST that names one (2026-11-20).  The character
+   stands for its code, which must be ASCII.  A character past 7FC is
+   two or more octets in UTF-8, so no single BYTE equals it, and
+   ByteLit refuses it here.  A CHAR variable is not one: it still
+   converts by name.  The program read `b[p] = 44' before this, and a
+   reader had to know the table.  The CONST was left out at first.
+   An agent in a blind trial then wrote `CONST LF = 0AC' and `b = LF',
+   as a reader would, and was refused six times. *)
+PROCEDURE ByteLit (k: Ast.Kid ; RO ctx: UTF) : BOOL =
+VAR code : I64 ;
+BEGIN
+  code := CharCodeOf (k) ;
+  IF code < 0 THEN RETURN FALSE END ;
+  IF k IS SOME e THEN
+    IF code > 127 THEN
+      ErrN (e, ctx, Cat ('a BYTE is compared with an ASCII character literal only: ',
+        'this character is past 7FC, so no single octet of UTF-8 holds it (par 2.1)'))
+    END
+  END ;
+  RETURN TRUE
+END ByteLit ;
+
 PROCEDURE BinType (e: PTR Ast.Node ; RO ctx: UTF) : UTF =
 VAR lt, rt, op : UTF ;
 BEGIN
@@ -7782,6 +7965,9 @@ BEGIN
       ErrN (e, ctx, S5 ("no '", op, "' with NaN: no comparison with NaN is",
         " ever TRUE, except '#', which always is; Math.IsNaN (x) asks",
         ' (par 2.1)'))
+    ELSIF Text.Eq (lt, 'BYTE') AND ByteLit (e.kids[1], ctx) OR
+          Text.Eq (rt, 'BYTE') AND ByteLit (e.kids[0], ctx) THEN
+      (* ByteLit judged the literal (par 2.1). *)
     ELSE
       Agree (StOperand, lt, rt, e.line) ;
       IF NOT (Compat (lt, rt) OR Compat (rt, lt)) THEN
@@ -8133,6 +8319,151 @@ BEGIN
   RETURN 'frame'
 END NewForm ;
 
+(* MemberIn answers the enumeration or case record of module m that
+   declares name as a member, or '' when m has none. *)
+PROCEDURE MemberIn (m: I64 ; RO name: UTF) : UTF =
+VAR j, v : I64 ;
+BEGIN
+  FOR j := 0 TO mods[m].nvts - 1 DO
+    FOR v := 0 TO LEN (mods[m].vts[j].variants) - 1 DO
+      IF Text.Eq (mods[m].vts[j].variants[v], name) THEN
+        RETURN mods[m].vts[j].typeName
+      END
+    END
+  END ;
+  RETURN ''
+END MemberIn ;
+
+(* MemberHome answers how a bare member name is written in full: Dir.Down
+   for Down.  The module's own types come first, then the types of the
+   modules it imports.  The answer is '' when no type has the member.
+   An agent's first Snake wrote `d = Down' and was told only that Down
+   is unknown (2026-11-18). *)
+PROCEDURE MemberHome (RO name: UTF) : UTF =
+VAR
+  m, me : I64 ;
+  t : UTF ;
+BEGIN
+  me := FindMod (curMod) ;
+  IF me >= 0 THEN
+    t := MemberIn (me, name) ;
+    IF Text.BLen (t) > 0 THEN RETURN S3 (t, '.', name) END
+  END ;
+  FOR m := 0 TO nmods - 1 DO
+    IF m # me AND ModImports (curRoot, curMod, mods[m].name) THEN
+      t := MemberIn (m, name) ;
+      IF Text.BLen (t) > 0 THEN
+        RETURN S3 (mods[m].name, '.', S3 (t, '.', name))
+      END
+    END
+  END ;
+  RETURN ''
+END MemberHome ;
+
+(* HoleType types a hole of an interpolation literal, ${e} or
+   ${e:8.2} (docs/interpolation-rfc.md, par 3.3 and 3.4).  A hole is
+   a string whatever it holds, so it always answers the string type:
+   one refusal here is not followed by a second from the `+' it is
+   under.
+
+   What a hole takes as it is: a string, a CHAR, a BOOL, an integer,
+   and a real, which is written in its shortest exact form.  What a
+   format may ask of each:
+
+     an integer   a width, with zeros as the fill when it says so
+     a real       a width, decimals 0 to 17, and e
+     the others   nothing
+
+   The runtime writes every one of them, a real with Fmt's own
+   digits, so a hole asks for no import. *)
+PROCEDURE HoleType (e: PTR Ast.Node ; RO ctx: UTF) : UTF =
+VAR
+  t : UTF ;
+  zero, sci, ok : BOOL ;
+  width, decimals : I64 ;
+BEGIN
+  IF e.nkids = 0 THEN RETURN UtfTy END ;       (* the parser refused it *)
+  t := ExprType (e.kids[0], ctx) ;
+  ok := Ast.HoleFormat (e.au, zero, width, decimals, sci) ;
+  IF NOT ok OR Text.BLen (t) = 0 THEN RETURN UtfTy END ;
+  IF IsIntStr (t) OR Text.Eq (t, '<int>') OR Text.Eq (t, 'U64') THEN
+    IF decimals >= 0 OR sci THEN
+      ErrN (e, ctx, Cat ('an integer in a hole takes a width and no decimals: write ${n:8}, ',
+        'or ${F64 (n):8.2} for a real (par 2.3)'))
+    END
+  ELSIF IsFloatStr (t) OR Text.Eq (t, '<real>') THEN
+    IF zero THEN
+      ErrN (e, ctx, 'a real in a hole is padded with blanks: the zero fill is for an integer (par 2.3)')
+    ELSIF decimals > 17 THEN
+      ErrN (e, ctx, S3 ('the format ', e.au,
+        ' asks for more decimals than a real has: 0 to 17 (par 2.3)'))
+    END ;
+  ELSIF Text.Eq (t, UtfTy) OR Text.Eq (t, '<str1>') OR Text.Eq (t, 'CHAR') OR
+        Text.Eq (t, 'BOOL') THEN
+    IF e.f1 THEN
+      ErrN (e, ctx, 'a string, a CHAR and a BOOL take no format: only a number is padded in a hole (par 2.3)')
+    END
+  ELSIF Text.Eq (t, 'BYTE') THEN
+    ErrN (e, ctx, 'a BYTE in a hole is a number or a character: write ${I64 (b)} or ${CHR (I64 (b))} (par 2.3)')
+  ELSIF Text.Eq (t, 'SLICE OF CHAR') OR Text.Eq (t, 'SLICE OF BYTE') THEN
+    ErrN (e, ctx, S3 ('a hole takes a string, not ', TyName (t), ': UTF (s) converts (par 2.3)'))
+  ELSIF Text.Eq (t, '<void>') THEN
+    ErrN (e, ctx, 'a hole holds a value: this call answers none (par 2.3)')
+  ELSE
+    ErrN (e, ctx, S3 ('a value of type ', TyName (t),
+      Cat (' has no text form in a hole: a hole takes a string, a CHAR, a number or a BOOL; ',
+           'for an enumeration answer a string from a CASE (par 2.3)')))
+  END ;
+  RETURN UtfTy
+END HoleType ;
+
+(* SliceLitType types [e1, ..., en] written as a call's argument (par
+   2.2.5).  It is a SLICE OF T in the frame.  T is the type of the
+   first element that is not a numeric literal.  Numeric literals
+   alone make I64, or F64 when the first is a real.  Every element
+   must fit T as a value assigned to a T does.  So a literal adapts
+   and nothing else converts.  T is a builtin type or a string: the
+   generator names those slices without a declaration.  The parser
+   holds the position: it reads the brackets only as a whole
+   argument. *)
+PROCEDURE SliceLitType (e: PTR Ast.Node ; RO ctx: UTF) : UTF =
+VAR
+  i : I64 ;
+  t, el : UTF ;
+  tys : SLICE OF UTF ;
+BEGIN
+  IF e.nkids = 0 THEN RETURN '' END ;
+  tys := NEW (UTF, e.nkids) ;
+  t := '' ;
+  FOR i := 0 TO e.nkids - 1 DO
+    tys[i] := ExprType (e.kids[i], ctx) ;
+    IF Text.BLen (t) = 0 AND NOT Text.Eq (tys[i], '<int>') AND NOT Text.Eq (tys[i], '<real>') THEN
+      t := tys[i]
+    END
+  END ;
+  IF Text.Eq (t, '<str1>') THEN t := StrLitTy () END ;
+  IF Text.BLen (t) = 0 THEN
+    (* an element in error, or numeric literals alone *)
+    IF Text.Eq (tys[0], '<real>') THEN t := 'F64'
+    ELSIF Text.Eq (tys[0], '<int>') THEN t := 'I64'
+    ELSE RETURN ''
+    END
+  END ;
+  IF NOT (IsBuiltinTy (t) OR Text.Eq (t, UtfTy) OR Text.Eq (t, 'SLICE OF CHAR')) THEN
+    ErrN (e, ctx, S3 ('a slice written in brackets holds strings, numbers, characters or booleans, not ',
+      TyName (t), ': fill a slice from NEW for any other element (par 2.2.5)')) ;
+    RETURN ''
+  END ;
+  FOR i := 0 TO e.nkids - 1 DO
+    el := AdaptLit (e.kids[i], t, tys[i]) ;
+    IF NOT Compat (t, el) THEN
+      ErrN (e, ctx, S5 ('element ', ItoA (i + 1), ' of the slice in brackets: cannot give ', TyName (tys[i]),
+        S3 (' where ', TyName (t), ' is expected: the elements have one type, that of the first (par 2.2.5)')))
+    END
+  END ;
+  RETURN Cat ('SLICE OF ', t)
+END SliceLitType ;
+
 PROCEDURE ExprType0 (k: Ast.Kid ; RO ctx: UTF) : UTF =
 VAR
   t, u, form : UTF ;
@@ -8154,6 +8485,8 @@ BEGIN
     | Ast.NTrue : RETURN 'BOOL'
     | Ast.NFalse : RETURN 'BOOL'
     | Ast.NNoneLit : RETURN '<none>'
+    | Ast.NAggregate : RETURN SliceLitType (e, ctx)
+    | Ast.NHole : RETURN HoleType (e, ctx)
     | Ast.NParen : RETURN ExprType (e.kids[0], ctx)
     | Ast.NSomeExpr :
         t := ExprType (e.kids[0], ctx) ;
@@ -8489,7 +8822,13 @@ BEGIN
            value context, scope populated), never in DesigStrType,
            which the signature checks also reach without a scope. *)
         IF e.nkids = 0 AND NOT BareNameKnown (e.au) THEN
-          ErrN (e, ctx, Cat ('unknown name: ', e.au))
+          IF Text.BLen (MemberHome (e.au)) > 0 THEN
+            ErrN (e, ctx, S3 ('unknown name: ', e.au,
+              S3 (' -- a member is named by its type: ', MemberHome (e.au),
+                  ' (bare only as a CASE label)')))
+          ELSE
+            ErrN (e, ctx, Cat ('unknown name: ', e.au))
+          END
         ELSIF e.nkids = 0 AND Text.BLen (ScopeMode (e.au)) = 0 AND NOT ConstNamed (e.au) THEN
           (* The name is known and has no value: a module or a type
              named where a value is read.  `x := I64', `IF Io = 3'
@@ -12478,6 +12817,29 @@ BEGIN
   END
 END ThreadOwnArg ;
 
+(* PlainRecord is TRUE for the name of a RECORD type that is not a
+   MONITOR. *)
+PROCEDURE PlainRecord (RO t: UTF) : BOOL =
+VAR
+  dot : I64 ;
+  md, ty : UTF ;
+BEGIN
+  IF Text.StartsWith (t, 'PTR ') OR Text.StartsWith (t, 'SHARED ') OR
+     Text.StartsWith (t, 'OPT ') OR Text.StartsWith (t, 'SLICE OF ') OR
+     Text.StartsWith (t, 'ARRAY ') OR Text.StartsWith (t, 'GRID ') THEN
+    RETURN FALSE
+  END ;
+  dot := Text.FindChar (t, '.') ;
+  IF dot >= 0 THEN
+    md := SLICE (t, 0, dot) ;
+    ty := SLICE (t, dot + 1, Text.BLen (t) - dot - 1)
+  ELSE
+    md := '' ; ty := t
+  END ;
+  IF LookupTypeName (md, ty) IS SOME n THEN RETURN n.kind = Ast.NRecordType END ;
+  RETURN FALSE
+END PlainRecord ;
+
 PROCEDURE CheckThread (st: PTR Ast.Node ; RO ctx: UTF) =
 VAR
   name, pTy, aTy, amode, what, sw, sh : UTF ;
@@ -12546,6 +12908,17 @@ BEGIN
         ErrN (st, ctx, S5 (StmtOpen (st), name, '): the target takes its ',
           TyName (pTy), S3 (' by value, and a thread is handed ', TyName (aTy),
           S3 (' -- declare the parameter VAR, or of type ', TyName (aTy), ' (par 6)'))))
+      ELSIF PlainRecord (aTy) THEN
+        (* A thread is handed one word: a pointer, or a monitor by its
+           address.  A record that is not a monitor has no pointer the
+           thread could be given: the name is a local, or a VAR
+           parameter of the starter, whose own caller holds the
+           pointer.  The generator refused this, `THREAD argument must
+           be pointer-shaped or a monitor', after a clean check
+           (examples/flock, 2026-11-19). *)
+        ErrN (st, ctx, S5 (StmtOpen (st), name, '): the argument is a ', TyName (aTy),
+          Cat (', a record: a thread is handed a pointer or a monitor -- ',
+               'hand it the PTR the record is reached through (par 6)')))
       END
     END ;
     (* A frame allocation, or a name holding one, dies when this frame
@@ -14177,14 +14550,18 @@ BEGIN
                 IF NOT IsVariantLabel (lbl) THEN
                   t := ExprType (lbl.kids[0], ctx) ;
                   Agree (StLabel, selTy, t, lbl.line) ;
-                  IF NOT (Compat (selTy, t) OR Compat (t, selTy)) THEN
+                  IF Text.Eq (selTy, 'BYTE') AND ByteLit (lbl.kids[0], ctx) THEN
+                    (* ByteLit judged the label (par 2.1). *)
+                  ELSIF NOT (Compat (selTy, t) OR Compat (t, selTy)) THEN
                     ErrN (lbl, ctx, S4 ('CASE label is ', TyName (t),
                       ' but the selector is ', TyName (selTy)))
                   END ;
                   IF lbl.kids[1] IS SOME hi THEN
                     t := ExprType (lbl.kids[1], ctx) ;
                     Agree (StLabel, selTy, t, hi.line) ;
-                    IF NOT (Compat (selTy, t) OR Compat (t, selTy)) THEN
+                    IF Text.Eq (selTy, 'BYTE') AND ByteLit (lbl.kids[1], ctx) THEN
+                      (* ByteLit judged the upper end the same way. *)
+                    ELSIF NOT (Compat (selTy, t) OR Compat (t, selTy)) THEN
                       ErrN (hi, ctx, S4 ('CASE label is ', TyName (t),
                         ' but the selector is ', TyName (selTy)))
                     END
@@ -15905,6 +16282,12 @@ BEGIN
           END
         END ;
         RETURN RgFreshObj ()
+    | Ast.NAggregate :
+        (* [a, b] is a fresh object of this frame, read-only, and it
+           reaches what its elements reach (par 2.2.5) *)
+        r := RgAdd (RgFreshObj (), RgRo) ;
+        FOR i := 0 TO e.nkids - 1 DO r := RgOr (r, RgExpr (e.kids[i], st)) END ;
+        RETURN r
     | Ast.NCallExpr :
         RETURN RgCall (e, st)
     | Ast.NCallSel :
@@ -20497,7 +20880,7 @@ BEGIN
               FOR k := 0 TO cs.nkids - 1 DO
                 IF cs.kids[k] IS SOME cd THEN
                   ty := ConstType (cd.au, seen) ;
-                  IF NOT seen THEN ConstAdd (cd.au, Text.Keep (pool, LitType (cd.kids[0])), cd.kids[0]) END
+                  IF NOT seen THEN ConstAddExpanded (cd, TRUE) END
                 END
               END
             END
@@ -20963,7 +21346,7 @@ BEGIN
                 ELSE
                   CheckAggregate (cd, u.au, 0)
                 END ;
-                ConstAdd (cd.au, Text.Keep (pool, LitType (cd.kids[0])), cd.kids[0])
+                ConstAddExpanded (cd, TRUE)
               END
             END
           END

@@ -90,9 +90,10 @@ begin
   GenModule ('DynUtf', []);
   GenModule ('Tsk', ['Faults', 'System']);
   GenModule ('Chan', []);
+  GenModule ('Jobs', []);
   GenModule ('Sup', ['Faults', 'Time', 'Io', 'Fmt']);
   GenModule ('Http', ['DynStr', 'Io', 'Text']);
-  GenModule ('HttpServer', ['DynStr', 'Http', 'Io', 'Logger', 'Zip', 'Text']);
+  GenModule ('HttpServer', ['DynStr', 'Http', 'Io', 'Json', 'Logger', 'Zip', 'Text']);
   GenModule ('OpenApi', ['HttpServer', 'DynStr', 'Text']);
   GenModule ('ApiSpec', ['DynStr', 'Text']);
   GenModule ('Arrow', ['DynStr', 'Faults', 'Text']);

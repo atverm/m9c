@@ -1,0 +1,14 @@
+(* A hole holds an expression.  An empty one has nothing to write.
+   The two characters ${ as text are joined by a +, since a string
+   has no escape. *)
+MODULE m ;
+PROCEDURE Fine (n: I64) : STR =
+BEGIN
+  RETURN '$' + $'{} is empty, ${n} is not'
+END Fine ;
+PROCEDURE Bad (n: I64) : STR =
+BEGIN
+  RETURN $'${} and ${n}'
+END Bad ;
+BEGIN
+END m.

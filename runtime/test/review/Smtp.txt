@@ -1,11 +1,11 @@
-REVIEW Smtp -- 43 procedures with a body, 22 of them functions; 13 headings in a DEFINITION
+REVIEW Smtp -- 44 procedures with a body, 22 of them functions; 14 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              22
-  assignments                                   154
-  arguments                                     429
+  assignments                                   160
+  arguments                                     435
   RETURN values                                  48
-  operands of a comparison or an operator       169
+  operands of a comparison or an operator       171
   CASE labels                                    17
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -30,9 +30,9 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
 
 TRUSTED -- outside what the checker can see
   UNSAFE units                                    2   csmtp, Smtp
-  foreign procedures                              9
+  foreign procedures                             11
     of them [SERIAL]                              1
-    of them [REENTRANT]                           8
+    of them [REENTRANT]                          10
   THREADs writing STATEFUL state                  0
   ADR sites (C reading or writing M9 storage)     7   reads in WrAll, reads in WrAll, writes or reads in Reply, writes or reads in Reply, reads in Dialogue, reads in Dialogue, +1 more
     of them filling a descriptor ([FRESH])        0

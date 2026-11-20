@@ -1,0 +1,2 @@
+parseprobes/slice-in-brackets-empty.m9:14:16: parse: a slice in brackets needs an element: its type is the type of its elements -- NEW (T, 0) is the empty slice
+m9c: 1 parse errors in parseprobes/slice-in-brackets-empty.m9

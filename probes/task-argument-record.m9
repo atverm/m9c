@@ -1,0 +1,28 @@
+(* EXPECT: TASK (Fly): the argument is a m.Sky, a record: a thread is handed a pointer or a monitor -- hand it the PTR the record is reached through (par 6) *)
+(* A THREAD or a TASK is handed one word: a pointer, or a monitor by
+   its address.  A record that reached this procedure as a VAR
+   parameter has no pointer here: the caller holds it.  The legal
+   form hands the pointer on.  The generator refused this after a
+   clean check until 2026-11-20. *)
+MODULE m ;
+TYPE
+  Sky = RECORD
+    birds : I64 ;
+  END [SHARABLE] ;
+VAR
+  pool : POOL ;
+  sky : PTR Sky ;
+PROCEDURE Fly (VAR s: Sky) =
+BEGIN
+END Fly ;
+PROCEDURE Fine () RAISES OutOfMemory =
+BEGIN
+  TASK (Fly, sky)
+END Fine ;
+PROCEDURE Bad (VAR s: Sky) RAISES OutOfMemory =
+BEGIN
+  TASK (Fly, s)
+END Bad ;
+BEGIN
+  sky := NEW (pool, Sky)
+END m.

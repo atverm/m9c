@@ -1250,7 +1250,7 @@ m9_sl_UTF8 Xml_Document (Xml_Writer * w, m9_state *err)
   err->res = m9res;
   { __typeof__(({ __auto_type m9n = (w->d); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a16 = ({ __auto_type m9n = (w->d); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
     if (err->exc) { m9ln = 1489; goto L_ret; };
-  m9ret = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s28, 38 }), m9_utf_of_char (err->res, 10u, err), err), DynStr_View (m9a16, err), err), m9_utf_of_char (err->res, 10u, err), err);
+  m9ret = m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t3 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s28, 38 }), m9_utf_of_char (err->res, 10u, err), err); m9_utf_cat (err->res, m9t3, DynStr_View (m9a16, err), err); }), m9_utf_of_char (err->res, 10u, err), err);
   if (err->exc) { m9ln = 1489; goto L_ret; };
   }
   goto L_ret;
@@ -4128,7 +4128,7 @@ L_dn_m9t4: ;
   bool m9t8 = (((Text_BLen (e, err) > INT64_C(0)) && (!Text_EqUtf (e, ((m9_sl_UTF8){ (uint8_t *) m9s189, 5 }), err))) && (!Text_EqUtf (e, ((m9_sl_UTF8){ (uint8_t *) m9s190, 4 }), err)));
   if (err->exc) { m9ln = 1111; goto L_ret; };
   if (m9t8) {
-    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s191, 30 }), Xml_RawValue (head, ((m9_sl_UTF8){ (uint8_t *) m9s192, 8 }), err), err)) m9t9 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s191, 30 }), Xml_RawValue (head, ((m9_sl_UTF8){ (uint8_t *) m9s192, 8 }), err), err); err->s[0].p = m9t9.p; err->s[0].len = m9t9.len; m9_pay_keep (err, 0, sizeof (*m9t9.p)); }
+    { __typeof__(({ m9_sl_UTF8 m9t9 = ((m9_sl_UTF8){ (uint8_t *) m9s191, 30 }); m9_utf_cat (err->res, m9t9, Xml_RawValue (head, ((m9_sl_UTF8){ (uint8_t *) m9s192, 8 }), err), err); })) m9t10 = ({ m9_sl_UTF8 m9t9 = ((m9_sl_UTF8){ (uint8_t *) m9s191, 30 }); m9_utf_cat (err->res, m9t9, Xml_RawValue (head, ((m9_sl_UTF8){ (uint8_t *) m9s192, 8 }), err), err); }); err->s[0].p = m9t10.p; err->s[0].len = m9t10.len; m9_pay_keep (err, 0, sizeof (*m9t10.p)); }
     err->i[0] = INT64_C(1);
     err->i[1] = INT64_C(1);
     m9_raise (err, &Xml_Unsupported);
@@ -4218,7 +4218,7 @@ static void Xml_Escaped (Xml_Writer * *w, m9_pool *w_pool, m9_sl_UTF8 s, bool at
     bool m9t2 = (!Xml_IsChar ((int64_t)(c), err));
     if (err->exc) { m9ln = 1414; goto L_ret; };
     if (m9t2) {
-      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s193, 41 }), Fmt_I64Str (i, err), err)) m9t3 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s193, 41 }), Fmt_I64Str (i, err), err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
+      { __typeof__(({ m9_sl_UTF8 m9t3 = ((m9_sl_UTF8){ (uint8_t *) m9s193, 41 }); m9_utf_cat (err->res, m9t3, Fmt_I64Str (i, err), err); })) m9t4 = ({ m9_sl_UTF8 m9t3 = ((m9_sl_UTF8){ (uint8_t *) m9s193, 41 }); m9_utf_cat (err->res, m9t3, Fmt_I64Str (i, err), err); }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
       m9_raise (err, &Xml_WriteError);
       m9_site (err, 1415, m9pn);
       goto L_ret;

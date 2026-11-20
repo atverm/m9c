@@ -1,0 +1,14 @@
+(* An interpolation literal computes: the $ says so to a reader.  One
+   with no hole computes nothing, and is a plain string.  A $ and a
+   brace in a plain string are themselves. *)
+MODULE m ;
+PROCEDURE Fine (n: I64) : STR =
+BEGIN
+  RETURN 'costs $5 {net}' + $' for ${n}'
+END Fine ;
+PROCEDURE Bad () : STR =
+BEGIN
+  RETURN $'costs $5 {net}'
+END Bad ;
+BEGIN
+END m.

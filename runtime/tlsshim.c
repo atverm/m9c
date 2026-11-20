@@ -94,6 +94,7 @@
 
 int tcp_connect (const char *host, int port);   /* tcpshim.c */
 int tcp_close (int fd);                         /* tcpshim.c */
+int tcp_rcvtimeo (int fd, int64_t ms);          /* tcpshim.c */
 
 /* A TASK WAITS FOR ITS TLS SOCKET IN THE POLLER (stage 3 of
    docs/task-plan.md).  A handle made in a task has a non-blocking
@@ -414,6 +415,16 @@ int64_t tls_write (int h, const void *buf, size_t n)
     if (!slots[h].nb || !wait_ssl (slots[h].fd, SSL_get_error (ssl, put), -1))
       return -1;
   }
+}
+
+/* tls_rcvtimeo sets the receive timeout of the handle's socket, as
+   tcp_rcvtimeo does for a plain one: tls_read then fails after ms of
+   silence.  Smtp sets it, so that a silent server ends the dialogue
+   (2026-11-20). */
+int tls_rcvtimeo (int h, int64_t ms)
+{
+  if (h < 0 || h >= TLS_MAX || !slots[h].used) return -1;
+  return tcp_rcvtimeo (slots[h].fd, ms);
 }
 
 int tls_close (int h)

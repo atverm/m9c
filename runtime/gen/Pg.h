@@ -17,6 +17,7 @@ typedef struct Pg_Result Pg_Result;
 extern const m9_exc Pg_PgError;
 
 #define Pg_MaxParams INT64_C(64)
+#define Pg_TimeoutGrace INT64_C(2000)
 #define Pg_Nowhere INT64_C(0)
 #define Pg_MaxMsg INT64_C(4096)
 #define Pg_ConnOk INT64_C(0)
@@ -31,7 +32,9 @@ typedef struct { m9_sl_UTF8 *p; int64_t len; } m9_sl_m9_sl_UTF8;
 Pg_Conn * Pg_Connect (m9_pool *pool, m9_sl_UTF8 conninfo, m9_state *err);
 void Pg_Reconnect (Pg_Conn * *c, m9_pool *c_pool, m9_state *err);
 bool Pg_Alive (Pg_Conn * c, m9_state *err);
+void Pg_Ensure (Pg_Conn * *c, m9_pool *c_pool, m9_state *err);
 void Pg_Close (Pg_Conn * *c, m9_pool *c_pool, m9_state *err);
+void Pg_SetTimeout (Pg_Conn * *c, m9_pool *c_pool, int64_t ms, m9_state *err);
 Pg_Result * Pg_Query (m9_pool *pool, Pg_Conn * c, m9_sl_UTF8 sql, m9_sl_m9_sl_UTF8 params, m9_state *err);
 int64_t Pg_Exec (Pg_Conn * c, m9_sl_UTF8 sql, m9_sl_m9_sl_UTF8 params, m9_state *err);
 m9_sl_UTF8 Pg_ArrayLiteral (m9_sl_m9_sl_UTF8 items, m9_state *err);

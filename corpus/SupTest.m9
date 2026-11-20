@@ -25,6 +25,7 @@ CONST
   AlwaysFail = 2 ;              (* child 0 fails every start *)
   Siblings = 3 ;                (* child 0 fails its first start; child 1 waits to be asked *)
   CrashTwice = 4 ;              (* child 0 crashes by a bug on its first two starts *)
+  FailForty = 5 ;               (* child 0 fails its first forty starts *)
 
 TYPE
   Tally = MONITOR RECORD
@@ -76,6 +77,7 @@ BEGIN
   IF s.id = 0 THEN
     IF j.mode = FailTwice AND n <= 2 THEN RAISE Refused END ;
     IF j.mode = AlwaysFail THEN RAISE Refused END ;
+    IF j.mode = FailForty AND n <= 40 THEN RAISE Refused END ;
     IF j.mode = Siblings AND n = 1 THEN
       (* fail only once the sibling runs: then the restart asks it *)
       WHILE Starts (j.tally, 1) < 1 DO Time.Sleep (1) END ;
@@ -165,6 +167,26 @@ EXCEPT
 | Faults.BadArg (w) : Check.That (t, 'gives up: ' + w, FALSE)
 END GivesUp ;
 
+(* ForEver: a child that fails forty times in a row, far past any
+   count a window allows, is started again every time under
+   Sup.Forever, and the supervisor never gives up. *)
+PROCEDURE ForEver () =
+VAR
+  j : PTR Job IN pool ;
+  clean, dirty : I64 ;
+BEGIN
+  j := NewJob (FailForty, 2, Sup.OneForOne, Sup.Forever) ;
+  Sup.Watch (j.board, 2) ;
+  AwaitGone (j.tally, 2) ;
+  Check.EqI64 (t, 'for ever: the failing child is started 41 times', Starts (j.tally, 0), 41) ;
+  Check.EqI64 (t, 'for ever: its sibling once', Starts (j.tally, 1), 1) ;
+  Sup.Restarts (j.board, clean, dirty) ;
+  Check.EqI64 (t, 'for ever: forty clean restarts, and no GaveUp', clean, 40)
+EXCEPT
+| Sup.GaveUp : Check.That (t, 'for ever: no GaveUp', FALSE)
+| Faults.BadArg (w) : Check.That (t, 'for ever: ' + w, FALSE)
+END ForEver ;
+
 PROCEDURE AllForOne () =
 VAR
   j : PTR Job IN pool ;
@@ -209,11 +231,14 @@ END PolicyRefused ;
 BEGIN
   OneForOne () ;
   GivesUp () ;
+  ForEver () ;
   AllForOne () ;
   Dirty () ;
   Check.That (t, 'Policy refuses an unknown policy', PolicyRefused (7, 3, 1000, 3)) ;
   Check.That (t, 'Policy refuses a window of 0', PolicyRefused (Sup.OneForOne, 3, 0, 3)) ;
   Check.That (t, 'Policy refuses a dirty limit of 0', PolicyRefused (Sup.OneForOne, 3, 1000, 0)) ;
   Check.That (t, 'Policy takes a sound one', NOT PolicyRefused (Sup.AllForOne, 0, 1, 1)) ;
+  Check.That (t, 'and Forever for the restarts', NOT PolicyRefused (Sup.OneForOne, Sup.Forever, 1000, 3)) ;
+  Check.That (t, 'and nothing below it', PolicyRefused (Sup.OneForOne, -2, 1000, 3)) ;
   Io.Halt (Check.Done (t, 'Sup'))
 END SupTest.

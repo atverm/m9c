@@ -17,6 +17,7 @@ extern const m9_exc Sup_GaveUp;
 #define Sup_MaxChildren INT64_C(64)
 #define Sup_OneForOne INT64_C(0)
 #define Sup_AllForOne INT64_C(1)
+#define Sup_Forever INT64_C(-1)
 #define Sup_Waiting INT64_C(0)
 #define Sup_Running INT64_C(1)
 #define Sup_Finished INT64_C(2)

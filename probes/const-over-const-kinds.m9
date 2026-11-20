@@ -1,0 +1,16 @@
+(* EXPECT: CONST Wide: a constant is a literal, a negated number, or an expression over literals and CONSTs declared before it -- compute anything else in a procedure (par 2.2.4) *)
+(* A CONST's name stands for its value, and nothing converts in a
+   constant either.  An integer CONST beside a real literal is the
+   expression 3 * 1.5, which no CONST holds.  The legal form writes
+   the count as a real.  A table is not a scalar, and a CONST does
+   not name one in an expression. *)
+MODULE m ;
+CONST
+  Count = 3 ;
+  CountF = 3.0 ;
+  Fine = CountF * 1.5 ;
+  Wide = Count * 1.5 ;
+VAR x : F64 ;
+BEGIN
+  x := Fine
+END m.

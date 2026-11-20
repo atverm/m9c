@@ -40,7 +40,7 @@ if [ -n "$why" ]; then
 fi
 
 # SMTP_W and SMTP_PORT let Sabotage.m9 run gates side by side, each
-# with a folder and four ports of its own.
+# with a folder and five ports of its own.
 W=${SMTP_W:-/tmp/m9-smtp}
 rm -rf "$W"; mkdir -p "$W/out"
 RT=$(cd .. && pwd)
@@ -56,8 +56,8 @@ openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
   { echo "smtp: FAIL -- openssl req"; exit 1; }
 
 B=${SMTP_PORT:-$((20000 + $$ % 10000))}
-P1=$B; P2=$((B + 1)); P3=$((B + 2)); P4=$((B + 3))
-"$PY" smtpfix/smtpfix.py serve $P1 $P2 $P3 $P4 "$W/cert.pem" "$W/key.pem" "$W/out" > "$W/serve.log" 2>&1 &
+P1=$B; P2=$((B + 1)); P3=$((B + 2)); P4=$((B + 3)); P5=$((B + 4))
+"$PY" smtpfix/smtpfix.py serve $P1 $P2 $P3 $P4 "$W/cert.pem" "$W/key.pem" "$W/out" $P5 > "$W/serve.log" 2>&1 &
 FIX=$!
 trap 'kill $FIX 2>/dev/null; wait $FIX 2>/dev/null' EXIT
 n=0
@@ -67,7 +67,7 @@ while ! grep -q serving "$W/serve.log" 2>/dev/null; do
 done
 
 st=0
-SSL_CERT_FILE="$W/cert.pem" "$W/smtpfix" $P1 $P2 $P3 $P4 > "$W/sent.txt" 2> "$W/driver.err" || st=$?
+SSL_CERT_FILE="$W/cert.pem" "$W/smtpfix" $P1 $P2 $P3 $P4 $P5 > "$W/sent.txt" 2> "$W/driver.err" || st=$?
 [ $st -eq 0 ] || { cat "$W/sent.txt" "$W/driver.err"; echo "smtp: FAIL -- the driver exited $st"; exit 1; }
 grep -q '^done$' "$W/sent.txt" || { cat "$W/sent.txt"; echo "smtp: FAIL -- the driver did not finish"; exit 1; }
 if grep -q '^FAIL' "$W/sent.txt"; then grep '^FAIL' "$W/sent.txt"; echo "smtp: FAIL"; exit 1; fi
@@ -86,6 +86,7 @@ refused octetsnorcpt 0
 refused needstarttls 530
 refused utfreply 550
 refused latinreply 550
+refused silent 0
 EOF
 sed -n 's/^\(refused [a-z]* [0-9]*\) .*/\1/p' "$W/sent.txt" > "$W/refused.got"
 diff "$W/refused.want" "$W/refused.got" || { grep '^refused' "$W/sent.txt"; echo "smtp: FAIL -- the refusals"; exit 1; }

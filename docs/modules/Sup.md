@@ -57,6 +57,17 @@ A zeroed Board is ready, with the defaults: one for one, 3
 restarts in 5,000 ms, 3 dirty crashes.  Policy sets them, before
 the first child joins.
 
+A SERVER'S WORKERS ARE RESTARTED FOR EVER.  A supervisor that
+gives up fits a job that should end when it keeps failing.  A
+server's workers must come back however often their database is
+away.  Policy with maxRestarts = Sup.Forever never gives up:
+Watch then raises GaveUp for nothing, and a child that fails is
+started again every time.  The dirty limit stays: a bug is not
+forgiven by a policy.  Two agents read this module for a server's
+workers and did not use it, because it gave up (2026-11-20).  For
+work that comes as jobs, Jobs gives a failed job out again
+without a supervisor.
+
 ### CONST MaxChildren
 
 _(documented with the group below)_
@@ -67,7 +78,11 @@ _(documented with the group below)_
 
 ### CONST AllForOne
 
-a child's state on the board
+_(documented with the group below)_
+
+### CONST Forever
+
+for Policy's maxRestarts: no limit
 
 ### CONST Waiting
 
@@ -105,8 +120,8 @@ policy allows.  Every child has been told to stop.
 ### Policy (VAR b: Board ; policy, maxRestarts, windowMs, dirtyMax: I64) RAISES Faults.BadArg
 
 Policy sets the board's policy: OneForOne or AllForOne, at most
-maxRestarts clean restarts in windowMs, and dirtyMax dirty crashes
-of one child.  It raises Faults.BadArg for a value out of range,
+maxRestarts clean restarts in windowMs (Forever: no limit), and
+dirtyMax dirty crashes of one child.  It raises Faults.BadArg for a value out of range,
 or once a child has joined.
 
 ### Join (VAR b: Board) : Seat RAISES Faults.BadArg
