@@ -49,7 +49,17 @@ tut_serve () {                  # the zarr chapters' local stores
   # printed and passed) into exit 1.  Carry the real status
   # across the cleanup instead.
   trap 'rc=$?; kill $TUT_SRV 2>/dev/null || :; exit $rc' EXIT
-  sleep 1
+  # The server is up when it answers, not after a second.  A fixed
+  # second was too short for Python under a trace, and on a loaded
+  # machine: C10Icos then said "store unreachable" (2026-11-20).  Ten
+  # seconds at most; the example says it plainly if that was not enough.
+  command -v curl > /dev/null || { sleep 1; return 0; }
+  i=0
+  while [ $i -lt 50 ]; do
+    curl -s -m 1 -o /dev/null http://127.0.0.1:18931/co2.zarr/.zarray && break
+    kill -0 "$TUT_SRV" 2>/dev/null || break
+    i=$((i + 1)); sleep 0.2
+  done
 }
 
 tut_pre () {                    # per-example setup before running

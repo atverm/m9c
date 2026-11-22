@@ -1576,7 +1576,9 @@ L_dn_m9t4: ;
     bool m9t7 = ({ bool m9t6 = ((((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Blank })).tag) && (!(*(bool *) m9_at (consumed.p, i, consumed.len, sizeof (bool), err)))); if (m9t6) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a31 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;   if (err->exc) { m9ln = 3775; goto L_hdl_m9t1; }; { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s20, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s21, 5 }), err)) m9a32 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s20, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s21, 5 }), err);   if (err->exc) { m9ln = 3775; goto L_hdl_m9t1; }; m9t6 = ((!Text_EqUtf (m9a31, m9a32, err))); } } } m9t6; });
     if (err->exc) { m9ln = 3775; goto L_hdl_m9t1; };
     if (m9t7) {
-      { Json_Node * lo = Rdf_ListObj (&(scratch), g, (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value, &(consumed), err);
+      { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a33 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value;
+        if (err->exc) { m9ln = 3776; goto L_hdl_m9t1; };
+      { Json_Node * lo = Rdf_ListObj (&(scratch), g, m9a33, &(consumed), err);
       if (err->exc) { m9ln = 3776; goto L_hdl_m9t1; };
       if (lo != NULL) {
         (*(Json_Node * *) m9_at (listAt.p, i, listAt.len, sizeof (Json_Node *), err)) = lo;
@@ -1584,6 +1586,7 @@ L_dn_m9t4: ;
         (*(bool *) m9_at (hasList.p, i, hasList.len, sizeof (bool), err)) = true;
         if (err->exc) { m9ln = 3778; goto L_hdl_m9t1; };
       } }
+      }
     }
     if ((uint64_t) m9t5to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
@@ -1614,27 +1617,27 @@ L_dn_m9t4: ;
         if (err->exc) { m9ln = 3787; goto L_hdl_m9t1; };
         node = m9v;
       }
-      { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a33 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
+      { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a34 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
         if (err->exc) { m9ln = 3788; goto L_hdl_m9t1; };
-      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s23, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s24, 4 }), err)) m9a34 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s23, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s24, 4 }), err);
+      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s23, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s24, 4 }), err)) m9a35 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s23, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s24, 4 }), err);
         if (err->exc) { m9ln = 3788; goto L_hdl_m9t1; };
-      bool m9t11 = (Text_EqUtf (m9a33, m9a34, err) && (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag != (((Rdf_Kind){ .tag = Rdf_Kind_Literal })).tag));
+      bool m9t11 = (Text_EqUtf (m9a34, m9a35, err) && (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag != (((Rdf_Kind){ .tag = Rdf_Kind_Literal })).tag));
       if (err->exc) { m9ln = 3788; goto L_hdl_m9t1; };
       if (m9t11) {
         bool m9t12 = (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Blank })).tag);
         if (err->exc) { m9ln = 3789; goto L_hdl_m9t1; };
         if (m9t12) {
-          { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s25, 2 }), (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value, err)) m9a35 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s25, 2 }), (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value, err);
+          { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s25, 2 }), (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value, err)) m9a36 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s25, 2 }), (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value, err);
             if (err->exc) { m9ln = 3789; goto L_hdl_m9t1; };
-          { __typeof__(tv) m9v = Json_NewStrIn (&(scratch), m9a35, err);
+          { __typeof__(tv) m9v = Json_NewStrIn (&(scratch), m9a36, err);
             if (err->exc) { m9ln = 3789; goto L_hdl_m9t1; };
             tv = m9v;
           }
           }
         } else {
-          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a36 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value;
+          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a37 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value;
             if (err->exc) { m9ln = 3790; goto L_hdl_m9t1; };
-          { __typeof__(tv) m9v = Json_NewStrIn (&(scratch), m9a36, err);
+          { __typeof__(tv) m9v = Json_NewStrIn (&(scratch), m9a37, err);
             if (err->exc) { m9ln = 3790; goto L_hdl_m9t1; };
             tv = m9v;
           }
@@ -1651,7 +1654,7 @@ L_dn_m9t4: ;
             val = m9v;
           }
         } else {
-          bool m9t15 = ({ bool m9t14 = (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Iri })).tag); if (m9t14) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a37 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value;   if (err->exc) { m9ln = 3795; goto L_hdl_m9t1; }; { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s27, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s28, 3 }), err)) m9a38 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s27, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s28, 3 }), err);   if (err->exc) { m9ln = 3795; goto L_hdl_m9t1; }; m9t14 = (Text_EqUtf (m9a37, m9a38, err)); } } } m9t14; });
+          bool m9t15 = ({ bool m9t14 = (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Iri })).tag); if (m9t14) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a38 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value;   if (err->exc) { m9ln = 3795; goto L_hdl_m9t1; }; { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s27, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s28, 3 }), err)) m9a39 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s27, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s28, 3 }), err);   if (err->exc) { m9ln = 3795; goto L_hdl_m9t1; }; m9t14 = (Text_EqUtf (m9a38, m9a39, err)); } } } m9t14; });
           if (err->exc) { m9ln = 3795; goto L_hdl_m9t1; };
           if (m9t15) {
             { __typeof__(val) m9v = Json_NewObjIn (&(scratch), err);
@@ -1665,17 +1668,17 @@ L_dn_m9t4: ;
             Json_Set (&(val), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s29, 5 }), &(arr), &(scratch), err);
             if (err->exc) { m9ln = 3799; goto L_hdl_m9t1; };
         } else {
-          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o) m9a39 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o;
+          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o) m9a40 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o;
             if (err->exc) { m9ln = 3801; goto L_hdl_m9t1; };
-          { __typeof__(val) m9v = Rdf_TermObj (&(scratch), &m9a39, err);
+          { __typeof__(val) m9v = Rdf_TermObj (&(scratch), &m9a40, err);
             if (err->exc) { m9ln = 3801; goto L_hdl_m9t1; };
             val = m9v;
           }
           }
         } }
-        { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a40 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
+        { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a41 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
           if (err->exc) { m9ln = 3803; goto L_hdl_m9t1; };
-        Rdf_AddUnique (&(scratch), &(node), &(scratch), m9a40, val, err);
+        Rdf_AddUnique (&(scratch), &(node), &(scratch), m9a41, val, err);
         if (err->exc) { m9ln = 3803; goto L_hdl_m9t1; };
         }
       } } }
@@ -1698,11 +1701,11 @@ L_dn_m9t4: ;
         if (err->exc) { m9ln = 3811; goto L_hdl_m9t1; };
         cnode = m9v;
       }
-      { __typeof__((*(m9_sl_UTF8 *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_UTF8), err))) m9a41 = (*(m9_sl_UTF8 *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_UTF8), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_UTF8), err))) m9a42 = (*(m9_sl_UTF8 *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) { m9ln = 3812; goto L_hdl_m9t1; };
-      { __typeof__(Rdf_CompactIri (&(c), m9a41, false, err)) m9a42 = Rdf_CompactIri (&(c), m9a41, false, err);
+      { __typeof__(Rdf_CompactIri (&(c), m9a42, false, err)) m9a43 = Rdf_CompactIri (&(c), m9a42, false, err);
         if (err->exc) { m9ln = 3812; goto L_hdl_m9t1; };
-      { __typeof__(tv) m9v = Json_NewStrIn (&(scratch), m9a42, err);
+      { __typeof__(tv) m9v = Json_NewStrIn (&(scratch), m9a43, err);
         if (err->exc) { m9ln = 3812; goto L_hdl_m9t1; };
         tv = m9v;
       }
@@ -1710,9 +1713,9 @@ L_dn_m9t4: ;
       }
       Json_Set (&(cnode), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s30, 3 }), &(tv), &(scratch), err);
       if (err->exc) { m9ln = 3813; goto L_hdl_m9t1; };
-      { __typeof__(({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a43 = ({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+      { __typeof__(({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a44 = ({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
         if (err->exc) { m9ln = 3814; goto L_hdl_m9t1; };
-      { __typeof__(names) m9v = Rdf_SortedNames (m9a43, err);
+      { __typeof__(names) m9v = Rdf_SortedNames (m9a44, err);
         if (err->exc) { m9ln = 3814; goto L_hdl_m9t1; };
         names = m9v;
       }
@@ -1734,9 +1737,9 @@ L_dn_m9t4: ;
           bool m9t19 = Text_EqUtf (key, ((m9_sl_UTF8){ (uint8_t *) m9s32, 5 }), err);
           if (err->exc) { m9ln = 3817; goto L_hdl_m9t1; };
           if (m9t19) {
-            { __typeof__(({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a44 = ({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+            { __typeof__(({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a45 = ({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
               if (err->exc) { m9ln = 3819; goto L_hdl_m9t1; };
-            { __typeof__(types) m9v = Rdf_JGet (m9a44, ((m9_sl_UTF8){ (uint8_t *) m9s33, 5 }), err);
+            { __typeof__(types) m9v = Rdf_JGet (m9a45, ((m9_sl_UTF8){ (uint8_t *) m9s33, 5 }), err);
               if (err->exc) { m9ln = 3819; goto L_hdl_m9t1; };
               types = m9v;
             }
@@ -1751,13 +1754,13 @@ L_dn_m9t4: ;
             if (err->exc) { m9ln = 3821; goto L_hdl_m9t1; };
             if (k <= m9t20to) for (;;) {
               M9_YCHK ();
-              { __typeof__(Json_Item (types, k, err)) m9a45 = Json_Item (types, k, err);
+              { __typeof__(Json_Item (types, k, err)) m9a46 = Json_Item (types, k, err);
                 if (err->exc) { m9ln = 3822; goto L_hdl_m9t1; };
-              { __typeof__(Rdf_JStr (m9a45, err)) m9a46 = Rdf_JStr (m9a45, err);
+              { __typeof__(Rdf_JStr (m9a46, err)) m9a47 = Rdf_JStr (m9a46, err);
                 if (err->exc) { m9ln = 3822; goto L_hdl_m9t1; };
-              { __typeof__(Rdf_CompactIri (&(c), m9a46, true, err)) m9a47 = Rdf_CompactIri (&(c), m9a46, true, err);
+              { __typeof__(Rdf_CompactIri (&(c), m9a47, true, err)) m9a48 = Rdf_CompactIri (&(c), m9a47, true, err);
                 if (err->exc) { m9ln = 3822; goto L_hdl_m9t1; };
-              { __typeof__(tv) m9v = Json_NewStrIn (&(scratch), m9a47, err);
+              { __typeof__(tv) m9v = Json_NewStrIn (&(scratch), m9a48, err);
                 if (err->exc) { m9ln = 3822; goto L_hdl_m9t1; };
                 tv = m9v;
               }
@@ -1772,9 +1775,9 @@ L_dn_m9t4: ;
             bool m9t21 = (Rdf_Items (arr, err) == INT64_C(1));
             if (err->exc) { m9ln = 3825; goto L_hdl_m9t1; };
             if (m9t21) {
-              { __typeof__(Json_Item (arr, INT64_C(0), err)) m9a48 = Json_Item (arr, INT64_C(0), err);
+              { __typeof__(Json_Item (arr, INT64_C(0), err)) m9a49 = Json_Item (arr, INT64_C(0), err);
                 if (err->exc) { m9ln = 3826; goto L_hdl_m9t1; };
-              { __typeof__(tv) m9v = Json_CloneIn (&(scratch), m9a48, err);
+              { __typeof__(tv) m9v = Json_CloneIn (&(scratch), m9a49, err);
                 if (err->exc) { m9ln = 3826; goto L_hdl_m9t1; };
                 tv = m9v;
               }
@@ -1786,14 +1789,14 @@ L_dn_m9t4: ;
               if (err->exc) { m9ln = 3829; goto L_hdl_m9t1; };
             }
         } else {
-          { __typeof__(({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a49 = ({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+          { __typeof__(({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a50 = ({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
             if (err->exc) { m9ln = 3832; goto L_hdl_m9t1; };
-          { __typeof__(arr) m9v = Rdf_JGet (m9a49, key, err);
+          { __typeof__(arr) m9v = Rdf_JGet (m9a50, key, err);
             if (err->exc) { m9ln = 3832; goto L_hdl_m9t1; };
             arr = m9v;
           }
           }
-          { __typeof__(isList) m9v = ({ bool m9t22 = (Rdf_Items (arr, err) == INT64_C(1)); if (m9t22) { { __typeof__(Json_Item (arr, INT64_C(0), err)) m9a50 = Json_Item (arr, INT64_C(0), err);   if (err->exc) { m9ln = 3833; goto L_hdl_m9t1; }; m9t22 = (Rdf_Has (m9a50, ((m9_sl_UTF8){ (uint8_t *) m9s36, 5 }), err)); } } m9t22; });
+          { __typeof__(isList) m9v = ({ bool m9t22 = (Rdf_Items (arr, err) == INT64_C(1)); if (m9t22) { { __typeof__(Json_Item (arr, INT64_C(0), err)) m9a51 = Json_Item (arr, INT64_C(0), err);   if (err->exc) { m9ln = 3833; goto L_hdl_m9t1; }; m9t22 = (Rdf_Has (m9a51, ((m9_sl_UTF8){ (uint8_t *) m9s36, 5 }), err)); } } m9t22; });
             if (err->exc) { m9ln = 3833; goto L_hdl_m9t1; };
             isList = m9v;
           }
@@ -1812,12 +1815,12 @@ L_dn_m9t4: ;
               pname = m9v;
             }
           }
-          bool m9t25 = ({ bool m9t24 = (Rdf_Items (arr, err) == INT64_C(1)); if (m9t24) { m9t24 = ((!(({ bool m9t23 = (k >= INT64_C(0)); if (m9t23) { { __typeof__((*(Rdf_TermDef *) m9_at (c.defs.p, k, c.defs.len, sizeof (Rdf_TermDef), err)).container) m9a51 = (*(Rdf_TermDef *) m9_at (c.defs.p, k, c.defs.len, sizeof (Rdf_TermDef), err)).container;   if (err->exc) { m9ln = 3836; goto L_hdl_m9t1; }; m9t23 = (Text_EqUtf (m9a51, ((m9_sl_UTF8){ (uint8_t *) m9s37, 4 }), err)); } } m9t23; })))); } m9t24; });
+          bool m9t25 = ({ bool m9t24 = (Rdf_Items (arr, err) == INT64_C(1)); if (m9t24) { m9t24 = ((!(({ bool m9t23 = (k >= INT64_C(0)); if (m9t23) { { __typeof__((*(Rdf_TermDef *) m9_at (c.defs.p, k, c.defs.len, sizeof (Rdf_TermDef), err)).container) m9a52 = (*(Rdf_TermDef *) m9_at (c.defs.p, k, c.defs.len, sizeof (Rdf_TermDef), err)).container;   if (err->exc) { m9ln = 3836; goto L_hdl_m9t1; }; m9t23 = (Text_EqUtf (m9a52, ((m9_sl_UTF8){ (uint8_t *) m9s37, 4 }), err)); } } m9t23; })))); } m9t24; });
           if (err->exc) { m9ln = 3836; goto L_hdl_m9t1; };
           if (m9t25) {
-            { __typeof__(Json_Item (arr, INT64_C(0), err)) m9a52 = Json_Item (arr, INT64_C(0), err);
+            { __typeof__(Json_Item (arr, INT64_C(0), err)) m9a53 = Json_Item (arr, INT64_C(0), err);
               if (err->exc) { m9ln = 3837; goto L_hdl_m9t1; };
-            { __typeof__(val) m9v = Rdf_CompactValue (&(scratch), &(c), k, m9a52, err);
+            { __typeof__(val) m9v = Rdf_CompactValue (&(scratch), &(c), k, m9a53, err);
               if (err->exc) { m9ln = 3837; goto L_hdl_m9t1; };
               val = m9v;
             }
@@ -1833,9 +1836,9 @@ L_dn_m9t4: ;
             if (err->exc) { m9ln = 3840; goto L_hdl_m9t1; };
             if (n <= m9t26to) for (;;) {
               M9_YCHK ();
-              { __typeof__(Json_Item (arr, n, err)) m9a53 = Json_Item (arr, n, err);
+              { __typeof__(Json_Item (arr, n, err)) m9a54 = Json_Item (arr, n, err);
                 if (err->exc) { m9ln = 3841; goto L_hdl_m9t1; };
-              { __typeof__(item) m9v = Rdf_CompactValue (&(scratch), &(c), k, m9a53, err);
+              { __typeof__(item) m9v = Rdf_CompactValue (&(scratch), &(c), k, m9a54, err);
                 if (err->exc) { m9ln = 3841; goto L_hdl_m9t1; };
                 item = m9v;
               }
@@ -1846,11 +1849,11 @@ L_dn_m9t4: ;
               n += 1;
             } }
           }
-          { __typeof__(Json_Name (pname, err)) m9a54 = Json_Name (pname, err);
+          { __typeof__(Json_Name (pname, err)) m9a55 = Json_Name (pname, err);
             if (err->exc) { m9ln = 3845; goto L_hdl_m9t1; };
-          { __typeof__(Text_KeepUtf (&(scratch), m9a54, err)) m9a55 = Text_KeepUtf (&(scratch), m9a54, err);
+          { __typeof__(Text_KeepUtf (&(scratch), m9a55, err)) m9a56 = Text_KeepUtf (&(scratch), m9a55, err);
             if (err->exc) { m9ln = 3845; goto L_hdl_m9t1; };
-          Rdf_SetKey (&(scratch), &(cnode), &(scratch), m9a55, val, err);
+          Rdf_SetKey (&(scratch), &(cnode), &(scratch), m9a56, val, err);
           if (err->exc) { m9ln = 3845; goto L_hdl_m9t1; };
           }
           }
@@ -1945,14 +1948,14 @@ m9_sl_UTF8 Rdf_RdfXml (Rdf_Graph * g, m9_state *err)
   if (err->exc) { m9ln = 3914; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     M9_YCHK ();
-    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a56 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
+    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a57 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
       if (err->exc) { m9ln = 3915; goto L_ret; };
-    { __typeof__(at) m9v = Rdf_LocalStart (m9a56, err);
+    { __typeof__(at) m9v = Rdf_LocalStart (m9a57, err);
       if (err->exc) { m9ln = 3915; goto L_ret; };
       at = m9v;
     }
     }
-    bool m9t3 = ({ bool m9t2 = (at == INT64_C(0)); if (!m9t2) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a57 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;   if (err->exc) { m9ln = 3916; goto L_ret; }; m9t2 = ((at >= Text_BLen (m9a57, err))); } } m9t2; });
+    bool m9t3 = ({ bool m9t2 = (at == INT64_C(0)); if (!m9t2) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a58 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;   if (err->exc) { m9ln = 3916; goto L_ret; }; m9t2 = ((at >= Text_BLen (m9a58, err))); } } m9t2; });
     if (err->exc) { m9ln = 3916; goto L_ret; };
     if (m9t3) {
       { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9t4 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
@@ -1974,9 +1977,9 @@ m9_sl_UTF8 Rdf_RdfXml (Rdf_Graph * g, m9_state *err)
     if (err->exc) { m9ln = 3919; goto L_ret; };
     if (j <= m9t6to) for (;;) {
       M9_YCHK ();
-      { __typeof__((*(m9_sl_UTF8 *) m9_at (nss.p, j, nss.len, sizeof (m9_sl_UTF8), err))) m9a58 = (*(m9_sl_UTF8 *) m9_at (nss.p, j, nss.len, sizeof (m9_sl_UTF8), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (nss.p, j, nss.len, sizeof (m9_sl_UTF8), err))) m9a59 = (*(m9_sl_UTF8 *) m9_at (nss.p, j, nss.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) { m9ln = 3919; goto L_ret; };
-      bool m9t7 = Text_EqUtf (m9a58, ns, err);
+      bool m9t7 = Text_EqUtf (m9a59, ns, err);
       if (err->exc) { m9ln = 3919; goto L_ret; };
       if (m9t7) {
         k = j;
@@ -2009,11 +2012,11 @@ m9_sl_UTF8 Rdf_RdfXml (Rdf_Graph * g, m9_state *err)
   if (err->exc) { m9ln = 3925; goto L_ret; };
   if (j <= m9t8to) for (;;) {
     M9_YCHK ();
-    { __typeof__(({ m9_sl_UTF8 m9t9 = ((m9_sl_UTF8){ (uint8_t *) m9s44, 8 }); m9_utf_cat (err->res, m9t9, Fmt_I64Str (j, err), err); })) m9a59 = ({ m9_sl_UTF8 m9t9 = ((m9_sl_UTF8){ (uint8_t *) m9s44, 8 }); m9_utf_cat (err->res, m9t9, Fmt_I64Str (j, err), err); });
+    { __typeof__(({ m9_sl_UTF8 m9t9 = ((m9_sl_UTF8){ (uint8_t *) m9s44, 8 }); m9_utf_cat (err->res, m9t9, Fmt_I64Str (j, err), err); })) m9a60 = ({ m9_sl_UTF8 m9t9 = ((m9_sl_UTF8){ (uint8_t *) m9s44, 8 }); m9_utf_cat (err->res, m9t9, Fmt_I64Str (j, err), err); });
       if (err->exc) { m9ln = 3925; goto L_ret; };
-    { __typeof__((*(m9_sl_UTF8 *) m9_at (nss.p, j, nss.len, sizeof (m9_sl_UTF8), err))) m9a60 = (*(m9_sl_UTF8 *) m9_at (nss.p, j, nss.len, sizeof (m9_sl_UTF8), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (nss.p, j, nss.len, sizeof (m9_sl_UTF8), err))) m9a61 = (*(m9_sl_UTF8 *) m9_at (nss.p, j, nss.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 3925; goto L_ret; };
-    Xml_Attribute (&(w), &(scratch), m9a59, m9a60, err);
+    Xml_Attribute (&(w), &(scratch), m9a60, m9a61, err);
     if (err->exc) { m9ln = 3925; goto L_ret; };
     }
     }
@@ -2038,15 +2041,15 @@ m9_sl_UTF8 Rdf_RdfXml (Rdf_Graph * g, m9_state *err)
       bool m9t12 = (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Blank })).tag);
       if (err->exc) { m9ln = 3930; goto L_ret; };
       if (m9t12) {
-        { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value) m9a61 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value;
+        { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value) m9a62 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value;
           if (err->exc) { m9ln = 3931; goto L_ret; };
-        Xml_Attribute (&(w), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s46, 10 }), m9a61, err);
+        Xml_Attribute (&(w), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s46, 10 }), m9a62, err);
         if (err->exc) { m9ln = 3931; goto L_ret; };
         }
       } else {
-        { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value) m9a62 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value;
+        { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value) m9a63 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value;
           if (err->exc) { m9ln = 3933; goto L_ret; };
-        Xml_Attribute (&(w), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s47, 9 }), m9a62, err);
+        Xml_Attribute (&(w), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s47, 9 }), m9a63, err);
         if (err->exc) { m9ln = 3933; goto L_ret; };
         }
       }
@@ -2056,14 +2059,14 @@ m9_sl_UTF8 Rdf_RdfXml (Rdf_Graph * g, m9_state *err)
       if (err->exc) { m9ln = 3935; goto L_ret; };
       if (j <= m9t13to) for (;;) {
         M9_YCHK ();
-        bool m9t15 = ({ bool m9t14 = ((!(*(bool *) m9_at (done.p, j, done.len, sizeof (bool), err))) && (((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).s.kind).tag == ((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.kind).tag)); if (m9t14) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).s.value) m9a63 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).s.value;   if (err->exc) { m9ln = 3936; goto L_ret; }; { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value) m9a64 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value;   if (err->exc) { m9ln = 3936; goto L_ret; }; m9t14 = (Text_EqUtf (m9a63, m9a64, err)); } } } m9t14; });
+        bool m9t15 = ({ bool m9t14 = ((!(*(bool *) m9_at (done.p, j, done.len, sizeof (bool), err))) && (((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).s.kind).tag == ((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.kind).tag)); if (m9t14) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).s.value) m9a64 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).s.value;   if (err->exc) { m9ln = 3936; goto L_ret; }; { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value) m9a65 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value;   if (err->exc) { m9ln = 3936; goto L_ret; }; m9t14 = (Text_EqUtf (m9a64, m9a65, err)); } } } m9t14; });
         if (err->exc) { m9ln = 3936; goto L_ret; };
         if (m9t15) {
           (*(bool *) m9_at (done.p, j, done.len, sizeof (bool), err)) = true;
           if (err->exc) { m9ln = 3938; goto L_ret; };
-          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a65 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p.value;
+          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a66 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p.value;
             if (err->exc) { m9ln = 3939; goto L_ret; };
-          { __typeof__(at) m9v = Rdf_LocalStart (m9a65, err);
+          { __typeof__(at) m9v = Rdf_LocalStart (m9a66, err);
             if (err->exc) { m9ln = 3939; goto L_ret; };
             at = m9v;
           }
@@ -2072,18 +2075,18 @@ m9_sl_UTF8 Rdf_RdfXml (Rdf_Graph * g, m9_state *err)
             if (err->exc) { m9ln = 3940; goto L_ret; };
             ns = m9v;
           }
-          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a66 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p.value;
+          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a67 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p.value;
             if (err->exc) { m9ln = 3941; goto L_ret; };
-          { __typeof__(local) m9v = m9_utf_slice ((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p.value, at, m9_sub_i64 (Text_BLen (m9a66, err), at, err), err);
+          { __typeof__(local) m9v = m9_utf_slice ((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p.value, at, m9_sub_i64 (Text_BLen (m9a67, err), at, err), err);
             if (err->exc) { m9ln = 3941; goto L_ret; };
             local = m9v;
           }
           }
           k = INT64_C(0);
           for (;;) {
-            { __typeof__((*(m9_sl_UTF8 *) m9_at (nss.p, k, nss.len, sizeof (m9_sl_UTF8), err))) m9a67 = (*(m9_sl_UTF8 *) m9_at (nss.p, k, nss.len, sizeof (m9_sl_UTF8), err));
+            { __typeof__((*(m9_sl_UTF8 *) m9_at (nss.p, k, nss.len, sizeof (m9_sl_UTF8), err))) m9a68 = (*(m9_sl_UTF8 *) m9_at (nss.p, k, nss.len, sizeof (m9_sl_UTF8), err));
               if (err->exc) { m9ln = 3943; goto L_ret; };
-            bool m9t18 = (!Text_EqUtf (m9a67, ns, err));
+            bool m9t18 = (!Text_EqUtf (m9a68, ns, err));
             if (err->exc) { m9ln = 3943; goto L_ret; };
             if (!(m9t18)) break;
             { __typeof__(k) m9v = m9_add_i64 (k, INT64_C(1), err);
@@ -2093,15 +2096,15 @@ m9_sl_UTF8 Rdf_RdfXml (Rdf_Graph * g, m9_state *err)
             }
           }
           if ((k == INT64_C(0))) {
-            { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s48, 4 }), local, err)) m9a68 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s48, 4 }), local, err);
+            { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s48, 4 }), local, err)) m9a69 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s48, 4 }), local, err);
               if (err->exc) { m9ln = 3945; goto L_ret; };
-            Xml_StartTag (&(w), &(scratch), m9a68, err);
+            Xml_StartTag (&(w), &(scratch), m9a69, err);
             if (err->exc) { m9ln = 3945; goto L_ret; };
             }
           } else {
-            { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t19 = ((m9_sl_UTF8){ (uint8_t *) m9s49, 2 }); m9_utf_cat (err->res, m9t19, Fmt_I64Str (k, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s50, 1 }), err), local, err)) m9a69 = m9_utf_cat (err->res, m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t19 = ((m9_sl_UTF8){ (uint8_t *) m9s49, 2 }); m9_utf_cat (err->res, m9t19, Fmt_I64Str (k, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s50, 1 }), err), local, err);
+            { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t19 = ((m9_sl_UTF8){ (uint8_t *) m9s49, 2 }); m9_utf_cat (err->res, m9t19, Fmt_I64Str (k, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s50, 1 }), err), local, err)) m9a70 = m9_utf_cat (err->res, m9_utf_cat (err->res, ({ m9_sl_UTF8 m9t19 = ((m9_sl_UTF8){ (uint8_t *) m9s49, 2 }); m9_utf_cat (err->res, m9t19, Fmt_I64Str (k, err), err); }), ((m9_sl_UTF8){ (uint8_t *) m9s50, 1 }), err), local, err);
               if (err->exc) { m9ln = 3947; goto L_ret; };
-            Xml_StartTag (&(w), &(scratch), m9a69, err);
+            Xml_StartTag (&(w), &(scratch), m9a70, err);
             if (err->exc) { m9ln = 3947; goto L_ret; };
             }
           }
@@ -2110,47 +2113,47 @@ m9_sl_UTF8 Rdf_RdfXml (Rdf_Graph * g, m9_state *err)
           switch (m9t20.tag) {
           case Rdf_Kind_Iri:
           {
-            { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a70 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.value;
+            { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a71 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.value;
               if (err->exc) { m9ln = 3950; goto L_ret; };
-            Xml_Attribute (&(w), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s51, 12 }), m9a70, err);
+            Xml_Attribute (&(w), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s51, 12 }), m9a71, err);
             if (err->exc) { m9ln = 3950; goto L_ret; };
             }
           } break;
           case Rdf_Kind_Blank:
           {
-            { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a71 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.value;
+            { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a72 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.value;
               if (err->exc) { m9ln = 3951; goto L_ret; };
-            Xml_Attribute (&(w), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s52, 10 }), m9a71, err);
+            Xml_Attribute (&(w), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s52, 10 }), m9a72, err);
             if (err->exc) { m9ln = 3951; goto L_ret; };
             }
           } break;
           case Rdf_Kind_Literal:
           {
-            { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.lang) m9a72 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.lang;
+            { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.lang) m9a73 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.lang;
               if (err->exc) { m9ln = 3953; goto L_ret; };
-            bool m9t21 = (Text_BLen (m9a72, err) > INT64_C(0));
+            bool m9t21 = (Text_BLen (m9a73, err) > INT64_C(0));
             if (err->exc) { m9ln = 3953; goto L_ret; };
             if (m9t21) {
-              { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.lang) m9a73 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.lang;
+              { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.lang) m9a74 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.lang;
                 if (err->exc) { m9ln = 3954; goto L_ret; };
-              Xml_Attribute (&(w), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s53, 8 }), m9a73, err);
+              Xml_Attribute (&(w), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s53, 8 }), m9a74, err);
               if (err->exc) { m9ln = 3954; goto L_ret; };
               }
             } else {
-              { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.datatype) m9a74 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.datatype;
+              { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.datatype) m9a75 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.datatype;
                 if (err->exc) { m9ln = 3954; goto L_ret; };
-              bool m9t23 = ({ bool m9t22 = (Text_BLen (m9a74, err) > INT64_C(0)); if (m9t22) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.datatype) m9a75 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.datatype;   if (err->exc) { m9ln = 3954; goto L_ret; }; m9t22 = ((!Text_EqUtf (m9a75, ((m9_sl_UTF8){ (uint8_t *) m9s54, 39 }), err))); } } m9t22; });
+              bool m9t23 = ({ bool m9t22 = (Text_BLen (m9a75, err) > INT64_C(0)); if (m9t22) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.datatype) m9a76 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.datatype;   if (err->exc) { m9ln = 3954; goto L_ret; }; m9t22 = ((!Text_EqUtf (m9a76, ((m9_sl_UTF8){ (uint8_t *) m9s54, 39 }), err))); } } m9t22; });
               if (err->exc) { m9ln = 3954; goto L_ret; };
               if (m9t23) {
-                { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.datatype) m9a76 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.datatype;
+                { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.datatype) m9a77 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.datatype;
                   if (err->exc) { m9ln = 3956; goto L_ret; };
-                Xml_Attribute (&(w), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s55, 12 }), m9a76, err);
+                Xml_Attribute (&(w), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s55, 12 }), m9a77, err);
                 if (err->exc) { m9ln = 3956; goto L_ret; };
                 }
             } } } }
-            { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a77 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.value;
+            { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a78 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.value;
               if (err->exc) { m9ln = 3958; goto L_ret; };
-            Xml_Chars (&(w), &(scratch), m9a77, err);
+            Xml_Chars (&(w), &(scratch), m9a78, err);
             if (err->exc) { m9ln = 3958; goto L_ret; };
             }
           } break;
@@ -2261,23 +2264,23 @@ m9_sl_UTF8 Rdf_NTriples (Rdf_Graph * g, m9_state *err)
   if (err->exc) { m9ln = 1305; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     M9_YCHK ();
-    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s) m9a78 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s;
+    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s) m9a79 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s;
       if (err->exc) { m9ln = 1306; goto L_ret; };
-    Rdf_PutTerm (&(d), &(scratch), &m9a78, err);
+    Rdf_PutTerm (&(d), &(scratch), &m9a79, err);
     if (err->exc) { m9ln = 1306; goto L_ret; };
     }
     DynStr_AppendChar (&(d), &(scratch), 32u, err);
     if (err->exc) { m9ln = 1307; goto L_ret; };
-    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p) m9a79 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p;
+    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p) m9a80 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p;
       if (err->exc) { m9ln = 1308; goto L_ret; };
-    Rdf_PutTerm (&(d), &(scratch), &m9a79, err);
+    Rdf_PutTerm (&(d), &(scratch), &m9a80, err);
     if (err->exc) { m9ln = 1308; goto L_ret; };
     }
     DynStr_AppendChar (&(d), &(scratch), 32u, err);
     if (err->exc) { m9ln = 1309; goto L_ret; };
-    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o) m9a80 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o;
+    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o) m9a81 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o;
       if (err->exc) { m9ln = 1310; goto L_ret; };
-    Rdf_PutTerm (&(d), &(scratch), &m9a80, err);
+    Rdf_PutTerm (&(d), &(scratch), &m9a81, err);
     if (err->exc) { m9ln = 1310; goto L_ret; };
     }
     DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s56, 2 }), err);
@@ -2380,9 +2383,9 @@ m9_sl_UTF8 Rdf_Turtle (Rdf_Graph * g, m9_sl_m9_sl_UTF8 names, m9_sl_m9_sl_UTF8 i
     bool m9t3 = (!(*(bool *) m9_at (done.p, i, done.len, sizeof (bool), err)));
     if (err->exc) { m9ln = 1529; goto L_ret; };
     if (m9t3) {
-      { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s) m9a81 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s;
+      { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s) m9a82 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s;
         if (err->exc) { m9ln = 1532; goto L_ret; };
-      Rdf_TtlTerm (&(body), &(scratch), &(p), err->res, &m9a81, false, err);
+      Rdf_TtlTerm (&(body), &(scratch), &(p), err->res, &m9a82, false, err);
       if (err->exc) { m9ln = 1532; goto L_ret; };
       }
       firstPred = true;
@@ -2392,30 +2395,30 @@ m9_sl_UTF8 Rdf_Turtle (Rdf_Graph * g, m9_sl_m9_sl_UTF8 names, m9_sl_m9_sl_UTF8 i
       if (err->exc) { m9ln = 1534; goto L_ret; };
       if (j <= m9t4to) for (;;) {
         M9_YCHK ();
-        bool m9t6 = ({ bool m9t5 = (!(*(bool *) m9_at (done.p, j, done.len, sizeof (bool), err))); if (m9t5) { { __typeof__(&((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).s)) m9a82 = &((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).s);   if (err->exc) { m9ln = 1535; goto L_ret; }; { __typeof__(&((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s)) m9a83 = &((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s);   if (err->exc) { m9ln = 1535; goto L_ret; }; m9t5 = (Rdf_SameTerm (&(*m9a82), &(*m9a83), err)); } } } m9t5; });
+        bool m9t6 = ({ bool m9t5 = (!(*(bool *) m9_at (done.p, j, done.len, sizeof (bool), err))); if (m9t5) { { __typeof__(&((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).s)) m9a83 = &((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).s);   if (err->exc) { m9ln = 1535; goto L_ret; }; { __typeof__(&((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s)) m9a84 = &((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s);   if (err->exc) { m9ln = 1535; goto L_ret; }; m9t5 = (Rdf_SameTerm (&(*m9a83), &(*m9a84), err)); } } } m9t5; });
         if (err->exc) { m9ln = 1535; goto L_ret; };
         if (m9t6) {
           if (firstPred) {
             DynStr_AppendChar (&(body), &(scratch), 32u, err);
             if (err->exc) { m9ln = 1536; goto L_ret; };
           } else {
-            { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s65, 2 }), m9_utf_of_char (err->res, 10u, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s66, 4 }), err)) m9a84 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s65, 2 }), m9_utf_of_char (err->res, 10u, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s66, 4 }), err);
+            { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s65, 2 }), m9_utf_of_char (err->res, 10u, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s66, 4 }), err)) m9a85 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s65, 2 }), m9_utf_of_char (err->res, 10u, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s66, 4 }), err);
               if (err->exc) { m9ln = 1536; goto L_ret; };
-            DynStr_Append (&(body), &(scratch), m9a84, err);
+            DynStr_Append (&(body), &(scratch), m9a85, err);
             if (err->exc) { m9ln = 1536; goto L_ret; };
             }
           }
           firstPred = false;
-          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p) m9a85 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p;
+          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p) m9a86 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p;
             if (err->exc) { m9ln = 1538; goto L_ret; };
-          Rdf_TtlTerm (&(body), &(scratch), &(p), err->res, &m9a85, true, err);
+          Rdf_TtlTerm (&(body), &(scratch), &(p), err->res, &m9a86, true, err);
           if (err->exc) { m9ln = 1538; goto L_ret; };
           }
           DynStr_AppendChar (&(body), &(scratch), 32u, err);
           if (err->exc) { m9ln = 1539; goto L_ret; };
-          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o) m9a86 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o;
+          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o) m9a87 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o;
             if (err->exc) { m9ln = 1540; goto L_ret; };
-          Rdf_TtlTerm (&(body), &(scratch), &(p), err->res, &m9a86, false, err);
+          Rdf_TtlTerm (&(body), &(scratch), &(p), err->res, &m9a87, false, err);
           if (err->exc) { m9ln = 1540; goto L_ret; };
           }
           (*(bool *) m9_at (done.p, j, done.len, sizeof (bool), err)) = true;
@@ -2426,14 +2429,14 @@ m9_sl_UTF8 Rdf_Turtle (Rdf_Graph * g, m9_sl_m9_sl_UTF8 names, m9_sl_m9_sl_UTF8 i
           if (err->exc) { m9ln = 1542; goto L_ret; };
           if (k <= m9t7to) for (;;) {
             M9_YCHK ();
-            bool m9t10 = ({ bool m9t9 = ({ bool m9t8 = (!(*(bool *) m9_at (done.p, k, done.len, sizeof (bool), err))); if (m9t8) { { __typeof__(&((*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).s)) m9a87 = &((*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).s);   if (err->exc) { m9ln = 1543; goto L_ret; }; { __typeof__(&((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s)) m9a88 = &((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s);   if (err->exc) { m9ln = 1543; goto L_ret; }; m9t8 = (Rdf_SameTerm (&(*m9a87), &(*m9a88), err)); } } } m9t8; }); if (m9t9) { { __typeof__(&((*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).p)) m9a89 = &((*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).p);   if (err->exc) { m9ln = 1543; goto L_ret; }; { __typeof__(&((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p)) m9a90 = &((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p);   if (err->exc) { m9ln = 1543; goto L_ret; }; m9t9 = (Rdf_SameTerm (&(*m9a89), &(*m9a90), err)); } } } m9t9; });
+            bool m9t10 = ({ bool m9t9 = ({ bool m9t8 = (!(*(bool *) m9_at (done.p, k, done.len, sizeof (bool), err))); if (m9t8) { { __typeof__(&((*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).s)) m9a88 = &((*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).s);   if (err->exc) { m9ln = 1543; goto L_ret; }; { __typeof__(&((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s)) m9a89 = &((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s);   if (err->exc) { m9ln = 1543; goto L_ret; }; m9t8 = (Rdf_SameTerm (&(*m9a88), &(*m9a89), err)); } } } m9t8; }); if (m9t9) { { __typeof__(&((*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).p)) m9a90 = &((*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).p);   if (err->exc) { m9ln = 1543; goto L_ret; }; { __typeof__(&((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p)) m9a91 = &((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p);   if (err->exc) { m9ln = 1543; goto L_ret; }; m9t9 = (Rdf_SameTerm (&(*m9a90), &(*m9a91), err)); } } } m9t9; });
             if (err->exc) { m9ln = 1543; goto L_ret; };
             if (m9t10) {
               DynStr_Append (&(body), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s67, 3 }), err);
               if (err->exc) { m9ln = 1544; goto L_ret; };
-              { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).o) m9a91 = (*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).o;
+              { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).o) m9a92 = (*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).o;
                 if (err->exc) { m9ln = 1545; goto L_ret; };
-              Rdf_TtlTerm (&(body), &(scratch), &(p), err->res, &m9a91, false, err);
+              Rdf_TtlTerm (&(body), &(scratch), &(p), err->res, &m9a92, false, err);
               if (err->exc) { m9ln = 1545; goto L_ret; };
               }
               (*(bool *) m9_at (done.p, k, done.len, sizeof (bool), err)) = true;
@@ -2446,9 +2449,9 @@ m9_sl_UTF8 Rdf_Turtle (Rdf_Graph * g, m9_sl_m9_sl_UTF8 names, m9_sl_m9_sl_UTF8 i
         if ((uint64_t) m9t4to - (uint64_t) j < (uint64_t) 1) break;
         j += 1;
       } }
-      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s68, 2 }), m9_utf_of_char (err->res, 10u, err), err)) m9a92 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s68, 2 }), m9_utf_of_char (err->res, 10u, err), err);
+      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s68, 2 }), m9_utf_of_char (err->res, 10u, err), err)) m9a93 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s68, 2 }), m9_utf_of_char (err->res, 10u, err), err);
         if (err->exc) { m9ln = 1551; goto L_ret; };
-      DynStr_Append (&(body), &(scratch), m9a92, err);
+      DynStr_Append (&(body), &(scratch), m9a93, err);
       if (err->exc) { m9ln = 1551; goto L_ret; };
       }
     }
@@ -2470,21 +2473,21 @@ m9_sl_UTF8 Rdf_Turtle (Rdf_Graph * g, m9_sl_m9_sl_UTF8 names, m9_sl_m9_sl_UTF8 i
     if (m9t12) {
       DynStr_Append (&(out), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s69, 8 }), err);
       if (err->exc) { m9ln = 1557; goto L_ret; };
-      { __typeof__((*(m9_sl_UTF8 *) m9_at (p.names.p, i, p.names.len, sizeof (m9_sl_UTF8), err))) m9a93 = (*(m9_sl_UTF8 *) m9_at (p.names.p, i, p.names.len, sizeof (m9_sl_UTF8), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (p.names.p, i, p.names.len, sizeof (m9_sl_UTF8), err))) m9a94 = (*(m9_sl_UTF8 *) m9_at (p.names.p, i, p.names.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) { m9ln = 1558; goto L_ret; };
-      DynStr_Append (&(out), &(scratch), m9a93, err);
+      DynStr_Append (&(out), &(scratch), m9a94, err);
       if (err->exc) { m9ln = 1558; goto L_ret; };
       }
       DynStr_Append (&(out), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s70, 2 }), err);
       if (err->exc) { m9ln = 1559; goto L_ret; };
-      { __typeof__((*(m9_sl_UTF8 *) m9_at (p.iris.p, i, p.iris.len, sizeof (m9_sl_UTF8), err))) m9a94 = (*(m9_sl_UTF8 *) m9_at (p.iris.p, i, p.iris.len, sizeof (m9_sl_UTF8), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (p.iris.p, i, p.iris.len, sizeof (m9_sl_UTF8), err))) m9a95 = (*(m9_sl_UTF8 *) m9_at (p.iris.p, i, p.iris.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) { m9ln = 1560; goto L_ret; };
-      Rdf_PutIri (&(out), &(scratch), m9a94, err);
+      Rdf_PutIri (&(out), &(scratch), m9a95, err);
       if (err->exc) { m9ln = 1560; goto L_ret; };
       }
-      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s71, 2 }), m9_utf_of_char (err->res, 10u, err), err)) m9a95 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s71, 2 }), m9_utf_of_char (err->res, 10u, err), err);
+      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s71, 2 }), m9_utf_of_char (err->res, 10u, err), err)) m9a96 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s71, 2 }), m9_utf_of_char (err->res, 10u, err), err);
         if (err->exc) { m9ln = 1561; goto L_ret; };
-      DynStr_Append (&(out), &(scratch), m9a95, err);
+      DynStr_Append (&(out), &(scratch), m9a96, err);
       if (err->exc) { m9ln = 1561; goto L_ret; };
       }
     }
@@ -2497,9 +2500,9 @@ m9_sl_UTF8 Rdf_Turtle (Rdf_Graph * g, m9_sl_m9_sl_UTF8 names, m9_sl_m9_sl_UTF8 i
     DynStr_AppendChar (&(out), &(scratch), 10u, err);
     if (err->exc) { m9ln = 1564; goto L_ret; };
   }
-  { __typeof__(DynStr_View (body, err)) m9a96 = DynStr_View (body, err);
+  { __typeof__(DynStr_View (body, err)) m9a97 = DynStr_View (body, err);
     if (err->exc) { m9ln = 1565; goto L_ret; };
-  DynStr_Append (&(out), &(scratch), m9a96, err);
+  DynStr_Append (&(out), &(scratch), m9a97, err);
   if (err->exc) { m9ln = 1565; goto L_ret; };
   }
   err->res = m9res;
@@ -2937,9 +2940,9 @@ static void Rdf_Expect (Rdf_Reader *r, m9_pool *r_pool, uint32_t c, m9_sl_UTF8 w
   bool m9t1 = (Rdf_PeekAt (r, r_pool, INT64_C(0), err) != c);
   if (err->exc) { m9ln = 322; goto L_ret; };
   if (m9t1) {
-    { __typeof__(m9_utf_cat (err->res, what, ((m9_sl_UTF8){ (uint8_t *) m9s72, 9 }), err)) m9a97 = m9_utf_cat (err->res, what, ((m9_sl_UTF8){ (uint8_t *) m9s72, 9 }), err);
+    { __typeof__(m9_utf_cat (err->res, what, ((m9_sl_UTF8){ (uint8_t *) m9s72, 9 }), err)) m9a98 = m9_utf_cat (err->res, what, ((m9_sl_UTF8){ (uint8_t *) m9s72, 9 }), err);
       if (err->exc) { m9ln = 322; goto L_ret; };
-    Rdf_Fail (r, r_pool, m9a97, err);
+    Rdf_Fail (r, r_pool, m9a98, err);
     if (err->exc) { m9ln = 322; goto L_ret; };
     }
   }
@@ -3147,17 +3150,17 @@ static uint32_t Rdf_Uchar (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
   m9t3to = n;
   if (i <= m9t3to) for (;;) {
     M9_YCHK ();
-    { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(0), err)) m9a98 = Rdf_PeekAt (r, r_pool, INT64_C(0), err);
+    { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(0), err)) m9a99 = Rdf_PeekAt (r, r_pool, INT64_C(0), err);
       if (err->exc) { m9ln = 391; goto L_ret; };
-    bool m9t4 = (!Rdf_IsHex (m9a98, err));
+    bool m9t4 = (!Rdf_IsHex (m9a99, err));
     if (err->exc) { m9ln = 391; goto L_ret; };
     if (m9t4) {
       Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s75, 35 }), err);
       if (err->exc) { m9ln = 391; goto L_ret; };
     } }
-    { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(0), err)) m9a99 = Rdf_PeekAt (r, r_pool, INT64_C(0), err);
+    { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(0), err)) m9a100 = Rdf_PeekAt (r, r_pool, INT64_C(0), err);
       if (err->exc) { m9ln = 392; goto L_ret; };
-    { __typeof__(v) m9v = m9_add_i64 (m9_mul_i64 (v, INT64_C(16), err), Rdf_HexVal (m9a99, err), err);
+    { __typeof__(v) m9v = m9_add_i64 (m9_mul_i64 (v, INT64_C(16), err), Rdf_HexVal (m9a100, err), err);
       if (err->exc) { m9ln = 392; goto L_ret; };
       v = m9v;
     }
@@ -3471,7 +3474,7 @@ static void Rdf_Split (m9_sl_UTF8 s, m9_sl_UTF8 *scheme, m9_sl_UTF8 *auth, m9_sl
       i = m9v;
     }
   }
-  bool m9t3 = ({ bool m9t2 = ((m9_add_i64 (i, INT64_C(1), err) < Text_BLen (s, err)) && Text_BIs (s, i, 47u, err)); if (m9t2) { { __typeof__(m9_add_i64 (i, INT64_C(1), err)) m9a100 = m9_add_i64 (i, INT64_C(1), err);   if (err->exc) { m9ln = 500; goto L_ret; }; m9t2 = (Text_BIs (s, m9a100, 47u, err)); } } m9t2; });
+  bool m9t3 = ({ bool m9t2 = ((m9_add_i64 (i, INT64_C(1), err) < Text_BLen (s, err)) && Text_BIs (s, i, 47u, err)); if (m9t2) { { __typeof__(m9_add_i64 (i, INT64_C(1), err)) m9a101 = m9_add_i64 (i, INT64_C(1), err);   if (err->exc) { m9ln = 500; goto L_ret; }; m9t2 = (Text_BIs (s, m9a101, 47u, err)); } } m9t2; });
   if (err->exc) { m9ln = 500; goto L_ret; };
   if (m9t3) {
     (*hasAuth) = true;
@@ -3639,9 +3642,9 @@ static m9_sl_UTF8 Rdf_Resolve (m9_sl_UTF8 base, m9_sl_UTF8 ref, m9_state *err)
           bool m9t4 = (bha && (Text_BLen (bp, err) == INT64_C(0)));
           if (err->exc) { m9ln = 549; goto L_ret; };
           if (m9t4) {
-            { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s91, 1 }), rp, err)) m9a101 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s91, 1 }), rp, err);
+            { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s91, 1 }), rp, err)) m9a102 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s91, 1 }), rp, err);
               if (err->exc) { m9ln = 550; goto L_ret; };
-            { __typeof__(tp) m9v = Rdf_RemoveDots (m9a101, err);
+            { __typeof__(tp) m9v = Rdf_RemoveDots (m9a102, err);
               if (err->exc) { m9ln = 550; goto L_ret; };
               tp = m9v;
             }
@@ -3652,9 +3655,9 @@ static m9_sl_UTF8 Rdf_Resolve (m9_sl_UTF8 base, m9_sl_UTF8 ref, m9_state *err)
               k = m9v;
             }
             if ((k >= INT64_C(0))) {
-              { __typeof__(m9_utf_cat (err->res, m9_utf_slice (bp, INT64_C(0), m9_add_i64 (k, INT64_C(1), err), err), rp, err)) m9a102 = m9_utf_cat (err->res, m9_utf_slice (bp, INT64_C(0), m9_add_i64 (k, INT64_C(1), err), err), rp, err);
+              { __typeof__(m9_utf_cat (err->res, m9_utf_slice (bp, INT64_C(0), m9_add_i64 (k, INT64_C(1), err), err), rp, err)) m9a103 = m9_utf_cat (err->res, m9_utf_slice (bp, INT64_C(0), m9_add_i64 (k, INT64_C(1), err), err), rp, err);
                 if (err->exc) { m9ln = 553; goto L_ret; };
-              { __typeof__(tp) m9v = Rdf_RemoveDots (m9a102, err);
+              { __typeof__(tp) m9v = Rdf_RemoveDots (m9a103, err);
                 if (err->exc) { m9ln = 553; goto L_ret; };
                 tp = m9v;
               }
@@ -3775,9 +3778,9 @@ static int64_t Rdf_PrefixOf (Rdf_Reader *r, m9_pool *r_pool, m9_sl_UTF8 name, m9
   for (;;) {
     if (!((i >= INT64_C(0)))) break;
     M9_YCHK ();
-    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*r).pfx.p, i, (*r).pfx.len, sizeof (m9_sl_UTF8), err))) m9a103 = (*(m9_sl_UTF8 *) m9_at ((*r).pfx.p, i, (*r).pfx.len, sizeof (m9_sl_UTF8), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*r).pfx.p, i, (*r).pfx.len, sizeof (m9_sl_UTF8), err))) m9a104 = (*(m9_sl_UTF8 *) m9_at ((*r).pfx.p, i, (*r).pfx.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 589; goto L_ret; };
-    bool m9t1 = Text_EqUtf (m9a103, name, err);
+    bool m9t1 = Text_EqUtf (m9a104, name, err);
     if (err->exc) { m9ln = 589; goto L_ret; };
     if (m9t1) {
       err->res = m9res;
@@ -3853,7 +3856,7 @@ static m9_sl_UTF8 Rdf_PnPrefix (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
         Rdf_Advance (r, r_pool, err);
         if (err->exc) { m9ln = 610; goto L_ret; };
       } else {
-        bool m9t5 = ({ bool m9t4 = (c == 46u); if (m9t4) { { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(1), err)) m9a104 = Rdf_PeekAt (r, r_pool, INT64_C(1), err);   if (err->exc) { m9ln = 610; goto L_ret; }; m9t4 = (((Rdf_IsPnChars (m9a104, err) || (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 46u)))); } } m9t4; });
+        bool m9t5 = ({ bool m9t4 = (c == 46u); if (m9t4) { { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(1), err)) m9a105 = Rdf_PeekAt (r, r_pool, INT64_C(1), err);   if (err->exc) { m9ln = 610; goto L_ret; }; m9t4 = (((Rdf_IsPnChars (m9a105, err) || (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 46u)))); } } m9t4; });
         if (err->exc) { m9ln = 610; goto L_ret; };
         if (m9t5) {
           { __typeof__(s) m9v = m9_utf_cat (err->res, s, m9_utf_of_char (err->res, c, err), err);
@@ -3866,9 +3869,9 @@ static m9_sl_UTF8 Rdf_PnPrefix (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
         break;
       } }
     }
-    { __typeof__(m9_sub_i64 (Text_BLen (s, err), INT64_C(1), err)) m9a105 = m9_sub_i64 (Text_BLen (s, err), INT64_C(1), err);
+    { __typeof__(m9_sub_i64 (Text_BLen (s, err), INT64_C(1), err)) m9a106 = m9_sub_i64 (Text_BLen (s, err), INT64_C(1), err);
       if (err->exc) { m9ln = 617; goto L_ret; };
-    bool m9t6 = Text_BIs (s, m9a105, 46u, err);
+    bool m9t6 = Text_BIs (s, m9a106, 46u, err);
     if (err->exc) { m9ln = 617; goto L_ret; };
     if (m9t6) {
       Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s99, 29 }), err);
@@ -3915,9 +3918,9 @@ static m9_sl_UTF8 Rdf_PnLocal (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
       c = m9v;
     }
     if ((c == 37u)) {
-      { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(1), err)) m9a106 = Rdf_PeekAt (r, r_pool, INT64_C(1), err);
+      { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(1), err)) m9a107 = Rdf_PeekAt (r, r_pool, INT64_C(1), err);
         if (err->exc) { m9ln = 637; goto L_ret; };
-      bool m9t2 = (!(({ bool m9t1 = Rdf_IsHex (m9a106, err); if (m9t1) { { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(2), err)) m9a107 = Rdf_PeekAt (r, r_pool, INT64_C(2), err);   if (err->exc) { m9ln = 637; goto L_ret; }; m9t1 = (Rdf_IsHex (m9a107, err)); } } m9t1; })));
+      bool m9t2 = (!(({ bool m9t1 = Rdf_IsHex (m9a107, err); if (m9t1) { { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(2), err)) m9a108 = Rdf_PeekAt (r, r_pool, INT64_C(2), err);   if (err->exc) { m9ln = 637; goto L_ret; }; m9t1 = (Rdf_IsHex (m9a108, err)); } } m9t1; })));
       if (err->exc) { m9ln = 637; goto L_ret; };
       if (m9t2) {
         Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s101, 34 }), err);
@@ -3935,9 +3938,9 @@ static m9_sl_UTF8 Rdf_PnLocal (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
       if (err->exc) { m9ln = 641; goto L_ret; };
     } else {
       if ((c == 92u)) {
-        { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(1), err)) m9a108 = Rdf_PeekAt (r, r_pool, INT64_C(1), err);
+        { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(1), err)) m9a109 = Rdf_PeekAt (r, r_pool, INT64_C(1), err);
           if (err->exc) { m9ln = 643; goto L_ret; };
-        bool m9t5 = (!Rdf_IsLocalEsc (m9a108, err));
+        bool m9t5 = (!Rdf_IsLocalEsc (m9a109, err));
         if (err->exc) { m9ln = 643; goto L_ret; };
         if (m9t5) {
           Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s102, 35 }), err);
@@ -3963,9 +3966,9 @@ static m9_sl_UTF8 Rdf_PnLocal (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
         if (err->exc) { m9ln = 648; goto L_ret; };
     } else {
       if (((c == 46u) && (!first))) {
-        { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(1), err)) m9a109 = Rdf_PeekAt (r, r_pool, INT64_C(1), err);
+        { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(1), err)) m9a110 = Rdf_PeekAt (r, r_pool, INT64_C(1), err);
           if (err->exc) { m9ln = 652; goto L_ret; };
-        bool m9t8 = ((((Rdf_IsPnChars (m9a109, err) || (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 58u)) || (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 37u)) || (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 92u)) || (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 46u));
+        bool m9t8 = ((((Rdf_IsPnChars (m9a110, err) || (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 58u)) || (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 37u)) || (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 92u)) || (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 46u));
         if (err->exc) { m9ln = 652; goto L_ret; };
         if (m9t8) {
           { __typeof__(s) m9v = m9_utf_cat (err->res, s, m9_utf_of_char (err->res, c, err), err);
@@ -4020,9 +4023,9 @@ static m9_sl_UTF8 Rdf_PrefixedName (Rdf_Reader *r, m9_pool *r_pool, m9_state *er
     k = m9v;
   }
   if ((k < INT64_C(0))) {
-    { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s103, 11 }), name, err), ((m9_sl_UTF8){ (uint8_t *) m9s104, 17 }), err)) m9a110 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s103, 11 }), name, err), ((m9_sl_UTF8){ (uint8_t *) m9s104, 17 }), err);
+    { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s103, 11 }), name, err), ((m9_sl_UTF8){ (uint8_t *) m9s104, 17 }), err)) m9a111 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s103, 11 }), name, err), ((m9_sl_UTF8){ (uint8_t *) m9s104, 17 }), err);
       if (err->exc) { m9ln = 673; goto L_ret; };
-    Rdf_Fail (r, r_pool, m9a110, err);
+    Rdf_Fail (r, r_pool, m9a111, err);
     if (err->exc) { m9ln = 673; goto L_ret; };
     }
   }
@@ -4106,9 +4109,9 @@ static m9_sl_UTF8 Rdf_Labelled (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m
   if (err->exc) { m9ln = 701; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     M9_YCHK ();
-    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*r).blab.p, i, (*r).blab.len, sizeof (m9_sl_UTF8), err))) m9a111 = (*(m9_sl_UTF8 *) m9_at ((*r).blab.p, i, (*r).blab.len, sizeof (m9_sl_UTF8), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*r).blab.p, i, (*r).blab.len, sizeof (m9_sl_UTF8), err))) m9a112 = (*(m9_sl_UTF8 *) m9_at ((*r).blab.p, i, (*r).blab.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 702; goto L_ret; };
-    bool m9t2 = Text_EqUtf (m9a111, lab, err);
+    bool m9t2 = Text_EqUtf (m9a112, lab, err);
     if (err->exc) { m9ln = 702; goto L_ret; };
     if (m9t2) {
       err->res = m9res;
@@ -4228,7 +4231,7 @@ static m9_sl_UTF8 Rdf_BlankLabel (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool,
       Rdf_Advance (r, r_pool, err);
       if (err->exc) { m9ln = 734; goto L_ret; };
     } else {
-      bool m9t4 = ({ bool m9t3 = (c == 46u); if (m9t3) { { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(1), err)) m9a112 = Rdf_PeekAt (r, r_pool, INT64_C(1), err);   if (err->exc) { m9ln = 734; goto L_ret; }; m9t3 = (((Rdf_IsPnChars (m9a112, err) || (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 46u)))); } } m9t3; });
+      bool m9t4 = ({ bool m9t3 = (c == 46u); if (m9t3) { { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(1), err)) m9a113 = Rdf_PeekAt (r, r_pool, INT64_C(1), err);   if (err->exc) { m9ln = 734; goto L_ret; }; m9t3 = (((Rdf_IsPnChars (m9a113, err) || (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 46u)))); } } m9t3; });
       if (err->exc) { m9ln = 734; goto L_ret; };
       if (m9t4) {
         { __typeof__(s) m9v = m9_utf_cat (err->res, s, m9_utf_of_char (err->res, c, err), err);
@@ -4241,9 +4244,9 @@ static m9_sl_UTF8 Rdf_BlankLabel (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool,
       break;
     } }
   }
-  { __typeof__(m9_sub_i64 (Text_BLen (s, err), INT64_C(1), err)) m9a113 = m9_sub_i64 (Text_BLen (s, err), INT64_C(1), err);
+  { __typeof__(m9_sub_i64 (Text_BLen (s, err), INT64_C(1), err)) m9a114 = m9_sub_i64 (Text_BLen (s, err), INT64_C(1), err);
     if (err->exc) { m9ln = 741; goto L_ret; };
-  bool m9t5 = Text_BIs (s, m9a113, 46u, err);
+  bool m9t5 = Text_BIs (s, m9a114, 46u, err);
   if (err->exc) { m9ln = 741; goto L_ret; };
   if (m9t5) {
     Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s107, 34 }), err);
@@ -4551,9 +4554,9 @@ static m9_sl_UTF8 Rdf_Iri (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
   if (err->exc) { m9ln = 843; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
-    { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a114 = Rdf_IriRef (r, r_pool, err);
+    { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a115 = Rdf_IriRef (r, r_pool, err);
       if (err->exc) { m9ln = 843; goto L_ret; };
-    m9ret = Rdf_Absolute (r, r_pool, m9a114, err);
+    m9ret = Rdf_Absolute (r, r_pool, m9a115, err);
     if (err->exc) { m9ln = 843; goto L_ret; };
     }
     goto L_ret;
@@ -4634,11 +4637,11 @@ static bool Rdf_Word (Rdf_Reader *r, m9_pool *r_pool, m9_sl_UTF8 w, m9_state *er
     i += 1;
   } }
   err->res = m9res;
-  { __typeof__(Text_BLen (w, err)) m9a115 = Text_BLen (w, err);
+  { __typeof__(Text_BLen (w, err)) m9a116 = Text_BLen (w, err);
     if (err->exc) { m9ln = 862; goto L_ret; };
-  { __typeof__(Rdf_PeekAt (r, r_pool, m9a115, err)) m9a116 = Rdf_PeekAt (r, r_pool, m9a115, err);
+  { __typeof__(Rdf_PeekAt (r, r_pool, m9a116, err)) m9a117 = Rdf_PeekAt (r, r_pool, m9a116, err);
     if (err->exc) { m9ln = 862; goto L_ret; };
-  m9ret = (!(({ bool m9t5 = ({ bool m9t3 = Rdf_IsPnChars (m9a116, err); if (!m9t3) { { __typeof__(Text_BLen (w, err)) m9a117 = Text_BLen (w, err);   if (err->exc) { m9ln = 862; goto L_ret; }; m9t3 = ((Rdf_PeekAt (r, r_pool, m9a117, err) == 58u)); } } m9t3; }); if (!m9t5) { { __typeof__(Text_BLen (w, err)) m9a118 = Text_BLen (w, err);   if (err->exc) { m9ln = 862; goto L_ret; }; m9t5 = (({ bool m9t4 = (Rdf_PeekAt (r, r_pool, m9a118, err) == 46u); if (m9t4) { { __typeof__(m9_add_i64 (Text_BLen (w, err), INT64_C(1), err)) m9a119 = m9_add_i64 (Text_BLen (w, err), INT64_C(1), err);   if (err->exc) { m9ln = 862; goto L_ret; }; { __typeof__(Rdf_PeekAt (r, r_pool, m9a119, err)) m9a120 = Rdf_PeekAt (r, r_pool, m9a119, err);   if (err->exc) { m9ln = 862; goto L_ret; }; m9t4 = (Rdf_IsPnChars (m9a120, err)); } } } m9t4; })); } } m9t5; })));
+  m9ret = (!(({ bool m9t5 = ({ bool m9t3 = Rdf_IsPnChars (m9a117, err); if (!m9t3) { { __typeof__(Text_BLen (w, err)) m9a118 = Text_BLen (w, err);   if (err->exc) { m9ln = 862; goto L_ret; }; m9t3 = ((Rdf_PeekAt (r, r_pool, m9a118, err) == 58u)); } } m9t3; }); if (!m9t5) { { __typeof__(Text_BLen (w, err)) m9a119 = Text_BLen (w, err);   if (err->exc) { m9ln = 862; goto L_ret; }; m9t5 = (({ bool m9t4 = (Rdf_PeekAt (r, r_pool, m9a119, err) == 46u); if (m9t4) { { __typeof__(m9_add_i64 (Text_BLen (w, err), INT64_C(1), err)) m9a120 = m9_add_i64 (Text_BLen (w, err), INT64_C(1), err);   if (err->exc) { m9ln = 862; goto L_ret; }; { __typeof__(Rdf_PeekAt (r, r_pool, m9a120, err)) m9a121 = Rdf_PeekAt (r, r_pool, m9a120, err);   if (err->exc) { m9ln = 862; goto L_ret; }; m9t4 = (Rdf_IsPnChars (m9a121, err)); } } } m9t4; })); } } m9t5; })));
   if (err->exc) { m9ln = 862; goto L_ret; };
   }
   }
@@ -4694,11 +4697,11 @@ static bool Rdf_WordCi (Rdf_Reader *r, m9_pool *r_pool, m9_sl_UTF8 w, m9_state *
     i += 1;
   } }
   err->res = m9res;
-  { __typeof__(Text_BLen (w, err)) m9a121 = Text_BLen (w, err);
+  { __typeof__(Text_BLen (w, err)) m9a122 = Text_BLen (w, err);
     if (err->exc) { m9ln = 875; goto L_ret; };
-  { __typeof__(Rdf_PeekAt (r, r_pool, m9a121, err)) m9a122 = Rdf_PeekAt (r, r_pool, m9a121, err);
+  { __typeof__(Rdf_PeekAt (r, r_pool, m9a122, err)) m9a123 = Rdf_PeekAt (r, r_pool, m9a122, err);
     if (err->exc) { m9ln = 875; goto L_ret; };
-  m9ret = (!Rdf_IsPnChars (m9a122, err));
+  m9ret = (!Rdf_IsPnChars (m9a123, err));
   if (err->exc) { m9ln = 875; goto L_ret; };
   }
   }
@@ -4926,9 +4929,9 @@ static Rdf_Term Rdf_Literal (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_s
     if (err->exc) { m9ln = 939; goto L_ret; };
     if (m9t1) {
       err->res = m9res;
-      { __typeof__(Rdf_LangTag (r, r_pool, err)) m9a123 = Rdf_LangTag (r, r_pool, err);
+      { __typeof__(Rdf_LangTag (r, r_pool, err)) m9a124 = Rdf_LangTag (r, r_pool, err);
         if (err->exc) { m9ln = 939; goto L_ret; };
-      m9ret = Rdf_LitT (v, m9a123, ((m9_sl_UTF8){ NULL, 0 }), err);
+      m9ret = Rdf_LitT (v, m9a124, ((m9_sl_UTF8){ NULL, 0 }), err);
       if (err->exc) { m9ln = 939; goto L_ret; };
       }
       goto L_ret;
@@ -4942,19 +4945,19 @@ static Rdf_Term Rdf_Literal (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_s
       if (err->exc) { m9ln = 941; goto L_ret; };
       if ((*r).turtle) {
         err->res = m9res;
-        { __typeof__(Rdf_Iri (r, r_pool, err)) m9a124 = Rdf_Iri (r, r_pool, err);
+        { __typeof__(Rdf_Iri (r, r_pool, err)) m9a125 = Rdf_Iri (r, r_pool, err);
           if (err->exc) { m9ln = 942; goto L_ret; };
-        m9ret = Rdf_LitT (v, ((m9_sl_UTF8){ NULL, 0 }), m9a124, err);
+        m9ret = Rdf_LitT (v, ((m9_sl_UTF8){ NULL, 0 }), m9a125, err);
         if (err->exc) { m9ln = 942; goto L_ret; };
         }
         goto L_ret;
       }
       err->res = m9res;
-      { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a125 = Rdf_IriRef (r, r_pool, err);
+      { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a126 = Rdf_IriRef (r, r_pool, err);
         if (err->exc) { m9ln = 943; goto L_ret; };
-      { __typeof__(Rdf_Absolute (r, r_pool, m9a125, err)) m9a126 = Rdf_Absolute (r, r_pool, m9a125, err);
+      { __typeof__(Rdf_Absolute (r, r_pool, m9a126, err)) m9a127 = Rdf_Absolute (r, r_pool, m9a126, err);
         if (err->exc) { m9ln = 943; goto L_ret; };
-      m9ret = Rdf_LitT (v, ((m9_sl_UTF8){ NULL, 0 }), m9a126, err);
+      m9ret = Rdf_LitT (v, ((m9_sl_UTF8){ NULL, 0 }), m9a127, err);
       if (err->exc) { m9ln = 943; goto L_ret; };
       }
       }
@@ -4971,9 +4974,9 @@ static Rdf_Term Rdf_Literal (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_s
     Rdf_Skip (r, r_pool, INT64_C(4), err);
     if (err->exc) { m9ln = 947; goto L_ret; };
     err->res = m9res;
-    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s126, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s127, 7 }), err)) m9a127 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s126, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s127, 7 }), err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s126, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s127, 7 }), err)) m9a128 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s126, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s127, 7 }), err);
       if (err->exc) { m9ln = 947; goto L_ret; };
-    m9ret = Rdf_LitT (((m9_sl_UTF8){ (uint8_t *) m9s128, 4 }), ((m9_sl_UTF8){ NULL, 0 }), m9a127, err);
+    m9ret = Rdf_LitT (((m9_sl_UTF8){ (uint8_t *) m9s128, 4 }), ((m9_sl_UTF8){ NULL, 0 }), m9a128, err);
     if (err->exc) { m9ln = 947; goto L_ret; };
     }
     goto L_ret;
@@ -4984,9 +4987,9 @@ static Rdf_Term Rdf_Literal (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_s
     Rdf_Skip (r, r_pool, INT64_C(5), err);
     if (err->exc) { m9ln = 948; goto L_ret; };
     err->res = m9res;
-    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s130, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s131, 7 }), err)) m9a128 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s130, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s131, 7 }), err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s130, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s131, 7 }), err)) m9a129 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s130, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s131, 7 }), err);
       if (err->exc) { m9ln = 948; goto L_ret; };
-    m9ret = Rdf_LitT (((m9_sl_UTF8){ (uint8_t *) m9s132, 5 }), ((m9_sl_UTF8){ NULL, 0 }), m9a128, err);
+    m9ret = Rdf_LitT (((m9_sl_UTF8){ (uint8_t *) m9s132, 5 }), ((m9_sl_UTF8){ NULL, 0 }), m9a129, err);
     if (err->exc) { m9ln = 948; goto L_ret; };
     }
     goto L_ret;
@@ -5041,9 +5044,9 @@ static Rdf_Term Rdf_Collection (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, R
   Rdf_Expect (r, r_pool, 40u, ((m9_sl_UTF8){ (uint8_t *) m9s134, 1 }), err);
   if (err->exc) { m9ln = 966; goto L_ret; };
   any = false;
-  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s135, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s136, 3 }), err)) m9a129 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s135, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s136, 3 }), err);
+  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s135, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s136, 3 }), err)) m9a130 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s135, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s136, 3 }), err);
     if (err->exc) { m9ln = 968; goto L_ret; };
-  { __typeof__(head) m9v = Rdf_IriT (m9a129, err);
+  { __typeof__(head) m9v = Rdf_IriT (m9a130, err);
     if (err->exc) { m9ln = 968; goto L_ret; };
     head = m9v;
   }
@@ -5066,19 +5069,19 @@ static Rdf_Term Rdf_Collection (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, R
       Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s137, 23 }), err);
       if (err->exc) { m9ln = 973; goto L_ret; };
     }
-    { __typeof__(Rdf_Fresh (pool, r, r_pool, err)) m9a130 = Rdf_Fresh (pool, r, r_pool, err);
+    { __typeof__(Rdf_Fresh (pool, r, r_pool, err)) m9a131 = Rdf_Fresh (pool, r, r_pool, err);
       if (err->exc) { m9ln = 974; goto L_ret; };
-    { __typeof__(cell) m9v = Rdf_BlankT (m9a130, err);
+    { __typeof__(cell) m9v = Rdf_BlankT (m9a131, err);
       if (err->exc) { m9ln = 974; goto L_ret; };
       cell = m9v;
     }
     }
     if (any) {
-      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s138, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s139, 4 }), err)) m9a131 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s138, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s139, 4 }), err);
+      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s138, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s139, 4 }), err)) m9a132 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s138, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s139, 4 }), err);
         if (err->exc) { m9ln = 976; goto L_ret; };
-      { __typeof__(Rdf_IriT (m9a131, err)) m9a132 = Rdf_IriT (m9a131, err);
+      { __typeof__(Rdf_IriT (m9a132, err)) m9a133 = Rdf_IriT (m9a132, err);
         if (err->exc) { m9ln = 976; goto L_ret; };
-      Rdf_Add (pool, g, g_pool, &(prev), &m9a132, &(cell), err);
+      Rdf_Add (pool, g, g_pool, &(prev), &m9a133, &(cell), err);
       if (err->exc) { m9ln = 976; goto L_ret; };
       }
       }
@@ -5090,26 +5093,26 @@ static Rdf_Term Rdf_Collection (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, R
       if (err->exc) { m9ln = 981; goto L_ret; };
       o = m9v;
     }
-    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s140, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s141, 5 }), err)) m9a133 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s140, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s141, 5 }), err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s140, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s141, 5 }), err)) m9a134 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s140, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s141, 5 }), err);
       if (err->exc) { m9ln = 982; goto L_ret; };
-    { __typeof__(Rdf_IriT (m9a133, err)) m9a134 = Rdf_IriT (m9a133, err);
+    { __typeof__(Rdf_IriT (m9a134, err)) m9a135 = Rdf_IriT (m9a134, err);
       if (err->exc) { m9ln = 982; goto L_ret; };
-    Rdf_Add (pool, g, g_pool, &(cell), &m9a134, &(o), err);
+    Rdf_Add (pool, g, g_pool, &(cell), &m9a135, &(o), err);
     if (err->exc) { m9ln = 982; goto L_ret; };
     }
     }
     prev = cell;
   }
   if (any) {
-    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s142, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s143, 4 }), err)) m9a135 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s142, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s143, 4 }), err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s142, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s143, 4 }), err)) m9a136 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s142, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s143, 4 }), err);
       if (err->exc) { m9ln = 985; goto L_ret; };
-    { __typeof__(Rdf_IriT (m9a135, err)) m9a136 = Rdf_IriT (m9a135, err);
+    { __typeof__(Rdf_IriT (m9a136, err)) m9a137 = Rdf_IriT (m9a136, err);
       if (err->exc) { m9ln = 985; goto L_ret; };
-    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s144, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s145, 3 }), err)) m9a137 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s144, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s145, 3 }), err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s144, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s145, 3 }), err)) m9a138 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s144, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s145, 3 }), err);
       if (err->exc) { m9ln = 985; goto L_ret; };
-    { __typeof__(Rdf_IriT (m9a137, err)) m9a138 = Rdf_IriT (m9a137, err);
+    { __typeof__(Rdf_IriT (m9a138, err)) m9a139 = Rdf_IriT (m9a138, err);
       if (err->exc) { m9ln = 985; goto L_ret; };
-    Rdf_Add (pool, g, g_pool, &(prev), &m9a136, &m9a138, err);
+    Rdf_Add (pool, g, g_pool, &(prev), &m9a137, &m9a139, err);
     if (err->exc) { m9ln = 985; goto L_ret; };
     }
     }
@@ -5148,9 +5151,9 @@ static Rdf_Term Rdf_PropertyList (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool,
   Rdf_Term b = {0}; (void) b;
   Rdf_Expect (r, r_pool, 91u, ((m9_sl_UTF8){ (uint8_t *) m9s146, 1 }), err);
   if (err->exc) { m9ln = 994; goto L_ret; };
-  { __typeof__(Rdf_Fresh (pool, r, r_pool, err)) m9a139 = Rdf_Fresh (pool, r, r_pool, err);
+  { __typeof__(Rdf_Fresh (pool, r, r_pool, err)) m9a140 = Rdf_Fresh (pool, r, r_pool, err);
     if (err->exc) { m9ln = 995; goto L_ret; };
-  { __typeof__(b) m9v = Rdf_BlankT (m9a139, err);
+  { __typeof__(b) m9v = Rdf_BlankT (m9a140, err);
     if (err->exc) { m9ln = 995; goto L_ret; };
     b = m9v;
   }
@@ -5212,9 +5215,9 @@ static Rdf_Term Rdf_ObjectTerm (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, R
   if (err->exc) { m9ln = 1010; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
-    { __typeof__(Rdf_BlankLabel (pool, r, r_pool, err)) m9a140 = Rdf_BlankLabel (pool, r, r_pool, err);
+    { __typeof__(Rdf_BlankLabel (pool, r, r_pool, err)) m9a141 = Rdf_BlankLabel (pool, r, r_pool, err);
       if (err->exc) { m9ln = 1010; goto L_ret; };
-    m9ret = Rdf_BlankT (m9a140, err);
+    m9ret = Rdf_BlankT (m9a141, err);
     if (err->exc) { m9ln = 1010; goto L_ret; };
     }
     goto L_ret;
@@ -5233,9 +5236,9 @@ static Rdf_Term Rdf_ObjectTerm (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, R
   }
   if ((c == 60u)) {
     err->res = m9res;
-    { __typeof__(Rdf_Iri (r, r_pool, err)) m9a141 = Rdf_Iri (r, r_pool, err);
+    { __typeof__(Rdf_Iri (r, r_pool, err)) m9a142 = Rdf_Iri (r, r_pool, err);
       if (err->exc) { m9ln = 1013; goto L_ret; };
-    m9ret = Rdf_IriT (m9a141, err);
+    m9ret = Rdf_IriT (m9a142, err);
     if (err->exc) { m9ln = 1013; goto L_ret; };
     }
     goto L_ret;
@@ -5258,9 +5261,9 @@ static Rdf_Term Rdf_ObjectTerm (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, R
   if (err->exc) { m9ln = 1018; goto L_ret; };
   if (m9t3) {
     err->res = m9res;
-    { __typeof__(Rdf_PrefixedName (r, r_pool, err)) m9a142 = Rdf_PrefixedName (r, r_pool, err);
+    { __typeof__(Rdf_PrefixedName (r, r_pool, err)) m9a143 = Rdf_PrefixedName (r, r_pool, err);
       if (err->exc) { m9ln = 1018; goto L_ret; };
-    m9ret = Rdf_IriT (m9a142, err);
+    m9ret = Rdf_IriT (m9a143, err);
     if (err->exc) { m9ln = 1018; goto L_ret; };
     }
     goto L_ret;
@@ -5299,15 +5302,15 @@ static Rdf_Term Rdf_Verb (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
   Rdf_Term m9ret = {0};
   Rdf_SkipWs (r, r_pool, err);
   if (err->exc) { m9ln = 1025; goto L_ret; };
-  bool m9t4 = ({ bool m9t3 = (Rdf_PeekAt (r, r_pool, INT64_C(0), err) == 97u); if (m9t3) { { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(1), err)) m9a143 = Rdf_PeekAt (r, r_pool, INT64_C(1), err);   if (err->exc) { m9ln = 1026; goto L_ret; }; m9t3 = ((!(({ bool m9t2 = (Rdf_IsPnChars (m9a143, err) || (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 58u)); if (!m9t2) { m9t2 = (({ bool m9t1 = (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 46u); if (m9t1) { { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(2), err)) m9a144 = Rdf_PeekAt (r, r_pool, INT64_C(2), err);   if (err->exc) { m9ln = 1026; goto L_ret; }; m9t1 = (Rdf_IsPnChars (m9a144, err)); } } m9t1; })); } m9t2; })))); } } m9t3; });
+  bool m9t4 = ({ bool m9t3 = (Rdf_PeekAt (r, r_pool, INT64_C(0), err) == 97u); if (m9t3) { { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(1), err)) m9a144 = Rdf_PeekAt (r, r_pool, INT64_C(1), err);   if (err->exc) { m9ln = 1026; goto L_ret; }; m9t3 = ((!(({ bool m9t2 = (Rdf_IsPnChars (m9a144, err) || (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 58u)); if (!m9t2) { m9t2 = (({ bool m9t1 = (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 46u); if (m9t1) { { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(2), err)) m9a145 = Rdf_PeekAt (r, r_pool, INT64_C(2), err);   if (err->exc) { m9ln = 1026; goto L_ret; }; m9t1 = (Rdf_IsPnChars (m9a145, err)); } } m9t1; })); } m9t2; })))); } } m9t3; });
   if (err->exc) { m9ln = 1026; goto L_ret; };
   if (m9t4) {
     Rdf_Advance (r, r_pool, err);
     if (err->exc) { m9ln = 1027; goto L_ret; };
     err->res = m9res;
-    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s151, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s152, 4 }), err)) m9a145 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s151, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s152, 4 }), err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s151, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s152, 4 }), err)) m9a146 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s151, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s152, 4 }), err);
       if (err->exc) { m9ln = 1028; goto L_ret; };
-    m9ret = Rdf_IriT (m9a145, err);
+    m9ret = Rdf_IriT (m9a146, err);
     if (err->exc) { m9ln = 1028; goto L_ret; };
     }
     goto L_ret;
@@ -5319,9 +5322,9 @@ static Rdf_Term Rdf_Verb (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
     if (err->exc) { m9ln = 1030; goto L_ret; };
   }
   err->res = m9res;
-  { __typeof__(Rdf_Iri (r, r_pool, err)) m9a146 = Rdf_Iri (r, r_pool, err);
+  { __typeof__(Rdf_Iri (r, r_pool, err)) m9a147 = Rdf_Iri (r, r_pool, err);
     if (err->exc) { m9ln = 1031; goto L_ret; };
-  m9ret = Rdf_IriT (m9a146, err);
+  m9ret = Rdf_IriT (m9a147, err);
   if (err->exc) { m9ln = 1031; goto L_ret; };
   }
   goto L_ret;
@@ -5448,11 +5451,11 @@ static bool Rdf_Directive (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_sta
       if (err->exc) { m9ln = 1072; goto L_ret; };
       Rdf_SkipWs (r, r_pool, err);
       if (err->exc) { m9ln = 1073; goto L_ret; };
-      { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a147 = Rdf_IriRef (r, r_pool, err);
+      { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a148 = Rdf_IriRef (r, r_pool, err);
         if (err->exc) { m9ln = 1074; goto L_ret; };
-      { __typeof__(Rdf_Absolute (r, r_pool, m9a147, err)) m9a148 = Rdf_Absolute (r, r_pool, m9a147, err);
+      { __typeof__(Rdf_Absolute (r, r_pool, m9a148, err)) m9a149 = Rdf_Absolute (r, r_pool, m9a148, err);
         if (err->exc) { m9ln = 1074; goto L_ret; };
-      { __typeof__((*r).base) m9v = Text_KeepUtf (pool, m9a148, err);
+      { __typeof__((*r).base) m9v = Text_KeepUtf (pool, m9a149, err);
         if (err->exc) { m9ln = 1074; goto L_ret; };
         (*r).base = m9v;
       }
@@ -5473,11 +5476,11 @@ static bool Rdf_Directive (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_sta
       if (err->exc) { m9ln = 1079; goto L_ret; };
       Rdf_SkipWs (r, r_pool, err);
       if (err->exc) { m9ln = 1080; goto L_ret; };
-      { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a149 = Rdf_IriRef (r, r_pool, err);
+      { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a150 = Rdf_IriRef (r, r_pool, err);
         if (err->exc) { m9ln = 1081; goto L_ret; };
-      { __typeof__(Rdf_Absolute (r, r_pool, m9a149, err)) m9a150 = Rdf_Absolute (r, r_pool, m9a149, err);
+      { __typeof__(Rdf_Absolute (r, r_pool, m9a150, err)) m9a151 = Rdf_Absolute (r, r_pool, m9a150, err);
         if (err->exc) { m9ln = 1081; goto L_ret; };
-      { __typeof__((*r).base) m9v = Text_KeepUtf (pool, m9a150, err);
+      { __typeof__((*r).base) m9v = Text_KeepUtf (pool, m9a151, err);
         if (err->exc) { m9ln = 1081; goto L_ret; };
         (*r).base = m9v;
       }
@@ -5499,9 +5502,9 @@ static bool Rdf_Directive (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_sta
   }
   Rdf_SkipWs (r, r_pool, err);
   if (err->exc) { m9ln = 1088; goto L_ret; };
-  { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a151 = Rdf_IriRef (r, r_pool, err);
+  { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a152 = Rdf_IriRef (r, r_pool, err);
     if (err->exc) { m9ln = 1089; goto L_ret; };
-  { __typeof__(iri) m9v = Rdf_Absolute (r, r_pool, m9a151, err);
+  { __typeof__(iri) m9v = Rdf_Absolute (r, r_pool, m9a152, err);
     if (err->exc) { m9ln = 1089; goto L_ret; };
     iri = m9v;
   }
@@ -5604,9 +5607,9 @@ static void Rdf_Triples (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, Rdf_Grap
   bool m9t2 = ((c == 95u) && (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 58u));
   if (err->exc) { m9ln = 1121; goto L_ret; };
   if (m9t2) {
-    { __typeof__(Rdf_BlankLabel (pool, r, r_pool, err)) m9a152 = Rdf_BlankLabel (pool, r, r_pool, err);
+    { __typeof__(Rdf_BlankLabel (pool, r, r_pool, err)) m9a153 = Rdf_BlankLabel (pool, r, r_pool, err);
       if (err->exc) { m9ln = 1122; goto L_ret; };
-    { __typeof__(s) m9v = Rdf_BlankT (m9a152, err);
+    { __typeof__(s) m9v = Rdf_BlankT (m9a153, err);
       if (err->exc) { m9ln = 1122; goto L_ret; };
       s = m9v;
     }
@@ -5621,9 +5624,9 @@ static void Rdf_Triples (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, Rdf_Grap
     bool m9t3 = Rdf_StartsIri (r, r_pool, err);
     if (err->exc) { m9ln = 1124; goto L_ret; };
     if (m9t3) {
-      { __typeof__(Rdf_Iri (r, r_pool, err)) m9a153 = Rdf_Iri (r, r_pool, err);
+      { __typeof__(Rdf_Iri (r, r_pool, err)) m9a154 = Rdf_Iri (r, r_pool, err);
         if (err->exc) { m9ln = 1126; goto L_ret; };
-      { __typeof__(s) m9v = Rdf_IriT (m9a153, err);
+      { __typeof__(s) m9v = Rdf_IriT (m9a154, err);
         if (err->exc) { m9ln = 1126; goto L_ret; };
         s = m9v;
       }
@@ -5716,11 +5719,11 @@ static Rdf_Term Rdf_NtTerm (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, bool 
   }
   if ((c == 60u)) {
     err->res = m9res;
-    { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a154 = Rdf_IriRef (r, r_pool, err);
+    { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a155 = Rdf_IriRef (r, r_pool, err);
       if (err->exc) { m9ln = 1187; goto L_ret; };
-    { __typeof__(Rdf_Absolute (r, r_pool, m9a154, err)) m9a155 = Rdf_Absolute (r, r_pool, m9a154, err);
+    { __typeof__(Rdf_Absolute (r, r_pool, m9a155, err)) m9a156 = Rdf_Absolute (r, r_pool, m9a155, err);
       if (err->exc) { m9ln = 1187; goto L_ret; };
-    m9ret = Rdf_IriT (m9a155, err);
+    m9ret = Rdf_IriT (m9a156, err);
     if (err->exc) { m9ln = 1187; goto L_ret; };
     }
     }
@@ -5730,9 +5733,9 @@ static Rdf_Term Rdf_NtTerm (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, bool 
   if (err->exc) { m9ln = 1188; goto L_ret; };
   if (m9t1) {
     err->res = m9res;
-    { __typeof__(Rdf_BlankLabel (pool, r, r_pool, err)) m9a156 = Rdf_BlankLabel (pool, r, r_pool, err);
+    { __typeof__(Rdf_BlankLabel (pool, r, r_pool, err)) m9a157 = Rdf_BlankLabel (pool, r, r_pool, err);
       if (err->exc) { m9ln = 1188; goto L_ret; };
-    m9ret = Rdf_BlankT (m9a156, err);
+    m9ret = Rdf_BlankT (m9a157, err);
     if (err->exc) { m9ln = 1188; goto L_ret; };
     }
     goto L_ret;
@@ -5804,19 +5807,19 @@ static void Rdf_Hex2 (DynStr_DString * *d, m9_pool *d_pool, int64_t v, m9_state 
   int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 h = {0}; (void) h;
   h = ((m9_sl_UTF8){ (uint8_t *) m9s162, 16 });
-  { __typeof__(m9_div_i64 (v, INT64_C(16), err)) m9a157 = m9_div_i64 (v, INT64_C(16), err);
+  { __typeof__(m9_div_i64 (v, INT64_C(16), err)) m9a158 = m9_div_i64 (v, INT64_C(16), err);
     if (err->exc) { m9ln = 1241; goto L_hdl_m9t1; };
-  { __typeof__(Text_BChar (h, m9a157, err)) m9a158 = Text_BChar (h, m9a157, err);
+  { __typeof__(Text_BChar (h, m9a158, err)) m9a159 = Text_BChar (h, m9a158, err);
     if (err->exc) { m9ln = 1241; goto L_hdl_m9t1; };
-  DynStr_AppendChar (d, d_pool, m9a158, err);
+  DynStr_AppendChar (d, d_pool, m9a159, err);
   if (err->exc) { m9ln = 1241; goto L_hdl_m9t1; };
   }
   }
-  { __typeof__(m9_mod_i64 (v, INT64_C(16), err)) m9a159 = m9_mod_i64 (v, INT64_C(16), err);
+  { __typeof__(m9_mod_i64 (v, INT64_C(16), err)) m9a160 = m9_mod_i64 (v, INT64_C(16), err);
     if (err->exc) { m9ln = 1242; goto L_hdl_m9t1; };
-  { __typeof__(Text_BChar (h, m9a159, err)) m9a160 = Text_BChar (h, m9a159, err);
+  { __typeof__(Text_BChar (h, m9a160, err)) m9a161 = Text_BChar (h, m9a160, err);
     if (err->exc) { m9ln = 1242; goto L_hdl_m9t1; };
-  DynStr_AppendChar (d, d_pool, m9a160, err);
+  DynStr_AppendChar (d, d_pool, m9a161, err);
   if (err->exc) { m9ln = 1242; goto L_hdl_m9t1; };
   }
   }
@@ -6032,15 +6035,15 @@ static int64_t Rdf_PrefixFor (Rdf_Prefixes *p, m9_pool *p_pool, m9_sl_UTF8 iri, 
   if (err->exc) { m9ln = 1365; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     M9_YCHK ();
-    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err))) m9a161 = (*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err))) m9a162 = (*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 1366; goto L_ret; };
-    bool m9t6 = ({ bool m9t5 = ({ bool m9t3 = ({ bool m9t2 = (Text_BLen (m9a161, err) > bestLen); if (m9t2) { { __typeof__((*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err))) m9a162 = (*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err));   if (err->exc) { m9ln = 1366; goto L_ret; }; m9t2 = ((Text_BLen (m9a162, err) <= Text_BLen (iri, err))); } } m9t2; }); if (m9t3) { { __typeof__((*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err))) m9a163 = (*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err));   if (err->exc) { m9ln = 1366; goto L_ret; }; m9t3 = (Text_StartsWithUtf (iri, m9a163, err)); } } m9t3; }); if (m9t5) { { __typeof__((*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err))) m9a164 = (*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err));   if (err->exc) { m9ln = 1366; goto L_ret; }; { __typeof__((*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err))) m9a165 = (*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err));   if (err->exc) { m9ln = 1366; goto L_ret; }; { __typeof__(m9_utf_slice (iri, Text_BLen (m9a164, err), m9_sub_i64 (Text_BLen (iri, err), Text_BLen (m9a165, err), err), err)) m9a166 = m9_utf_slice (iri, Text_BLen (m9a164, err), m9_sub_i64 (Text_BLen (iri, err), Text_BLen (m9a165, err), err), err);   if (err->exc) { m9ln = 1366; goto L_ret; }; m9t5 = (Rdf_LocalOk (m9a166, err)); } } } } m9t5; });
+    bool m9t6 = ({ bool m9t5 = ({ bool m9t3 = ({ bool m9t2 = (Text_BLen (m9a162, err) > bestLen); if (m9t2) { { __typeof__((*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err))) m9a163 = (*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err));   if (err->exc) { m9ln = 1366; goto L_ret; }; m9t2 = ((Text_BLen (m9a163, err) <= Text_BLen (iri, err))); } } m9t2; }); if (m9t3) { { __typeof__((*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err))) m9a164 = (*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err));   if (err->exc) { m9ln = 1366; goto L_ret; }; m9t3 = (Text_StartsWithUtf (iri, m9a164, err)); } } m9t3; }); if (m9t5) { { __typeof__((*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err))) m9a165 = (*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err));   if (err->exc) { m9ln = 1366; goto L_ret; }; { __typeof__((*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err))) m9a166 = (*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err));   if (err->exc) { m9ln = 1366; goto L_ret; }; { __typeof__(m9_utf_slice (iri, Text_BLen (m9a165, err), m9_sub_i64 (Text_BLen (iri, err), Text_BLen (m9a166, err), err), err)) m9a167 = m9_utf_slice (iri, Text_BLen (m9a165, err), m9_sub_i64 (Text_BLen (iri, err), Text_BLen (m9a166, err), err), err);   if (err->exc) { m9ln = 1366; goto L_ret; }; m9t5 = (Rdf_LocalOk (m9a167, err)); } } } } m9t5; });
     if (err->exc) { m9ln = 1366; goto L_ret; };
     if (m9t6) {
       best = i;
-      { __typeof__((*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err))) m9a167 = (*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err))) m9a168 = (*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) { m9ln = 1370; goto L_ret; };
-      { __typeof__(bestLen) m9v = Text_BLen (m9a167, err);
+      { __typeof__(bestLen) m9v = Text_BLen (m9a168, err);
         if (err->exc) { m9ln = 1370; goto L_ret; };
         bestLen = m9v;
       }
@@ -6078,20 +6081,20 @@ static void Rdf_TtlIri (DynStr_DString * *d, m9_pool *d_pool, Rdf_Prefixes *p, m
   if ((k >= INT64_C(0))) {
     (*(bool *) m9_at ((*p).used.p, k, (*p).used.len, sizeof (bool), err)) = true;
     if (err->exc) { m9ln = 1382; goto L_ret; };
-    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*p).names.p, k, (*p).names.len, sizeof (m9_sl_UTF8), err))) m9a168 = (*(m9_sl_UTF8 *) m9_at ((*p).names.p, k, (*p).names.len, sizeof (m9_sl_UTF8), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*p).names.p, k, (*p).names.len, sizeof (m9_sl_UTF8), err))) m9a169 = (*(m9_sl_UTF8 *) m9_at ((*p).names.p, k, (*p).names.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 1383; goto L_ret; };
-    DynStr_Append (d, d_pool, m9a168, err);
+    DynStr_Append (d, d_pool, m9a169, err);
     if (err->exc) { m9ln = 1383; goto L_ret; };
     }
     DynStr_AppendChar (d, d_pool, 58u, err);
     if (err->exc) { m9ln = 1384; goto L_ret; };
-    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*p).iris.p, k, (*p).iris.len, sizeof (m9_sl_UTF8), err))) m9a169 = (*(m9_sl_UTF8 *) m9_at ((*p).iris.p, k, (*p).iris.len, sizeof (m9_sl_UTF8), err));
-      if (err->exc) { m9ln = 1385; goto L_ret; };
     { __typeof__((*(m9_sl_UTF8 *) m9_at ((*p).iris.p, k, (*p).iris.len, sizeof (m9_sl_UTF8), err))) m9a170 = (*(m9_sl_UTF8 *) m9_at ((*p).iris.p, k, (*p).iris.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 1385; goto L_ret; };
-    { __typeof__(m9_utf_slice (iri, Text_BLen (m9a169, err), m9_sub_i64 (Text_BLen (iri, err), Text_BLen (m9a170, err), err), err)) m9a171 = m9_utf_slice (iri, Text_BLen (m9a169, err), m9_sub_i64 (Text_BLen (iri, err), Text_BLen (m9a170, err), err), err);
+    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*p).iris.p, k, (*p).iris.len, sizeof (m9_sl_UTF8), err))) m9a171 = (*(m9_sl_UTF8 *) m9_at ((*p).iris.p, k, (*p).iris.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 1385; goto L_ret; };
-    DynStr_Append (d, d_pool, m9a171, err);
+    { __typeof__(m9_utf_slice (iri, Text_BLen (m9a170, err), m9_sub_i64 (Text_BLen (iri, err), Text_BLen (m9a171, err), err), err)) m9a172 = m9_utf_slice (iri, Text_BLen (m9a170, err), m9_sub_i64 (Text_BLen (iri, err), Text_BLen (m9a171, err), err), err);
+      if (err->exc) { m9ln = 1385; goto L_ret; };
+    DynStr_Append (d, d_pool, m9a172, err);
     if (err->exc) { m9ln = 1385; goto L_ret; };
     }
     }
@@ -6178,22 +6181,22 @@ static bool Rdf_ShortForm (Rdf_Term *t, m9_state *err)
   if (m9t2) {
     i = INT64_C(1);
   }
-  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s173, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s174, 7 }), err)) m9a172 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s173, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s174, 7 }), err);
+  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s173, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s174, 7 }), err)) m9a173 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s173, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s174, 7 }), err);
     if (err->exc) { m9ln = 1416; goto L_ret; };
-  bool m9t3 = Text_EqUtf ((*t).datatype, m9a172, err);
+  bool m9t3 = Text_EqUtf ((*t).datatype, m9a173, err);
   if (err->exc) { m9ln = 1416; goto L_ret; };
   if (m9t3) {
     err->res = m9res;
-    { __typeof__(Text_BLen (s, err)) m9a173 = Text_BLen (s, err);
+    { __typeof__(Text_BLen (s, err)) m9a174 = Text_BLen (s, err);
       if (err->exc) { m9ln = 1417; goto L_ret; };
-    m9ret = Rdf_Digits (s, i, m9a173, err);
+    m9ret = Rdf_Digits (s, i, m9a174, err);
     if (err->exc) { m9ln = 1417; goto L_ret; };
     }
     goto L_ret;
   } else {
-    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s175, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s176, 7 }), err)) m9a174 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s175, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s176, 7 }), err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s175, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s176, 7 }), err)) m9a175 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s175, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s176, 7 }), err);
       if (err->exc) { m9ln = 1417; goto L_ret; };
-    bool m9t4 = Text_EqUtf ((*t).datatype, m9a174, err);
+    bool m9t4 = Text_EqUtf ((*t).datatype, m9a175, err);
     if (err->exc) { m9ln = 1417; goto L_ret; };
     if (m9t4) {
       { __typeof__(dot) m9v = Text_FindCharUtf (s, 46u, err);
@@ -6201,13 +6204,13 @@ static bool Rdf_ShortForm (Rdf_Term *t, m9_state *err)
         dot = m9v;
       }
       err->res = m9res;
-      m9ret = ({ bool m9t5 = ((dot >= i) && (((dot == i) || Rdf_Digits (s, i, dot, err)))); if (m9t5) { { __typeof__(m9_add_i64 (dot, INT64_C(1), err)) m9a175 = m9_add_i64 (dot, INT64_C(1), err);   if (err->exc) { m9ln = 1420; goto L_ret; }; { __typeof__(Text_BLen (s, err)) m9a176 = Text_BLen (s, err);   if (err->exc) { m9ln = 1420; goto L_ret; }; m9t5 = (Rdf_Digits (s, m9a175, m9a176, err)); } } } m9t5; });
+      m9ret = ({ bool m9t5 = ((dot >= i) && (((dot == i) || Rdf_Digits (s, i, dot, err)))); if (m9t5) { { __typeof__(m9_add_i64 (dot, INT64_C(1), err)) m9a176 = m9_add_i64 (dot, INT64_C(1), err);   if (err->exc) { m9ln = 1420; goto L_ret; }; { __typeof__(Text_BLen (s, err)) m9a177 = Text_BLen (s, err);   if (err->exc) { m9ln = 1420; goto L_ret; }; m9t5 = (Rdf_Digits (s, m9a176, m9a177, err)); } } } m9t5; });
       if (err->exc) { m9ln = 1420; goto L_ret; };
       goto L_ret;
   } else {
-    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s177, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s178, 6 }), err)) m9a177 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s177, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s178, 6 }), err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s177, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s178, 6 }), err)) m9a178 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s177, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s178, 6 }), err);
       if (err->exc) { m9ln = 1420; goto L_ret; };
-    bool m9t6 = Text_EqUtf ((*t).datatype, m9a177, err);
+    bool m9t6 = Text_EqUtf ((*t).datatype, m9a178, err);
     if (err->exc) { m9ln = 1420; goto L_ret; };
     if (m9t6) {
       { __typeof__(e) m9v = Text_FindCharUtf (s, 101u, err);
@@ -6225,9 +6228,9 @@ static bool Rdf_ShortForm (Rdf_Term *t, m9_state *err)
         m9ret = false;
         goto L_ret;
       }
-      { __typeof__(m9_utf_slice (s, INT64_C(0), e, err)) m9a178 = m9_utf_slice (s, INT64_C(0), e, err);
+      { __typeof__(m9_utf_slice (s, INT64_C(0), e, err)) m9a179 = m9_utf_slice (s, INT64_C(0), e, err);
         if (err->exc) { m9ln = 1425; goto L_ret; };
-      { __typeof__(dot) m9v = Text_FindCharUtf (m9a178, 46u, err);
+      { __typeof__(dot) m9v = Text_FindCharUtf (m9a179, 46u, err);
         if (err->exc) { m9ln = 1425; goto L_ret; };
         dot = m9v;
       }
@@ -6242,9 +6245,9 @@ static bool Rdf_ShortForm (Rdf_Term *t, m9_state *err)
         }
       } else {
         if ((dot == i)) {
-          { __typeof__(m9_add_i64 (dot, INT64_C(1), err)) m9a179 = m9_add_i64 (dot, INT64_C(1), err);
+          { __typeof__(m9_add_i64 (dot, INT64_C(1), err)) m9a180 = m9_add_i64 (dot, INT64_C(1), err);
             if (err->exc) { m9ln = 1429; goto L_ret; };
-          bool m9t9 = (!Rdf_Digits (s, m9a179, e, err));
+          bool m9t9 = (!Rdf_Digits (s, m9a180, e, err));
           if (err->exc) { m9ln = 1429; goto L_ret; };
           if (m9t9) {
             err->res = m9res;
@@ -6259,7 +6262,7 @@ static bool Rdf_ShortForm (Rdf_Term *t, m9_state *err)
           m9ret = false;
           goto L_ret;
         }
-        bool m9t12 = ({ bool m9t11 = (m9_add_i64 (dot, INT64_C(1), err) < e); if (m9t11) { { __typeof__(m9_add_i64 (dot, INT64_C(1), err)) m9a180 = m9_add_i64 (dot, INT64_C(1), err);   if (err->exc) { m9ln = 1432; goto L_ret; }; m9t11 = ((!Rdf_Digits (s, m9a180, e, err))); } } m9t11; });
+        bool m9t12 = ({ bool m9t11 = (m9_add_i64 (dot, INT64_C(1), err) < e); if (m9t11) { { __typeof__(m9_add_i64 (dot, INT64_C(1), err)) m9a181 = m9_add_i64 (dot, INT64_C(1), err);   if (err->exc) { m9ln = 1432; goto L_ret; }; m9t11 = ((!Rdf_Digits (s, m9a181, e, err))); } } m9t11; });
         if (err->exc) { m9ln = 1432; goto L_ret; };
         if (m9t12) {
           err->res = m9res;
@@ -6280,16 +6283,16 @@ static bool Rdf_ShortForm (Rdf_Term *t, m9_state *err)
         }
       }
       err->res = m9res;
-      { __typeof__(Text_BLen (s, err)) m9a181 = Text_BLen (s, err);
+      { __typeof__(Text_BLen (s, err)) m9a182 = Text_BLen (s, err);
         if (err->exc) { m9ln = 1436; goto L_ret; };
-      m9ret = Rdf_Digits (s, i, m9a181, err);
+      m9ret = Rdf_Digits (s, i, m9a182, err);
       if (err->exc) { m9ln = 1436; goto L_ret; };
       }
       goto L_ret;
   } else {
-    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s179, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s180, 7 }), err)) m9a182 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s179, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s180, 7 }), err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s179, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s180, 7 }), err)) m9a183 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s179, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s180, 7 }), err);
       if (err->exc) { m9ln = 1436; goto L_ret; };
-    bool m9t14 = Text_EqUtf ((*t).datatype, m9a182, err);
+    bool m9t14 = Text_EqUtf ((*t).datatype, m9a183, err);
     if (err->exc) { m9ln = 1436; goto L_ret; };
     if (m9t14) {
       err->res = m9res;
@@ -6407,7 +6410,7 @@ static void Rdf_TtlTerm (DynStr_DString * *d, m9_pool *d_pool, Rdf_Prefixes *p, 
   switch (m9t1.tag) {
   case Rdf_Kind_Iri:
   {
-    bool m9t3 = ({ bool m9t2 = predicate; if (m9t2) { { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s191, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s192, 4 }), err)) m9a183 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s191, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s192, 4 }), err);   if (err->exc) { m9ln = 1484; goto L_ret; }; m9t2 = (Text_EqUtf ((*t).value, m9a183, err)); } } m9t2; });
+    bool m9t3 = ({ bool m9t2 = predicate; if (m9t2) { { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s191, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s192, 4 }), err)) m9a184 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s191, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s192, 4 }), err);   if (err->exc) { m9ln = 1484; goto L_ret; }; m9t2 = (Text_EqUtf ((*t).value, m9a184, err)); } } m9t2; });
     if (err->exc) { m9ln = 1484; goto L_ret; };
     if (m9t3) {
       DynStr_AppendChar (d, d_pool, 97u, err);
@@ -6477,9 +6480,9 @@ static void Rdf_AddDefault (Rdf_Prefixes *p, m9_pool *p_pool, m9_sl_UTF8 name, m
   if (err->exc) { m9ln = 1574; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     M9_YCHK ();
-    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*p).names.p, i, (*p).names.len, sizeof (m9_sl_UTF8), err))) m9a184 = (*(m9_sl_UTF8 *) m9_at ((*p).names.p, i, (*p).names.len, sizeof (m9_sl_UTF8), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*p).names.p, i, (*p).names.len, sizeof (m9_sl_UTF8), err))) m9a185 = (*(m9_sl_UTF8 *) m9_at ((*p).names.p, i, (*p).names.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 1575; goto L_ret; };
-    bool m9t2 = Text_EqUtf (m9a184, name, err);
+    bool m9t2 = Text_EqUtf (m9a185, name, err);
     if (err->exc) { m9ln = 1575; goto L_ret; };
     if (m9t2) {
       goto L_ret;
@@ -6721,9 +6724,9 @@ static m9_sl_UTF8 Rdf_XIri (Rdf_XState *st, m9_pool *st_pool, m9_sl_UTF8 base, m
   bool m9t2 = (Text_BLen (base, err) == INT64_C(0));
   if (err->exc) { m9ln = 1676; goto L_ret; };
   if (m9t2) {
-    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s213, 42 }), ref, err)) m9a185 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s213, 42 }), ref, err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s213, 42 }), ref, err)) m9a186 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s213, 42 }), ref, err);
       if (err->exc) { m9ln = 1676; goto L_ret; };
-    Rdf_XFail (m9a185, err);
+    Rdf_XFail (m9a186, err);
     if (err->exc) { m9ln = 1676; goto L_ret; };
     }
   }
@@ -6792,9 +6795,9 @@ static m9_sl_UTF8 Rdf_IdIri (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, m9
   bool m9t1 = (!Rdf_NcName (id, err));
   if (err->exc) { m9ln = 1697; goto L_ret; };
   if (m9t1) {
-    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s214, 27 }), id, err)) m9a186 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s214, 27 }), id, err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s214, 27 }), id, err)) m9a187 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s214, 27 }), id, err);
       if (err->exc) { m9ln = 1697; goto L_ret; };
-    Rdf_XFail (m9a186, err);
+    Rdf_XFail (m9a187, err);
     if (err->exc) { m9ln = 1697; goto L_ret; };
     }
   }
@@ -6814,14 +6817,14 @@ static m9_sl_UTF8 Rdf_IdIri (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, m9
   if (err->exc) { m9ln = 1700; goto L_ret; };
   if (i <= m9t3to) for (;;) {
     M9_YCHK ();
-    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*st).ids.p, i, (*st).ids.len, sizeof (m9_sl_UTF8), err))) m9a187 = (*(m9_sl_UTF8 *) m9_at ((*st).ids.p, i, (*st).ids.len, sizeof (m9_sl_UTF8), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*st).ids.p, i, (*st).ids.len, sizeof (m9_sl_UTF8), err))) m9a188 = (*(m9_sl_UTF8 *) m9_at ((*st).ids.p, i, (*st).ids.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 1701; goto L_ret; };
-    bool m9t4 = Text_EqUtf (m9a187, iri, err);
+    bool m9t4 = Text_EqUtf (m9a188, iri, err);
     if (err->exc) { m9ln = 1701; goto L_ret; };
     if (m9t4) {
-      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s217, 19 }), id, err)) m9a188 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s217, 19 }), id, err);
+      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s217, 19 }), id, err)) m9a189 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s217, 19 }), id, err);
         if (err->exc) { m9ln = 1701; goto L_ret; };
-      Rdf_XFail (m9a188, err);
+      Rdf_XFail (m9a189, err);
       if (err->exc) { m9ln = 1701; goto L_ret; };
       }
     } }
@@ -6918,9 +6921,9 @@ static bool Rdf_ContentIsElements (Xml_Element * e, m9_state *err)
   if (err->exc) { m9ln = 1724; goto L_ret; };
   if (i <= m9t2to) for (;;) {
     M9_YCHK ();
-    { __typeof__(({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) { m9ln = 1725; goto L_ret; }; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->tail) m9a189 = ({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) { m9ln = 1725; goto L_ret; }; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->tail;
+    { __typeof__(({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) { m9ln = 1725; goto L_ret; }; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->tail) m9a190 = ({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) { m9ln = 1725; goto L_ret; }; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->tail;
       if (err->exc) { m9ln = 1725; goto L_ret; };
-    bool m9t3 = (!Rdf_IsWs (m9a189, err));
+    bool m9t3 = (!Rdf_IsWs (m9a190, err));
     if (err->exc) { m9ln = 1725; goto L_ret; };
     if (m9t3) {
       err->res = m9res;
@@ -6954,15 +6957,15 @@ static void Rdf_PropertyAttr (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, R
     bool m9t2 = Text_EqUtf (local, ((m9_sl_UTF8){ (uint8_t *) m9s220, 4 }), err);
     if (err->exc) { m9ln = 1738; goto L_ret; };
     if (m9t2) {
-      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s221, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s222, 4 }), err)) m9a190 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s221, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s222, 4 }), err);
+      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s221, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s222, 4 }), err)) m9a191 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s221, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s222, 4 }), err);
         if (err->exc) { m9ln = 1739; goto L_ret; };
-      { __typeof__(Rdf_IriT (m9a190, err)) m9a191 = Rdf_IriT (m9a190, err);
+      { __typeof__(Rdf_IriT (m9a191, err)) m9a192 = Rdf_IriT (m9a191, err);
         if (err->exc) { m9ln = 1739; goto L_ret; };
-      { __typeof__(Rdf_XIri (st, st_pool, base, value, err)) m9a192 = Rdf_XIri (st, st_pool, base, value, err);
+      { __typeof__(Rdf_XIri (st, st_pool, base, value, err)) m9a193 = Rdf_XIri (st, st_pool, base, value, err);
         if (err->exc) { m9ln = 1739; goto L_ret; };
-      { __typeof__(Rdf_IriT (m9a192, err)) m9a193 = Rdf_IriT (m9a192, err);
+      { __typeof__(Rdf_IriT (m9a193, err)) m9a194 = Rdf_IriT (m9a193, err);
         if (err->exc) { m9ln = 1739; goto L_ret; };
-      Rdf_Add (pool, g, g_pool, subj, &m9a191, &m9a193, err);
+      Rdf_Add (pool, g, g_pool, subj, &m9a192, &m9a194, err);
       if (err->exc) { m9ln = 1739; goto L_ret; };
       }
       }
@@ -6973,20 +6976,20 @@ static void Rdf_PropertyAttr (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, R
     bool m9t3 = (((Rdf_IsCoreSyntax (local, err) || Rdf_IsOldTerm (local, err)) || Text_EqUtf (local, ((m9_sl_UTF8){ (uint8_t *) m9s223, 2 }), err)) || Text_EqUtf (local, ((m9_sl_UTF8){ (uint8_t *) m9s224, 11 }), err));
     if (err->exc) { m9ln = 1742; goto L_ret; };
     if (m9t3) {
-      { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s225, 4 }), local, err), ((m9_sl_UTF8){ (uint8_t *) m9s226, 28 }), err)) m9a194 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s225, 4 }), local, err), ((m9_sl_UTF8){ (uint8_t *) m9s226, 28 }), err);
+      { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s225, 4 }), local, err), ((m9_sl_UTF8){ (uint8_t *) m9s226, 28 }), err)) m9a195 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s225, 4 }), local, err), ((m9_sl_UTF8){ (uint8_t *) m9s226, 28 }), err);
         if (err->exc) { m9ln = 1744; goto L_ret; };
-      Rdf_XFail (m9a194, err);
+      Rdf_XFail (m9a195, err);
       if (err->exc) { m9ln = 1744; goto L_ret; };
       }
     }
   }
-  { __typeof__(m9_utf_cat (err->res, ns, local, err)) m9a195 = m9_utf_cat (err->res, ns, local, err);
+  { __typeof__(m9_utf_cat (err->res, ns, local, err)) m9a196 = m9_utf_cat (err->res, ns, local, err);
     if (err->exc) { m9ln = 1747; goto L_ret; };
-  { __typeof__(Rdf_IriT (m9a195, err)) m9a196 = Rdf_IriT (m9a195, err);
+  { __typeof__(Rdf_IriT (m9a196, err)) m9a197 = Rdf_IriT (m9a196, err);
     if (err->exc) { m9ln = 1747; goto L_ret; };
-  { __typeof__(Rdf_LitT (value, lang, ((m9_sl_UTF8){ NULL, 0 }), err)) m9a197 = Rdf_LitT (value, lang, ((m9_sl_UTF8){ NULL, 0 }), err);
+  { __typeof__(Rdf_LitT (value, lang, ((m9_sl_UTF8){ NULL, 0 }), err)) m9a198 = Rdf_LitT (value, lang, ((m9_sl_UTF8){ NULL, 0 }), err);
     if (err->exc) { m9ln = 1747; goto L_ret; };
-  Rdf_Add (pool, g, g_pool, subj, &m9a196, &m9a197, err);
+  Rdf_Add (pool, g, g_pool, subj, &m9a197, &m9a198, err);
   if (err->exc) { m9ln = 1747; goto L_ret; };
   }
   }
@@ -7031,9 +7034,9 @@ static Rdf_Term Rdf_NodeElement (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool
     bool m9t2 = ((Rdf_IsCoreSyntax (e->local, err) || Rdf_IsOldTerm (e->local, err)) || Text_EqUtf (e->local, ((m9_sl_UTF8){ (uint8_t *) m9s227, 2 }), err));
     if (err->exc) { m9ln = 1762; goto L_ret; };
     if (m9t2) {
-      { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s228, 4 }), e->local, err), ((m9_sl_UTF8){ (uint8_t *) m9s229, 22 }), err)) m9a198 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s228, 4 }), e->local, err), ((m9_sl_UTF8){ (uint8_t *) m9s229, 22 }), err);
+      { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s228, 4 }), e->local, err), ((m9_sl_UTF8){ (uint8_t *) m9s229, 22 }), err)) m9a199 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s228, 4 }), e->local, err), ((m9_sl_UTF8){ (uint8_t *) m9s229, 22 }), err);
         if (err->exc) { m9ln = 1763; goto L_ret; };
-      Rdf_XFail (m9a198, err);
+      Rdf_XFail (m9a199, err);
       if (err->exc) { m9ln = 1763; goto L_ret; };
       }
     }
@@ -7041,9 +7044,9 @@ static Rdf_Term Rdf_NodeElement (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool
   bool m9t3 = (Text_BLen (e->ns, err) == INT64_C(0));
   if (err->exc) { m9ln = 1766; goto L_ret; };
   if (m9t3) {
-    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s230, 32 }), e->name, err)) m9a199 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s230, 32 }), e->name, err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s230, 32 }), e->name, err)) m9a200 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s230, 32 }), e->name, err);
       if (err->exc) { m9ln = 1766; goto L_ret; };
-    Rdf_XFail (m9a199, err);
+    Rdf_XFail (m9a200, err);
     if (err->exc) { m9ln = 1766; goto L_ret; };
     }
   }
@@ -7055,11 +7058,11 @@ static Rdf_Term Rdf_NodeElement (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool
       if (err->exc) { m9ln = 1770; goto L_ret; };
       named = m9v;
     }
-    { __typeof__(Xml_AttrValue (e, ((m9_sl_UTF8){ (uint8_t *) m9s233, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s234, 2 }), err)) m9a200 = Xml_AttrValue (e, ((m9_sl_UTF8){ (uint8_t *) m9s233, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s234, 2 }), err);
+    { __typeof__(Xml_AttrValue (e, ((m9_sl_UTF8){ (uint8_t *) m9s233, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s234, 2 }), err)) m9a201 = Xml_AttrValue (e, ((m9_sl_UTF8){ (uint8_t *) m9s233, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s234, 2 }), err);
       if (err->exc) { m9ln = 1771; goto L_ret; };
-    { __typeof__(Rdf_IdIri (pool, st, st_pool, base, m9a200, err)) m9a201 = Rdf_IdIri (pool, st, st_pool, base, m9a200, err);
+    { __typeof__(Rdf_IdIri (pool, st, st_pool, base, m9a201, err)) m9a202 = Rdf_IdIri (pool, st, st_pool, base, m9a201, err);
       if (err->exc) { m9ln = 1771; goto L_ret; };
-    { __typeof__(subj) m9v = Rdf_IriT (m9a201, err);
+    { __typeof__(subj) m9v = Rdf_IriT (m9a202, err);
       if (err->exc) { m9ln = 1771; goto L_ret; };
       subj = m9v;
     }
@@ -7080,15 +7083,15 @@ static Rdf_Term Rdf_NodeElement (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool
     bool m9t6 = (!Rdf_NcName (v, err));
     if (err->exc) { m9ln = 1776; goto L_ret; };
     if (m9t6) {
-      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s239, 31 }), v, err)) m9a202 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s239, 31 }), v, err);
+      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s239, 31 }), v, err)) m9a203 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s239, 31 }), v, err);
         if (err->exc) { m9ln = 1776; goto L_ret; };
-      Rdf_XFail (m9a202, err);
+      Rdf_XFail (m9a203, err);
       if (err->exc) { m9ln = 1776; goto L_ret; };
       }
     }
-    { __typeof__(Rdf_Labelled (pool, &((*st).r), st_pool, v, err)) m9a203 = Rdf_Labelled (pool, &((*st).r), st_pool, v, err);
+    { __typeof__(Rdf_Labelled (pool, &((*st).r), st_pool, v, err)) m9a204 = Rdf_Labelled (pool, &((*st).r), st_pool, v, err);
       if (err->exc) { m9ln = 1777; goto L_ret; };
-    { __typeof__(subj) m9v = Rdf_BlankT (m9a203, err);
+    { __typeof__(subj) m9v = Rdf_BlankT (m9a204, err);
       if (err->exc) { m9ln = 1777; goto L_ret; };
       subj = m9v;
     }
@@ -7101,11 +7104,11 @@ static Rdf_Term Rdf_NodeElement (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool
       if (err->exc) { m9ln = 1780; goto L_ret; };
       named = m9v;
     }
-    { __typeof__(Xml_AttrValue (e, ((m9_sl_UTF8){ (uint8_t *) m9s242, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s243, 5 }), err)) m9a204 = Xml_AttrValue (e, ((m9_sl_UTF8){ (uint8_t *) m9s242, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s243, 5 }), err);
+    { __typeof__(Xml_AttrValue (e, ((m9_sl_UTF8){ (uint8_t *) m9s242, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s243, 5 }), err)) m9a205 = Xml_AttrValue (e, ((m9_sl_UTF8){ (uint8_t *) m9s242, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s243, 5 }), err);
       if (err->exc) { m9ln = 1781; goto L_ret; };
-    { __typeof__(Rdf_XIri (st, st_pool, base, m9a204, err)) m9a205 = Rdf_XIri (st, st_pool, base, m9a204, err);
+    { __typeof__(Rdf_XIri (st, st_pool, base, m9a205, err)) m9a206 = Rdf_XIri (st, st_pool, base, m9a205, err);
       if (err->exc) { m9ln = 1781; goto L_ret; };
-    { __typeof__(subj) m9v = Rdf_IriT (m9a205, err);
+    { __typeof__(subj) m9v = Rdf_IriT (m9a206, err);
       if (err->exc) { m9ln = 1781; goto L_ret; };
       subj = m9v;
     }
@@ -7113,16 +7116,16 @@ static Rdf_Term Rdf_NodeElement (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool
     }
   }
   if ((named > INT64_C(1))) {
-    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s244, 53 }), e->name, err)) m9a206 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s244, 53 }), e->name, err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s244, 53 }), e->name, err)) m9a207 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s244, 53 }), e->name, err);
       if (err->exc) { m9ln = 1783; goto L_ret; };
-    Rdf_XFail (m9a206, err);
+    Rdf_XFail (m9a207, err);
     if (err->exc) { m9ln = 1783; goto L_ret; };
     }
   }
   if ((named == INT64_C(0))) {
-    { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a207 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
+    { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a208 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
       if (err->exc) { m9ln = 1784; goto L_ret; };
-    { __typeof__(subj) m9v = Rdf_BlankT (m9a207, err);
+    { __typeof__(subj) m9v = Rdf_BlankT (m9a208, err);
       if (err->exc) { m9ln = 1784; goto L_ret; };
       subj = m9v;
     }
@@ -7131,15 +7134,15 @@ static Rdf_Term Rdf_NodeElement (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool
   bool m9t8 = (!((Rdf_IsRdf (e, err) && Text_EqUtf (e->local, ((m9_sl_UTF8){ (uint8_t *) m9s245, 11 }), err))));
   if (err->exc) { m9ln = 1785; goto L_ret; };
   if (m9t8) {
-    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s246, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s247, 4 }), err)) m9a208 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s246, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s247, 4 }), err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s246, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s247, 4 }), err)) m9a209 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s246, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s247, 4 }), err);
       if (err->exc) { m9ln = 1786; goto L_ret; };
-    { __typeof__(Rdf_IriT (m9a208, err)) m9a209 = Rdf_IriT (m9a208, err);
+    { __typeof__(Rdf_IriT (m9a209, err)) m9a210 = Rdf_IriT (m9a209, err);
       if (err->exc) { m9ln = 1786; goto L_ret; };
-    { __typeof__(m9_utf_cat (err->res, e->ns, e->local, err)) m9a210 = m9_utf_cat (err->res, e->ns, e->local, err);
+    { __typeof__(m9_utf_cat (err->res, e->ns, e->local, err)) m9a211 = m9_utf_cat (err->res, e->ns, e->local, err);
       if (err->exc) { m9ln = 1786; goto L_ret; };
-    { __typeof__(Rdf_IriT (m9a210, err)) m9a211 = Rdf_IriT (m9a210, err);
+    { __typeof__(Rdf_IriT (m9a211, err)) m9a212 = Rdf_IriT (m9a211, err);
       if (err->exc) { m9ln = 1786; goto L_ret; };
-    Rdf_Add (pool, g, g_pool, &(subj), &m9a209, &m9a211, err);
+    Rdf_Add (pool, g, g_pool, &(subj), &m9a210, &m9a212, err);
     if (err->exc) { m9ln = 1786; goto L_ret; };
     }
     }
@@ -7152,42 +7155,42 @@ static Rdf_Term Rdf_NodeElement (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool
   if (err->exc) { m9ln = 1789; goto L_ret; };
   if (i <= m9t9to) for (;;) {
     M9_YCHK ();
-    { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a212 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
+    { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a213 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
       if (err->exc) { m9ln = 1790; goto L_ret; };
-    bool m9t11 = ({ bool m9t10 = Text_EqUtf (m9a212, ((m9_sl_UTF8){ (uint8_t *) m9s248, 29 }), err); if (!m9t10) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a213 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) { m9ln = 1790; goto L_ret; }; m9t10 = (Text_EqUtf (m9a213, ((m9_sl_UTF8){ (uint8_t *) m9s249, 36 }), err)); } } m9t10; });
+    bool m9t11 = ({ bool m9t10 = Text_EqUtf (m9a213, ((m9_sl_UTF8){ (uint8_t *) m9s248, 29 }), err); if (!m9t10) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a214 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) { m9ln = 1790; goto L_ret; }; m9t10 = (Text_EqUtf (m9a214, ((m9_sl_UTF8){ (uint8_t *) m9s249, 36 }), err)); } } m9t10; });
     if (err->exc) { m9ln = 1790; goto L_ret; };
     if (m9t11) {
     } else {
-      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a214 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
+      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a215 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
         if (err->exc) { m9ln = 1790; goto L_ret; };
-      bool m9t12 = (Text_BLen (m9a214, err) == INT64_C(0));
+      bool m9t12 = (Text_BLen (m9a215, err) == INT64_C(0));
       if (err->exc) { m9ln = 1790; goto L_ret; };
       if (m9t12) {
-        { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name) m9a215 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name;
+        { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name) m9a216 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name;
           if (err->exc) { m9ln = 1794; goto L_ret; };
-        bool m9t13 = (!Text_StartsWithUtf (m9a215, ((m9_sl_UTF8){ (uint8_t *) m9s250, 3 }), err));
+        bool m9t13 = (!Text_StartsWithUtf (m9a216, ((m9_sl_UTF8){ (uint8_t *) m9s250, 3 }), err));
         if (err->exc) { m9ln = 1794; goto L_ret; };
         if (m9t13) {
-          { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s251, 34 }), (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name, err)) m9a216 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s251, 34 }), (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name, err);
+          { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s251, 34 }), (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name, err)) m9a217 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s251, 34 }), (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name, err);
             if (err->exc) { m9ln = 1795; goto L_ret; };
-          Rdf_XFail (m9a216, err);
+          Rdf_XFail (m9a217, err);
           if (err->exc) { m9ln = 1795; goto L_ret; };
           }
         } }
     } else {
-      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a217 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
+      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a218 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
         if (err->exc) { m9ln = 1795; goto L_ret; };
-      bool m9t17 = ({ bool m9t16 = Text_EqUtf (m9a217, ((m9_sl_UTF8){ (uint8_t *) m9s252, 43 }), err); if (m9t16) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local) m9a218 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) { m9ln = 1795; goto L_ret; }; m9t16 = ((({ bool m9t15 = ({ bool m9t14 = Text_EqUtf (m9a218, ((m9_sl_UTF8){ (uint8_t *) m9s253, 2 }), err); if (!m9t14) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local) m9a219 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) { m9ln = 1795; goto L_ret; }; m9t14 = (Text_EqUtf (m9a219, ((m9_sl_UTF8){ (uint8_t *) m9s254, 6 }), err)); } } m9t14; }); if (!m9t15) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local) m9a220 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) { m9ln = 1795; goto L_ret; }; m9t15 = (Text_EqUtf (m9a220, ((m9_sl_UTF8){ (uint8_t *) m9s255, 5 }), err)); } } m9t15; }))); } } m9t16; });
+      bool m9t17 = ({ bool m9t16 = Text_EqUtf (m9a218, ((m9_sl_UTF8){ (uint8_t *) m9s252, 43 }), err); if (m9t16) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local) m9a219 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) { m9ln = 1795; goto L_ret; }; m9t16 = ((({ bool m9t15 = ({ bool m9t14 = Text_EqUtf (m9a219, ((m9_sl_UTF8){ (uint8_t *) m9s253, 2 }), err); if (!m9t14) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local) m9a220 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) { m9ln = 1795; goto L_ret; }; m9t14 = (Text_EqUtf (m9a220, ((m9_sl_UTF8){ (uint8_t *) m9s254, 6 }), err)); } } m9t14; }); if (!m9t15) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local) m9a221 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) { m9ln = 1795; goto L_ret; }; m9t15 = (Text_EqUtf (m9a221, ((m9_sl_UTF8){ (uint8_t *) m9s255, 5 }), err)); } } m9t15; }))); } } m9t16; });
       if (err->exc) { m9ln = 1795; goto L_ret; };
       if (m9t17) {
     } else {
-      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a221 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
+      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a222 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
         if (err->exc) { m9ln = 1802; goto L_ret; };
-      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local) m9a222 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local;
+      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local) m9a223 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local;
         if (err->exc) { m9ln = 1802; goto L_ret; };
-      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).value) m9a223 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).value;
+      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).value) m9a224 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).value;
         if (err->exc) { m9ln = 1802; goto L_ret; };
-      Rdf_PropertyAttr (pool, st, st_pool, g, g_pool, &(subj), m9a221, m9a222, m9a223, base, lang, err);
+      Rdf_PropertyAttr (pool, st, st_pool, g, g_pool, &(subj), m9a222, m9a223, m9a224, base, lang, err);
       if (err->exc) { m9ln = 1802; goto L_ret; };
       }
       }
@@ -7232,9 +7235,9 @@ static void Rdf_PropertyElts (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, X
   bool m9t1 = (!Rdf_ContentIsElements (e, err));
   if (err->exc) { m9ln = 1816; goto L_ret; };
   if (m9t1) {
-    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s256, 46 }), e->name, err)) m9a224 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s256, 46 }), e->name, err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s256, 46 }), e->name, err)) m9a225 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s256, 46 }), e->name, err);
       if (err->exc) { m9ln = 1816; goto L_ret; };
-    Rdf_XFail (m9a224, err);
+    Rdf_XFail (m9a225, err);
     if (err->exc) { m9ln = 1816; goto L_ret; };
     }
   }
@@ -7245,9 +7248,9 @@ static void Rdf_PropertyElts (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, X
   if (err->exc) { m9ln = 1818; goto L_ret; };
   if (i <= m9t2to) for (;;) {
     M9_YCHK ();
-    { __typeof__(({ __auto_type m9n = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a225 = ({ __auto_type m9n = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+    { __typeof__(({ __auto_type m9n = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a226 = ({ __auto_type m9n = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
       if (err->exc) { m9ln = 1819; goto L_ret; };
-    Rdf_PropertyElt (pool, st, st_pool, m9a225, g, g_pool, subj, base, lang, &(li), err);
+    Rdf_PropertyElt (pool, st, st_pool, m9a226, g, g_pool, subj, base, lang, &(li), err);
     if (err->exc) { m9ln = 1819; goto L_ret; };
     }
     if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
@@ -7277,48 +7280,48 @@ static void Rdf_Reify (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Rdf_Grap
   static const char m9pn[] = "Rdf.Reify"; (void) m9pn;
   int32_t m9ln = 0; (void) m9ln;
   Rdf_Term r = {0}; (void) r;
-  { __typeof__(Rdf_IdIri (pool, st, st_pool, base, id, err)) m9a226 = Rdf_IdIri (pool, st, st_pool, base, id, err);
+  { __typeof__(Rdf_IdIri (pool, st, st_pool, base, id, err)) m9a227 = Rdf_IdIri (pool, st, st_pool, base, id, err);
     if (err->exc) { m9ln = 1829; goto L_ret; };
-  { __typeof__(r) m9v = Rdf_IriT (m9a226, err);
+  { __typeof__(r) m9v = Rdf_IriT (m9a227, err);
     if (err->exc) { m9ln = 1829; goto L_ret; };
     r = m9v;
   }
   }
-  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s257, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s258, 4 }), err)) m9a227 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s257, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s258, 4 }), err);
+  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s257, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s258, 4 }), err)) m9a228 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s257, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s258, 4 }), err);
     if (err->exc) { m9ln = 1830; goto L_ret; };
-  { __typeof__(Rdf_IriT (m9a227, err)) m9a228 = Rdf_IriT (m9a227, err);
+  { __typeof__(Rdf_IriT (m9a228, err)) m9a229 = Rdf_IriT (m9a228, err);
     if (err->exc) { m9ln = 1830; goto L_ret; };
-  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s259, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s260, 9 }), err)) m9a229 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s259, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s260, 9 }), err);
+  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s259, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s260, 9 }), err)) m9a230 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s259, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s260, 9 }), err);
     if (err->exc) { m9ln = 1830; goto L_ret; };
-  { __typeof__(Rdf_IriT (m9a229, err)) m9a230 = Rdf_IriT (m9a229, err);
+  { __typeof__(Rdf_IriT (m9a230, err)) m9a231 = Rdf_IriT (m9a230, err);
     if (err->exc) { m9ln = 1830; goto L_ret; };
-  Rdf_Add (pool, g, g_pool, &(r), &m9a228, &m9a230, err);
+  Rdf_Add (pool, g, g_pool, &(r), &m9a229, &m9a231, err);
   if (err->exc) { m9ln = 1830; goto L_ret; };
   }
   }
   }
   }
-  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s261, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s262, 7 }), err)) m9a231 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s261, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s262, 7 }), err);
+  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s261, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s262, 7 }), err)) m9a232 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s261, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s262, 7 }), err);
     if (err->exc) { m9ln = 1831; goto L_ret; };
-  { __typeof__(Rdf_IriT (m9a231, err)) m9a232 = Rdf_IriT (m9a231, err);
+  { __typeof__(Rdf_IriT (m9a232, err)) m9a233 = Rdf_IriT (m9a232, err);
     if (err->exc) { m9ln = 1831; goto L_ret; };
-  Rdf_Add (pool, g, g_pool, &(r), &m9a232, s, err);
+  Rdf_Add (pool, g, g_pool, &(r), &m9a233, s, err);
   if (err->exc) { m9ln = 1831; goto L_ret; };
   }
   }
-  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s263, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s264, 9 }), err)) m9a233 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s263, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s264, 9 }), err);
+  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s263, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s264, 9 }), err)) m9a234 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s263, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s264, 9 }), err);
     if (err->exc) { m9ln = 1832; goto L_ret; };
-  { __typeof__(Rdf_IriT (m9a233, err)) m9a234 = Rdf_IriT (m9a233, err);
+  { __typeof__(Rdf_IriT (m9a234, err)) m9a235 = Rdf_IriT (m9a234, err);
     if (err->exc) { m9ln = 1832; goto L_ret; };
-  Rdf_Add (pool, g, g_pool, &(r), &m9a234, p, err);
+  Rdf_Add (pool, g, g_pool, &(r), &m9a235, p, err);
   if (err->exc) { m9ln = 1832; goto L_ret; };
   }
   }
-  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s265, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s266, 6 }), err)) m9a235 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s265, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s266, 6 }), err);
+  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s265, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s266, 6 }), err)) m9a236 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s265, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s266, 6 }), err);
     if (err->exc) { m9ln = 1833; goto L_ret; };
-  { __typeof__(Rdf_IriT (m9a235, err)) m9a236 = Rdf_IriT (m9a235, err);
+  { __typeof__(Rdf_IriT (m9a236, err)) m9a237 = Rdf_IriT (m9a236, err);
     if (err->exc) { m9ln = 1833; goto L_ret; };
-  Rdf_Add (pool, g, g_pool, &(r), &m9a236, o, err);
+  Rdf_Add (pool, g, g_pool, &(r), &m9a237, o, err);
   if (err->exc) { m9ln = 1833; goto L_ret; };
   }
   }
@@ -7370,9 +7373,9 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
   bool m9t1 = (Text_BLen (pe->ns, err) == INT64_C(0));
   if (err->exc) { m9ln = 1848; goto L_ret; };
   if (m9t1) {
-    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s267, 32 }), pe->name, err)) m9a237 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s267, 32 }), pe->name, err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s267, 32 }), pe->name, err)) m9a238 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s267, 32 }), pe->name, err);
       if (err->exc) { m9ln = 1848; goto L_ret; };
-    Rdf_XFail (m9a237, err);
+    Rdf_XFail (m9a238, err);
     if (err->exc) { m9ln = 1848; goto L_ret; };
     }
   }
@@ -7382,9 +7385,9 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
     bool m9t3 = ((Rdf_IsCoreSyntax (pe->local, err) || Rdf_IsOldTerm (pe->local, err)) || Text_EqUtf (pe->local, ((m9_sl_UTF8){ (uint8_t *) m9s268, 11 }), err));
     if (err->exc) { m9ln = 1850; goto L_ret; };
     if (m9t3) {
-      { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s269, 4 }), pe->local, err), ((m9_sl_UTF8){ (uint8_t *) m9s270, 26 }), err)) m9a238 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s269, 4 }), pe->local, err), ((m9_sl_UTF8){ (uint8_t *) m9s270, 26 }), err);
+      { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s269, 4 }), pe->local, err), ((m9_sl_UTF8){ (uint8_t *) m9s270, 26 }), err)) m9a239 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s269, 4 }), pe->local, err), ((m9_sl_UTF8){ (uint8_t *) m9s270, 26 }), err);
         if (err->exc) { m9ln = 1851; goto L_ret; };
-      Rdf_XFail (m9a238, err);
+      Rdf_XFail (m9a239, err);
       if (err->exc) { m9ln = 1851; goto L_ret; };
       }
     }
@@ -7395,26 +7398,26 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
         if (err->exc) { m9ln = 1854; goto L_ret; };
         (*li) = m9v;
       }
-      { __typeof__(({ m9_sl_UTF8 m9t5 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s272, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s273, 1 }), err); m9_utf_cat (err->res, m9t5, Fmt_I64Str ((*li), err), err); })) m9a239 = ({ m9_sl_UTF8 m9t5 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s272, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s273, 1 }), err); m9_utf_cat (err->res, m9t5, Fmt_I64Str ((*li), err), err); });
+      { __typeof__(({ m9_sl_UTF8 m9t5 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s272, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s273, 1 }), err); m9_utf_cat (err->res, m9t5, Fmt_I64Str ((*li), err), err); })) m9a240 = ({ m9_sl_UTF8 m9t5 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s272, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s273, 1 }), err); m9_utf_cat (err->res, m9t5, Fmt_I64Str ((*li), err), err); });
         if (err->exc) { m9ln = 1855; goto L_ret; };
-      { __typeof__(pred) m9v = Rdf_IriT (m9a239, err);
+      { __typeof__(pred) m9v = Rdf_IriT (m9a240, err);
         if (err->exc) { m9ln = 1855; goto L_ret; };
         pred = m9v;
       }
       }
     } else {
-      { __typeof__(m9_utf_cat (err->res, pe->ns, pe->local, err)) m9a240 = m9_utf_cat (err->res, pe->ns, pe->local, err);
+      { __typeof__(m9_utf_cat (err->res, pe->ns, pe->local, err)) m9a241 = m9_utf_cat (err->res, pe->ns, pe->local, err);
         if (err->exc) { m9ln = 1857; goto L_ret; };
-      { __typeof__(pred) m9v = Rdf_IriT (m9a240, err);
+      { __typeof__(pred) m9v = Rdf_IriT (m9a241, err);
         if (err->exc) { m9ln = 1857; goto L_ret; };
         pred = m9v;
       }
       }
     }
   } else {
-    { __typeof__(m9_utf_cat (err->res, pe->ns, pe->local, err)) m9a241 = m9_utf_cat (err->res, pe->ns, pe->local, err);
+    { __typeof__(m9_utf_cat (err->res, pe->ns, pe->local, err)) m9a242 = m9_utf_cat (err->res, pe->ns, pe->local, err);
       if (err->exc) { m9ln = 1860; goto L_ret; };
-    { __typeof__(pred) m9v = Rdf_IriT (m9a241, err);
+    { __typeof__(pred) m9v = Rdf_IriT (m9a242, err);
       if (err->exc) { m9ln = 1860; goto L_ret; };
       pred = m9v;
     }
@@ -7435,32 +7438,32 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
   if (err->exc) { m9ln = 1866; goto L_ret; };
   if (i <= m9t6to) for (;;) {
     M9_YCHK ();
-    { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a242 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;
+    { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a243 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;
       if (err->exc) { m9ln = 1867; goto L_ret; };
-    bool m9t8 = ({ bool m9t7 = Text_EqUtf (m9a242, ((m9_sl_UTF8){ (uint8_t *) m9s274, 29 }), err); if (!m9t7) { { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a243 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) { m9ln = 1867; goto L_ret; }; m9t7 = (Text_EqUtf (m9a243, ((m9_sl_UTF8){ (uint8_t *) m9s275, 36 }), err)); } } m9t7; });
+    bool m9t8 = ({ bool m9t7 = Text_EqUtf (m9a243, ((m9_sl_UTF8){ (uint8_t *) m9s274, 29 }), err); if (!m9t7) { { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a244 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) { m9ln = 1867; goto L_ret; }; m9t7 = (Text_EqUtf (m9a244, ((m9_sl_UTF8){ (uint8_t *) m9s275, 36 }), err)); } } m9t7; });
     if (err->exc) { m9ln = 1867; goto L_ret; };
     if (m9t8) {
     } else {
-      { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a244 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;
+      { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a245 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;
         if (err->exc) { m9ln = 1867; goto L_ret; };
-      bool m9t9 = (Text_BLen (m9a244, err) == INT64_C(0));
+      bool m9t9 = (Text_BLen (m9a245, err) == INT64_C(0));
       if (err->exc) { m9ln = 1867; goto L_ret; };
       if (m9t9) {
-        { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).name) m9a245 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).name;
+        { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).name) m9a246 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).name;
           if (err->exc) { m9ln = 1869; goto L_ret; };
-        bool m9t10 = (!Text_StartsWithUtf (m9a245, ((m9_sl_UTF8){ (uint8_t *) m9s276, 3 }), err));
+        bool m9t10 = (!Text_StartsWithUtf (m9a246, ((m9_sl_UTF8){ (uint8_t *) m9s276, 3 }), err));
         if (err->exc) { m9ln = 1869; goto L_ret; };
         if (m9t10) {
-          { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s277, 34 }), (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).name, err)) m9a246 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s277, 34 }), (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).name, err);
+          { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s277, 34 }), (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).name, err)) m9a247 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s277, 34 }), (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).name, err);
             if (err->exc) { m9ln = 1870; goto L_ret; };
-          Rdf_XFail (m9a246, err);
+          Rdf_XFail (m9a247, err);
           if (err->exc) { m9ln = 1870; goto L_ret; };
           }
         } }
     } else {
-      { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a247 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;
+      { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a248 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;
         if (err->exc) { m9ln = 1870; goto L_ret; };
-      bool m9t11 = Text_EqUtf (m9a247, ((m9_sl_UTF8){ (uint8_t *) m9s278, 43 }), err);
+      bool m9t11 = Text_EqUtf (m9a248, ((m9_sl_UTF8){ (uint8_t *) m9s278, 43 }), err);
       if (err->exc) { m9ln = 1870; goto L_ret; };
       if (m9t11) {
         { __typeof__(v) m9v = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local;
@@ -7507,9 +7510,9 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
           bool m9t17 = ((((Text_EqUtf (v, ((m9_sl_UTF8){ (uint8_t *) m9s284, 5 }), err) || Rdf_IsOldTerm (v, err)) || Text_EqUtf (v, ((m9_sl_UTF8){ (uint8_t *) m9s285, 2 }), err)) || Text_EqUtf (v, ((m9_sl_UTF8){ (uint8_t *) m9s286, 11 }), err)) || Text_EqUtf (v, ((m9_sl_UTF8){ (uint8_t *) m9s287, 3 }), err));
           if (err->exc) { m9ln = 1878; goto L_ret; };
           if (m9t17) {
-            { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s288, 4 }), v, err), ((m9_sl_UTF8){ (uint8_t *) m9s289, 22 }), err)) m9a248 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s288, 4 }), v, err), ((m9_sl_UTF8){ (uint8_t *) m9s289, 22 }), err);
+            { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s288, 4 }), v, err), ((m9_sl_UTF8){ (uint8_t *) m9s289, 22 }), err)) m9a249 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s288, 4 }), v, err), ((m9_sl_UTF8){ (uint8_t *) m9s289, 22 }), err);
               if (err->exc) { m9ln = 1881; goto L_ret; };
-            Rdf_XFail (m9a248, err);
+            Rdf_XFail (m9a249, err);
             if (err->exc) { m9ln = 1881; goto L_ret; };
             }
         } else {
@@ -7522,27 +7525,27 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
     i += 1;
   } }
   if ((hasResource && hasNodeId)) {
-    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s290, 36 }), pe->name, err)) m9a249 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s290, 36 }), pe->name, err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s290, 36 }), pe->name, err)) m9a250 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s290, 36 }), pe->name, err);
       if (err->exc) { m9ln = 1888; goto L_ret; };
-    Rdf_XFail (m9a249, err);
+    Rdf_XFail (m9a250, err);
     if (err->exc) { m9ln = 1888; goto L_ret; };
     }
   }
   n = (pe->kids).len;
   if (hasParse) {
     if ((((hasResource || hasNodeId) || hasDatatype) || props)) {
-      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s291, 41 }), pe->name, err)) m9a250 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s291, 41 }), pe->name, err);
+      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s291, 41 }), pe->name, err)) m9a251 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s291, 41 }), pe->name, err);
         if (err->exc) { m9ln = 1892; goto L_ret; };
-      Rdf_XFail (m9a250, err);
+      Rdf_XFail (m9a251, err);
       if (err->exc) { m9ln = 1892; goto L_ret; };
       }
     }
     bool m9t18 = Text_EqUtf (parseType, ((m9_sl_UTF8){ (uint8_t *) m9s292, 8 }), err);
     if (err->exc) { m9ln = 1894; goto L_ret; };
     if (m9t18) {
-      { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a251 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
+      { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a252 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
         if (err->exc) { m9ln = 1895; goto L_ret; };
-      { __typeof__(obj) m9v = Rdf_BlankT (m9a251, err);
+      { __typeof__(obj) m9v = Rdf_BlankT (m9a252, err);
         if (err->exc) { m9ln = 1895; goto L_ret; };
         obj = m9v;
       }
@@ -7566,17 +7569,17 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
           if (err->exc) { m9ln = 1900; goto L_ret; };
         }
         if ((n == INT64_C(0))) {
-          { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s295, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s296, 3 }), err)) m9a252 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s295, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s296, 3 }), err);
+          { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s295, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s296, 3 }), err)) m9a253 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s295, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s296, 3 }), err);
             if (err->exc) { m9ln = 1902; goto L_ret; };
-          { __typeof__(obj) m9v = Rdf_IriT (m9a252, err);
+          { __typeof__(obj) m9v = Rdf_IriT (m9a253, err);
             if (err->exc) { m9ln = 1902; goto L_ret; };
             obj = m9v;
           }
           }
         } else {
-          { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a253 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
+          { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a254 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
             if (err->exc) { m9ln = 1904; goto L_ret; };
-          { __typeof__(obj) m9v = Rdf_BlankT (m9a253, err);
+          { __typeof__(obj) m9v = Rdf_BlankT (m9a254, err);
             if (err->exc) { m9ln = 1904; goto L_ret; };
             obj = m9v;
           }
@@ -7589,32 +7592,32 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
           if (i <= m9t21to) for (;;) {
             M9_YCHK ();
             if ((i > INT64_C(0))) {
-              { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a254 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
+              { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a255 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
                 if (err->exc) { m9ln = 1908; goto L_ret; };
-              { __typeof__(cell) m9v = Rdf_BlankT (m9a254, err);
+              { __typeof__(cell) m9v = Rdf_BlankT (m9a255, err);
                 if (err->exc) { m9ln = 1908; goto L_ret; };
                 cell = m9v;
               }
               }
-              { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s297, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s298, 4 }), err)) m9a255 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s297, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s298, 4 }), err);
+              { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s297, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s298, 4 }), err)) m9a256 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s297, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s298, 4 }), err);
                 if (err->exc) { m9ln = 1909; goto L_ret; };
-              { __typeof__(Rdf_IriT (m9a255, err)) m9a256 = Rdf_IriT (m9a255, err);
+              { __typeof__(Rdf_IriT (m9a256, err)) m9a257 = Rdf_IriT (m9a256, err);
                 if (err->exc) { m9ln = 1909; goto L_ret; };
-              Rdf_Add (pool, g, g_pool, &(prev), &m9a256, &(cell), err);
+              Rdf_Add (pool, g, g_pool, &(prev), &m9a257, &(cell), err);
               if (err->exc) { m9ln = 1909; goto L_ret; };
               }
               }
               prev = cell;
             }
-            { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s299, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s300, 5 }), err)) m9a257 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s299, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s300, 5 }), err);
+            { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s299, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s300, 5 }), err)) m9a258 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s299, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s300, 5 }), err);
               if (err->exc) { m9ln = 1912; goto L_ret; };
-            { __typeof__(Rdf_IriT (m9a257, err)) m9a258 = Rdf_IriT (m9a257, err);
+            { __typeof__(Rdf_IriT (m9a258, err)) m9a259 = Rdf_IriT (m9a258, err);
               if (err->exc) { m9ln = 1912; goto L_ret; };
-            { __typeof__(({ __auto_type m9n = ((*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a259 = ({ __auto_type m9n = ((*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+            { __typeof__(({ __auto_type m9n = ((*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a260 = ({ __auto_type m9n = ((*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
               if (err->exc) { m9ln = 1912; goto L_ret; };
-            { __typeof__(Rdf_NodeElement (pool, st, st_pool, m9a259, g, g_pool, base, lang, err)) m9a260 = Rdf_NodeElement (pool, st, st_pool, m9a259, g, g_pool, base, lang, err);
+            { __typeof__(Rdf_NodeElement (pool, st, st_pool, m9a260, g, g_pool, base, lang, err)) m9a261 = Rdf_NodeElement (pool, st, st_pool, m9a260, g, g_pool, base, lang, err);
               if (err->exc) { m9ln = 1912; goto L_ret; };
-            Rdf_Add (pool, g, g_pool, &(prev), &m9a258, &m9a260, err);
+            Rdf_Add (pool, g, g_pool, &(prev), &m9a259, &m9a261, err);
             if (err->exc) { m9ln = 1912; goto L_ret; };
             }
             }
@@ -7623,15 +7626,15 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
             if ((uint64_t) m9t21to - (uint64_t) i < (uint64_t) 1) break;
             i += 1;
           } }
-          { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s301, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s302, 4 }), err)) m9a261 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s301, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s302, 4 }), err);
+          { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s301, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s302, 4 }), err)) m9a262 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s301, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s302, 4 }), err);
             if (err->exc) { m9ln = 1914; goto L_ret; };
-          { __typeof__(Rdf_IriT (m9a261, err)) m9a262 = Rdf_IriT (m9a261, err);
+          { __typeof__(Rdf_IriT (m9a262, err)) m9a263 = Rdf_IriT (m9a262, err);
             if (err->exc) { m9ln = 1914; goto L_ret; };
-          { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s303, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s304, 3 }), err)) m9a263 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s303, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s304, 3 }), err);
+          { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s303, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s304, 3 }), err)) m9a264 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s303, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s304, 3 }), err);
             if (err->exc) { m9ln = 1914; goto L_ret; };
-          { __typeof__(Rdf_IriT (m9a263, err)) m9a264 = Rdf_IriT (m9a263, err);
+          { __typeof__(Rdf_IriT (m9a264, err)) m9a265 = Rdf_IriT (m9a264, err);
             if (err->exc) { m9ln = 1914; goto L_ret; };
-          Rdf_Add (pool, g, g_pool, &(prev), &m9a262, &m9a264, err);
+          Rdf_Add (pool, g, g_pool, &(prev), &m9a263, &m9a265, err);
           if (err->exc) { m9ln = 1914; goto L_ret; };
           }
           }
@@ -7645,11 +7648,11 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
           if (err->exc) { m9ln = 1917; goto L_ret; };
         }
     } else {
-      { __typeof__(Rdf_XmlLiteral (pe, err)) m9a265 = Rdf_XmlLiteral (pe, err);
+      { __typeof__(Rdf_XmlLiteral (pe, err)) m9a266 = Rdf_XmlLiteral (pe, err);
         if (err->exc) { m9ln = 1920; goto L_ret; };
-      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s305, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s306, 10 }), err)) m9a266 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s305, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s306, 10 }), err);
+      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s305, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s306, 10 }), err)) m9a267 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s305, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s306, 10 }), err);
         if (err->exc) { m9ln = 1920; goto L_ret; };
-      { __typeof__(obj) m9v = Rdf_LitT (m9a265, ((m9_sl_UTF8){ NULL, 0 }), m9a266, err);
+      { __typeof__(obj) m9v = Rdf_LitT (m9a266, ((m9_sl_UTF8){ NULL, 0 }), m9a267, err);
         if (err->exc) { m9ln = 1920; goto L_ret; };
         obj = m9v;
       }
@@ -7667,29 +7670,29 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
       bool m9t22 = (!Rdf_ContentIsElements (pe, err));
       if (err->exc) { m9ln = 1925; goto L_ret; };
       if (m9t22) {
-        { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s307, 36 }), pe->name, err)) m9a267 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s307, 36 }), pe->name, err);
+        { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s307, 36 }), pe->name, err)) m9a268 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s307, 36 }), pe->name, err);
           if (err->exc) { m9ln = 1925; goto L_ret; };
-        Rdf_XFail (m9a267, err);
+        Rdf_XFail (m9a268, err);
         if (err->exc) { m9ln = 1925; goto L_ret; };
         }
       }
       if ((n > INT64_C(1))) {
-        { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s308, 51 }), pe->name, err)) m9a268 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s308, 51 }), pe->name, err);
+        { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s308, 51 }), pe->name, err)) m9a269 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s308, 51 }), pe->name, err);
           if (err->exc) { m9ln = 1926; goto L_ret; };
-        Rdf_XFail (m9a268, err);
+        Rdf_XFail (m9a269, err);
         if (err->exc) { m9ln = 1926; goto L_ret; };
         }
       }
       if ((((hasResource || hasNodeId) || hasDatatype) || props)) {
-        { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s309, 36 }), pe->name, err)) m9a269 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s309, 36 }), pe->name, err);
+        { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s309, 36 }), pe->name, err)) m9a270 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s309, 36 }), pe->name, err);
           if (err->exc) { m9ln = 1928; goto L_ret; };
-        Rdf_XFail (m9a269, err);
+        Rdf_XFail (m9a270, err);
         if (err->exc) { m9ln = 1928; goto L_ret; };
         }
       }
-      { __typeof__(({ __auto_type m9n = ((*(Xml_Element * *) m9_at (pe->kids.p, INT64_C(0), pe->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a270 = ({ __auto_type m9n = ((*(Xml_Element * *) m9_at (pe->kids.p, INT64_C(0), pe->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+      { __typeof__(({ __auto_type m9n = ((*(Xml_Element * *) m9_at (pe->kids.p, INT64_C(0), pe->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a271 = ({ __auto_type m9n = ((*(Xml_Element * *) m9_at (pe->kids.p, INT64_C(0), pe->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
         if (err->exc) { m9ln = 1930; goto L_ret; };
-      { __typeof__(obj) m9v = Rdf_NodeElement (pool, st, st_pool, m9a270, g, g_pool, base, lang, err);
+      { __typeof__(obj) m9v = Rdf_NodeElement (pool, st, st_pool, m9a271, g, g_pool, base, lang, err);
         if (err->exc) { m9ln = 1930; goto L_ret; };
         obj = m9v;
       }
@@ -7705,16 +7708,16 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
     if (err->exc) { m9ln = 1932; goto L_ret; };
     if (m9t23) {
       if (((hasResource || hasNodeId) || props)) {
-        { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s310, 31 }), pe->name, err)) m9a271 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s310, 31 }), pe->name, err);
+        { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s310, 31 }), pe->name, err)) m9a272 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s310, 31 }), pe->name, err);
           if (err->exc) { m9ln = 1935; goto L_ret; };
-        Rdf_XFail (m9a271, err);
+        Rdf_XFail (m9a272, err);
         if (err->exc) { m9ln = 1935; goto L_ret; };
         }
       }
       if (hasDatatype) {
-        { __typeof__(Rdf_XIri (st, st_pool, base, datatype, err)) m9a272 = Rdf_XIri (st, st_pool, base, datatype, err);
+        { __typeof__(Rdf_XIri (st, st_pool, base, datatype, err)) m9a273 = Rdf_XIri (st, st_pool, base, datatype, err);
           if (err->exc) { m9ln = 1937; goto L_ret; };
-        { __typeof__(obj) m9v = Rdf_LitT (pe->text, ((m9_sl_UTF8){ NULL, 0 }), m9a272, err);
+        { __typeof__(obj) m9v = Rdf_LitT (pe->text, ((m9_sl_UTF8){ NULL, 0 }), m9a273, err);
           if (err->exc) { m9ln = 1937; goto L_ret; };
           obj = m9v;
         }
@@ -7737,11 +7740,11 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
         Rdf_XFail (((m9_sl_UTF8){ (uint8_t *) m9s311, 32 }), err);
         if (err->exc) { m9ln = 1946; goto L_ret; };
       }
-      { __typeof__(Xml_AttrValue (pe, ((m9_sl_UTF8){ (uint8_t *) m9s312, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s313, 8 }), err)) m9a273 = Xml_AttrValue (pe, ((m9_sl_UTF8){ (uint8_t *) m9s312, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s313, 8 }), err);
+      { __typeof__(Xml_AttrValue (pe, ((m9_sl_UTF8){ (uint8_t *) m9s312, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s313, 8 }), err)) m9a274 = Xml_AttrValue (pe, ((m9_sl_UTF8){ (uint8_t *) m9s312, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s313, 8 }), err);
         if (err->exc) { m9ln = 1947; goto L_ret; };
-      { __typeof__(Rdf_XIri (st, st_pool, base, m9a273, err)) m9a274 = Rdf_XIri (st, st_pool, base, m9a273, err);
+      { __typeof__(Rdf_XIri (st, st_pool, base, m9a274, err)) m9a275 = Rdf_XIri (st, st_pool, base, m9a274, err);
         if (err->exc) { m9ln = 1947; goto L_ret; };
-      { __typeof__(obj) m9v = Rdf_IriT (m9a274, err);
+      { __typeof__(obj) m9v = Rdf_IriT (m9a275, err);
         if (err->exc) { m9ln = 1947; goto L_ret; };
         obj = m9v;
       }
@@ -7760,15 +7763,15 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
         bool m9t24 = (!Rdf_NcName (v, err));
         if (err->exc) { m9ln = 1951; goto L_ret; };
         if (m9t24) {
-          { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s317, 31 }), v, err)) m9a275 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s317, 31 }), v, err);
+          { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s317, 31 }), v, err)) m9a276 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s317, 31 }), v, err);
             if (err->exc) { m9ln = 1951; goto L_ret; };
-          Rdf_XFail (m9a275, err);
+          Rdf_XFail (m9a276, err);
           if (err->exc) { m9ln = 1951; goto L_ret; };
           }
         }
-        { __typeof__(Rdf_Labelled (pool, &((*st).r), st_pool, v, err)) m9a276 = Rdf_Labelled (pool, &((*st).r), st_pool, v, err);
+        { __typeof__(Rdf_Labelled (pool, &((*st).r), st_pool, v, err)) m9a277 = Rdf_Labelled (pool, &((*st).r), st_pool, v, err);
           if (err->exc) { m9ln = 1952; goto L_ret; };
-        { __typeof__(obj) m9v = Rdf_BlankT (m9a276, err);
+        { __typeof__(obj) m9v = Rdf_BlankT (m9a277, err);
           if (err->exc) { m9ln = 1952; goto L_ret; };
           obj = m9v;
         }
@@ -7779,18 +7782,18 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
           Rdf_XFail (((m9_sl_UTF8){ (uint8_t *) m9s318, 39 }), err);
           if (err->exc) { m9ln = 1954; goto L_ret; };
         }
-        { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a277 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
+        { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a278 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
           if (err->exc) { m9ln = 1955; goto L_ret; };
-        { __typeof__(obj) m9v = Rdf_BlankT (m9a277, err);
+        { __typeof__(obj) m9v = Rdf_BlankT (m9a278, err);
           if (err->exc) { m9ln = 1955; goto L_ret; };
           obj = m9v;
         }
         }
     } else {
       if (hasDatatype) {
-        { __typeof__(Rdf_XIri (st, st_pool, base, datatype, err)) m9a278 = Rdf_XIri (st, st_pool, base, datatype, err);
+        { __typeof__(Rdf_XIri (st, st_pool, base, datatype, err)) m9a279 = Rdf_XIri (st, st_pool, base, datatype, err);
           if (err->exc) { m9ln = 1957; goto L_ret; };
-        { __typeof__(obj) m9v = Rdf_LitT (((m9_sl_UTF8){ NULL, 0 }), ((m9_sl_UTF8){ NULL, 0 }), m9a278, err);
+        { __typeof__(obj) m9v = Rdf_LitT (((m9_sl_UTF8){ NULL, 0 }), ((m9_sl_UTF8){ NULL, 0 }), m9a279, err);
           if (err->exc) { m9ln = 1957; goto L_ret; };
           obj = m9v;
         }
@@ -7814,25 +7817,25 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
       if (err->exc) { m9ln = 1964; goto L_ret; };
       if (i <= m9t25to) for (;;) {
         M9_YCHK ();
-        { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a279 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;
+        { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a280 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;
           if (err->exc) { m9ln = 1965; goto L_ret; };
-        bool m9t28 = ({ bool m9t27 = ({ bool m9t26 = Text_EqUtf (m9a279, ((m9_sl_UTF8){ (uint8_t *) m9s319, 29 }), err); if (!m9t26) { { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a280 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) { m9ln = 1965; goto L_ret; }; m9t26 = (Text_EqUtf (m9a280, ((m9_sl_UTF8){ (uint8_t *) m9s320, 36 }), err)); } } m9t26; }); if (!m9t27) { { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a281 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) { m9ln = 1965; goto L_ret; }; m9t27 = ((Text_BLen (m9a281, err) == INT64_C(0))); } } m9t27; });
+        bool m9t28 = ({ bool m9t27 = ({ bool m9t26 = Text_EqUtf (m9a280, ((m9_sl_UTF8){ (uint8_t *) m9s319, 29 }), err); if (!m9t26) { { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a281 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) { m9ln = 1965; goto L_ret; }; m9t26 = (Text_EqUtf (m9a281, ((m9_sl_UTF8){ (uint8_t *) m9s320, 36 }), err)); } } m9t26; }); if (!m9t27) { { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a282 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) { m9ln = 1965; goto L_ret; }; m9t27 = ((Text_BLen (m9a282, err) == INT64_C(0))); } } m9t27; });
         if (err->exc) { m9ln = 1965; goto L_ret; };
         if (m9t28) {
         } else {
-          { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a282 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;
+          { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a283 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;
             if (err->exc) { m9ln = 1965; goto L_ret; };
-          bool m9t32 = ({ bool m9t31 = Text_EqUtf (m9a282, ((m9_sl_UTF8){ (uint8_t *) m9s321, 43 }), err); if (m9t31) { { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local) m9a283 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) { m9ln = 1965; goto L_ret; }; m9t31 = ((({ bool m9t30 = ({ bool m9t29 = Text_EqUtf (m9a283, ((m9_sl_UTF8){ (uint8_t *) m9s322, 2 }), err); if (!m9t29) { { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local) m9a284 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) { m9ln = 1965; goto L_ret; }; m9t29 = (Text_EqUtf (m9a284, ((m9_sl_UTF8){ (uint8_t *) m9s323, 8 }), err)); } } m9t29; }); if (!m9t30) { { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local) m9a285 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) { m9ln = 1965; goto L_ret; }; m9t30 = (Text_EqUtf (m9a285, ((m9_sl_UTF8){ (uint8_t *) m9s324, 6 }), err)); } } m9t30; }))); } } m9t31; });
+          bool m9t32 = ({ bool m9t31 = Text_EqUtf (m9a283, ((m9_sl_UTF8){ (uint8_t *) m9s321, 43 }), err); if (m9t31) { { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local) m9a284 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) { m9ln = 1965; goto L_ret; }; m9t31 = ((({ bool m9t30 = ({ bool m9t29 = Text_EqUtf (m9a284, ((m9_sl_UTF8){ (uint8_t *) m9s322, 2 }), err); if (!m9t29) { { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local) m9a285 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) { m9ln = 1965; goto L_ret; }; m9t29 = (Text_EqUtf (m9a285, ((m9_sl_UTF8){ (uint8_t *) m9s323, 8 }), err)); } } m9t29; }); if (!m9t30) { { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local) m9a286 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) { m9ln = 1965; goto L_ret; }; m9t30 = (Text_EqUtf (m9a286, ((m9_sl_UTF8){ (uint8_t *) m9s324, 6 }), err)); } } m9t30; }))); } } m9t31; });
           if (err->exc) { m9ln = 1965; goto L_ret; };
           if (m9t32) {
         } else {
-          { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a286 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;
+          { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a287 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;
             if (err->exc) { m9ln = 1971; goto L_ret; };
-          { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local) m9a287 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local;
+          { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local) m9a288 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local;
             if (err->exc) { m9ln = 1971; goto L_ret; };
-          { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).value) m9a288 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).value;
+          { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).value) m9a289 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).value;
             if (err->exc) { m9ln = 1971; goto L_ret; };
-          Rdf_PropertyAttr (pool, st, st_pool, g, g_pool, &(obj), m9a286, m9a287, m9a288, base, lang, err);
+          Rdf_PropertyAttr (pool, st, st_pool, g, g_pool, &(obj), m9a287, m9a288, m9a289, base, lang, err);
           if (err->exc) { m9ln = 1971; goto L_ret; };
           }
           }
@@ -8038,9 +8041,9 @@ static bool Rdf_Declared (m9_sl_m9_sl_UTF8 dn, m9_sl_m9_sl_UTF8 du, int64_t n, m
   if (err->exc) { m9ln = 2033; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     M9_YCHK ();
-    { __typeof__((*(m9_sl_UTF8 *) m9_at (dn.p, i, dn.len, sizeof (m9_sl_UTF8), err))) m9a289 = (*(m9_sl_UTF8 *) m9_at (dn.p, i, dn.len, sizeof (m9_sl_UTF8), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (dn.p, i, dn.len, sizeof (m9_sl_UTF8), err))) m9a290 = (*(m9_sl_UTF8 *) m9_at (dn.p, i, dn.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 2034; goto L_ret; };
-    bool m9t3 = ({ bool m9t2 = Text_EqUtf (m9a289, prefix, err); if (m9t2) { { __typeof__((*(m9_sl_UTF8 *) m9_at (du.p, i, du.len, sizeof (m9_sl_UTF8), err))) m9a290 = (*(m9_sl_UTF8 *) m9_at (du.p, i, du.len, sizeof (m9_sl_UTF8), err));   if (err->exc) { m9ln = 2034; goto L_ret; }; m9t2 = (Text_EqUtf (m9a290, uri, err)); } } m9t2; });
+    bool m9t3 = ({ bool m9t2 = Text_EqUtf (m9a290, prefix, err); if (m9t2) { { __typeof__((*(m9_sl_UTF8 *) m9_at (du.p, i, du.len, sizeof (m9_sl_UTF8), err))) m9a291 = (*(m9_sl_UTF8 *) m9_at (du.p, i, du.len, sizeof (m9_sl_UTF8), err));   if (err->exc) { m9ln = 2034; goto L_ret; }; m9t2 = (Text_EqUtf (m9a291, uri, err)); } } m9t2; });
     if (err->exc) { m9ln = 2034; goto L_ret; };
     if (m9t3) {
       err->res = m9res;
@@ -8108,21 +8111,21 @@ static void Rdf_Serialize (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, 
   if (err->exc) { m9ln = 2061; goto L_ret; };
   if (i <= m9t2to) for (;;) {
     M9_YCHK ();
-    { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a291 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
+    { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a292 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
       if (err->exc) { m9ln = 2062; goto L_ret; };
-    bool m9t5 = ({ bool m9t4 = ({ bool m9t3 = (Text_BLen (m9a291, err) > INT64_C(0)); if (m9t3) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a292 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) { m9ln = 2062; goto L_ret; }; m9t3 = ((!Text_EqUtf (m9a292, ((m9_sl_UTF8){ (uint8_t *) m9s335, 29 }), err))); } } m9t3; }); if (m9t4) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a293 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) { m9ln = 2062; goto L_ret; }; m9t4 = ((!Text_EqUtf (m9a293, ((m9_sl_UTF8){ (uint8_t *) m9s336, 36 }), err))); } } m9t4; });
+    bool m9t5 = ({ bool m9t4 = ({ bool m9t3 = (Text_BLen (m9a292, err) > INT64_C(0)); if (m9t3) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a293 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) { m9ln = 2062; goto L_ret; }; m9t3 = ((!Text_EqUtf (m9a293, ((m9_sl_UTF8){ (uint8_t *) m9s335, 29 }), err))); } } m9t3; }); if (m9t4) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a294 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) { m9ln = 2062; goto L_ret; }; m9t4 = ((!Text_EqUtf (m9a294, ((m9_sl_UTF8){ (uint8_t *) m9s336, 36 }), err))); } } m9t4; });
     if (err->exc) { m9ln = 2062; goto L_ret; };
     if (m9t5) {
-      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name) m9a294 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name;
+      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name) m9a295 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name;
         if (err->exc) { m9ln = 2064; goto L_ret; };
-      { __typeof__(px) m9v = Rdf_Prefix (m9a294, err);
+      { __typeof__(px) m9v = Rdf_Prefix (m9a295, err);
         if (err->exc) { m9ln = 2064; goto L_ret; };
         px = m9v;
       }
       }
       j = INT64_C(0);
       for (;;) {
-        bool m9t7 = ({ bool m9t6 = (j < m); if (m9t6) { { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err))) m9a295 = (*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err));   if (err->exc) { m9ln = 2066; goto L_ret; }; m9t6 = ((!Text_EqUtf (m9a295, px, err))); } } m9t6; });
+        bool m9t7 = ({ bool m9t6 = (j < m); if (m9t6) { { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err))) m9a296 = (*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err));   if (err->exc) { m9ln = 2066; goto L_ret; }; m9t6 = ((!Text_EqUtf (m9a296, px, err))); } } m9t6; });
         if (err->exc) { m9ln = 2066; goto L_ret; };
         if (!(m9t7)) break;
         { __typeof__(j) m9v = m9_add_i64 (j, INT64_C(1), err);
@@ -8159,11 +8162,11 @@ static void Rdf_Serialize (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, 
     if (err->exc) { m9ln = 2072; goto L_ret; };
     if (j <= m9t9to) for (;;) {
       M9_YCHK ();
-      { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err))) m9a296 = (*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err))) m9a297 = (*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) { m9ln = 2073; goto L_ret; };
-      { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err))) m9a297 = (*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err))) m9a298 = (*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) { m9ln = 2073; goto L_ret; };
-      bool m9t10 = Rdf_StrLess (m9a296, m9a297, err);
+      bool m9t10 = Rdf_StrLess (m9a297, m9a298, err);
       if (err->exc) { m9ln = 2073; goto L_ret; };
       if (m9t10) {
         { __typeof__(px) m9v = (*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err));
@@ -8201,16 +8204,16 @@ static void Rdf_Serialize (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, 
   if (err->exc) { m9ln = 2079; goto L_ret; };
   if (i <= m9t11to) for (;;) {
     M9_YCHK ();
-    { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err))) m9a298 = (*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err))) m9a299 = (*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 2080; goto L_ret; };
-    { __typeof__((*(m9_sl_UTF8 *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_UTF8), err))) m9a299 = (*(m9_sl_UTF8 *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_UTF8), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_UTF8), err))) m9a300 = (*(m9_sl_UTF8 *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 2080; goto L_ret; };
-    bool m9t12 = (!Rdf_Declared ((*dn), (*du), n, m9a298, m9a299, err));
+    bool m9t12 = (!Rdf_Declared ((*dn), (*du), n, m9a299, m9a300, err));
     if (err->exc) { m9ln = 2080; goto L_ret; };
     if (m9t12) {
-      { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err))) m9a300 = (*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err))) m9a301 = (*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) { m9ln = 2081; goto L_ret; };
-      bool m9t13 = (Text_BLen (m9a300, err) == INT64_C(0));
+      bool m9t13 = (Text_BLen (m9a301, err) == INT64_C(0));
       if (err->exc) { m9ln = 2081; goto L_ret; };
       if (m9t13) {
         DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s337, 8 }), err);
@@ -8218,33 +8221,33 @@ static void Rdf_Serialize (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, 
       } else {
         DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s338, 7 }), err);
         if (err->exc) { m9ln = 2082; goto L_ret; };
-        { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err))) m9a301 = (*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err));
+        { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err))) m9a302 = (*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err));
           if (err->exc) { m9ln = 2082; goto L_ret; };
-        DynStr_Append (d, d_pool, m9a301, err);
+        DynStr_Append (d, d_pool, m9a302, err);
         if (err->exc) { m9ln = 2082; goto L_ret; };
         }
         DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s339, 2 }), err);
         if (err->exc) { m9ln = 2082; goto L_ret; };
       } }
-      { __typeof__((*(m9_sl_UTF8 *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_UTF8), err))) m9a302 = (*(m9_sl_UTF8 *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_UTF8), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_UTF8), err))) m9a303 = (*(m9_sl_UTF8 *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) { m9ln = 2084; goto L_ret; };
-      Rdf_EscAttr (d, d_pool, m9a302, err);
+      Rdf_EscAttr (d, d_pool, m9a303, err);
       if (err->exc) { m9ln = 2084; goto L_ret; };
       }
       DynStr_AppendChar (d, d_pool, 34u, err);
       if (err->exc) { m9ln = 2085; goto L_ret; };
       if ((n < ((*dn)).len)) {
-        { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err))) m9a303 = (*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err));
+        { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err))) m9a304 = (*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err));
           if (err->exc) { m9ln = 2087; goto L_ret; };
-        { __typeof__((*(m9_sl_UTF8 *) m9_at ((*dn).p, n, (*dn).len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (pool, m9a303, err);
+        { __typeof__((*(m9_sl_UTF8 *) m9_at ((*dn).p, n, (*dn).len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (pool, m9a304, err);
           if (err->exc) { m9ln = 2087; goto L_ret; };
           (*(m9_sl_UTF8 *) m9_at ((*dn).p, n, (*dn).len, sizeof (m9_sl_UTF8), err)) = m9v;
           if (err->exc) { m9ln = 2087; goto L_ret; };
         }
         }
-        { __typeof__((*(m9_sl_UTF8 *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_UTF8), err))) m9a304 = (*(m9_sl_UTF8 *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_UTF8), err));
+        { __typeof__((*(m9_sl_UTF8 *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_UTF8), err))) m9a305 = (*(m9_sl_UTF8 *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_UTF8), err));
           if (err->exc) { m9ln = 2087; goto L_ret; };
-        { __typeof__((*(m9_sl_UTF8 *) m9_at ((*du).p, n, (*du).len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (pool, m9a304, err);
+        { __typeof__((*(m9_sl_UTF8 *) m9_at ((*du).p, n, (*du).len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (pool, m9a305, err);
           if (err->exc) { m9ln = 2087; goto L_ret; };
           (*(m9_sl_UTF8 *) m9_at ((*du).p, n, (*du).len, sizeof (m9_sl_UTF8), err)) = m9v;
           if (err->exc) { m9ln = 2087; goto L_ret; };
@@ -8270,9 +8273,9 @@ static void Rdf_Serialize (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, 
   if (err->exc) { m9ln = 2095; goto L_ret; };
   if (i <= m9t14to) for (;;) {
     M9_YCHK ();
-    { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a305 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
+    { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a306 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
       if (err->exc) { m9ln = 2096; goto L_ret; };
-    bool m9t15 = (!Text_EqUtf (m9a305, ((m9_sl_UTF8){ (uint8_t *) m9s340, 29 }), err));
+    bool m9t15 = (!Text_EqUtf (m9a306, ((m9_sl_UTF8){ (uint8_t *) m9s340, 29 }), err));
     if (err->exc) { m9ln = 2096; goto L_ret; };
     if (m9t15) {
       (*(int64_t *) m9_at (ai.p, m, ai.len, sizeof (int64_t), err)) = i;
@@ -8297,11 +8300,11 @@ static void Rdf_Serialize (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, 
     if (err->exc) { m9ln = 2099; goto L_ret; };
     if (j <= m9t17to) for (;;) {
       M9_YCHK ();
-      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, j, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a306 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, j, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns;
+      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, j, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a307 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, j, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns;
         if (err->exc) { m9ln = 2100; goto L_ret; };
-      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a307 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns;
+      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a308 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns;
         if (err->exc) { m9ln = 2100; goto L_ret; };
-      bool m9t20 = ({ bool m9t19 = Rdf_StrLess (m9a306, m9a307, err); if (!m9t19) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, j, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a308 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, j, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) { m9ln = 2100; goto L_ret; }; { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a309 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) { m9ln = 2100; goto L_ret; }; m9t19 = ((({ bool m9t18 = Text_EqUtf (m9a308, m9a309, err); if (m9t18) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, j, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).local) m9a310 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, j, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) { m9ln = 2100; goto L_ret; }; { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).local) m9a311 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) { m9ln = 2100; goto L_ret; }; m9t18 = (Rdf_StrLess (m9a310, m9a311, err)); } } } m9t18; }))); } } } m9t19; });
+      bool m9t20 = ({ bool m9t19 = Rdf_StrLess (m9a307, m9a308, err); if (!m9t19) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, j, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a309 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, j, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) { m9ln = 2100; goto L_ret; }; { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a310 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) { m9ln = 2100; goto L_ret; }; m9t19 = ((({ bool m9t18 = Text_EqUtf (m9a309, m9a310, err); if (m9t18) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, j, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).local) m9a311 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, j, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) { m9ln = 2100; goto L_ret; }; { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).local) m9a312 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) { m9ln = 2100; goto L_ret; }; m9t18 = (Rdf_StrLess (m9a311, m9a312, err)); } } } m9t18; }))); } } } m9t19; });
       if (err->exc) { m9ln = 2100; goto L_ret; };
       if (m9t20) {
         { __typeof__(t) m9v = (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err));
@@ -8330,16 +8333,16 @@ static void Rdf_Serialize (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, 
     M9_YCHK ();
     DynStr_AppendChar (d, d_pool, 32u, err);
     if (err->exc) { m9ln = 2108; goto L_ret; };
-    { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).name) m9a312 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).name;
+    { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).name) m9a313 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).name;
       if (err->exc) { m9ln = 2109; goto L_ret; };
-    DynStr_Append (d, d_pool, m9a312, err);
+    DynStr_Append (d, d_pool, m9a313, err);
     if (err->exc) { m9ln = 2109; goto L_ret; };
     }
     DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s341, 2 }), err);
     if (err->exc) { m9ln = 2110; goto L_ret; };
-    { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).value) m9a313 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).value;
+    { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).value) m9a314 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).value;
       if (err->exc) { m9ln = 2111; goto L_ret; };
-    Rdf_EscAttr (d, d_pool, m9a313, err);
+    Rdf_EscAttr (d, d_pool, m9a314, err);
     if (err->exc) { m9ln = 2111; goto L_ret; };
     }
     DynStr_AppendChar (d, d_pool, 34u, err);
@@ -8357,14 +8360,14 @@ static void Rdf_Serialize (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, 
   if (err->exc) { m9ln = 2116; goto L_ret; };
   if (i <= m9t22to) for (;;) {
     M9_YCHK ();
-    { __typeof__(({ __auto_type m9n = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a314 = ({ __auto_type m9n = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+    { __typeof__(({ __auto_type m9n = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a315 = ({ __auto_type m9n = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
       if (err->exc) { m9ln = 2117; goto L_ret; };
-    Rdf_Serialize (pool, d, d_pool, m9a314, dn, du, n, err);
+    Rdf_Serialize (pool, d, d_pool, m9a315, dn, du, n, err);
     if (err->exc) { m9ln = 2117; goto L_ret; };
     }
-    { __typeof__(({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) { m9ln = 2118; goto L_ret; }; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->tail) m9a315 = ({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) { m9ln = 2118; goto L_ret; }; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->tail;
+    { __typeof__(({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) { m9ln = 2118; goto L_ret; }; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->tail) m9a316 = ({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) { m9ln = 2118; goto L_ret; }; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->tail;
       if (err->exc) { m9ln = 2118; goto L_ret; };
-    Rdf_EscText (d, d_pool, m9a315, err);
+    Rdf_EscText (d, d_pool, m9a316, err);
     if (err->exc) { m9ln = 2118; goto L_ret; };
     }
     if ((uint64_t) m9t22to - (uint64_t) i < (uint64_t) 1) break;
@@ -8420,14 +8423,14 @@ static m9_sl_UTF8 Rdf_XmlLiteral (Xml_Element * pe, m9_state *err)
   if (err->exc) { m9ln = 2138; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     M9_YCHK ();
-    { __typeof__(({ __auto_type m9n = ((*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a316 = ({ __auto_type m9n = ((*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+    { __typeof__(({ __auto_type m9n = ((*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a317 = ({ __auto_type m9n = ((*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
       if (err->exc) { m9ln = 2139; goto L_ret; };
-    Rdf_Serialize (&(scratch), &(d), &(scratch), m9a316, &(dn), &(du), INT64_C(0), err);
+    Rdf_Serialize (&(scratch), &(d), &(scratch), m9a317, &(dn), &(du), INT64_C(0), err);
     if (err->exc) { m9ln = 2139; goto L_ret; };
     }
-    { __typeof__(({ __auto_type m9g = ((*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))); if (err->exc) { m9ln = 2140; goto L_ret; }; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->tail) m9a317 = ({ __auto_type m9g = ((*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))); if (err->exc) { m9ln = 2140; goto L_ret; }; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->tail;
+    { __typeof__(({ __auto_type m9g = ((*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))); if (err->exc) { m9ln = 2140; goto L_ret; }; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->tail) m9a318 = ({ __auto_type m9g = ((*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))); if (err->exc) { m9ln = 2140; goto L_ret; }; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->tail;
       if (err->exc) { m9ln = 2140; goto L_ret; };
-    Rdf_EscText (&(d), &(scratch), m9a317, err);
+    Rdf_EscText (&(d), &(scratch), m9a318, err);
     if (err->exc) { m9ln = 2140; goto L_ret; };
     }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
@@ -8634,9 +8637,9 @@ static int64_t Rdf_FindTerm (Rdf_Ctx *c, m9_sl_UTF8 term, m9_state *err)
   if (err->exc) { m9ln = 2300; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     M9_YCHK ();
-    { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).term) m9a318 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).term;
+    { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).term) m9a319 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).term;
       if (err->exc) { m9ln = 2301; goto L_ret; };
-    bool m9t2 = Text_EqUtf (m9a318, term, err);
+    bool m9t2 = Text_EqUtf (m9a319, term, err);
     if (err->exc) { m9ln = 2301; goto L_ret; };
     if (m9t2) {
       err->res = m9res;
@@ -8767,9 +8770,9 @@ static int64_t Rdf_DefState (Rdf_Defining *df, m9_sl_UTF8 term, m9_state *err)
   if (err->exc) { m9ln = 2334; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     M9_YCHK ();
-    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*df).terms.p, i, (*df).terms.len, sizeof (m9_sl_UTF8), err))) m9a319 = (*(m9_sl_UTF8 *) m9_at ((*df).terms.p, i, (*df).terms.len, sizeof (m9_sl_UTF8), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*df).terms.p, i, (*df).terms.len, sizeof (m9_sl_UTF8), err))) m9a320 = (*(m9_sl_UTF8 *) m9_at ((*df).terms.p, i, (*df).terms.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 2335; goto L_ret; };
-    bool m9t2 = Text_EqUtf (m9a319, term, err);
+    bool m9t2 = Text_EqUtf (m9a320, term, err);
     if (err->exc) { m9ln = 2335; goto L_ret; };
     if (m9t2) {
       err->res = m9res;
@@ -8808,9 +8811,9 @@ static void Rdf_SetDefState (m9_pool *pool, Rdf_Defining *df, m9_pool *df_pool, 
   if (err->exc) { m9ln = 2346; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     M9_YCHK ();
-    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*df).terms.p, i, (*df).terms.len, sizeof (m9_sl_UTF8), err))) m9a320 = (*(m9_sl_UTF8 *) m9_at ((*df).terms.p, i, (*df).terms.len, sizeof (m9_sl_UTF8), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*df).terms.p, i, (*df).terms.len, sizeof (m9_sl_UTF8), err))) m9a321 = (*(m9_sl_UTF8 *) m9_at ((*df).terms.p, i, (*df).terms.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 2347; goto L_ret; };
-    bool m9t2 = Text_EqUtf (m9a320, term, err);
+    bool m9t2 = Text_EqUtf (m9a321, term, err);
     if (err->exc) { m9ln = 2347; goto L_ret; };
     if (m9t2) {
       (*(int64_t *) m9_at ((*df).state.p, i, (*df).state.len, sizeof (int64_t), err)) = st;
@@ -9280,11 +9283,11 @@ L_dn_m9t3: ;
     if (err->exc) { m9ln = 2467; goto L_ret; };
     if (j <= m9t5to) for (;;) {
       M9_YCHK ();
-      { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err))) m9a321 = (*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err))) m9a322 = (*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) { m9ln = 2468; goto L_ret; };
-      { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err))) m9a322 = (*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err))) m9a323 = (*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) { m9ln = 2468; goto L_ret; };
-      bool m9t6 = Rdf_StrLess (m9a321, m9a322, err);
+      bool m9t6 = Rdf_StrLess (m9a322, m9a323, err);
       if (err->exc) { m9ln = 2468; goto L_ret; };
       if (m9t6) {
         { __typeof__(t) m9v = (*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err));
@@ -9509,7 +9512,7 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
   d.hasLang = false;
   d.reverse = false;
   d.isNull = false;
-  bool m9t7 = ({ bool m9t6 = Json_IsNull (value, err); if (!m9t6) { m9t6 = ((({ bool m9t5 = (Rdf_IsObj (value, err) && Rdf_Has (value, ((m9_sl_UTF8){ (uint8_t *) m9s368, 3 }), err)); if (m9t5) { { __typeof__(Rdf_JGet (value, ((m9_sl_UTF8){ (uint8_t *) m9s369, 3 }), err)) m9a323 = Rdf_JGet (value, ((m9_sl_UTF8){ (uint8_t *) m9s369, 3 }), err);   if (err->exc) { m9ln = 2545; goto L_hdl_m9t1; }; m9t5 = (Json_IsNull (m9a323, err)); } } m9t5; }))); } m9t6; });
+  bool m9t7 = ({ bool m9t6 = Json_IsNull (value, err); if (!m9t6) { m9t6 = ((({ bool m9t5 = (Rdf_IsObj (value, err) && Rdf_Has (value, ((m9_sl_UTF8){ (uint8_t *) m9s368, 3 }), err)); if (m9t5) { { __typeof__(Rdf_JGet (value, ((m9_sl_UTF8){ (uint8_t *) m9s369, 3 }), err)) m9a324 = Rdf_JGet (value, ((m9_sl_UTF8){ (uint8_t *) m9s369, 3 }), err);   if (err->exc) { m9ln = 2545; goto L_hdl_m9t1; }; m9t5 = (Json_IsNull (m9a324, err)); } } m9t5; }))); } m9t6; });
   if (err->exc) { m9ln = 2545; goto L_hdl_m9t1; };
   if (m9t7) {
     d.isNull = true;
@@ -9556,9 +9559,9 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
       Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s374, 20 }), term, err);
       if (err->exc) { m9ln = 2560; goto L_hdl_m9t1; };
     }
-    { __typeof__(Rdf_JStr (tv, err)) m9a324 = Rdf_JStr (tv, err);
+    { __typeof__(Rdf_JStr (tv, err)) m9a325 = Rdf_JStr (tv, err);
       if (err->exc) { m9ln = 2561; goto L_hdl_m9t1; };
-    { __typeof__(s) m9v = Rdf_ExpandIri (pool, c, c_pool, m9a324, false, true, local, df, df_pool, &(nul), err);
+    { __typeof__(s) m9v = Rdf_ExpandIri (pool, c, c_pool, m9a325, false, true, local, df, df_pool, &(nul), err);
       if (err->exc) { m9ln = 2561; goto L_hdl_m9t1; };
       s = m9v;
     }
@@ -9593,9 +9596,9 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
       Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s382, 19 }), term, err);
       if (err->exc) { m9ln = 2570; goto L_hdl_m9t1; };
     }
-    { __typeof__(Rdf_JStr (tv, err)) m9a325 = Rdf_JStr (tv, err);
+    { __typeof__(Rdf_JStr (tv, err)) m9a326 = Rdf_JStr (tv, err);
       if (err->exc) { m9ln = 2571; goto L_hdl_m9t1; };
-    { __typeof__(s) m9v = Rdf_ExpandIri (pool, c, c_pool, m9a325, false, true, local, df, df_pool, &(nul), err);
+    { __typeof__(s) m9v = Rdf_ExpandIri (pool, c, c_pool, m9a326, false, true, local, df, df_pool, &(nul), err);
       if (err->exc) { m9ln = 2571; goto L_hdl_m9t1; };
       s = m9v;
     }
@@ -9624,9 +9627,9 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
         bool m9t19 = (Rdf_IsStr (tv, err) && ((Json_StrIs (tv, ((m9_sl_UTF8){ (uint8_t *) m9s386, 4 }), err) || Json_StrIs (tv, ((m9_sl_UTF8){ (uint8_t *) m9s387, 6 }), err))));
         if (err->exc) { m9ln = 2576; goto L_hdl_m9t1; };
         if (m9t19) {
-          { __typeof__(Rdf_JStr (tv, err)) m9a326 = Rdf_JStr (tv, err);
+          { __typeof__(Rdf_JStr (tv, err)) m9a327 = Rdf_JStr (tv, err);
             if (err->exc) { m9ln = 2578; goto L_hdl_m9t1; };
-          { __typeof__(d.container) m9v = Text_KeepUtf (pool, m9a326, err);
+          { __typeof__(d.container) m9v = Text_KeepUtf (pool, m9a327, err);
             if (err->exc) { m9ln = 2578; goto L_hdl_m9t1; };
             d.container = m9v;
           }
@@ -9643,7 +9646,7 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
     if (err->exc) { m9ln = 2584; goto L_hdl_m9t1; };
     goto L_ret;
   }
-  bool m9t21 = ({ bool m9t20 = Rdf_Has (value, ((m9_sl_UTF8){ (uint8_t *) m9s389, 3 }), err); if (m9t20) { { __typeof__(Rdf_JGet (value, ((m9_sl_UTF8){ (uint8_t *) m9s390, 3 }), err)) m9a327 = Rdf_JGet (value, ((m9_sl_UTF8){ (uint8_t *) m9s390, 3 }), err);   if (err->exc) { m9ln = 2587; goto L_hdl_m9t1; }; m9t20 = ((!Json_StrIs (m9a327, term, err))); } } m9t20; });
+  bool m9t21 = ({ bool m9t20 = Rdf_Has (value, ((m9_sl_UTF8){ (uint8_t *) m9s389, 3 }), err); if (m9t20) { { __typeof__(Rdf_JGet (value, ((m9_sl_UTF8){ (uint8_t *) m9s390, 3 }), err)) m9a328 = Rdf_JGet (value, ((m9_sl_UTF8){ (uint8_t *) m9s390, 3 }), err);   if (err->exc) { m9ln = 2587; goto L_hdl_m9t1; }; m9t20 = ((!Json_StrIs (m9a328, term, err))); } } m9t20; });
   if (err->exc) { m9ln = 2587; goto L_hdl_m9t1; };
   if (m9t21) {
     { __typeof__(tv) m9v = Rdf_JGet (value, ((m9_sl_UTF8){ (uint8_t *) m9s391, 3 }), err);
@@ -9656,9 +9659,9 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
       Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s392, 19 }), term, err);
       if (err->exc) { m9ln = 2589; goto L_hdl_m9t1; };
     }
-    { __typeof__(Rdf_JStr (tv, err)) m9a328 = Rdf_JStr (tv, err);
+    { __typeof__(Rdf_JStr (tv, err)) m9a329 = Rdf_JStr (tv, err);
       if (err->exc) { m9ln = 2590; goto L_hdl_m9t1; };
-    { __typeof__(s) m9v = Rdf_ExpandIri (pool, c, c_pool, m9a328, false, true, local, df, df_pool, &(nul), err);
+    { __typeof__(s) m9v = Rdf_ExpandIri (pool, c, c_pool, m9a329, false, true, local, df, df_pool, &(nul), err);
       if (err->exc) { m9ln = 2590; goto L_hdl_m9t1; };
       s = m9v;
     }
@@ -9706,9 +9709,9 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
       bool m9t27 = ((k >= INT64_C(0)) && (!(*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).isNull));
       if (err->exc) { m9ln = 2601; goto L_hdl_m9t1; };
       if (m9t27) {
-        { __typeof__(({ m9_sl_UTF8 m9t29 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri; m9_utf_cat (err->res, m9t29, m9_utf_slice (term, m9_add_i64 (colon, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (term, err), colon, err), INT64_C(1), err), err), err); })) m9a329 = ({ m9_sl_UTF8 m9t29 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri; m9_utf_cat (err->res, m9t29, m9_utf_slice (term, m9_add_i64 (colon, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (term, err), colon, err), INT64_C(1), err), err), err); });
+        { __typeof__(({ m9_sl_UTF8 m9t29 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri; m9_utf_cat (err->res, m9t29, m9_utf_slice (term, m9_add_i64 (colon, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (term, err), colon, err), INT64_C(1), err), err), err); })) m9a330 = ({ m9_sl_UTF8 m9t29 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri; m9_utf_cat (err->res, m9t29, m9_utf_slice (term, m9_add_i64 (colon, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (term, err), colon, err), INT64_C(1), err), err), err); });
           if (err->exc) { m9ln = 2602; goto L_hdl_m9t1; };
-        { __typeof__(d.iri) m9v = Text_KeepUtf (pool, m9a329, err);
+        { __typeof__(d.iri) m9v = Text_KeepUtf (pool, m9a330, err);
           if (err->exc) { m9ln = 2602; goto L_hdl_m9t1; };
           d.iri = m9v;
         }
@@ -9718,9 +9721,9 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
       }
     } else {
       if ((*c).hasVocab) {
-        { __typeof__(m9_utf_cat (err->res, (*c).vocab, term, err)) m9a330 = m9_utf_cat (err->res, (*c).vocab, term, err);
+        { __typeof__(m9_utf_cat (err->res, (*c).vocab, term, err)) m9a331 = m9_utf_cat (err->res, (*c).vocab, term, err);
           if (err->exc) { m9ln = 2607; goto L_hdl_m9t1; };
-        { __typeof__(d.iri) m9v = Text_KeepUtf (pool, m9a330, err);
+        { __typeof__(d.iri) m9v = Text_KeepUtf (pool, m9a331, err);
           if (err->exc) { m9ln = 2607; goto L_hdl_m9t1; };
           d.iri = m9v;
         }
@@ -9775,11 +9778,11 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
       if (err->exc) { m9ln = 2625; goto L_hdl_m9t1; };
       if (m9t35) {
         d.hasLang = true;
-        { __typeof__(Rdf_JStr (tv, err)) m9a331 = Rdf_JStr (tv, err);
+        { __typeof__(Rdf_JStr (tv, err)) m9a332 = Rdf_JStr (tv, err);
           if (err->exc) { m9ln = 2627; goto L_hdl_m9t1; };
-        { __typeof__(Text_LowerUtf (m9a331, err)) m9a332 = Text_LowerUtf (m9a331, err);
+        { __typeof__(Text_LowerUtf (m9a332, err)) m9a333 = Text_LowerUtf (m9a332, err);
           if (err->exc) { m9ln = 2627; goto L_hdl_m9t1; };
-        { __typeof__(d.lang) m9v = Text_KeepUtf (pool, m9a332, err);
+        { __typeof__(d.lang) m9v = Text_KeepUtf (pool, m9a333, err);
           if (err->exc) { m9ln = 2627; goto L_hdl_m9t1; };
           d.lang = m9v;
         }
@@ -9881,9 +9884,9 @@ static Rdf_Ctx Rdf_ProcessContext (m9_pool *pool, Rdf_JState *st, m9_pool *st_po
       bool m9t7 = Rdf_IsStr (item, err);
       if (err->exc) { m9ln = 2656; goto L_hdl_m9t1; };
       if (m9t7) {
-        { __typeof__(Rdf_JStr (item, err)) m9a333 = Rdf_JStr (item, err);
+        { __typeof__(Rdf_JStr (item, err)) m9a334 = Rdf_JStr (item, err);
           if (err->exc) { m9ln = 2658; goto L_hdl_m9t1; };
-        Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s411, 27 }), m9a333, err);
+        Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s411, 27 }), m9a334, err);
         if (err->exc) { m9ln = 2658; goto L_hdl_m9t1; };
         }
     } else {
@@ -9923,9 +9926,9 @@ static Rdf_Ctx Rdf_ProcessContext (m9_pool *pool, Rdf_JState *st, m9_pool *st_po
               bool m9t13 = (Text_BLen (result.base, err) > INT64_C(0));
               if (err->exc) { m9ln = 2667; goto L_hdl_m9t1; };
               if (m9t13) {
-                { __typeof__(Rdf_Resolve (result.base, s, err)) m9a334 = Rdf_Resolve (result.base, s, err);
+                { __typeof__(Rdf_Resolve (result.base, s, err)) m9a335 = Rdf_Resolve (result.base, s, err);
                   if (err->exc) { m9ln = 2668; goto L_hdl_m9t1; };
-                { __typeof__(result.base) m9v = Text_KeepUtf (pool, m9a334, err);
+                { __typeof__(result.base) m9v = Text_KeepUtf (pool, m9a335, err);
                   if (err->exc) { m9ln = 2668; goto L_hdl_m9t1; };
                   result.base = m9v;
                 }
@@ -9951,13 +9954,13 @@ static Rdf_Ctx Rdf_ProcessContext (m9_pool *pool, Rdf_JState *st, m9_pool *st_po
         if (m9t15) {
           result.hasVocab = false;
         } else {
-          bool m9t18 = ({ bool m9t17 = Rdf_IsStr (v, err); if (m9t17) { { __typeof__(Rdf_JStr (v, err)) m9a335 = Rdf_JStr (v, err);   if (err->exc) { m9ln = 2676; goto L_hdl_m9t1; }; m9t17 = ((({ bool m9t16 = Rdf_IsAbsolute (m9a335, err); if (!m9t16) { { __typeof__(Rdf_JStr (v, err)) m9a336 = Rdf_JStr (v, err);   if (err->exc) { m9ln = 2676; goto L_hdl_m9t1; }; m9t16 = (Rdf_IsBlankId (m9a336, err)); } } m9t16; }))); } } m9t17; });
+          bool m9t18 = ({ bool m9t17 = Rdf_IsStr (v, err); if (m9t17) { { __typeof__(Rdf_JStr (v, err)) m9a336 = Rdf_JStr (v, err);   if (err->exc) { m9ln = 2676; goto L_hdl_m9t1; }; m9t17 = ((({ bool m9t16 = Rdf_IsAbsolute (m9a336, err); if (!m9t16) { { __typeof__(Rdf_JStr (v, err)) m9a337 = Rdf_JStr (v, err);   if (err->exc) { m9ln = 2676; goto L_hdl_m9t1; }; m9t16 = (Rdf_IsBlankId (m9a337, err)); } } m9t16; }))); } } m9t17; });
           if (err->exc) { m9ln = 2676; goto L_hdl_m9t1; };
           if (m9t18) {
             result.hasVocab = true;
-            { __typeof__(Rdf_JStr (v, err)) m9a337 = Rdf_JStr (v, err);
+            { __typeof__(Rdf_JStr (v, err)) m9a338 = Rdf_JStr (v, err);
               if (err->exc) { m9ln = 2678; goto L_hdl_m9t1; };
-            { __typeof__(result.vocab) m9v = Text_KeepUtf (pool, m9a337, err);
+            { __typeof__(result.vocab) m9v = Text_KeepUtf (pool, m9a338, err);
               if (err->exc) { m9ln = 2678; goto L_hdl_m9t1; };
               result.vocab = m9v;
             }
@@ -9983,11 +9986,11 @@ static Rdf_Ctx Rdf_ProcessContext (m9_pool *pool, Rdf_JState *st, m9_pool *st_po
           if (err->exc) { m9ln = 2684; goto L_hdl_m9t1; };
           if (m9t21) {
             result.hasLang = true;
-            { __typeof__(Rdf_JStr (v, err)) m9a338 = Rdf_JStr (v, err);
+            { __typeof__(Rdf_JStr (v, err)) m9a339 = Rdf_JStr (v, err);
               if (err->exc) { m9ln = 2685; goto L_hdl_m9t1; };
-            { __typeof__(Text_LowerUtf (m9a338, err)) m9a339 = Text_LowerUtf (m9a338, err);
+            { __typeof__(Text_LowerUtf (m9a339, err)) m9a340 = Text_LowerUtf (m9a339, err);
               if (err->exc) { m9ln = 2685; goto L_hdl_m9t1; };
-            { __typeof__(result.lang) m9v = Text_KeepUtf (pool, m9a339, err);
+            { __typeof__(result.lang) m9v = Text_KeepUtf (pool, m9a340, err);
               if (err->exc) { m9ln = 2685; goto L_hdl_m9t1; };
               result.lang = m9v;
             }
@@ -10017,14 +10020,14 @@ static Rdf_Ctx Rdf_ProcessContext (m9_pool *pool, Rdf_JState *st, m9_pool *st_po
       if (err->exc) { m9ln = 2693; goto L_hdl_m9t1; };
       if (k <= m9t22to) for (;;) {
         M9_YCHK ();
-        { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, k, names.len, sizeof (m9_sl_UTF8), err))) m9a340 = (*(m9_sl_UTF8 *) m9_at (names.p, k, names.len, sizeof (m9_sl_UTF8), err));
+        { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, k, names.len, sizeof (m9_sl_UTF8), err))) m9a341 = (*(m9_sl_UTF8 *) m9_at (names.p, k, names.len, sizeof (m9_sl_UTF8), err));
           if (err->exc) { m9ln = 2694; goto L_hdl_m9t1; };
-        bool m9t25 = (!(({ bool m9t24 = ({ bool m9t23 = Text_EqUtf (m9a340, ((m9_sl_UTF8){ (uint8_t *) m9s423, 5 }), err); if (!m9t23) { { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, k, names.len, sizeof (m9_sl_UTF8), err))) m9a341 = (*(m9_sl_UTF8 *) m9_at (names.p, k, names.len, sizeof (m9_sl_UTF8), err));   if (err->exc) { m9ln = 2694; goto L_hdl_m9t1; }; m9t23 = (Text_EqUtf (m9a341, ((m9_sl_UTF8){ (uint8_t *) m9s424, 6 }), err)); } } m9t23; }); if (!m9t24) { { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, k, names.len, sizeof (m9_sl_UTF8), err))) m9a342 = (*(m9_sl_UTF8 *) m9_at (names.p, k, names.len, sizeof (m9_sl_UTF8), err));   if (err->exc) { m9ln = 2694; goto L_hdl_m9t1; }; m9t24 = (Text_EqUtf (m9a342, ((m9_sl_UTF8){ (uint8_t *) m9s425, 9 }), err)); } } m9t24; })));
+        bool m9t25 = (!(({ bool m9t24 = ({ bool m9t23 = Text_EqUtf (m9a341, ((m9_sl_UTF8){ (uint8_t *) m9s423, 5 }), err); if (!m9t23) { { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, k, names.len, sizeof (m9_sl_UTF8), err))) m9a342 = (*(m9_sl_UTF8 *) m9_at (names.p, k, names.len, sizeof (m9_sl_UTF8), err));   if (err->exc) { m9ln = 2694; goto L_hdl_m9t1; }; m9t23 = (Text_EqUtf (m9a342, ((m9_sl_UTF8){ (uint8_t *) m9s424, 6 }), err)); } } m9t23; }); if (!m9t24) { { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, k, names.len, sizeof (m9_sl_UTF8), err))) m9a343 = (*(m9_sl_UTF8 *) m9_at (names.p, k, names.len, sizeof (m9_sl_UTF8), err));   if (err->exc) { m9ln = 2694; goto L_hdl_m9t1; }; m9t24 = (Text_EqUtf (m9a343, ((m9_sl_UTF8){ (uint8_t *) m9s425, 9 }), err)); } } m9t24; })));
         if (err->exc) { m9ln = 2694; goto L_hdl_m9t1; };
         if (m9t25) {
-          { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, k, names.len, sizeof (m9_sl_UTF8), err))) m9a343 = (*(m9_sl_UTF8 *) m9_at (names.p, k, names.len, sizeof (m9_sl_UTF8), err));
+          { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, k, names.len, sizeof (m9_sl_UTF8), err))) m9a344 = (*(m9_sl_UTF8 *) m9_at (names.p, k, names.len, sizeof (m9_sl_UTF8), err));
             if (err->exc) { m9ln = 2696; goto L_hdl_m9t1; };
-          Rdf_CreateTerm (pool, &(result), err->res, item, m9a343, &(df), err->res, err);
+          Rdf_CreateTerm (pool, &(result), err->res, item, m9a344, &(df), err->res, err);
           if (err->exc) { m9ln = 2696; goto L_hdl_m9t1; };
           }
         } }
@@ -10106,9 +10109,9 @@ static Json_Node * Rdf_Arrayified (m9_pool *pool, Json_Node * v, m9_state *err)
     if (err->exc) { m9ln = 2720; goto L_hdl_m9t1; };
     if (i <= m9t4to) for (;;) {
       M9_YCHK ();
-      { __typeof__(Json_Item (v, i, err)) m9a344 = Json_Item (v, i, err);
+      { __typeof__(Json_Item (v, i, err)) m9a345 = Json_Item (v, i, err);
         if (err->exc) { m9ln = 2721; goto L_hdl_m9t1; };
-      { __typeof__(c) m9v = Json_CloneIn (pool, m9a344, err);
+      { __typeof__(c) m9v = Json_CloneIn (pool, m9a345, err);
         if (err->exc) { m9ln = 2721; goto L_hdl_m9t1; };
         c = m9v;
       }
@@ -10174,7 +10177,9 @@ static void Rdf_AddTo (m9_pool *pool, Json_Node * *obj, m9_pool *obj_pool, m9_sl
     if (err->exc) { m9ln = 2742; goto L_hdl_m9t1; };
     k = m9v;
   }
-  { Json_Node * e = Json_Field (({ __auto_type m9n = ((*obj)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); }), k, err);
+  { __typeof__(({ __auto_type m9n = ((*obj)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a346 = ({ __auto_type m9n = ((*obj)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+    if (err->exc) { m9ln = 2743; goto L_hdl_m9t1; };
+  { Json_Node * e = Json_Field (m9a346, k, err);
   if (err->exc) { m9ln = 2743; goto L_hdl_m9t1; };
   if (e != NULL) {
     a = e;
@@ -10186,6 +10191,7 @@ static void Rdf_AddTo (m9_pool *pool, Json_Node * *obj, m9_pool *obj_pool, m9_sl
     Json_Set (obj, obj_pool, k, &(a), &((*pool)), err);
     if (err->exc) { m9ln = 2747; goto L_hdl_m9t1; };
   } }
+  }
   bool m9t3 = Rdf_IsArr (v, err);
   if (err->exc) { m9ln = 2749; goto L_hdl_m9t1; };
   if (m9t3) {
@@ -10195,9 +10201,9 @@ static void Rdf_AddTo (m9_pool *pool, Json_Node * *obj, m9_pool *obj_pool, m9_sl
     if (err->exc) { m9ln = 2750; goto L_hdl_m9t1; };
     if (i <= m9t4to) for (;;) {
       M9_YCHK ();
-      { __typeof__(Json_Item (v, i, err)) m9a345 = Json_Item (v, i, err);
+      { __typeof__(Json_Item (v, i, err)) m9a347 = Json_Item (v, i, err);
         if (err->exc) { m9ln = 2751; goto L_hdl_m9t1; };
-      { __typeof__(c) m9v = Json_CloneIn (pool, m9a345, err);
+      { __typeof__(c) m9v = Json_CloneIn (pool, m9a347, err);
         if (err->exc) { m9ln = 2751; goto L_hdl_m9t1; };
         c = m9v;
       }
@@ -10338,7 +10344,7 @@ static Json_Node * Rdf_ExpandValue (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, 
     if (err->exc) { m9ln = 2796; goto L_hdl_m9t1; };
     o = m9v;
   }
-  bool m9t5 = (({ bool m9t4 = (k >= INT64_C(0)); if (m9t4) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a346 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;   if (err->exc) { m9ln = 2797; goto L_hdl_m9t1; }; m9t4 = ((({ bool m9t3 = Text_EqUtf (m9a346, ((m9_sl_UTF8){ (uint8_t *) m9s430, 3 }), err); if (!m9t3) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a347 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;   if (err->exc) { m9ln = 2797; goto L_hdl_m9t1; }; m9t3 = (Text_EqUtf (m9a347, ((m9_sl_UTF8){ (uint8_t *) m9s431, 6 }), err)); } } m9t3; }))); } } m9t4; }) && Rdf_IsStr (value, err));
+  bool m9t5 = (({ bool m9t4 = (k >= INT64_C(0)); if (m9t4) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a348 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;   if (err->exc) { m9ln = 2797; goto L_hdl_m9t1; }; m9t4 = ((({ bool m9t3 = Text_EqUtf (m9a348, ((m9_sl_UTF8){ (uint8_t *) m9s430, 3 }), err); if (!m9t3) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a349 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;   if (err->exc) { m9ln = 2797; goto L_hdl_m9t1; }; m9t3 = (Text_EqUtf (m9a349, ((m9_sl_UTF8){ (uint8_t *) m9s431, 6 }), err)); } } m9t3; }))); } } m9t4; }) && Rdf_IsStr (value, err));
   if (err->exc) { m9ln = 2797; goto L_hdl_m9t1; };
   if (m9t5) {
     { __typeof__(df.terms) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), INT64_C(1), err);
@@ -10350,15 +10356,15 @@ static Json_Node * Rdf_ExpandValue (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, 
       df.state = m9v;
     }
     df.n = INT64_C(0);
-    { __typeof__(Rdf_JStr (value, err)) m9a348 = Rdf_JStr (value, err);
+    { __typeof__(Rdf_JStr (value, err)) m9a350 = Rdf_JStr (value, err);
       if (err->exc) { m9ln = 2800; goto L_hdl_m9t1; };
-    { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a349 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;
+    { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a351 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;
       if (err->exc) { m9ln = 2800; goto L_hdl_m9t1; };
-    { __typeof__(Text_EqUtf (m9a349, ((m9_sl_UTF8){ (uint8_t *) m9s432, 6 }), err)) m9a350 = Text_EqUtf (m9a349, ((m9_sl_UTF8){ (uint8_t *) m9s432, 6 }), err);
+    { __typeof__(Text_EqUtf (m9a351, ((m9_sl_UTF8){ (uint8_t *) m9s432, 6 }), err)) m9a352 = Text_EqUtf (m9a351, ((m9_sl_UTF8){ (uint8_t *) m9s432, 6 }), err);
       if (err->exc) { m9ln = 2800; goto L_hdl_m9t1; };
-    { __typeof__(Rdf_ExpandIri (pool, c, c_pool, m9a348, true, m9a350, NULL, &(df), err->res, &(nul), err)) m9a351 = Rdf_ExpandIri (pool, c, c_pool, m9a348, true, m9a350, NULL, &(df), err->res, &(nul), err);
+    { __typeof__(Rdf_ExpandIri (pool, c, c_pool, m9a350, true, m9a352, NULL, &(df), err->res, &(nul), err)) m9a353 = Rdf_ExpandIri (pool, c, c_pool, m9a350, true, m9a352, NULL, &(df), err->res, &(nul), err);
       if (err->exc) { m9ln = 2800; goto L_hdl_m9t1; };
-    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a351, err);
+    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a353, err);
       if (err->exc) { m9ln = 2800; goto L_hdl_m9t1; };
       s = m9v;
     }
@@ -10374,12 +10380,12 @@ static Json_Node * Rdf_ExpandValue (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, 
   }
   Rdf_SetKey (pool, &(o), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s434, 6 }), value, err);
   if (err->exc) { m9ln = 2804; goto L_hdl_m9t1; };
-  bool m9t9 = ({ bool m9t8 = ({ bool m9t7 = ({ bool m9t6 = (k >= INT64_C(0)); if (m9t6) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a352 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;   if (err->exc) { m9ln = 2805; goto L_hdl_m9t1; }; m9t6 = ((Text_BLen (m9a352, err) > INT64_C(0))); } } m9t6; }); if (m9t7) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a353 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;   if (err->exc) { m9ln = 2805; goto L_hdl_m9t1; }; m9t7 = ((!Text_EqUtf (m9a353, ((m9_sl_UTF8){ (uint8_t *) m9s435, 3 }), err))); } } m9t7; }); if (m9t8) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a354 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;   if (err->exc) { m9ln = 2805; goto L_hdl_m9t1; }; m9t8 = ((!Text_EqUtf (m9a354, ((m9_sl_UTF8){ (uint8_t *) m9s436, 6 }), err))); } } m9t8; });
+  bool m9t9 = ({ bool m9t8 = ({ bool m9t7 = ({ bool m9t6 = (k >= INT64_C(0)); if (m9t6) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a354 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;   if (err->exc) { m9ln = 2805; goto L_hdl_m9t1; }; m9t6 = ((Text_BLen (m9a354, err) > INT64_C(0))); } } m9t6; }); if (m9t7) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a355 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;   if (err->exc) { m9ln = 2805; goto L_hdl_m9t1; }; m9t7 = ((!Text_EqUtf (m9a355, ((m9_sl_UTF8){ (uint8_t *) m9s435, 3 }), err))); } } m9t7; }); if (m9t8) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a356 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;   if (err->exc) { m9ln = 2805; goto L_hdl_m9t1; }; m9t8 = ((!Text_EqUtf (m9a356, ((m9_sl_UTF8){ (uint8_t *) m9s436, 6 }), err))); } } m9t8; });
   if (err->exc) { m9ln = 2805; goto L_hdl_m9t1; };
   if (m9t9) {
-    { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a355 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;
+    { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a357 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;
       if (err->exc) { m9ln = 2807; goto L_hdl_m9t1; };
-    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a355, err);
+    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a357, err);
       if (err->exc) { m9ln = 2807; goto L_hdl_m9t1; };
       s = m9v;
     }
@@ -10393,14 +10399,14 @@ static Json_Node * Rdf_ExpandValue (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, 
       bool m9t11 = ((k >= INT64_C(0)) && (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).hasLang);
       if (err->exc) { m9ln = 2810; goto L_hdl_m9t1; };
       if (m9t11) {
-        { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang) m9a356 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang;
+        { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang) m9a358 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang;
           if (err->exc) { m9ln = 2811; goto L_hdl_m9t1; };
-        bool m9t12 = (Text_BLen (m9a356, err) > INT64_C(0));
+        bool m9t12 = (Text_BLen (m9a358, err) > INT64_C(0));
         if (err->exc) { m9ln = 2811; goto L_hdl_m9t1; };
         if (m9t12) {
-          { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang) m9a357 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang;
+          { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang) m9a359 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang;
             if (err->exc) { m9ln = 2812; goto L_hdl_m9t1; };
-          { __typeof__(s) m9v = Json_NewStrIn (pool, m9a357, err);
+          { __typeof__(s) m9v = Json_NewStrIn (pool, m9a359, err);
             if (err->exc) { m9ln = 2812; goto L_hdl_m9t1; };
             s = m9v;
           }
@@ -10520,7 +10526,7 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
         k = m9v;
       }
     }
-    { __typeof__(listCtx) m9v = ({ bool m9t8 = ((hasProp && Text_EqUtf (activeProp, ((m9_sl_UTF8){ (uint8_t *) m9s442, 5 }), err))); if (!m9t8) { m9t8 = ((({ bool m9t7 = (k >= INT64_C(0)); if (m9t7) { { __typeof__((*(Rdf_TermDef *) m9_at (c.defs.p, k, c.defs.len, sizeof (Rdf_TermDef), err)).container) m9a358 = (*(Rdf_TermDef *) m9_at (c.defs.p, k, c.defs.len, sizeof (Rdf_TermDef), err)).container;   if (err->exc) { m9ln = 2849; goto L_hdl_m9t1; }; m9t7 = (Text_EqUtf (m9a358, ((m9_sl_UTF8){ (uint8_t *) m9s443, 5 }), err)); } } m9t7; }))); } m9t8; });
+    { __typeof__(listCtx) m9v = ({ bool m9t8 = ((hasProp && Text_EqUtf (activeProp, ((m9_sl_UTF8){ (uint8_t *) m9s442, 5 }), err))); if (!m9t8) { m9t8 = ((({ bool m9t7 = (k >= INT64_C(0)); if (m9t7) { { __typeof__((*(Rdf_TermDef *) m9_at (c.defs.p, k, c.defs.len, sizeof (Rdf_TermDef), err)).container) m9a360 = (*(Rdf_TermDef *) m9_at (c.defs.p, k, c.defs.len, sizeof (Rdf_TermDef), err)).container;   if (err->exc) { m9ln = 2849; goto L_hdl_m9t1; }; m9t7 = (Text_EqUtf (m9a360, ((m9_sl_UTF8){ (uint8_t *) m9s443, 5 }), err)); } } m9t7; }))); } m9t8; });
       if (err->exc) { m9ln = 2849; goto L_hdl_m9t1; };
       listCtx = m9v;
     }
@@ -10530,7 +10536,9 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
     if (err->exc) { m9ln = 2850; goto L_hdl_m9t1; };
     if (i <= m9t9to) for (;;) {
       M9_YCHK ();
-      { Json_Node * x = Rdf_Expand (pool, st, st_pool, &(c), activeProp, hasProp, Json_Item (element, i, err), err);
+      { __typeof__(Json_Item (element, i, err)) m9a361 = Json_Item (element, i, err);
+        if (err->exc) { m9ln = 2851; goto L_hdl_m9t1; };
+      { Json_Node * x = Rdf_Expand (pool, st, st_pool, &(c), activeProp, hasProp, m9a361, err);
       if (err->exc) { m9ln = 2851; goto L_hdl_m9t1; };
       if (x != NULL) {
         bool m9t10 = (listCtx && ((Rdf_IsArr (x, err) || Rdf_IsListObj (x, err))));
@@ -10548,9 +10556,9 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
           if (err->exc) { m9ln = 2854; goto L_hdl_m9t1; };
           if (j <= m9t12to) for (;;) {
             M9_YCHK ();
-            { __typeof__(Json_Item (x, j, err)) m9a359 = Json_Item (x, j, err);
+            { __typeof__(Json_Item (x, j, err)) m9a362 = Json_Item (x, j, err);
               if (err->exc) { m9ln = 2855; goto L_hdl_m9t1; };
-            { __typeof__(item) m9v = Json_CloneIn (pool, m9a359, err);
+            { __typeof__(item) m9v = Json_CloneIn (pool, m9a362, err);
               if (err->exc) { m9ln = 2855; goto L_hdl_m9t1; };
               item = m9v;
             }
@@ -10566,6 +10574,7 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
           if (err->exc) { m9ln = 2860; goto L_hdl_m9t1; };
         }
       } }
+      }
       if ((uint64_t) m9t9to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
     } }
@@ -10576,9 +10585,9 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
   bool m9t13 = Rdf_Has (element, ((m9_sl_UTF8){ (uint8_t *) m9s445, 8 }), err);
   if (err->exc) { m9ln = 2867; goto L_hdl_m9t1; };
   if (m9t13) {
-    { __typeof__(Rdf_JGet (element, ((m9_sl_UTF8){ (uint8_t *) m9s446, 8 }), err)) m9a360 = Rdf_JGet (element, ((m9_sl_UTF8){ (uint8_t *) m9s446, 8 }), err);
+    { __typeof__(Rdf_JGet (element, ((m9_sl_UTF8){ (uint8_t *) m9s446, 8 }), err)) m9a363 = Rdf_JGet (element, ((m9_sl_UTF8){ (uint8_t *) m9s446, 8 }), err);
       if (err->exc) { m9ln = 2867; goto L_hdl_m9t1; };
-    { __typeof__(c) m9v = Rdf_ProcessContext (pool, st, st_pool, &(c), m9a360, err);
+    { __typeof__(c) m9v = Rdf_ProcessContext (pool, st, st_pool, &(c), m9a363, err);
       if (err->exc) { m9ln = 2867; goto L_hdl_m9t1; };
       c = m9v;
     }
@@ -10651,11 +10660,11 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
               Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s452, 17 }), ((m9_sl_UTF8){ NULL, 0 }), err);
               if (err->exc) { m9ln = 2883; goto L_hdl_m9t1; };
             }
-            { __typeof__(Rdf_JStr (value, err)) m9a361 = Rdf_JStr (value, err);
+            { __typeof__(Rdf_JStr (value, err)) m9a364 = Rdf_JStr (value, err);
               if (err->exc) { m9ln = 2884; goto L_hdl_m9t1; };
-            { __typeof__(Rdf_ExpandIri (pool, &(c), err->res, m9a361, true, false, NULL, &(df), err->res, &(nul), err)) m9a362 = Rdf_ExpandIri (pool, &(c), err->res, m9a361, true, false, NULL, &(df), err->res, &(nul), err);
+            { __typeof__(Rdf_ExpandIri (pool, &(c), err->res, m9a364, true, false, NULL, &(df), err->res, &(nul), err)) m9a365 = Rdf_ExpandIri (pool, &(c), err->res, m9a364, true, false, NULL, &(df), err->res, &(nul), err);
               if (err->exc) { m9ln = 2884; goto L_hdl_m9t1; };
-            { __typeof__(s) m9v = Json_NewStrIn (pool, m9a362, err);
+            { __typeof__(s) m9v = Json_NewStrIn (pool, m9a365, err);
               if (err->exc) { m9ln = 2884; goto L_hdl_m9t1; };
               s = m9v;
             }
@@ -10670,11 +10679,11 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
               bool m9t23 = Rdf_IsStr (value, err);
               if (err->exc) { m9ln = 2887; goto L_hdl_m9t1; };
               if (m9t23) {
-                { __typeof__(Rdf_JStr (value, err)) m9a363 = Rdf_JStr (value, err);
+                { __typeof__(Rdf_JStr (value, err)) m9a366 = Rdf_JStr (value, err);
                   if (err->exc) { m9ln = 2888; goto L_hdl_m9t1; };
-                { __typeof__(Rdf_ExpandIri (pool, &(c), err->res, m9a363, true, true, NULL, &(df), err->res, &(nul), err)) m9a364 = Rdf_ExpandIri (pool, &(c), err->res, m9a363, true, true, NULL, &(df), err->res, &(nul), err);
+                { __typeof__(Rdf_ExpandIri (pool, &(c), err->res, m9a366, true, true, NULL, &(df), err->res, &(nul), err)) m9a367 = Rdf_ExpandIri (pool, &(c), err->res, m9a366, true, true, NULL, &(df), err->res, &(nul), err);
                   if (err->exc) { m9ln = 2888; goto L_hdl_m9t1; };
-                { __typeof__(s) m9v = Json_NewStrIn (pool, m9a364, err);
+                { __typeof__(s) m9v = Json_NewStrIn (pool, m9a367, err);
                   if (err->exc) { m9ln = 2888; goto L_hdl_m9t1; };
                   s = m9v;
                 }
@@ -10696,21 +10705,21 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                   if (err->exc) { m9ln = 2892; goto L_hdl_m9t1; };
                   if (j <= m9t25to) for (;;) {
                     M9_YCHK ();
-                    { __typeof__(Json_Item (value, j, err)) m9a365 = Json_Item (value, j, err);
+                    { __typeof__(Json_Item (value, j, err)) m9a368 = Json_Item (value, j, err);
                       if (err->exc) { m9ln = 2893; goto L_hdl_m9t1; };
-                    bool m9t26 = (!Rdf_IsStr (m9a365, err));
+                    bool m9t26 = (!Rdf_IsStr (m9a368, err));
                     if (err->exc) { m9ln = 2893; goto L_hdl_m9t1; };
                     if (m9t26) {
                       Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s456, 18 }), ((m9_sl_UTF8){ NULL, 0 }), err);
                       if (err->exc) { m9ln = 2893; goto L_hdl_m9t1; };
                     } }
-                    { __typeof__(Json_Item (value, j, err)) m9a366 = Json_Item (value, j, err);
+                    { __typeof__(Json_Item (value, j, err)) m9a369 = Json_Item (value, j, err);
                       if (err->exc) { m9ln = 2894; goto L_hdl_m9t1; };
-                    { __typeof__(Rdf_JStr (m9a366, err)) m9a367 = Rdf_JStr (m9a366, err);
+                    { __typeof__(Rdf_JStr (m9a369, err)) m9a370 = Rdf_JStr (m9a369, err);
                       if (err->exc) { m9ln = 2894; goto L_hdl_m9t1; };
-                    { __typeof__(Rdf_ExpandIri (pool, &(c), err->res, m9a367, true, true, NULL, &(df), err->res, &(nul), err)) m9a368 = Rdf_ExpandIri (pool, &(c), err->res, m9a367, true, true, NULL, &(df), err->res, &(nul), err);
+                    { __typeof__(Rdf_ExpandIri (pool, &(c), err->res, m9a370, true, true, NULL, &(df), err->res, &(nul), err)) m9a371 = Rdf_ExpandIri (pool, &(c), err->res, m9a370, true, true, NULL, &(df), err->res, &(nul), err);
                       if (err->exc) { m9ln = 2894; goto L_hdl_m9t1; };
-                    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a368, err);
+                    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a371, err);
                       if (err->exc) { m9ln = 2894; goto L_hdl_m9t1; };
                       s = m9v;
                     }
@@ -10771,11 +10780,11 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                 Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s467, 30 }), ((m9_sl_UTF8){ NULL, 0 }), err);
                 if (err->exc) { m9ln = 2913; goto L_hdl_m9t1; };
               }
-              { __typeof__(Rdf_JStr (value, err)) m9a369 = Rdf_JStr (value, err);
+              { __typeof__(Rdf_JStr (value, err)) m9a372 = Rdf_JStr (value, err);
                 if (err->exc) { m9ln = 2914; goto L_hdl_m9t1; };
-              { __typeof__(Text_LowerUtf (m9a369, err)) m9a370 = Text_LowerUtf (m9a369, err);
+              { __typeof__(Text_LowerUtf (m9a372, err)) m9a373 = Text_LowerUtf (m9a372, err);
                 if (err->exc) { m9ln = 2914; goto L_hdl_m9t1; };
-              { __typeof__(s) m9v = Json_NewStrIn (pool, m9a370, err);
+              { __typeof__(s) m9v = Json_NewStrIn (pool, m9a373, err);
                 if (err->exc) { m9ln = 2914; goto L_hdl_m9t1; };
                 s = m9v;
               }
@@ -10820,9 +10829,9 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                     if (err->exc) { m9ln = 2924; goto L_hdl_m9t1; };
                     if (j <= m9t38to) for (;;) {
                       M9_YCHK ();
-                      { __typeof__(Json_Item (x, j, err)) m9a371 = Json_Item (x, j, err);
+                      { __typeof__(Json_Item (x, j, err)) m9a374 = Json_Item (x, j, err);
                         if (err->exc) { m9ln = 2925; goto L_hdl_m9t1; };
-                      bool m9t39 = Rdf_IsListObj (m9a371, err);
+                      bool m9t39 = Rdf_IsListObj (m9a374, err);
                       if (err->exc) { m9ln = 2925; goto L_hdl_m9t1; };
                       if (m9t39) {
                         Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s475, 13 }), ((m9_sl_UTF8){ NULL, 0 }), err);
@@ -10888,13 +10897,13 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                   if (err->exc) { m9ln = 2946; goto L_hdl_m9t1; };
                   if (j <= m9t44to) for (;;) {
                     M9_YCHK ();
-                    { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err))) m9a372 = (*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err));
+                    { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err))) m9a375 = (*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err));
                       if (err->exc) { m9ln = 2947; goto L_hdl_m9t1; };
-                    { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err))) m9a373 = (*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err));
+                    { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err))) m9a376 = (*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err));
                       if (err->exc) { m9ln = 2947; goto L_hdl_m9t1; };
-                    { __typeof__(Rdf_JGet (inner, m9a373, err)) m9a374 = Rdf_JGet (inner, m9a373, err);
+                    { __typeof__(Rdf_JGet (inner, m9a376, err)) m9a377 = Rdf_JGet (inner, m9a376, err);
                       if (err->exc) { m9ln = 2947; goto L_hdl_m9t1; };
-                    Rdf_AddTo (pool, &(result), &((*pool)), m9a372, m9a374, err);
+                    Rdf_AddTo (pool, &(result), &((*pool)), m9a375, m9a377, err);
                     if (err->exc) { m9ln = 2947; goto L_hdl_m9t1; };
                     }
                     }
@@ -10913,9 +10922,9 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                 if (err->exc) { m9ln = 2951; goto L_hdl_m9t1; };
                 if (j <= m9t45to) for (;;) {
                   M9_YCHK ();
-                  { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err))) m9a375 = (*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err));
+                  { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err))) m9a378 = (*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err));
                     if (err->exc) { m9ln = 2952; goto L_hdl_m9t1; };
-                  bool m9t46 = (!Text_EqUtf (m9a375, ((m9_sl_UTF8){ (uint8_t *) m9s485, 8 }), err));
+                  bool m9t46 = (!Text_EqUtf (m9a378, ((m9_sl_UTF8){ (uint8_t *) m9s485, 8 }), err));
                   if (err->exc) { m9ln = 2952; goto L_hdl_m9t1; };
                   if (m9t46) {
                     { Json_Node * rm = Json_Field (result, ((m9_sl_UTF8){ (uint8_t *) m9s486, 8 }), err);
@@ -10930,9 +10939,9 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                       Json_Set (&(result), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s487, 8 }), &(rev), &((*pool)), err);
                       if (err->exc) { m9ln = 2956; goto L_hdl_m9t1; };
                     } }
-                    { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err))) m9a376 = (*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err));
+                    { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err))) m9a379 = (*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err));
                       if (err->exc) { m9ln = 2958; goto L_hdl_m9t1; };
-                    { __typeof__(ev) m9v = Rdf_JGet (x, m9a376, err);
+                    { __typeof__(ev) m9v = Rdf_JGet (x, m9a379, err);
                       if (err->exc) { m9ln = 2958; goto L_hdl_m9t1; };
                       ev = m9v;
                     }
@@ -10953,9 +10962,9 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                         Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s488, 30 }), ((m9_sl_UTF8){ NULL, 0 }), err);
                         if (err->exc) { m9ln = 2961; goto L_hdl_m9t1; };
                       }
-                      { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err))) m9a377 = (*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err));
+                      { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err))) m9a380 = (*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err));
                         if (err->exc) { m9ln = 2962; goto L_hdl_m9t1; };
-                      Rdf_AddTo (pool, &(rev), &((*pool)), m9a377, item, err);
+                      Rdf_AddTo (pool, &(rev), &((*pool)), m9a380, item, err);
                       if (err->exc) { m9ln = 2962; goto L_hdl_m9t1; };
                       }
                       if ((uint64_t) m9t47to - (uint64_t) k < (uint64_t) 1) break;
@@ -10997,11 +11006,11 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
           if (err->exc) { m9ln = 2977; goto L_hdl_m9t1; };
           if (j <= m9t50to) for (;;) {
             M9_YCHK ();
-            { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err))) m9a378 = (*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err));
+            { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err))) m9a381 = (*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err));
               if (err->exc) { m9ln = 2978; goto L_hdl_m9t1; };
-            { __typeof__(Rdf_JGet (value, m9a378, err)) m9a379 = Rdf_JGet (value, m9a378, err);
+            { __typeof__(Rdf_JGet (value, m9a381, err)) m9a382 = Rdf_JGet (value, m9a381, err);
               if (err->exc) { m9ln = 2978; goto L_hdl_m9t1; };
-            { __typeof__(arr) m9v = Rdf_Arrayified (pool, m9a379, err);
+            { __typeof__(arr) m9v = Rdf_Arrayified (pool, m9a382, err);
               if (err->exc) { m9ln = 2978; goto L_hdl_m9t1; };
               arr = m9v;
             }
@@ -11029,11 +11038,11 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
               }
               Rdf_SetKey (pool, &(langObj), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s491, 6 }), item, err);
               if (err->exc) { m9ln = 2983; goto L_hdl_m9t1; };
-              { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err))) m9a380 = (*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err));
+              { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err))) m9a383 = (*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err));
                 if (err->exc) { m9ln = 2984; goto L_hdl_m9t1; };
-              { __typeof__(Text_LowerUtf (m9a380, err)) m9a381 = Text_LowerUtf (m9a380, err);
+              { __typeof__(Text_LowerUtf (m9a383, err)) m9a384 = Text_LowerUtf (m9a383, err);
                 if (err->exc) { m9ln = 2984; goto L_hdl_m9t1; };
-              { __typeof__(s) m9v = Json_NewStrIn (pool, m9a381, err);
+              { __typeof__(s) m9v = Json_NewStrIn (pool, m9a384, err);
                 if (err->exc) { m9ln = 2984; goto L_hdl_m9t1; };
                 s = m9v;
               }
@@ -11067,7 +11076,13 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
             if (err->exc) { m9ln = 2992; goto L_hdl_m9t1; };
             if (j <= m9t54to) for (;;) {
               M9_YCHK ();
-              { Json_Node * x = Rdf_Expand (pool, st, st_pool, &(c), key, true, Rdf_Arrayified (pool, Rdf_JGet (value, (*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err)), err), err), err);
+              { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err))) m9a385 = (*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err));
+                if (err->exc) { m9ln = 2993; goto L_hdl_m9t1; };
+              { __typeof__(Rdf_JGet (value, m9a385, err)) m9a386 = Rdf_JGet (value, m9a385, err);
+                if (err->exc) { m9ln = 2993; goto L_hdl_m9t1; };
+              { __typeof__(Rdf_Arrayified (pool, m9a386, err)) m9a387 = Rdf_Arrayified (pool, m9a386, err);
+                if (err->exc) { m9ln = 2993; goto L_hdl_m9t1; };
+              { Json_Node * x = Rdf_Expand (pool, st, st_pool, &(c), key, true, m9a387, err);
               if (err->exc) { m9ln = 2993; goto L_hdl_m9t1; };
               if (x != NULL) {
                 { __typeof__(arr) m9v = Rdf_Arrayified (pool, x, err);
@@ -11080,9 +11095,9 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                 if (err->exc) { m9ln = 2995; goto L_hdl_m9t1; };
                 if (n <= m9t55to) for (;;) {
                   M9_YCHK ();
-                  { __typeof__(Json_Item (arr, n, err)) m9a382 = Json_Item (arr, n, err);
+                  { __typeof__(Json_Item (arr, n, err)) m9a388 = Json_Item (arr, n, err);
                     if (err->exc) { m9ln = 2996; goto L_hdl_m9t1; };
-                  { __typeof__(item) m9v = Json_CloneIn (pool, m9a382, err);
+                  { __typeof__(item) m9v = Json_CloneIn (pool, m9a388, err);
                     if (err->exc) { m9ln = 2996; goto L_hdl_m9t1; };
                     item = m9v;
                   }
@@ -11090,9 +11105,9 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                   bool m9t56 = (!Rdf_Has (item, ((m9_sl_UTF8){ (uint8_t *) m9s494, 6 }), err));
                   if (err->exc) { m9ln = 2997; goto L_hdl_m9t1; };
                   if (m9t56) {
-                    { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err))) m9a383 = (*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err));
+                    { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err))) m9a389 = (*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err));
                       if (err->exc) { m9ln = 2998; goto L_hdl_m9t1; };
-                    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a383, err);
+                    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a389, err);
                       if (err->exc) { m9ln = 2998; goto L_hdl_m9t1; };
                       s = m9v;
                     }
@@ -11106,6 +11121,9 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                   n += 1;
                 } }
               } }
+              }
+              }
+              }
               if ((uint64_t) m9t54to - (uint64_t) j < (uint64_t) 1) break;
               j += 1;
             } }
@@ -11221,18 +11239,18 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
       Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s509, 20 }), ((m9_sl_UTF8){ NULL, 0 }), err);
       if (err->exc) { m9ln = 3046; goto L_hdl_m9t1; };
     }
-    { __typeof__(Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s510, 6 }), err)) m9a384 = Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s510, 6 }), err);
+    { __typeof__(Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s510, 6 }), err)) m9a390 = Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s510, 6 }), err);
       if (err->exc) { m9ln = 3047; goto L_hdl_m9t1; };
-    bool m9t66 = Json_IsNull (m9a384, err);
+    bool m9t66 = Json_IsNull (m9a390, err);
     if (err->exc) { m9ln = 3047; goto L_hdl_m9t1; };
     if (m9t66) {
       err->res = m9res;
       m9ret = NULL;
       goto L_ret;
     } }
-    { __typeof__(Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s511, 6 }), err)) m9a385 = Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s511, 6 }), err);
+    { __typeof__(Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s511, 6 }), err)) m9a391 = Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s511, 6 }), err);
       if (err->exc) { m9ln = 3048; goto L_hdl_m9t1; };
-    bool m9t67 = ((!Rdf_IsStr (m9a385, err)) && Rdf_Has (result, ((m9_sl_UTF8){ (uint8_t *) m9s512, 9 }), err));
+    bool m9t67 = ((!Rdf_IsStr (m9a391, err)) && Rdf_Has (result, ((m9_sl_UTF8){ (uint8_t *) m9s512, 9 }), err));
     if (err->exc) { m9ln = 3048; goto L_hdl_m9t1; };
     if (m9t67) {
       Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s513, 29 }), ((m9_sl_UTF8){ NULL, 0 }), err);
@@ -11241,9 +11259,9 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
     bool m9t68 = Rdf_Has (result, ((m9_sl_UTF8){ (uint8_t *) m9s514, 5 }), err);
     if (err->exc) { m9ln = 3051; goto L_hdl_m9t1; };
     if (m9t68) {
-      { __typeof__(Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s515, 5 }), err)) m9a386 = Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s515, 5 }), err);
+      { __typeof__(Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s515, 5 }), err)) m9a392 = Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s515, 5 }), err);
         if (err->exc) { m9ln = 3052; goto L_hdl_m9t1; };
-      bool m9t70 = ({ bool m9t69 = (!Rdf_IsStr (m9a386, err)); if (!m9t69) { { __typeof__(Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s516, 5 }), err)) m9a387 = Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s516, 5 }), err);   if (err->exc) { m9ln = 3052; goto L_hdl_m9t1; }; { __typeof__(Rdf_JStr (m9a387, err)) m9a388 = Rdf_JStr (m9a387, err);   if (err->exc) { m9ln = 3052; goto L_hdl_m9t1; }; m9t69 = ((!Rdf_IsAbsolute (m9a388, err))); } } } m9t69; });
+      bool m9t70 = ({ bool m9t69 = (!Rdf_IsStr (m9a392, err)); if (!m9t69) { { __typeof__(Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s516, 5 }), err)) m9a393 = Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s516, 5 }), err);   if (err->exc) { m9ln = 3052; goto L_hdl_m9t1; }; { __typeof__(Rdf_JStr (m9a393, err)) m9a394 = Rdf_JStr (m9a393, err);   if (err->exc) { m9ln = 3052; goto L_hdl_m9t1; }; m9t69 = ((!Rdf_IsAbsolute (m9a394, err))); } } } m9t69; });
       if (err->exc) { m9ln = 3052; goto L_hdl_m9t1; };
       if (m9t70) {
         Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s517, 19 }), ((m9_sl_UTF8){ NULL, 0 }), err);
@@ -11251,12 +11269,12 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
       } }
     }
   } else {
-    bool m9t72 = ({ bool m9t71 = Rdf_Has (result, ((m9_sl_UTF8){ (uint8_t *) m9s518, 5 }), err); if (m9t71) { { __typeof__(Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s519, 5 }), err)) m9a389 = Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s519, 5 }), err);   if (err->exc) { m9ln = 3053; goto L_hdl_m9t1; }; m9t71 = ((!Rdf_IsArr (m9a389, err))); } } m9t71; });
+    bool m9t72 = ({ bool m9t71 = Rdf_Has (result, ((m9_sl_UTF8){ (uint8_t *) m9s518, 5 }), err); if (m9t71) { { __typeof__(Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s519, 5 }), err)) m9a395 = Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s519, 5 }), err);   if (err->exc) { m9ln = 3053; goto L_hdl_m9t1; }; m9t71 = ((!Rdf_IsArr (m9a395, err))); } } m9t71; });
     if (err->exc) { m9ln = 3053; goto L_hdl_m9t1; };
     if (m9t72) {
-      { __typeof__(Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s520, 5 }), err)) m9a390 = Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s520, 5 }), err);
+      { __typeof__(Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s520, 5 }), err)) m9a396 = Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s520, 5 }), err);
         if (err->exc) { m9ln = 3057; goto L_hdl_m9t1; };
-      { __typeof__(arr) m9v = Rdf_Arrayified (pool, m9a390, err);
+      { __typeof__(arr) m9v = Rdf_Arrayified (pool, m9a396, err);
         if (err->exc) { m9ln = 3057; goto L_hdl_m9t1; };
         arr = m9v;
       }
@@ -11376,9 +11394,9 @@ static m9_sl_UTF8 Rdf_BlankFor (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool,
   int32_t m9ln = 0; (void) m9ln;
   m9_sl_UTF8 m9ret = {0};
   err->res = m9res;
-  { __typeof__(m9_utf_slice (id, INT64_C(2), m9_sub_i64 (Text_BLen (id, err), INT64_C(2), err), err)) m9a391 = m9_utf_slice (id, INT64_C(2), m9_sub_i64 (Text_BLen (id, err), INT64_C(2), err), err);
+  { __typeof__(m9_utf_slice (id, INT64_C(2), m9_sub_i64 (Text_BLen (id, err), INT64_C(2), err), err)) m9a397 = m9_utf_slice (id, INT64_C(2), m9_sub_i64 (Text_BLen (id, err), INT64_C(2), err), err);
     if (err->exc) { m9ln = 3096; goto L_ret; };
-  m9ret = ({ m9_sl_UTF8 m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s537, 2 }); m9_utf_cat (err->res, m9t2, Rdf_Labelled (pool, &((*st).r), st_pool, m9a391, err), err); });
+  m9ret = ({ m9_sl_UTF8 m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s537, 2 }); m9_utf_cat (err->res, m9t2, Rdf_Labelled (pool, &((*st).r), st_pool, m9a397, err), err); });
   if (err->exc) { m9ln = 3096; goto L_ret; };
   }
   goto L_ret;
@@ -11445,9 +11463,9 @@ static Json_Node * Rdf_NodeFor (m9_pool *pool, Rdf_NodeMap *nm, m9_pool *nm_pool
   if (err->exc) { m9ln = 3112; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     M9_YCHK ();
-    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*nm).ids.p, i, (*nm).ids.len, sizeof (m9_sl_UTF8), err))) m9a392 = (*(m9_sl_UTF8 *) m9_at ((*nm).ids.p, i, (*nm).ids.len, sizeof (m9_sl_UTF8), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*nm).ids.p, i, (*nm).ids.len, sizeof (m9_sl_UTF8), err))) m9a398 = (*(m9_sl_UTF8 *) m9_at ((*nm).ids.p, i, (*nm).ids.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) { m9ln = 3113; goto L_ret; };
-    bool m9t2 = Text_EqUtf (m9a392, id, err);
+    bool m9t2 = Text_EqUtf (m9a398, id, err);
     if (err->exc) { m9ln = 3113; goto L_ret; };
     if (m9t2) {
       err->res = m9res;
@@ -11545,11 +11563,11 @@ static bool Rdf_SameNode (Json_Node * a, Json_Node * b, m9_state *err)
   int32_t m9ln = 0; (void) m9ln;
   bool m9ret = false;
   err->res = m9res;
-  { __typeof__(Json_CompactSorted (a, err)) m9a393 = Json_CompactSorted (a, err);
+  { __typeof__(Json_CompactSorted (a, err)) m9a399 = Json_CompactSorted (a, err);
     if (err->exc) { m9ln = 3140; goto L_hdl_m9t1; };
-  { __typeof__(Json_CompactSorted (b, err)) m9a394 = Json_CompactSorted (b, err);
+  { __typeof__(Json_CompactSorted (b, err)) m9a400 = Json_CompactSorted (b, err);
     if (err->exc) { m9ln = 3140; goto L_hdl_m9t1; };
-  m9ret = Text_EqUtf (m9a393, m9a394, err);
+  m9ret = Text_EqUtf (m9a399, m9a400, err);
   if (err->exc) { m9ln = 3140; goto L_hdl_m9t1; };
   }
   }
@@ -11603,7 +11621,9 @@ static void Rdf_AddUnique (m9_pool *pool, Json_Node * *node, m9_pool *node_pool,
     if (err->exc) { m9ln = 3156; goto L_hdl_m9t1; };
     k = m9v;
   }
-  { Json_Node * e = Json_Field (({ __auto_type m9n = ((*node)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); }), k, err);
+  { __typeof__(({ __auto_type m9n = ((*node)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a401 = ({ __auto_type m9n = ((*node)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+    if (err->exc) { m9ln = 3157; goto L_hdl_m9t1; };
+  { Json_Node * e = Json_Field (m9a401, k, err);
   if (err->exc) { m9ln = 3157; goto L_hdl_m9t1; };
   if (e != NULL) {
     a = e;
@@ -11615,15 +11635,16 @@ static void Rdf_AddUnique (m9_pool *pool, Json_Node * *node, m9_pool *node_pool,
     Json_Set (node, node_pool, k, &(a), &((*pool)), err);
     if (err->exc) { m9ln = 3161; goto L_hdl_m9t1; };
   } }
+  }
   { __typeof__(i) m9t3to;
   i = INT64_C(0);
   m9t3to = m9_sub_i64 (Rdf_Items (a, err), INT64_C(1), err);
   if (err->exc) { m9ln = 3163; goto L_hdl_m9t1; };
   if (i <= m9t3to) for (;;) {
     M9_YCHK ();
-    { __typeof__(Json_Item (a, i, err)) m9a395 = Json_Item (a, i, err);
+    { __typeof__(Json_Item (a, i, err)) m9a402 = Json_Item (a, i, err);
       if (err->exc) { m9ln = 3164; goto L_hdl_m9t1; };
-    bool m9t4 = Rdf_SameNode (m9a395, v, err);
+    bool m9t4 = Rdf_SameNode (m9a402, v, err);
     if (err->exc) { m9ln = 3164; goto L_hdl_m9t1; };
     if (m9t4) {
       goto L_ret;
@@ -11739,9 +11760,9 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
     if (err->exc) { m9ln = 3200; goto L_hdl_m9t1; };
     if (i <= m9t4to) for (;;) {
       M9_YCHK ();
-      { __typeof__(Json_Item (element, i, err)) m9a396 = Json_Item (element, i, err);
+      { __typeof__(Json_Item (element, i, err)) m9a403 = Json_Item (element, i, err);
         if (err->exc) { m9ln = 3201; goto L_hdl_m9t1; };
-      Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a396, subject, prop, reverse, list, err);
+      Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a403, subject, prop, reverse, list, err);
       if (err->exc) { m9ln = 3201; goto L_hdl_m9t1; };
       }
       if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
@@ -11793,9 +11814,9 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
     }
     Json_Set (&(listObj), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s544, 5 }), &(arr), &((*pool)), err);
     if (err->exc) { m9ln = 3224; goto L_hdl_m9t1; };
-    { __typeof__(Rdf_JGet (element, ((m9_sl_UTF8){ (uint8_t *) m9s545, 5 }), err)) m9a397 = Rdf_JGet (element, ((m9_sl_UTF8){ (uint8_t *) m9s545, 5 }), err);
+    { __typeof__(Rdf_JGet (element, ((m9_sl_UTF8){ (uint8_t *) m9s545, 5 }), err)) m9a404 = Rdf_JGet (element, ((m9_sl_UTF8){ (uint8_t *) m9s545, 5 }), err);
       if (err->exc) { m9ln = 3225; goto L_hdl_m9t1; };
-    Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a397, subject, prop, reverse, listObj, err);
+    Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a404, subject, prop, reverse, listObj, err);
     if (err->exc) { m9ln = 3225; goto L_hdl_m9t1; };
     }
     { Json_Node * l = list;
@@ -11820,9 +11841,9 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
   bool m9t10 = Rdf_Has (element, ((m9_sl_UTF8){ (uint8_t *) m9s547, 3 }), err);
   if (err->exc) { m9ln = 3238; goto L_hdl_m9t1; };
   if (m9t10) {
-    { __typeof__(Rdf_JGet (element, ((m9_sl_UTF8){ (uint8_t *) m9s548, 3 }), err)) m9a398 = Rdf_JGet (element, ((m9_sl_UTF8){ (uint8_t *) m9s548, 3 }), err);
+    { __typeof__(Rdf_JGet (element, ((m9_sl_UTF8){ (uint8_t *) m9s548, 3 }), err)) m9a405 = Rdf_JGet (element, ((m9_sl_UTF8){ (uint8_t *) m9s548, 3 }), err);
       if (err->exc) { m9ln = 3239; goto L_hdl_m9t1; };
-    { __typeof__(id) m9v = Rdf_JStr (m9a398, err);
+    { __typeof__(id) m9v = Rdf_JStr (m9a405, err);
       if (err->exc) { m9ln = 3239; goto L_hdl_m9t1; };
       id = m9v;
     }
@@ -11905,9 +11926,9 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
     if (err->exc) { m9ln = 3273; goto L_hdl_m9t1; };
     if (i <= m9t14to) for (;;) {
       M9_YCHK ();
-      { __typeof__(Json_Item (types, i, err)) m9a399 = Json_Item (types, i, err);
+      { __typeof__(Json_Item (types, i, err)) m9a406 = Json_Item (types, i, err);
         if (err->exc) { m9ln = 3274; goto L_hdl_m9t1; };
-      Rdf_AddUnique (pool, &(node), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s553, 5 }), m9a399, err);
+      Rdf_AddUnique (pool, &(node), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s553, 5 }), m9a406, err);
       if (err->exc) { m9ln = 3274; goto L_hdl_m9t1; };
       }
       if ((uint64_t) m9t14to - (uint64_t) i < (uint64_t) 1) break;
@@ -11931,9 +11952,9 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
     if (err->exc) { m9ln = 3280; goto L_hdl_m9t1; };
     if (i <= m9t16to) for (;;) {
       M9_YCHK ();
-      { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_UTF8), err))) m9a400 = (*(m9_sl_UTF8 *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_UTF8), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_UTF8), err))) m9a407 = (*(m9_sl_UTF8 *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) { m9ln = 3281; goto L_hdl_m9t1; };
-      { __typeof__(arr) m9v = Rdf_JGet (inner, m9a400, err);
+      { __typeof__(arr) m9v = Rdf_JGet (inner, m9a407, err);
         if (err->exc) { m9ln = 3281; goto L_hdl_m9t1; };
         arr = m9v;
       }
@@ -11944,11 +11965,11 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
       if (err->exc) { m9ln = 3282; goto L_hdl_m9t1; };
       if (j <= m9t17to) for (;;) {
         M9_YCHK ();
-        { __typeof__(Json_Item (arr, j, err)) m9a401 = Json_Item (arr, j, err);
+        { __typeof__(Json_Item (arr, j, err)) m9a408 = Json_Item (arr, j, err);
           if (err->exc) { m9ln = 3283; goto L_hdl_m9t1; };
-        { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_UTF8), err))) m9a402 = (*(m9_sl_UTF8 *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_UTF8), err));
+        { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_UTF8), err))) m9a409 = (*(m9_sl_UTF8 *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_UTF8), err));
           if (err->exc) { m9ln = 3283; goto L_hdl_m9t1; };
-        Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a401, id, m9a402, true, NULL, err);
+        Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a408, id, m9a409, true, NULL, err);
         if (err->exc) { m9ln = 3283; goto L_hdl_m9t1; };
         }
         }
@@ -12000,9 +12021,9 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
         if (err->exc) { m9ln = 3300; goto L_hdl_m9t1; };
         if (j <= m9t22to) for (;;) {
           M9_YCHK ();
-          { __typeof__(Json_Item (arr, j, err)) m9a403 = Json_Item (arr, j, err);
+          { __typeof__(Json_Item (arr, j, err)) m9a410 = Json_Item (arr, j, err);
             if (err->exc) { m9ln = 3301; goto L_hdl_m9t1; };
-          Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a403, id, k, false, NULL, err);
+          Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a410, id, k, false, NULL, err);
           if (err->exc) { m9ln = 3301; goto L_hdl_m9t1; };
           }
           if ((uint64_t) m9t22to - (uint64_t) j < (uint64_t) 1) break;
@@ -12148,9 +12169,9 @@ static m9_sl_UTF8 Rdf_CanonDouble (double r, m9_state *err)
   }
   exp_ = INT64_C(0);
   if ((e >= INT64_C(0))) {
-    { __typeof__(m9_utf_slice (s, m9_add_i64 (e, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (s, err), e, err), INT64_C(1), err), err)) m9a404 = m9_utf_slice (s, m9_add_i64 (e, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (s, err), e, err), INT64_C(1), err), err);
+    { __typeof__(m9_utf_slice (s, m9_add_i64 (e, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (s, err), e, err), INT64_C(1), err), err)) m9a411 = m9_utf_slice (s, m9_add_i64 (e, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (s, err), e, err), INT64_C(1), err), err);
       if (err->exc) { m9ln = 3343; goto L_hdl_m9t1; };
-    { __typeof__(exp_) m9v = Rdf_IntOf (m9a404, err);
+    { __typeof__(exp_) m9v = Rdf_IntOf (m9a411, err);
       if (err->exc) { m9ln = 3343; goto L_hdl_m9t1; };
       exp_ = m9v;
     }
@@ -12203,7 +12224,7 @@ static m9_sl_UTF8 Rdf_CanonDouble (double r, m9_state *err)
     exp_ = m9v;
   }
   for (;;) {
-    bool m9t10 = ({ bool m9t9 = (Text_BLen (digits, err) > INT64_C(1)); if (m9t9) { { __typeof__(m9_sub_i64 (Text_BLen (digits, err), INT64_C(1), err)) m9a405 = m9_sub_i64 (Text_BLen (digits, err), INT64_C(1), err);   if (err->exc) { m9ln = 3357; goto L_hdl_m9t1; }; m9t9 = (Text_BIs (digits, m9a405, 48u, err)); } } m9t9; });
+    bool m9t10 = ({ bool m9t9 = (Text_BLen (digits, err) > INT64_C(1)); if (m9t9) { { __typeof__(m9_sub_i64 (Text_BLen (digits, err), INT64_C(1), err)) m9a412 = m9_sub_i64 (Text_BLen (digits, err), INT64_C(1), err);   if (err->exc) { m9ln = 3357; goto L_hdl_m9t1; }; m9t9 = (Text_BIs (digits, m9a412, 48u, err)); } } m9t9; });
     if (err->exc) { m9ln = 3357; goto L_hdl_m9t1; };
     if (!(m9t10)) break;
     { __typeof__(digits) m9v = m9_utf_slice (digits, INT64_C(0), m9_sub_i64 (Text_BLen (digits, err), INT64_C(1), err), err);
@@ -12282,9 +12303,9 @@ static Rdf_Term Rdf_ObjectToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_poo
   bool m9t3 = (Rdf_Has (item, ((m9_sl_UTF8){ (uint8_t *) m9s572, 3 }), err) && (!Rdf_Has (item, ((m9_sl_UTF8){ (uint8_t *) m9s573, 6 }), err)));
   if (err->exc) { m9ln = 3378; goto L_hdl_m9t1; };
   if (m9t3) {
-    { __typeof__(Rdf_JGet (item, ((m9_sl_UTF8){ (uint8_t *) m9s574, 3 }), err)) m9a406 = Rdf_JGet (item, ((m9_sl_UTF8){ (uint8_t *) m9s574, 3 }), err);
+    { __typeof__(Rdf_JGet (item, ((m9_sl_UTF8){ (uint8_t *) m9s574, 3 }), err)) m9a413 = Rdf_JGet (item, ((m9_sl_UTF8){ (uint8_t *) m9s574, 3 }), err);
       if (err->exc) { m9ln = 3379; goto L_hdl_m9t1; };
-    { __typeof__(s) m9v = Rdf_JStr (m9a406, err);
+    { __typeof__(s) m9v = Rdf_JStr (m9a413, err);
       if (err->exc) { m9ln = 3379; goto L_hdl_m9t1; };
       s = m9v;
     }
@@ -12293,9 +12314,9 @@ static Rdf_Term Rdf_ObjectToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_poo
     if (err->exc) { m9ln = 3380; goto L_hdl_m9t1; };
     if (m9t4) {
       err->res = m9res;
-      { __typeof__(m9_utf_slice (s, INT64_C(2), m9_sub_i64 (Text_BLen (s, err), INT64_C(2), err), err)) m9a407 = m9_utf_slice (s, INT64_C(2), m9_sub_i64 (Text_BLen (s, err), INT64_C(2), err), err);
+      { __typeof__(m9_utf_slice (s, INT64_C(2), m9_sub_i64 (Text_BLen (s, err), INT64_C(2), err), err)) m9a414 = m9_utf_slice (s, INT64_C(2), m9_sub_i64 (Text_BLen (s, err), INT64_C(2), err), err);
         if (err->exc) { m9ln = 3380; goto L_hdl_m9t1; };
-      m9ret = Rdf_BlankT (m9a407, err);
+      m9ret = Rdf_BlankT (m9a414, err);
       if (err->exc) { m9ln = 3380; goto L_hdl_m9t1; };
       }
       goto L_ret;
@@ -12322,9 +12343,9 @@ static Rdf_Term Rdf_ObjectToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_poo
   bool m9t7 = Rdf_Has (item, ((m9_sl_UTF8){ (uint8_t *) m9s576, 5 }), err);
   if (err->exc) { m9ln = 3386; goto L_hdl_m9t1; };
   if (m9t7) {
-    { __typeof__(Rdf_JGet (item, ((m9_sl_UTF8){ (uint8_t *) m9s577, 5 }), err)) m9a408 = Rdf_JGet (item, ((m9_sl_UTF8){ (uint8_t *) m9s577, 5 }), err);
+    { __typeof__(Rdf_JGet (item, ((m9_sl_UTF8){ (uint8_t *) m9s577, 5 }), err)) m9a415 = Rdf_JGet (item, ((m9_sl_UTF8){ (uint8_t *) m9s577, 5 }), err);
       if (err->exc) { m9ln = 3386; goto L_hdl_m9t1; };
-    { __typeof__(dt) m9v = Rdf_JStr (m9a408, err);
+    { __typeof__(dt) m9v = Rdf_JStr (m9a415, err);
       if (err->exc) { m9ln = 3386; goto L_hdl_m9t1; };
       dt = m9v;
     }
@@ -12362,7 +12383,7 @@ static Rdf_Term Rdf_ObjectToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_poo
         if (err->exc) { m9ln = 3391; goto L_hdl_m9t1; };
         s = m9v;
       }
-      bool m9t13 = ({ bool m9t12 = (((Text_FindCharUtf (s, 46u, err) >= INT64_C(0)) || (Text_FindCharUtf (s, 101u, err) >= INT64_C(0))) || (Text_FindCharUtf (s, 69u, err) >= INT64_C(0))); if (!m9t12) { { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s582, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s583, 6 }), err)) m9a409 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s582, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s583, 6 }), err);   if (err->exc) { m9ln = 3392; goto L_hdl_m9t1; }; m9t12 = (Text_EqUtf (dt, m9a409, err)); } } m9t12; });
+      bool m9t13 = ({ bool m9t12 = (((Text_FindCharUtf (s, 46u, err) >= INT64_C(0)) || (Text_FindCharUtf (s, 101u, err) >= INT64_C(0))) || (Text_FindCharUtf (s, 69u, err) >= INT64_C(0))); if (!m9t12) { { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s582, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s583, 6 }), err)) m9a416 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s582, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s583, 6 }), err);   if (err->exc) { m9ln = 3392; goto L_hdl_m9t1; }; m9t12 = (Text_EqUtf (dt, m9a416, err)); } } m9t12; });
       if (err->exc) { m9ln = 3392; goto L_hdl_m9t1; };
       if (m9t13) {
         bool m9t14 = (Text_BLen (dt, err) == INT64_C(0));
@@ -12374,11 +12395,11 @@ static Rdf_Term Rdf_ObjectToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_poo
           }
         }
         err->res = m9res;
-        { __typeof__(Json_AsF64 (v, err)) m9a410 = Json_AsF64 (v, err);
+        { __typeof__(Json_AsF64 (v, err)) m9a417 = Json_AsF64 (v, err);
           if (err->exc) { m9ln = 3395; goto L_hdl_m9t1; };
-        { __typeof__(Rdf_CanonDouble (m9a410, err)) m9a411 = Rdf_CanonDouble (m9a410, err);
+        { __typeof__(Rdf_CanonDouble (m9a417, err)) m9a418 = Rdf_CanonDouble (m9a417, err);
           if (err->exc) { m9ln = 3395; goto L_hdl_m9t1; };
-        m9ret = Rdf_LitT (m9a411, ((m9_sl_UTF8){ NULL, 0 }), dt, err);
+        m9ret = Rdf_LitT (m9a418, ((m9_sl_UTF8){ NULL, 0 }), dt, err);
         if (err->exc) { m9ln = 3395; goto L_hdl_m9t1; };
         }
         }
@@ -12393,11 +12414,11 @@ static Rdf_Term Rdf_ObjectToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_poo
         }
       }
       err->res = m9res;
-      { __typeof__(Json_AsI64 (v, err)) m9a412 = Json_AsI64 (v, err);
+      { __typeof__(Json_AsI64 (v, err)) m9a419 = Json_AsI64 (v, err);
         if (err->exc) { m9ln = 3398; goto L_hdl_m9t1; };
-      { __typeof__(Fmt_I64Str (m9a412, err)) m9a413 = Fmt_I64Str (m9a412, err);
+      { __typeof__(Fmt_I64Str (m9a419, err)) m9a420 = Fmt_I64Str (m9a419, err);
         if (err->exc) { m9ln = 3398; goto L_hdl_m9t1; };
-      m9ret = Rdf_LitT (m9a413, ((m9_sl_UTF8){ NULL, 0 }), dt, err);
+      m9ret = Rdf_LitT (m9a420, ((m9_sl_UTF8){ NULL, 0 }), dt, err);
       if (err->exc) { m9ln = 3398; goto L_hdl_m9t1; };
       }
       }
@@ -12414,11 +12435,11 @@ static Rdf_Term Rdf_ObjectToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_poo
       if (err->exc) { m9ln = 3401; goto L_hdl_m9t1; };
       if (m9t17) {
         err->res = m9res;
-        { __typeof__(Rdf_JGet (item, ((m9_sl_UTF8){ (uint8_t *) m9s589, 9 }), err)) m9a414 = Rdf_JGet (item, ((m9_sl_UTF8){ (uint8_t *) m9s589, 9 }), err);
+        { __typeof__(Rdf_JGet (item, ((m9_sl_UTF8){ (uint8_t *) m9s589, 9 }), err)) m9a421 = Rdf_JGet (item, ((m9_sl_UTF8){ (uint8_t *) m9s589, 9 }), err);
           if (err->exc) { m9ln = 3401; goto L_hdl_m9t1; };
-        { __typeof__(Rdf_JStr (m9a414, err)) m9a415 = Rdf_JStr (m9a414, err);
+        { __typeof__(Rdf_JStr (m9a421, err)) m9a422 = Rdf_JStr (m9a421, err);
           if (err->exc) { m9ln = 3401; goto L_hdl_m9t1; };
-        m9ret = Rdf_LitT (s, m9a415, ((m9_sl_UTF8){ NULL, 0 }), err);
+        m9ret = Rdf_LitT (s, m9a422, ((m9_sl_UTF8){ NULL, 0 }), err);
         if (err->exc) { m9ln = 3401; goto L_hdl_m9t1; };
         }
         }
@@ -12493,16 +12514,16 @@ static Rdf_Term Rdf_ListToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool,
   }
   if ((n == INT64_C(0))) {
     err->res = m9res;
-    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s592, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s593, 3 }), err)) m9a416 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s592, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s593, 3 }), err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s592, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s593, 3 }), err)) m9a423 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s592, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s593, 3 }), err);
       if (err->exc) { m9ln = 3421; goto L_hdl_m9t1; };
-    m9ret = Rdf_IriT (m9a416, err);
+    m9ret = Rdf_IriT (m9a423, err);
     if (err->exc) { m9ln = 3421; goto L_hdl_m9t1; };
     }
     goto L_ret;
   }
-  { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a417 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
+  { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a424 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
     if (err->exc) { m9ln = 3422; goto L_hdl_m9t1; };
-  { __typeof__(head) m9v = Rdf_BlankT (m9a417, err);
+  { __typeof__(head) m9v = Rdf_BlankT (m9a424, err);
     if (err->exc) { m9ln = 3422; goto L_hdl_m9t1; };
     head = m9v;
   }
@@ -12515,36 +12536,36 @@ static Rdf_Term Rdf_ListToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool,
   if (i <= m9t3to) for (;;) {
     M9_YCHK ();
     if ((i > INT64_C(0))) {
-      { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a418 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
+      { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a425 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
         if (err->exc) { m9ln = 3426; goto L_hdl_m9t1; };
-      { __typeof__(cell) m9v = Rdf_BlankT (m9a418, err);
+      { __typeof__(cell) m9v = Rdf_BlankT (m9a425, err);
         if (err->exc) { m9ln = 3426; goto L_hdl_m9t1; };
         cell = m9v;
       }
       }
-      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s594, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s595, 4 }), err)) m9a419 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s594, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s595, 4 }), err);
+      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s594, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s595, 4 }), err)) m9a426 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s594, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s595, 4 }), err);
         if (err->exc) { m9ln = 3427; goto L_hdl_m9t1; };
-      { __typeof__(Rdf_IriT (m9a419, err)) m9a420 = Rdf_IriT (m9a419, err);
+      { __typeof__(Rdf_IriT (m9a426, err)) m9a427 = Rdf_IriT (m9a426, err);
         if (err->exc) { m9ln = 3427; goto L_hdl_m9t1; };
-      Rdf_Add (pool, g, g_pool, &(prev), &m9a420, &(cell), err);
+      Rdf_Add (pool, g, g_pool, &(prev), &m9a427, &(cell), err);
       if (err->exc) { m9ln = 3427; goto L_hdl_m9t1; };
       }
       }
       prev = cell;
     }
-    { __typeof__(Json_Item (items, i, err)) m9a421 = Json_Item (items, i, err);
+    { __typeof__(Json_Item (items, i, err)) m9a428 = Json_Item (items, i, err);
       if (err->exc) { m9ln = 3430; goto L_hdl_m9t1; };
-    { __typeof__(o) m9v = Rdf_ObjectToTerm (pool, st, st_pool, m9a421, &(ok), err);
+    { __typeof__(o) m9v = Rdf_ObjectToTerm (pool, st, st_pool, m9a428, &(ok), err);
       if (err->exc) { m9ln = 3430; goto L_hdl_m9t1; };
       o = m9v;
     }
     }
     if (ok) {
-      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s596, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s597, 5 }), err)) m9a422 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s596, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s597, 5 }), err);
+      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s596, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s597, 5 }), err)) m9a429 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s596, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s597, 5 }), err);
         if (err->exc) { m9ln = 3431; goto L_hdl_m9t1; };
-      { __typeof__(Rdf_IriT (m9a422, err)) m9a423 = Rdf_IriT (m9a422, err);
+      { __typeof__(Rdf_IriT (m9a429, err)) m9a430 = Rdf_IriT (m9a429, err);
         if (err->exc) { m9ln = 3431; goto L_hdl_m9t1; };
-      Rdf_Add (pool, g, g_pool, &(prev), &m9a423, &(o), err);
+      Rdf_Add (pool, g, g_pool, &(prev), &m9a430, &(o), err);
       if (err->exc) { m9ln = 3431; goto L_hdl_m9t1; };
       }
       }
@@ -12552,15 +12573,15 @@ static Rdf_Term Rdf_ListToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool,
     if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
-  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s598, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s599, 4 }), err)) m9a424 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s598, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s599, 4 }), err);
+  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s598, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s599, 4 }), err)) m9a431 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s598, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s599, 4 }), err);
     if (err->exc) { m9ln = 3433; goto L_hdl_m9t1; };
-  { __typeof__(Rdf_IriT (m9a424, err)) m9a425 = Rdf_IriT (m9a424, err);
+  { __typeof__(Rdf_IriT (m9a431, err)) m9a432 = Rdf_IriT (m9a431, err);
     if (err->exc) { m9ln = 3433; goto L_hdl_m9t1; };
-  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s600, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s601, 3 }), err)) m9a426 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s600, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s601, 3 }), err);
+  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s600, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s601, 3 }), err)) m9a433 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s600, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s601, 3 }), err);
     if (err->exc) { m9ln = 3433; goto L_hdl_m9t1; };
-  { __typeof__(Rdf_IriT (m9a426, err)) m9a427 = Rdf_IriT (m9a426, err);
+  { __typeof__(Rdf_IriT (m9a433, err)) m9a434 = Rdf_IriT (m9a433, err);
     if (err->exc) { m9ln = 3433; goto L_hdl_m9t1; };
-  Rdf_Add (pool, g, g_pool, &(prev), &m9a425, &m9a427, err);
+  Rdf_Add (pool, g, g_pool, &(prev), &m9a432, &m9a434, err);
   if (err->exc) { m9ln = 3433; goto L_hdl_m9t1; };
   }
   }
@@ -12630,7 +12651,7 @@ static int64_t Rdf_RefCount (Rdf_Graph * g, m9_sl_UTF8 id, m9_state *err)
   if (err->exc) { m9ln = 3537; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     M9_YCHK ();
-    bool m9t3 = ({ bool m9t2 = (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Blank })).tag); if (m9t2) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a428 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value;   if (err->exc) { m9ln = 3538; goto L_ret; }; m9t2 = (Text_EqUtf (m9a428, id, err)); } } m9t2; });
+    bool m9t3 = ({ bool m9t2 = (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Blank })).tag); if (m9t2) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a435 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value;   if (err->exc) { m9ln = 3538; goto L_ret; }; m9t2 = (Text_EqUtf (m9a435, id, err)); } } m9t2; });
     if (err->exc) { m9ln = 3538; goto L_ret; };
     if (m9t3) {
       { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
@@ -12681,14 +12702,14 @@ static bool Rdf_IsCell (Rdf_Graph * g, m9_sl_UTF8 id, int64_t *first, int64_t *r
   if (err->exc) { m9ln = 3551; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     M9_YCHK ();
-    bool m9t3 = ({ bool m9t2 = (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Blank })).tag); if (m9t2) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value) m9a429 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value;   if (err->exc) { m9ln = 3552; goto L_ret; }; m9t2 = (Text_EqUtf (m9a429, id, err)); } } m9t2; });
+    bool m9t3 = ({ bool m9t2 = (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Blank })).tag); if (m9t2) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value) m9a436 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value;   if (err->exc) { m9ln = 3552; goto L_ret; }; m9t2 = (Text_EqUtf (m9a436, id, err)); } } m9t2; });
     if (err->exc) { m9ln = 3552; goto L_ret; };
     if (m9t3) {
-      { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a430 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
+      { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a437 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
         if (err->exc) { m9ln = 3553; goto L_ret; };
-      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s604, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s605, 5 }), err)) m9a431 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s604, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s605, 5 }), err);
+      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s604, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s605, 5 }), err)) m9a438 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s604, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s605, 5 }), err);
         if (err->exc) { m9ln = 3553; goto L_ret; };
-      bool m9t4 = Text_EqUtf (m9a430, m9a431, err);
+      bool m9t4 = Text_EqUtf (m9a437, m9a438, err);
       if (err->exc) { m9ln = 3553; goto L_ret; };
       if (m9t4) {
         { __typeof__(nf) m9v = m9_add_i64 (nf, INT64_C(1), err);
@@ -12697,11 +12718,11 @@ static bool Rdf_IsCell (Rdf_Graph * g, m9_sl_UTF8 id, int64_t *first, int64_t *r
         }
         (*first) = i;
       } else {
-        { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a432 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
+        { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a439 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
           if (err->exc) { m9ln = 3553; goto L_ret; };
-        { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s606, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s607, 4 }), err)) m9a433 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s606, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s607, 4 }), err);
+        { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s606, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s607, 4 }), err)) m9a440 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s606, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s607, 4 }), err);
           if (err->exc) { m9ln = 3553; goto L_ret; };
-        bool m9t5 = Text_EqUtf (m9a432, m9a433, err);
+        bool m9t5 = Text_EqUtf (m9a439, m9a440, err);
         if (err->exc) { m9ln = 3553; goto L_ret; };
         if (m9t5) {
           { __typeof__(nr) m9v = m9_add_i64 (nr, INT64_C(1), err);
@@ -12710,11 +12731,11 @@ static bool Rdf_IsCell (Rdf_Graph * g, m9_sl_UTF8 id, int64_t *first, int64_t *r
           }
           (*rest) = i;
       } else {
-        { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a434 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
+        { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a441 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
           if (err->exc) { m9ln = 3554; goto L_ret; };
-        { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s608, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s609, 4 }), err)) m9a435 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s608, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s609, 4 }), err);
+        { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s608, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s609, 4 }), err)) m9a442 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s608, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s609, 4 }), err);
           if (err->exc) { m9ln = 3554; goto L_ret; };
-        bool m9t7 = ({ bool m9t6 = (Text_EqUtf (m9a434, m9a435, err) && (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Iri })).tag)); if (m9t6) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a436 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value;   if (err->exc) { m9ln = 3554; goto L_ret; }; { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s610, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s611, 4 }), err)) m9a437 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s610, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s611, 4 }), err);   if (err->exc) { m9ln = 3554; goto L_ret; }; m9t6 = (Text_EqUtf (m9a436, m9a437, err)); } } } m9t6; });
+        bool m9t7 = ({ bool m9t6 = (Text_EqUtf (m9a441, m9a442, err) && (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Iri })).tag)); if (m9t6) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a443 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value;   if (err->exc) { m9ln = 3554; goto L_ret; }; { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s610, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s611, 4 }), err)) m9a444 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s610, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s611, 4 }), err);   if (err->exc) { m9ln = 3554; goto L_ret; }; m9t6 = (Text_EqUtf (m9a443, m9a444, err)); } } } m9t6; });
         if (err->exc) { m9ln = 3554; goto L_ret; };
         if (m9t7) {
       } else {
@@ -12766,9 +12787,9 @@ static Json_Node * Rdf_TermObj (m9_pool *pool, Rdf_Term *t, m9_state *err)
   } break;
   case Rdf_Kind_Blank:
   {
-    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s613, 2 }), (*t).value, err)) m9a438 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s613, 2 }), (*t).value, err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s613, 2 }), (*t).value, err)) m9a445 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s613, 2 }), (*t).value, err);
       if (err->exc) { m9ln = 3575; goto L_hdl_m9t1; };
-    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a438, err);
+    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a445, err);
       if (err->exc) { m9ln = 3575; goto L_hdl_m9t1; };
       s = m9v;
     }
@@ -12875,16 +12896,16 @@ static Json_Node * Rdf_ListObj (m9_pool *pool, Rdf_Graph * g, m9_sl_UTF8 head, m
       if (err->exc) { m9ln = 3610; goto L_hdl_m9t1; };
       n = m9v;
     }
-    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, first, g->t.len, sizeof (Rdf_Triple), err)).o) m9a439 = (*(Rdf_Triple *) m9_at (g->t.p, first, g->t.len, sizeof (Rdf_Triple), err)).o;
+    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, first, g->t.len, sizeof (Rdf_Triple), err)).o) m9a446 = (*(Rdf_Triple *) m9_at (g->t.p, first, g->t.len, sizeof (Rdf_Triple), err)).o;
       if (err->exc) { m9ln = 3611; goto L_hdl_m9t1; };
-    { __typeof__(item) m9v = Rdf_TermObj (pool, &m9a439, err);
+    { __typeof__(item) m9v = Rdf_TermObj (pool, &m9a446, err);
       if (err->exc) { m9ln = 3611; goto L_hdl_m9t1; };
       item = m9v;
     }
     }
     Json_Add (&(arr), &((*pool)), &(item), &((*pool)), err);
     if (err->exc) { m9ln = 3612; goto L_hdl_m9t1; };
-    bool m9t5 = ({ bool m9t4 = (((*(Rdf_Triple *) m9_at (g->t.p, rest, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Iri })).tag); if (m9t4) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, rest, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a440 = (*(Rdf_Triple *) m9_at (g->t.p, rest, g->t.len, sizeof (Rdf_Triple), err)).o.value;   if (err->exc) { m9ln = 3613; goto L_hdl_m9t1; }; { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s619, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s620, 3 }), err)) m9a441 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s619, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s620, 3 }), err);   if (err->exc) { m9ln = 3613; goto L_hdl_m9t1; }; m9t4 = (Text_EqUtf (m9a440, m9a441, err)); } } } m9t4; });
+    bool m9t5 = ({ bool m9t4 = (((*(Rdf_Triple *) m9_at (g->t.p, rest, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Iri })).tag); if (m9t4) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, rest, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a447 = (*(Rdf_Triple *) m9_at (g->t.p, rest, g->t.len, sizeof (Rdf_Triple), err)).o.value;   if (err->exc) { m9ln = 3613; goto L_hdl_m9t1; }; { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s619, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s620, 3 }), err)) m9a448 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s619, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s620, 3 }), err);   if (err->exc) { m9ln = 3613; goto L_hdl_m9t1; }; m9t4 = (Text_EqUtf (m9a447, m9a448, err)); } } } m9t4; });
     if (err->exc) { m9ln = 3613; goto L_hdl_m9t1; };
     if (m9t5) {
       break;
@@ -12974,7 +12995,7 @@ static m9_sl_UTF8 Rdf_CompactIri (Rdf_Ctx *c, m9_sl_UTF8 iri, bool vocab, m9_sta
     if (err->exc) { m9ln = 3633; goto L_ret; };
     if (i <= m9t1to) for (;;) {
       M9_YCHK ();
-      bool m9t3 = ({ bool m9t2 = ((!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).isNull) && (!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).reverse)); if (m9t2) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a442 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;   if (err->exc) { m9ln = 3634; goto L_ret; }; m9t2 = (Text_EqUtf (m9a442, iri, err)); } } m9t2; });
+      bool m9t3 = ({ bool m9t2 = ((!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).isNull) && (!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).reverse)); if (m9t2) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a449 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;   if (err->exc) { m9ln = 3634; goto L_ret; }; m9t2 = (Text_EqUtf (m9a449, iri, err)); } } m9t2; });
       if (err->exc) { m9ln = 3634; goto L_ret; };
       if (m9t3) {
         err->res = m9res;
@@ -12997,13 +13018,13 @@ static m9_sl_UTF8 Rdf_CompactIri (Rdf_Ctx *c, m9_sl_UTF8 iri, bool vocab, m9_sta
   if (err->exc) { m9ln = 3640; goto L_ret; };
   if (i <= m9t4to) for (;;) {
     M9_YCHK ();
-    bool m9t10 = ({ bool m9t9 = ({ bool m9t8 = ({ bool m9t7 = ({ bool m9t6 = ({ bool m9t5 = ((!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).isNull) && (!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).reverse)); if (m9t5) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a443 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;   if (err->exc) { m9ln = 3644; goto L_ret; }; m9t5 = ((Text_BLen (m9a443, err) > bestLen)); } } m9t5; }); if (m9t6) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a444 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;   if (err->exc) { m9ln = 3644; goto L_ret; }; m9t6 = ((Text_BLen (m9a444, err) < Text_BLen (iri, err))); } } m9t6; }); if (m9t7) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a445 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;   if (err->exc) { m9ln = 3644; goto L_ret; }; m9t7 = (Text_StartsWithUtf (iri, m9a445, err)); } } m9t7; }); if (m9t8) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).term) m9a446 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).term;   if (err->exc) { m9ln = 3644; goto L_ret; }; m9t8 = ((Text_FindCharUtf (m9a446, 58u, err) < INT64_C(0))); } } m9t8; }); if (m9t9) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a447 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;   if (err->exc) { m9ln = 3644; goto L_ret; }; { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a448 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;   if (err->exc) { m9ln = 3644; goto L_ret; }; { __typeof__(m9_sub_i64 (Text_BLen (m9a448, err), INT64_C(1), err)) m9a449 = m9_sub_i64 (Text_BLen (m9a448, err), INT64_C(1), err);   if (err->exc) { m9ln = 3644; goto L_ret; }; { __typeof__(Text_BChar (m9a447, m9a449, err)) m9a450 = Text_BChar (m9a447, m9a449, err);   if (err->exc) { m9ln = 3644; goto L_ret; }; m9t9 = ((Text_FindCharUtf (((m9_sl_UTF8){ (uint8_t *) m9s622, 7 }), m9a450, err) >= INT64_C(0))); } } } } } m9t9; });
+    bool m9t10 = ({ bool m9t9 = ({ bool m9t8 = ({ bool m9t7 = ({ bool m9t6 = ({ bool m9t5 = ((!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).isNull) && (!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).reverse)); if (m9t5) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a450 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;   if (err->exc) { m9ln = 3644; goto L_ret; }; m9t5 = ((Text_BLen (m9a450, err) > bestLen)); } } m9t5; }); if (m9t6) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a451 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;   if (err->exc) { m9ln = 3644; goto L_ret; }; m9t6 = ((Text_BLen (m9a451, err) < Text_BLen (iri, err))); } } m9t6; }); if (m9t7) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a452 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;   if (err->exc) { m9ln = 3644; goto L_ret; }; m9t7 = (Text_StartsWithUtf (iri, m9a452, err)); } } m9t7; }); if (m9t8) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).term) m9a453 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).term;   if (err->exc) { m9ln = 3644; goto L_ret; }; m9t8 = ((Text_FindCharUtf (m9a453, 58u, err) < INT64_C(0))); } } m9t8; }); if (m9t9) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a454 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;   if (err->exc) { m9ln = 3644; goto L_ret; }; { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a455 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;   if (err->exc) { m9ln = 3644; goto L_ret; }; { __typeof__(m9_sub_i64 (Text_BLen (m9a455, err), INT64_C(1), err)) m9a456 = m9_sub_i64 (Text_BLen (m9a455, err), INT64_C(1), err);   if (err->exc) { m9ln = 3644; goto L_ret; }; { __typeof__(Text_BChar (m9a454, m9a456, err)) m9a457 = Text_BChar (m9a454, m9a456, err);   if (err->exc) { m9ln = 3644; goto L_ret; }; m9t9 = ((Text_FindCharUtf (((m9_sl_UTF8){ (uint8_t *) m9s622, 7 }), m9a457, err) >= INT64_C(0))); } } } } } m9t9; });
     if (err->exc) { m9ln = 3644; goto L_ret; };
     if (m9t10) {
       best = i;
-      { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a451 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;
+      { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a458 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;
         if (err->exc) { m9ln = 3648; goto L_ret; };
-      { __typeof__(bestLen) m9v = Text_BLen (m9a451, err);
+      { __typeof__(bestLen) m9v = Text_BLen (m9a458, err);
         if (err->exc) { m9ln = 3648; goto L_ret; };
         bestLen = m9v;
       }
@@ -13072,17 +13093,17 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
     }
     { __typeof__(i) m9t4to;
     i = INT64_C(0);
-    { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s625, 5 }), err)) m9a452 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s625, 5 }), err);
+    { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s625, 5 }), err)) m9a459 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s625, 5 }), err);
       if (err->exc) { m9ln = 3672; goto L_hdl_m9t1; };
-    m9t4to = m9_sub_i64 (Rdf_Items (m9a452, err), INT64_C(1), err);
+    m9t4to = m9_sub_i64 (Rdf_Items (m9a459, err), INT64_C(1), err);
     if (err->exc) { m9ln = 3672; goto L_hdl_m9t1; };
     if (i <= m9t4to) for (;;) {
       M9_YCHK ();
-      { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s626, 5 }), err)) m9a453 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s626, 5 }), err);
+      { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s626, 5 }), err)) m9a460 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s626, 5 }), err);
         if (err->exc) { m9ln = 3673; goto L_hdl_m9t1; };
-      { __typeof__(Json_Item (m9a453, i, err)) m9a454 = Json_Item (m9a453, i, err);
+      { __typeof__(Json_Item (m9a460, i, err)) m9a461 = Json_Item (m9a460, i, err);
         if (err->exc) { m9ln = 3673; goto L_hdl_m9t1; };
-      { __typeof__(item) m9v = Rdf_CompactValue (pool, c, k, m9a454, err);
+      { __typeof__(item) m9v = Rdf_CompactValue (pool, c, k, m9a461, err);
         if (err->exc) { m9ln = 3673; goto L_hdl_m9t1; };
         item = m9v;
       }
@@ -13094,7 +13115,7 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
       i += 1;
     } }
     }
-    bool m9t6 = ({ bool m9t5 = (k >= INT64_C(0)); if (m9t5) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).container) m9a455 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).container;   if (err->exc) { m9ln = 3676; goto L_hdl_m9t1; }; m9t5 = (Text_EqUtf (m9a455, ((m9_sl_UTF8){ (uint8_t *) m9s627, 5 }), err)); } } m9t5; });
+    bool m9t6 = ({ bool m9t5 = (k >= INT64_C(0)); if (m9t5) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).container) m9a462 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).container;   if (err->exc) { m9ln = 3676; goto L_hdl_m9t1; }; m9t5 = (Text_EqUtf (m9a462, ((m9_sl_UTF8){ (uint8_t *) m9s627, 5 }), err)); } } m9t5; });
     if (err->exc) { m9ln = 3676; goto L_hdl_m9t1; };
     if (m9t6) {
       err->res = m9res;
@@ -13114,9 +13135,9 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
   bool m9t7 = Rdf_Has (v, ((m9_sl_UTF8){ (uint8_t *) m9s629, 3 }), err);
   if (err->exc) { m9ln = 3681; goto L_hdl_m9t1; };
   if (m9t7) {
-    { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s630, 3 }), err)) m9a456 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s630, 3 }), err);
+    { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s630, 3 }), err)) m9a463 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s630, 3 }), err);
       if (err->exc) { m9ln = 3682; goto L_hdl_m9t1; };
-    { __typeof__(id) m9v = Rdf_JStr (m9a456, err);
+    { __typeof__(id) m9v = Rdf_JStr (m9a463, err);
       if (err->exc) { m9ln = 3682; goto L_hdl_m9t1; };
       id = m9v;
     }
@@ -13125,9 +13146,9 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
     if (err->exc) { m9ln = 3683; goto L_hdl_m9t1; };
     if (m9t8) {
       err->res = m9res;
-      { __typeof__(Rdf_CompactIri (c, id, false, err)) m9a457 = Rdf_CompactIri (c, id, false, err);
+      { __typeof__(Rdf_CompactIri (c, id, false, err)) m9a464 = Rdf_CompactIri (c, id, false, err);
         if (err->exc) { m9ln = 3683; goto L_hdl_m9t1; };
-      m9ret = Json_NewStrIn (pool, m9a457, err);
+      m9ret = Json_NewStrIn (pool, m9a464, err);
       if (err->exc) { m9ln = 3683; goto L_hdl_m9t1; };
       }
       goto L_ret;
@@ -13136,9 +13157,9 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
     if (err->exc) { m9ln = 3684; goto L_hdl_m9t1; };
     if (m9t9) {
       err->res = m9res;
-      { __typeof__(Rdf_CompactIri (c, id, true, err)) m9a458 = Rdf_CompactIri (c, id, true, err);
+      { __typeof__(Rdf_CompactIri (c, id, true, err)) m9a465 = Rdf_CompactIri (c, id, true, err);
         if (err->exc) { m9ln = 3684; goto L_hdl_m9t1; };
-      m9ret = Json_NewStrIn (pool, m9a458, err);
+      m9ret = Json_NewStrIn (pool, m9a465, err);
       if (err->exc) { m9ln = 3684; goto L_hdl_m9t1; };
       }
       goto L_ret;
@@ -13147,9 +13168,9 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
       if (err->exc) { m9ln = 3685; goto L_hdl_m9t1; };
       o = m9v;
     }
-    { __typeof__(Rdf_CompactIri (c, id, false, err)) m9a459 = Rdf_CompactIri (c, id, false, err);
+    { __typeof__(Rdf_CompactIri (c, id, false, err)) m9a466 = Rdf_CompactIri (c, id, false, err);
       if (err->exc) { m9ln = 3686; goto L_hdl_m9t1; };
-    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a459, err);
+    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a466, err);
       if (err->exc) { m9ln = 3686; goto L_hdl_m9t1; };
       s = m9v;
     }
@@ -13163,22 +13184,22 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
   bool m9t10 = Rdf_Has (v, ((m9_sl_UTF8){ (uint8_t *) m9s634, 9 }), err);
   if (err->exc) { m9ln = 3691; goto L_hdl_m9t1; };
   if (m9t10) {
-    { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s635, 9 }), err)) m9a460 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s635, 9 }), err);
+    { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s635, 9 }), err)) m9a467 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s635, 9 }), err);
       if (err->exc) { m9ln = 3692; goto L_hdl_m9t1; };
-    { __typeof__(lg) m9v = Rdf_JStr (m9a460, err);
+    { __typeof__(lg) m9v = Rdf_JStr (m9a467, err);
       if (err->exc) { m9ln = 3692; goto L_hdl_m9t1; };
       lg = m9v;
     }
     }
-    bool m9t12 = ({ bool m9t11 = ((k >= INT64_C(0)) && (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).hasLang); if (m9t11) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang) m9a461 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang;   if (err->exc) { m9ln = 3693; goto L_hdl_m9t1; }; m9t11 = (Text_EqUtf (m9a461, lg, err)); } } m9t11; });
+    bool m9t12 = ({ bool m9t11 = ((k >= INT64_C(0)) && (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).hasLang); if (m9t11) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang) m9a468 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang;   if (err->exc) { m9ln = 3693; goto L_hdl_m9t1; }; m9t11 = (Text_EqUtf (m9a468, lg, err)); } } m9t11; });
     if (err->exc) { m9ln = 3693; goto L_hdl_m9t1; };
     if (m9t12) {
       err->res = m9res;
-      { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s636, 6 }), err)) m9a462 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s636, 6 }), err);
+      { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s636, 6 }), err)) m9a469 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s636, 6 }), err);
         if (err->exc) { m9ln = 3694; goto L_hdl_m9t1; };
-      { __typeof__(Rdf_JStr (m9a462, err)) m9a463 = Rdf_JStr (m9a462, err);
+      { __typeof__(Rdf_JStr (m9a469, err)) m9a470 = Rdf_JStr (m9a469, err);
         if (err->exc) { m9ln = 3694; goto L_hdl_m9t1; };
-      m9ret = Json_NewStrIn (pool, m9a463, err);
+      m9ret = Json_NewStrIn (pool, m9a470, err);
       if (err->exc) { m9ln = 3694; goto L_hdl_m9t1; };
       }
       }
@@ -13188,11 +13209,11 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
     if (err->exc) { m9ln = 3696; goto L_hdl_m9t1; };
     if (m9t13) {
       err->res = m9res;
-      { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s637, 6 }), err)) m9a464 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s637, 6 }), err);
+      { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s637, 6 }), err)) m9a471 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s637, 6 }), err);
         if (err->exc) { m9ln = 3697; goto L_hdl_m9t1; };
-      { __typeof__(Rdf_JStr (m9a464, err)) m9a465 = Rdf_JStr (m9a464, err);
+      { __typeof__(Rdf_JStr (m9a471, err)) m9a472 = Rdf_JStr (m9a471, err);
         if (err->exc) { m9ln = 3697; goto L_hdl_m9t1; };
-      m9ret = Json_NewStrIn (pool, m9a465, err);
+      m9ret = Json_NewStrIn (pool, m9a472, err);
       if (err->exc) { m9ln = 3697; goto L_hdl_m9t1; };
       }
       }
@@ -13202,9 +13223,9 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
       if (err->exc) { m9ln = 3699; goto L_hdl_m9t1; };
       o = m9v;
     }
-    { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s638, 6 }), err)) m9a466 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s638, 6 }), err);
+    { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s638, 6 }), err)) m9a473 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s638, 6 }), err);
       if (err->exc) { m9ln = 3700; goto L_hdl_m9t1; };
-    Rdf_SetKey (pool, &(o), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s639, 6 }), m9a466, err);
+    Rdf_SetKey (pool, &(o), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s639, 6 }), m9a473, err);
     if (err->exc) { m9ln = 3700; goto L_hdl_m9t1; };
     }
     { __typeof__(s) m9v = Json_NewStrIn (pool, lg, err);
@@ -13220,9 +13241,9 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
   bool m9t14 = Rdf_Has (v, ((m9_sl_UTF8){ (uint8_t *) m9s641, 5 }), err);
   if (err->exc) { m9ln = 3705; goto L_hdl_m9t1; };
   if (m9t14) {
-    { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s642, 5 }), err)) m9a467 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s642, 5 }), err);
+    { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s642, 5 }), err)) m9a474 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s642, 5 }), err);
       if (err->exc) { m9ln = 3706; goto L_hdl_m9t1; };
-    { __typeof__(dt) m9v = Rdf_JStr (m9a467, err);
+    { __typeof__(dt) m9v = Rdf_JStr (m9a474, err);
       if (err->exc) { m9ln = 3706; goto L_hdl_m9t1; };
       dt = m9v;
     }
@@ -13231,11 +13252,11 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
     if (err->exc) { m9ln = 3707; goto L_hdl_m9t1; };
     if (m9t15) {
       err->res = m9res;
-      { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s643, 6 }), err)) m9a468 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s643, 6 }), err);
+      { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s643, 6 }), err)) m9a475 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s643, 6 }), err);
         if (err->exc) { m9ln = 3707; goto L_hdl_m9t1; };
-      { __typeof__(Rdf_JStr (m9a468, err)) m9a469 = Rdf_JStr (m9a468, err);
+      { __typeof__(Rdf_JStr (m9a475, err)) m9a476 = Rdf_JStr (m9a475, err);
         if (err->exc) { m9ln = 3707; goto L_hdl_m9t1; };
-      m9ret = Json_NewStrIn (pool, m9a469, err);
+      m9ret = Json_NewStrIn (pool, m9a476, err);
       if (err->exc) { m9ln = 3707; goto L_hdl_m9t1; };
       }
       }
@@ -13245,14 +13266,14 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
       if (err->exc) { m9ln = 3708; goto L_hdl_m9t1; };
       o = m9v;
     }
-    { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s644, 6 }), err)) m9a470 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s644, 6 }), err);
+    { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s644, 6 }), err)) m9a477 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s644, 6 }), err);
       if (err->exc) { m9ln = 3709; goto L_hdl_m9t1; };
-    Rdf_SetKey (pool, &(o), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s645, 6 }), m9a470, err);
+    Rdf_SetKey (pool, &(o), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s645, 6 }), m9a477, err);
     if (err->exc) { m9ln = 3709; goto L_hdl_m9t1; };
     }
-    { __typeof__(Rdf_CompactIri (c, dt, true, err)) m9a471 = Rdf_CompactIri (c, dt, true, err);
+    { __typeof__(Rdf_CompactIri (c, dt, true, err)) m9a478 = Rdf_CompactIri (c, dt, true, err);
       if (err->exc) { m9ln = 3710; goto L_hdl_m9t1; };
-    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a471, err);
+    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a478, err);
       if (err->exc) { m9ln = 3710; goto L_hdl_m9t1; };
       s = m9v;
     }
@@ -13263,15 +13284,15 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
     m9ret = o;
     goto L_ret;
   }
-  bool m9t18 = ({ bool m9t17 = (Text_BLen (tm, err) == INT64_C(0)); if (m9t17) { m9t17 = ((((({ bool m9t16 = ((k >= INT64_C(0)) && (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).hasLang); if (m9t16) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang) m9a472 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang;   if (err->exc) { m9ln = 3715; goto L_hdl_m9t1; }; m9t16 = ((Text_BLen (m9a472, err) == INT64_C(0))); } } m9t16; })) || (!(*c).hasLang)))); } m9t17; });
+  bool m9t18 = ({ bool m9t17 = (Text_BLen (tm, err) == INT64_C(0)); if (m9t17) { m9t17 = ((((({ bool m9t16 = ((k >= INT64_C(0)) && (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).hasLang); if (m9t16) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang) m9a479 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang;   if (err->exc) { m9ln = 3715; goto L_hdl_m9t1; }; m9t16 = ((Text_BLen (m9a479, err) == INT64_C(0))); } } m9t16; })) || (!(*c).hasLang)))); } m9t17; });
   if (err->exc) { m9ln = 3715; goto L_hdl_m9t1; };
   if (m9t18) {
     err->res = m9res;
-    { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s647, 6 }), err)) m9a473 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s647, 6 }), err);
+    { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s647, 6 }), err)) m9a480 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s647, 6 }), err);
       if (err->exc) { m9ln = 3717; goto L_hdl_m9t1; };
-    { __typeof__(Rdf_JStr (m9a473, err)) m9a474 = Rdf_JStr (m9a473, err);
+    { __typeof__(Rdf_JStr (m9a480, err)) m9a481 = Rdf_JStr (m9a480, err);
       if (err->exc) { m9ln = 3717; goto L_hdl_m9t1; };
-    m9ret = Json_NewStrIn (pool, m9a474, err);
+    m9ret = Json_NewStrIn (pool, m9a481, err);
     if (err->exc) { m9ln = 3717; goto L_hdl_m9t1; };
     }
     }
@@ -13281,9 +13302,9 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
     if (err->exc) { m9ln = 3719; goto L_hdl_m9t1; };
     o = m9v;
   }
-  { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s648, 6 }), err)) m9a475 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s648, 6 }), err);
+  { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s648, 6 }), err)) m9a482 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s648, 6 }), err);
     if (err->exc) { m9ln = 3720; goto L_hdl_m9t1; };
-  Rdf_SetKey (pool, &(o), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s649, 6 }), m9a475, err);
+  Rdf_SetKey (pool, &(o), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s649, 6 }), m9a482, err);
   if (err->exc) { m9ln = 3720; goto L_hdl_m9t1; };
   }
   err->res = m9res;
@@ -13339,12 +13360,12 @@ static int64_t Rdf_PropTerm (Rdf_Ctx *c, m9_sl_UTF8 iri, bool isList, m9_state *
   if (err->exc) { m9ln = 3733; goto L_ret; };
   if (i <= m9t1to) for (;;) {
     M9_YCHK ();
-    bool m9t3 = ({ bool m9t2 = ((!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).isNull) && (!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).reverse)); if (m9t2) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a476 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;   if (err->exc) { m9ln = 3734; goto L_ret; }; m9t2 = (Text_EqUtf (m9a476, iri, err)); } } m9t2; });
+    bool m9t3 = ({ bool m9t2 = ((!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).isNull) && (!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).reverse)); if (m9t2) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a483 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;   if (err->exc) { m9ln = 3734; goto L_ret; }; m9t2 = (Text_EqUtf (m9a483, iri, err)); } } m9t2; });
     if (err->exc) { m9ln = 3734; goto L_ret; };
     if (m9t3) {
-      { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).container) m9a477 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).container;
+      { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).container) m9a484 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).container;
         if (err->exc) { m9ln = 3735; goto L_ret; };
-      bool m9t4 = (isList == Text_EqUtf (m9a477, ((m9_sl_UTF8){ (uint8_t *) m9s650, 5 }), err));
+      bool m9t4 = (isList == Text_EqUtf (m9a484, ((m9_sl_UTF8){ (uint8_t *) m9s650, 5 }), err));
       if (err->exc) { m9ln = 3735; goto L_ret; };
       if (m9t4) {
         err->res = m9res;

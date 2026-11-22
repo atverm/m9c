@@ -1,0 +1,32 @@
+data: {"id":"8bd183b28bb14982bbab2b9980f2bd87","object":"chat.completion.chunk","created":1795301698,"model":"qwen3-8-27b","choices":[{"index":0,"delta":{"reasoning_content":null,"role":"assistant","content":""},"logprobs":null,"finish_reason":null,"matched_stop":null}]}
+
+data: {"id":"8bd183b28bb14982bbab2b9980f2bd87","object":"chat.completion.chunk","created":1795301698,"model":"qwen3-8-27b","choices":[{"index":0,"delta":{"reasoning_content":"User"},"logprobs":null,"finish_reason":null,"matched_stop":null}]}
+
+data: {"id":"8bd183b28bb14982bbab2b9980f2bd87","object":"chat.completion.chunk","created":1795301698,"model":"qwen3-8-27b","choices":[{"index":0,"delta":{"reasoning_content":" asks: \"Name the chemical formula of"},"logprobs":null,"finish_reason":null,"matched_stop":null}]}
+
+data: {"id":"8bd183b28bb14982bbab2b9980f2bd87","object":"chat.completion.chunk","created":1795301698,"model":"qwen3-8-27b","choices":[{"index":0,"delta":{"reasoning_content":" carbon dioxide, in one short sentence.\""},"logprobs":null,"finish_reason":null,"matched_stop":null}]}
+
+data: {"id":"8bd183b28bb14982bbab2b9980f2bd87","object":"chat.completion.chunk","created":1795301698,"model":"qwen3-8-27b","choices":[{"index":0,"delta":{"reasoning_content":" Need answer one short"},"logprobs":null,"finish_reason":null,"matched_stop":null}]}
+
+data: {"id":"8bd183b28bb14982bbab2b9980f2bd87","object":"chat.completion.chunk","created":1795301698,"model":"qwen3-8-27b","choices":[{"index":0,"delta":{"reasoning_content":" sentence. Must include"},"logprobs":null,"finish_reason":null,"matched_stop":null}]}
+
+data: {"id":"8bd183b28bb14982bbab2b9980f2bd87","object":"chat.completion.chunk","created":1795301698,"model":"qwen3-8-27b","choices":[{"index":0,"delta":{"reasoning_content":" formula CO"},"logprobs":null,"finish_reason":null,"matched_stop":null}]}
+
+data: {"id":"8bd183b28bb14982bbab2b9980f2bd87","object":"chat.completion.chunk","created":1795301698,"model":"qwen3-8-27b","choices":[{"index":0,"delta":{"reasoning_content":"2. Ensure short. Final"},"logprobs":null,"finish_reason":null,"matched_stop":null}]}
+
+data: {"id":"8bd183b28bb14982bbab2b9980f2bd87","object":"chat.completion.chunk","created":1795301699,"model":"qwen3-8-27b","choices":[{"index":0,"delta":{"reasoning_content":" only sentence"},"logprobs":null,"finish_reason":null,"matched_stop":null}]}
+
+data: {"id":"8bd183b28bb14982bbab2b9980f2bd87","object":"chat.completion.chunk","created":1795301699,"model":"qwen3-8-27b","choices":[{"index":0,"delta":{"reasoning_content":".\n"},"logprobs":null,"finish_reason":null,"matched_stop":null}]}
+
+data: {"id":"8bd183b28bb14982bbab2b9980f2bd87","object":"chat.completion.chunk","created":1795301699,"model":"qwen3-8-27b","choices":[{"index":0,"delta":{"reasoning_content":null,"content":"\n\nThe chemical formula of"},"logprobs":null,"finish_reason":null,"matched_stop":null}]}
+
+data: {"id":"8bd183b28bb14982bbab2b9980f2bd87","object":"chat.completion.chunk","created":1795301699,"model":"qwen3-8-27b","choices":[{"index":0,"delta":{"reasoning_content":null,"content":" carbon dioxide is CO"},"logprobs":null,"finish_reason":null,"matched_stop":null}]}
+
+data: {"id":"8bd183b28bb14982bbab2b9980f2bd87","object":"chat.completion.chunk","created":1795301699,"model":"qwen3-8-27b","choices":[{"index":0,"delta":{"reasoning_content":null,"content":"₂."},"logprobs":null,"finish_reason":null,"matched_stop":null}]}
+
+data: {"id":"8bd183b28bb14982bbab2b9980f2bd87","object":"chat.completion.chunk","created":1795301699,"model":"qwen3-8-27b","choices":[{"index":0,"delta":{"reasoning_content":null},"logprobs":null,"finish_reason":"stop","matched_stop":248046}]}
+
+data: {"id":"8bd183b28bb14982bbab2b9980f2bd87","object":"chat.completion.chunk","created":1795301699,"model":"qwen3-8-27b","choices":[],"usage":{"prompt_tokens":65,"total_tokens":115,"completion_tokens":50,"prompt_tokens_details":null,"reasoning_tokens":38}}
+
+data: [DONE]
+

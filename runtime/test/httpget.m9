@@ -17,6 +17,10 @@ IMPORT Text ;
      -> Http.RequestRetry with a backoff factor of FACTORMS
         milliseconds: `status <n> tries <n> <body>` on one line, or
         `transport: <why> tries <n>` when the last try failed
+   httpget stream URL [at]
+     -> Http.Open and NextLine: `status <n>`, then `line <text>` per
+        line of the body, then `end`.  With `at`, each line is
+        `at <ms>` instead: when it arrived, after the headers
 
    The fetch gate drives this program.  It prints what a checker can
    compare and nothing else; the assertions live in httpget.sh.  The
@@ -27,6 +31,7 @@ IMPORT Text ;
 IMPORT DynStr ;
 IMPORT Http ;
 IMPORT Io ;
+IMPORT Time ;
 
 VAR
   pool : POOL ;
@@ -34,6 +39,9 @@ VAR
   hd : PTR DynStr.DString IN pool ;
   cl : PTR Http.Client IN pool ;
   fm : PTR Http.Form IN pool ;
+  st : PTR Http.Stream IN pool ;
+  t0 : Time.Instant ;
+  ln : STR ;
   fb : SLICE OF BYTE ;
   status, bytes, i, tries : I64 ;
 
@@ -105,6 +113,21 @@ BEGIN
     END ;
     Io.Write ('kept ') ; Io.WriteI64 (Http.Kept (cl)) ; Io.WriteLine ('') ;
     Http.CloseClient (cl)
+  ELSIF Text.Eq (mode, 'stream') THEN
+    st := Http.Open (pool, 'GET', Io.Arg (pool, 2), '', fb) ;
+    t0 := Time.Now () ;
+    Io.Write ('status ') ; Io.WriteI64 (st.status) ; Io.WriteLine ('') ;
+    WHILE Http.NextLine (pool, st, ln) DO
+      IF Io.ArgCount () > 3 THEN
+        Io.Write ('at ') ;
+        Io.WriteI64 (I64 (Time.Elapsed (t0, Time.Now ()) * 1000.0)) ;
+        Io.WriteLine ('')
+      ELSE
+        Io.WriteLine ('line ' + ln)
+      END
+    END ;
+    Io.WriteLine ('end') ;
+    Http.CloseStream (st)
   ELSIF Text.Eq (mode, 'form') THEN
     (* Http.FormBody gets two fields (one past ASCII, one empty) and two
        files: one holding the first boundary the builder would try and

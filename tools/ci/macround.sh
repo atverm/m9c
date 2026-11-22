@@ -7,8 +7,9 @@
 # It is the round that was run by hand on the MacBook from a script
 # outside the tree (2026-10-22 on), here so that a CI job on a Mac and
 # a person run the same thing.  The gates and their lanes are that
-# script's.  What it left out stays out: the cache of green gates by
-# their inputs is a convenience of one machine.
+# script's.  The cache of green gates by their inputs is lanes.sh's
+# since 2026-11-20, for a caller that names a key command
+# (M9_LANES_KEYCMD); without one every gate runs, as on CI.
 #
 # The environment is the one the gates were written against on a Mac:
 #   gcc     Homebrew's GCC, as `gcc'.  Apple's cc is clang, which the
@@ -51,5 +52,5 @@ echo "macround: $(sw_vers -productName) $(sw_vers -productVersion), $(uname -m),
 if [ $# -gt 0 ]; then exec tools/ci/lanes.sh "$@"; fi
 exec tools/ci/lanes.sh \
   "frontgold frontprop semcheck gendiff bootstrap fmt tutdiff genforms sanitize" \
-  "listdiff diagdiff guide paddle snake flock m9c docdiff reviewdiff threads mandiff run pkgcache scale gcconly lsp elide edit adopt release m9test regions arrowread toolcheck tasks m9f" \
+  "listdiff diagdiff guide paddle snake flock m9c docdiff reviewdiff threads mandiff run pkgcache scale gcconly lsp elide edit adopt release m9test regions arrowread toolcheck tasks m9f llm llmtools" \
   "soundfuzz"

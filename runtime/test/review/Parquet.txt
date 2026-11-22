@@ -2,10 +2,10 @@ REVIEW Parquet -- 90 procedures with a body, 41 of them functions; 8 headings in
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              41
-  assignments                                   465
+  assignments                                   469
   arguments                                    1242
   RETURN values                                  72
-  operands of a comparison or an operator       662
+  operands of a comparison or an operator       668
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                1

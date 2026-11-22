@@ -38,9 +38,16 @@ fi
 got=$(sha "$TAR")
 [ "$got" = "$SHA" ] || { echo "xml: FAIL -- $TAR is $got, not $SHA"; exit 1; }
 
-rm -rf xmlconf
-mkdir xmlconf
-tar xzf "$TAR" -C xmlconf
+# A suite unpacked from this tarball is left as it is.  Unpacking it
+# again removed it for a moment, while gates in other lanes may read it
+# (XmlTest under m9test, sanitize and soundfuzz).  xmlconf/.sha names
+# the tarball it came from.
+if [ "$(cat xmlconf/.sha 2>/dev/null)" != "$SHA" ]; then
+  rm -rf xmlconf
+  mkdir xmlconf
+  tar xzf "$TAR" -C xmlconf
+  echo "$SHA" > xmlconf/.sha
+fi
 
 W=/tmp/m9-xml
 rm -rf "$W"; mkdir -p "$W"

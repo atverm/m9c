@@ -20,10 +20,14 @@ rule unenforced on 2026-10-01, by counting it from the tree.
 
 ### TYPE Stat
 
-the lines where the first
-passed-over sites stand, as text:
-`12, 40, 41, ...'.  It is empty
-when nothing was passed over.
+_(undocumented)_
+
+- `name : UTF`
+- `checked, skipped : I64`
+- `lines : UTF` -- the lines where the first
+  passed-over sites stand, as text:
+  `12, 40, 41, ...'.  It is empty
+  when nothing was passed over.
 
 ### Page (root: PTR Ast.Node ; RO modName: UTF ; checked: BOOL ; RO stats: SLICE OF Stat ; RO writes: SLICE OF UTF ; RO stale: SLICE OF UTF ; RO strs: SLICE OF UTF ; RO adrs: SLICE OF UTF ; RO deps: SLICE OF UTF) : UTF
 

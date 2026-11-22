@@ -49,7 +49,10 @@ the test's that calls, handles it by name and answers TRUE:
 
 ### TYPE T
 
-how many were made
+_(undocumented)_
+
+- `checks : I64` -- how many were made
+- `failed : I64` -- how many of them did not hold
 
 ### TYPE Action
 

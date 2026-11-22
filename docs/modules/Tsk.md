@@ -101,11 +101,21 @@ chunks of this round finished
 
 ### TYPE Crew
 
-Seat is one worker's place in the crew, a local of the worker.
+_(undocumented)_
+
+- `go : Go`
+- `done : Done`
 
 ### TYPE Seat
 
-0 .. workers - 1
+Seat is one worker's place in the crew, a local of the worker.
+
+- `id : I64` -- 0 .. workers - 1
+- `round : I64` -- the round this chunk belongs to
+- `op : I64` -- the round's op
+- `n : I64` -- the round's indices
+- `lo, hi : I64` -- the chunk: lo .. hi - 1
+- `failed : BOOL` -- set by the body; Next reports it
 
 ### EXCEPTION Failed
 

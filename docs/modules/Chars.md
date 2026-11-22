@@ -28,7 +28,13 @@ lookups (2026-10-23).  A lookup took 23-33 ns against 43-51, at
 
 ### TYPE Index
 
-32 width tags a word, tag = octets - 1
+_(undocumented)_
+
+- `tags : SLICE OF I64` -- 32 width tags a word, tag = octets - 1
+- `blk : SLICE OF I64` -- byte offset of code point 256 k
+- `count : I64` -- the code points
+- `octets : I64` -- the string's length, for StrI's check
+- `first, last : I64` -- its first and last octets, -1 if empty
 
 ### Str (RO s: UTF ; x: I64) : CHAR
 

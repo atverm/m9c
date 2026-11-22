@@ -33,15 +33,31 @@ bytes of its file or HTTP body.
 
 ### TYPE Kind
 
-_(documented with the group below)_
+_(undocumented)_
 
 ### TYPE Attr
 
-as written, prefix:local
+_(undocumented)_
+
+- `name : STR` -- as written, prefix:local
+- `ns : STR` -- its namespace, '' for none; a
+  declaration xmlns or xmlns:p has
+  http://www.w3.org/2000/xmlns/
+- `local : STR`
+- `value : STR` -- references replaced, white space
+  normalised
 
 ### TYPE Event
 
-Start, End: as written; Pi: target
+_(undocumented)_
+
+- `kind : Kind`
+- `name : STR` -- Start, End: as written; Pi: target
+- `ns, local : STR` -- Start, End: the element's namespace
+- `attrs : SLICE OF Attr` -- Start: in document order
+- `text : STR` -- Text: character data, CDATA sections
+  joined in; Comment; Pi: its data
+- `line, col : I64` -- where the event begins
 
 ### TYPE Reader
 
@@ -49,7 +65,14 @@ opaque; lives in a POOL
 
 ### TYPE Element
 
-character data before the first child
+_(undocumented)_
+
+- `name, ns, local : STR`
+- `attrs : SLICE OF Attr`
+- `text : STR` -- character data before the first child
+- `tail : STR` -- after the end tag, before the next
+  sibling: ElementTree's model
+- `kids : SLICE OF PTR Element`
 
 ### TYPE Writer
 

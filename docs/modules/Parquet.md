@@ -74,7 +74,41 @@ _(undocumented)_
 
 ### TYPE Options
 
-file-level key_value_metadata
+Options holds what WriteX takes, and three things a dataframe
+written for pandas and pyarrow needs.  The cp-kernel's time
+series renditions (2026-10-09), which pyarrow writes from pandas,
+found them:
+
+  usCols -- INT64 columns (microseconds since the epoch)
+            annotated TIMESTAMP(MICROS, isAdjustedToUTC false):
+            pandas' naive datetime64[us], a time WITHOUT a zone
+            said.  nsCols, which says UTC, is the other one;
+            a column in both is BadArg.
+  i8Cols -- I16 or I32 columns written as INT32 annotated
+            INT_8, which pyarrow reads as int8: Frame has no
+            signed 8-bit arm (BYTE is unsigned, written UINT_8).
+            A value outside -128 .. 127 is BadArg, the column
+            named; a missing cell is not looked at when nulls.
+  nulls  -- every column but BOOL and STR is OPTIONAL, and a
+            cell that is the column's missing value (or NaN, in
+            a real column) is a NULL: definition levels, one
+            bit-packed run, and the value left out.  FALSE
+            writes WriteX's bytes.
+
+  codec  -- every page compressed so, and said in the column's
+            metadata; another number is BadArg.
+
+A zeroed record is WriteX with nothing asked: empty slices,
+nulls FALSE, CodecNone.  Every name in usCols and i8Cols must be a column
+of the frame of the right kind, or BadArg says which (nsCols is
+not held to the frame, as WriteX never held it).
+
+- `kvK, kvV : SLICE OF STR` -- file-level key_value_metadata
+- `nsCols : SLICE OF STR` -- INT64 as TIMESTAMP(NANOS, UTC)
+- `usCols : SLICE OF STR` -- INT64 as TIMESTAMP(MICROS, local)
+- `i8Cols : SLICE OF STR` -- an I16 or I32 column as INT_8
+- `nulls : BOOL` -- missing cells as Parquet nulls
+- `codec : I64` -- CodecNone, CodecSnappy, CodecGzip, CodecZstd
 
 ### WriteOpt (VAR pool: POOL ; f: PTR Frame.Fr ; RO path: STR ; RO o: Options) RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError
 

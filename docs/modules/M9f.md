@@ -43,9 +43,19 @@ answers it.
 Place pairs a token's place in the M9 text, l9 and c9, with its
 place in the .m9f text, lf and cf.
 
+- `l9, c9 : I64`
+- `lf, cf : I64`
+- `semi : BOOL` -- ToM9 inserted a ; after this token
+
 ### TYPE Result
 
 Result holds a conversion's text, its map and its errors.
+
+- `text : UTF`
+- `map : SLICE OF Place` -- ToM9 fills it, in text order
+- `n : I64` -- the places in map
+- `errs : UTF` -- one LINE:COL: message line per error
+- `nerr : I64`
 
 ### ToM9 (VAR pool: POOL ; RO KEPT src: UTF) : PTR Result IN pool RAISES IndexError
 

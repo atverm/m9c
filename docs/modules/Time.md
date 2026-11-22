@@ -35,17 +35,27 @@ someone picks one.  This module picks, says so, and tests it.
 
 ### TYPE Instant
 
-seconds since the Unix epoch, UTC
+_(undocumented)_
+
+- `t : F64` -- seconds since the Unix epoch, UTC
 
 ### TYPE Civil
 
-proleptic Gregorian, month 1..12
+_(undocumented)_
+
+- `year, month, day : I64` -- proleptic Gregorian, month 1..12
+- `hour, minute : I64`
+- `second : F64` -- 0 .. 59.999..., fraction included
 
 ### TYPE Span
 
 Span is a CALENDAR span: years and months are symbolic, the
 rest are exact.  It is not a duration: it cannot be converted
 to seconds without knowing which instant it is measured from.
+
+- `years, months, days : I64`
+- `hours, minutes : I64`
+- `seconds : F64`
 
 ### Elapsed (a, b: Instant) : F64
 
@@ -102,7 +112,10 @@ this module does not do local time.
 
 ### TYPE Nanos
 
-seconds since 1970-01-01T00:00:00Z
+_(undocumented)_
+
+- `secs : I64` -- seconds since 1970-01-01T00:00:00Z
+- `nanos : I64` -- 0 .. 999999999
 
 ### ParseNanos (RO s: STR) : Nanos RAISES ValueRange
 

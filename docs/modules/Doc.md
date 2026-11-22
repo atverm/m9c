@@ -45,7 +45,15 @@ shape and are not parameter blocks.
 
 ### TYPE Stats
 
-definition units, and documented
+_(undocumented)_
+
+- `mods, modsDoc : I64` -- definition units, and documented
+- `procs, procsDoc : I64` -- exported procedures, likewise
+- `others, othersDoc : I64` -- types, consts, exceptions
+- `params, paramsDoc : I64` -- named parameters, and explained
+- `banners : I64` -- column-1 comments, owned by nobody
+- `unattached : I64` -- indented, but nothing above it
+- `unknownParam : I64` -- a `name --` naming no parameter
 
 ### Json (VAR pool: POOL ; root: PTR Ast.Node ; RO modName: UTF ; VAR st: Stats) : UTF RAISES IndexError
 
@@ -57,7 +65,10 @@ its "kind" (procedure, type, const, var, exception), "name",
 "signature", the "params" as a list of {names, mode, type} with
 mode one of "", "VAR", "OWN", "RO", the "result" (null for a
 proper procedure), the "raises" list, and the "attrib" (null, or
-the bracketed word).  Every string is the one Text prints, so a
+the bracketed word).  For a type it gives the "type" as
+written (null when opaque), a record's "fields" in the shape of
+"params", and an enumeration's "values".  Every string is the one
+Text prints, so a
 tool that reads this and a person who reads the page are reading
 the same document.  The gather is shared and the renderers
 differ.

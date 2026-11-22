@@ -26,13 +26,17 @@ vectors.
 
 ### TYPE Sha256
 
-the C state, 128 octets, 8-aligned:
-OpenSSL's SHA256_CTX; opaque here
+_(undocumented)_
+
+- `st : ARRAY 16 OF I64` -- the C state, 128 octets, 8-aligned:
+  OpenSSL's SHA256_CTX; opaque here
 
 ### TYPE Hmac
 
-after the padded key: the stream goes
-through inner, its digest through outer
+_(undocumented)_
+
+- `inner, outer : Sha256` -- after the padded key: the stream goes
+  through inner, its digest through outer
 
 ### CONST DigestLen
 

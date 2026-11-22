@@ -1,6 +1,6 @@
 ---
 name: oracles-gates
-description: Proving that a port, migration, refactor or new feature is right with evidence that can say no -- an independent oracle, a gate that exits 0 or 1, recorded goldens, sabotage that shows the gate can fail, and fuzzing judged by an oracle, a model or the sanitizers. Load before porting code from another language or version, before claiming a change is done, correct, equivalent or faster, before writing or changing a test or gate, and when asked to verify, compare against a reference, or fuzz.
+description: Proving that a port, migration, refactor or new feature is right with evidence that can say no -- an independent oracle, a gate that exits 0 or 1, recorded goldens, sabotage that shows the gate can fail, and fuzzing judged by an oracle, a model or the sanitizers. Load before porting code from another language or version, before claiming a change is done, correct, equivalent or faster, before writing or changing a test or gate, when runs of the gates get long (skip what did not change, by traced inputs and pinned reviews), and when asked to verify, compare against a reference, or fuzz.
 ---
 
 # Oracles, gates and goldens
@@ -32,7 +32,15 @@ that can fail, and you report what that check printed.
    independent implementations.  Write down which oracle and why.
 2. **Keep the oracle in its own language.**  A Python oracle stays
    Python.  Rewriting it in the language under test, or writing code
-   and oracle yourself, holds the code to itself.
+   and oracle yourself, holds the code to itself.  Never hold one
+   implementation to another written in the same language by the same
+   hands, nor two implementations to each other.
+   **Prefer the production code itself as the oracle**, imported, not
+   ported.  A vendored copy keeps an `ORIGIN.md`: where it came from,
+   at which commit.  A rule the spec fixes and the reference does not
+   have is computed by the oracle from the spec's own words.
+   Run a Python oracle with `python -I`, so that it cannot pick up a
+   module from the working directory.
 3. **Fix a point**: tag the application and record the toolchain.
    Build a newer toolchain in a scratch location, never over the one
    in use.
@@ -63,6 +71,63 @@ that can fail, and you report what that check printed.
 - **A gate that regenerates what it compares against cannot fail.**
   Generating the expectation and comparing against it are two scripts.
 
+## Running gates often: skip only what did not change
+
+A project's gates grow until a full run takes too long to run before
+every push.  Then do not drop gates, and do not schedule full runs at
+night on machines that are not always on.  Run a gate again only when
+something it reads has changed.  Run everything only before a release.
+
+1. **Trace each gate once.**  Run it under a tracer (strace on Linux)
+   and record what it read: files, directory listings, paths it looked
+   for and did not find, the programs it ran, the environment.  That
+   list is the gate's manifest.  A gate without a manifest always runs.
+2. **Key each gate by its inputs.**  The key hashes the content of every
+   file in its manifest, the listings, the absent paths (one that
+   appears changes the key), the version of every tool it ran, the
+   compiler's version line, and the environment variables it reads.
+   A gate whose key equals its last green key is reported `cached`, not
+   run.  Any input the key cannot read gives no key: the gate runs.
+3. **Store the key taken at the start**, and only after the gate is
+   green.  Check the inputs again at the end: if one changed while the
+   gate ran, store nothing.
+4. **Pin a review where the trace cannot see.**  A gate that branches
+   on the operating system, or skipped part of its work during the
+   trace, read other files elsewhere.  Review those branches and record
+   the review as a pin: a hash of the gate script, the scripts that
+   branch, and the parts that were skipped.  An unpinned or changed pin
+   means the gate runs and the report names it: "looks at the OS,
+   unreviewed".  Re-pin only after reading what changed, and write why
+   beside the pin.
+5. **Trace again when a gate's own script changes.**  The manifest
+   records each script the gate ran with its hash.  A changed script
+   gives no key and says "trace this gate again", because the gate may
+   now read other files.  A new gate has no manifest and runs until it
+   is traced.
+6. **Some gates are never skipped**, each with its reason in the list:
+   one that fetches a released artifact from the network, one whose
+   sandbox cannot run under the tracer.
+7. **Rerun a red timing gate alone once.**  A gate that measures speed
+   can go red only because other gates loaded the machine.  Report it
+   as "red under load, green alone" and store no key for it.  A gate
+   red alone is red.
+8. **Before a release, run fresh**: every gate, no keys.  The hosted CI
+   after each push stays the full run that waits for nobody.
+9. **Prove the cache works**: run the round twice on an unchanged tree.
+   The second run must cache every keyed gate.  Then change one input
+   and see that exactly the gates that read it run.
+
+The limit: a change that makes a gate read a file it never read before
+is seen only through the change itself (its script, or a file it
+already read) until the gate is traced again.  The fresh run before a
+release and the hosted CI close that gap.
+
+In M9 the lanes runner `tools/ci/lanes.sh` skips by key when
+`M9_LANES_KEYCMD` names the program that computes keys and
+`M9_LANES_KEYDIR` the folder of green keys.  `M9_LANES_FRESH=1` runs
+everything.  Without the two, as on the hosted CI, every gate runs.
+An unchanged round went from 1061 s to 33 s.
+
 ## Sabotage: show what a gate holds
 
 One red run shows a gate can fail.  It does not show the gate holds
@@ -76,7 +141,12 @@ each property it claims.
    Never break the working tree.
 3. **A sabotage the gate passes names a missing check.**  Write that
    check before going on, and run the list again.  Report it as
-   "18 sabotages, 18 red".
+   "18 sabotages, 18 red".  But first ask whether the plant is a fault
+   at all: two reverts that commute are not an order error.  Then the
+   spec is amended, never the gate loosened.
+   **A red run must be red for the right reason.**  The check prints
+   its own message on failure, and the sabotage run looks for that
+   message.  A plant caught by another check is not caught.
 4. **Put a control inside the gate**, a known-bad case reported on
    every run: a planted data race the race detector must see, an
    output with a line cut out that the comparison must notice.  A gate
@@ -141,8 +211,14 @@ back -- the weakest, and always available).
   the meaning of a few silently.
 - Floats: compare with stated tolerances and say why, or byte for byte
   only when both sides format the same way.  Sort unordered
-  collections and JSON keys before comparing.  Pin the oracle's
-  versions: a minor numpy or pandas release can move a last digit.
+  collections and JSON keys before comparing, and compare JSON by
+  parsed value: `1` and `1.0` print differently and are equal.  Pin
+  the oracle's versions: a minor numpy or pandas release can move a
+  last digit.  pandas' default CSV parser rounds long decimals: read
+  with `float_precision="round_trip"`.  numpy 2 (NEP 50) keeps
+  `float32_array * 1e6` in float32, one rounding.
+- Gates that share a resource, a database they reset or a port, must
+  never run at once.  Check for a running one first.
 - A test runner can be green without testing: count the tests it ran
   and hold the count.
 

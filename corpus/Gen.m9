@@ -7391,6 +7391,11 @@ BEGIN
           IF st.kids[0] IS SOME isn THEN
             vtN := OptInner (isn.kids[0]) ;
             IF vtN IS SOME vt0 THEN
+              (* A raising argument in the condition is hoisted ahead of
+                 it, as for a plain IF.  Without it, F (G (x)) IS SOME p
+                 ran F on the NULL that G answered when it raised: a
+                 crash in Llm's first gate (2026-11-21). *)
+              nh := Lower (isn.kids[0], ind) ;
               cnd := EX (isn.kids[0], '') ;
               rs := LeftRaises (isn.kids[0]) ;
               bname := '' ;
@@ -7416,6 +7421,7 @@ BEGIN
                 END
               END ;
               Line (KPbuf, ind, '} }') ;
+              CloseN (nh, ind) ;
               scope.n := savedScope
             ELSE
               ErrAt (st, 'IS SOME form unsupported yet')
@@ -7497,6 +7503,9 @@ BEGIN
               bname := '' ;
               IF isn.kids[1] IS SOME bn1 THEN bname := Text.Keep (gpool, bn1.au) END ;
               Line (KPbuf, ind, 'for (;;) {') ;
+              (* The condition's raising arguments are hoisted inside
+                 the loop, every pass, as for a plain WHILE. *)
+              h0 := Lower (isn.kids[0], ind + 1) ;
               cnd := EX (isn.kids[0], '') ;
               rs := LeftRaises (isn.kids[0]) ;
               Line (KPbuf, ind + 1, S5 (TyC (vtN), ' ', CN (bname),
@@ -7516,6 +7525,7 @@ BEGIN
               YCheck (st.kids[1], ind + 1) ;
               EmitSeq (st.kids[1], ind + 1) ;
               LoopExit (ind + 1) ;
+              CloseN (h0, ind + 1) ;
               loopDepth := loopDepth - 1 ; xitLbl := savedXit ;
               inSwitch := sv ; finDepth := sf ;
               scope.n := savedScope ;

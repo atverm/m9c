@@ -409,6 +409,31 @@ ck "three 503s with a factor of 0.2 s: four tries" \
    "status 200 tries 4 ok at request 4" "$($T GET "$U/flaky/l/3" 3 200)"
 between "and 0 + 0.4 + 0.8 seconds of waiting" 1200 2000 "$(ms $t0)"
 
+# Check Http's Stream against the event stream httpfix.py sends.  The
+# fixture itself prints the lines NextLine must answer.  The chunks
+# split a CRLF and a character's UTF-8, and one line is longer than a
+# read.
+{ echo "status 200"; python3 "$OUT/httpfix.py" sselines; } > "$OUT/sse.want"
+for f in chunked length close; do
+  "$OUT/httpget" stream "$U/sse/$f" > "$OUT/sse.$f" 2>&1 || true
+  if cmp -s "$OUT/sse.want" "$OUT/sse.$f"; then got=same; else
+    got="differs: $(diff "$OUT/sse.want" "$OUT/sse.$f" | cut -c1-80 | head -3)"; fi
+  ck "a stream framed by $f, line by line" same "$got"
+done
+for f in cut cutmid; do
+  ck "a stream cut off by the close ($f) is refused by name" \
+     "transport: the body ended before its last chunk" \
+     "$("$OUT/httpget" stream "$U/sse/$f" 2>&1 | tail -1 || true)"
+done
+# The fixture waits a second after each line.  The first line must
+# arrive before that second is out: a reader that waited for the whole
+# body would answer both lines at about 2000 ms.
+"$OUT/httpget" stream "$U/sse/slow" at > "$OUT/sse.slow" 2>&1 || true
+ck "a slow stream: the status, two lines, the end" \
+   "status 200 at at end" "$(sed 's/^at [0-9]*$/at/' "$OUT/sse.slow" | tr '\n' ' ' | sed 's/ $//')"
+between "the first line came before the pause" 0 700 "$(sed -n 2p "$OUT/sse.slow" | cut -d' ' -f2)"
+between "the second after it" 900 1800 "$(sed -n 3p "$OUT/sse.slow" | cut -d' ' -f2)"
+
 if [ "${M9HTTP_LIVE:-0}" = "1" ]; then
   D=$("$OUT/httpget" text 'https://doi.org/10.18160/JZ2X-GZGU' 'application/ld+json' | head -1)
   ck "LIVE: a DOI over TLS, cross-host redirect, chunked" "status 200 chars 63908" "$D"

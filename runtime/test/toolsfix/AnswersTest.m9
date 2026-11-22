@@ -1,0 +1,79 @@
+MODULE AnswersTest ;
+
+(* AnswersTest reads answers into Obs's records through ObsTools, made
+   by tools/M9Tools.m9 (docs/ml-plan.md, stage A3).  The texts are
+   answers a model could give: right ones, the leading newlines Qwen
+   writes, and ones each reader must refuse.  It prints one line a
+   text, `TYPE TEXT -> RESULT', and then the request a chat makes when
+   it expects each type, `BODY ...'.  runtime/test/llmtools.sh holds
+   the lines to a recorded list, and has Python check the texts
+   against the schemas in the bodies. *)
+
+IMPORT Io ;
+IMPORT Llm ;
+IMPORT Obs ;
+IMPORT ObsTools ;
+IMPORT Text ;
+
+CONST
+  Kinds = ['Reading', 'Reading', 'Reading', 'Reading', 'Reading', 'Reading',
+           'Reading', 'Reading', 'Reading',
+           'Batch', 'Batch', 'Batch', 'Batch'] ;
+  Texts = ['{"station":"HTM","co2":421.7,"height":150,"flag":"Good","checked":true}',
+           '{"station":"PAL","co2":418,"height":12,"flag":"Suspect"}',
+           '{"station":"PAL","co2":418,"height":12,"flag":"Suspect","checked":false,"unit":"ppm"}',
+           '{"station":"PAL","co2":418,"height":12,"flag":"Great","checked":false}',
+           '{"station":"PAL","co2":418,"height":40000,"flag":"Bad","checked":false}',
+           '{"station":"PAL","co2":"high","height":12,"flag":"Bad","checked":false}',
+           'nope',
+           '[1,2]',
+           '{"station":"SVB \"x\" ₂","co2":425.9,"height":150,"flag":"Bad","checked":true}',
+           '{"readings":[{"station":"A","co2":1,"height":1,"flag":"Good","checked":true},{"station":"B","co2":2.5,"height":2,"flag":"Bad","checked":false}],"note":"two"}',
+           '{"readings":5,"note":"x"}',
+           '{"readings":[{"station":"A","co2":1,"height":1.5,"flag":"Good","checked":true}],"note":"x"}',
+           '{"readings":[],"note":"none"}'] ;
+
+VAR
+  pool : POOL ;
+  c : Llm.Chat ;
+  i : I64 ;
+
+(* Shown answers a reading as one line. *)
+PROCEDURE Shown (RO r: Obs.Reading) : STR =
+BEGIN
+  RETURN $'${r.station} ${r.co2} ${r.height} ${ORD (r.flag)} ${r.checked}'
+END Shown ;
+
+(* Read answers what reading text t as kind k gave: the record, or the
+   refusal. *)
+PROCEDURE Read (RO k, t: STR) : STR =
+VAR r : Obs.Reading ; b : Obs.Batch ; s : STR ; j : I64 ;
+BEGIN
+  IF Text.Eq (k, 'Reading') THEN
+    ObsTools.ParseReading (pool, t, r) ;
+    RETURN 'ok ' + Shown (r)
+  END ;
+  ObsTools.ParseBatch (pool, t, b) ;
+  s := $'ok ${LEN (b.readings)} readings, note ${b.note}' ;
+  FOR j := 0 TO LEN (b.readings) - 1 DO s := s + '; ' + Shown (b.readings[j]) END ;
+  RETURN s
+EXCEPT
+| Llm.FormatError (m) : RETURN 'FormatError ' + m
+| IndexError : RETURN 'IndexError'
+END Read ;
+
+BEGIN
+  FOR i := 0 TO LEN (Kinds) - 1 DO
+    Io.WriteLine (Kinds[i] + ' ' + Texts[i] + ' -> ' + Read (Kinds[i], Texts[i]))
+  END ;
+  Io.WriteLine ('Reading (with newlines first) -> ' + Read ('Reading', '' + 0AC + 0AC + Texts[0])) ;
+  Llm.Init (pool, c, 'http://127.0.0.1:1/v1', 'm') ;
+  Llm.Expect (pool, c, 'Reading', ObsTools.ReadingSchemaText ()) ;
+  Io.WriteLine ('BODY Reading ' + Llm.Body (c)) ;
+  Llm.Expect (pool, c, 'Batch', ObsTools.BatchSchemaText ()) ;
+  Io.WriteLine ('BODY Batch ' + Llm.Body (c)) ;
+  Llm.Free (c) ;
+  Io.WriteLine ('BODY free ' + Llm.Body (c))
+EXCEPT
+| Llm.FormatError (m) : Io.ErrLine ('AnswersTest: a schema was refused: ' + m) ; Io.Halt (1)
+END AnswersTest.

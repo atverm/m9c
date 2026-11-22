@@ -10,6 +10,7 @@
 // Lexis, report par 2: (* *) comments NEST (the depth is the state,
 // and it crosses lines); strings in ' or " with NO escapes; char
 // literals are hex digits with a C suffix and begin with a digit;
+// $'...' and $"..." are interpolation literals, holes ${...} inside;
 // 0x hex; a real needs digits on both sides of its point; a first
 // line beginning #! belongs to the operating system.
 
@@ -48,6 +49,28 @@ export function makeM9(keywords) {
       if (stream.match('(*')) {
         state.depth = 1;
         return comment(stream, state);
+      }
+      // An interpolation literal, $'...' or $"...", is one string from
+      // its $, as the lexer makes it one InterpLit.  A hole, ${...}, may
+      // hold a string of either kind, so it is skipped to its brace:
+      // the delimiter inside a hole does not end the literal.
+      if (stream.match(/^\$(?=['"])/)) {
+        const q = stream.next();
+        let depth = 0;
+        while (!stream.eol()) {
+          const c = stream.next();
+          if (depth === 0) {
+            if (c === q) break;
+            if (c === '$' && stream.peek() === '{') { stream.next(); depth = 1; }
+          } else if (c === "'" || c === '"') {
+            while (!stream.eol() && stream.next() !== c) { /* to its end */ }
+          } else if (c === '{') {
+            depth++;
+          } else if (c === '}') {
+            depth--;
+          }
+        }
+        return 'string';
       }
       const ch = stream.peek();
       if (ch === "'" || ch === '"') {

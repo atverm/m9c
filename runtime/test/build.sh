@@ -173,6 +173,19 @@ gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 M9_BLOCK_REUSE=0 ./blockreuse_test
 }
 
+# `+` stays linear when something is allocated between two appends
+# (docs/append-plan.md): the pool's grow slots, aliases, a statement's
+# release and a pool's free.  Under -DM9_POISON too, where a write
+# into storage given back would show.
+b_append () {
+gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
+    -iquote .. -iquote ../gen ../m9rt.c append_driver.c -lm -o append_test
+./append_test
+gcc -std=c11 -O1 -DM9_POISON -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
+    -iquote .. -iquote ../gen ../m9rt.c append_driver.c -lm -o append_poison
+./append_poison
+}
+
 # TASK's runtime, stage 1 (docs/task-plan.md): exact counts through
 # monitors, 100,000 tasks parked and freed by one SIGNAL, a THREAD and
 # a TASK waking each other, and the deadlock and overflow stops by name.
@@ -665,8 +678,11 @@ bytes: a b c
 7 from the ELSIF
 handled, then cleaned up
 exits at 6 4
-for in 60 a b c" ] || { echo "FAIL: a raising call's answer was stored, a binder lost to a module variable, a nested raising call ran its caller, F32 of a huge double did not raise, a U64 literal past 2^63 was wrong, GRID over a slice misread it, a module variable named y0 collided with libm, IndexError's payload did not bind, or a literal beyond ASCII went wrong, or IS SOME as an expression answered wrong, a CASE over Store.Fs did not dispatch, WriteBytes overtook Write, or a CONST expression, an ELSIF after IS SOME, EXCEPT with FINALLY or an EXIT from a CASE arm went wrong, or FOR IN missed an element"; ./shareuse_test; exit 1; }
-echo "PASS (22 checks) -- a call that raised answered nothing: the target keeps its value, the SHARED copy comes after the test; a binder shadows a module variable; a raising argument is guarded before the enclosing call; F32 of a huge double raises; a U64 literal past 2^63 reads; GRID over a slice indexes row-major and refuses a wrong extent; a module variable named like a Bessel function is escaped; IndexError binds (index, length); a literal beyond ASCII is its scalars"
+for in 60 a b c
+half 3
+Empty raised before HalfBox ran
+Empty raised in the WHILE after 2" ] || { echo "FAIL: a raising call's answer was stored, a binder lost to a module variable, a nested raising call ran its caller, F32 of a huge double did not raise, a U64 literal past 2^63 was wrong, GRID over a slice misread it, a module variable named y0 collided with libm, IndexError's payload did not bind, or a literal beyond ASCII went wrong, or IS SOME as an expression answered wrong, a CASE over Store.Fs did not dispatch, WriteBytes overtook Write, or a CONST expression, an ELSIF after IS SOME, EXCEPT with FINALLY or an EXIT from a CASE arm went wrong, or FOR IN missed an element, or a raising argument ran its caller in an IS SOME condition of IF or WHILE"; ./shareuse_test; exit 1; }
+echo "PASS (24 checks) -- a call that raised answered nothing: the target keeps its value, the SHARED copy comes after the test; a binder shadows a module variable; a raising argument is guarded before the enclosing call, in an IS SOME condition of IF and WHILE too; F32 of a huge double raises; a U64 literal past 2^63 reads; GRID over a slice indexes row-major and refuses a wrong extent; a module variable named like a Bessel function is escaped; IndexError binds (index, length); a literal beyond ASCII is its scalars"
 }
 
 # Http's URL fetcher runs against a local fixture server.  It is IN THE
@@ -705,7 +721,7 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label \
 echo "PASS (1 check) -- catbench.c still compiles"
 }
 
-for b in dynstr dict fmt time text syslog math mat sort sort_rt bits crc utfrt blockreuse task execlimit parsef64 csvnum system stats numpyexact \
+for b in dynstr dict fmt time text syslog math mat sort sort_rt bits crc utfrt blockreuse append task execlimit parsef64 csvnum system stats numpyexact \
          frame delim io zip csv grib json apispec arrow \
          httpserver sigpipe release zarrw stores; do
   battery "$b"

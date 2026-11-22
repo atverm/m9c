@@ -1715,6 +1715,24 @@ BEGIN
       END
     ELSE
       groups := hdr DIV 2 ;
+      (* A width of 0 takes no bytes: every value is 0.  polars writes
+         a column of one distinct value so, a dictionary of one entry
+         and indices of no bits.  The reader refused such a file as
+         damaged until 2026-11-20.  The groups are not walked: their
+         count is the writer's word and nothing in the file bounds
+         it. *)
+      IF width = 0 THEN
+        WHILE got < n AND groups > 0 DO
+          FOR i := 1 TO 8 DO
+            IF got < n THEN
+              v[got] := 0 ;
+              got := got + 1
+            END
+          END ;
+          groups := groups - 1
+        END ;
+        groups := 0
+      END ;
       IF groups > (end - at) THEN RAISE Faults.BadArg (RunBad) END ;
       IF at + groups * width > end THEN RAISE Faults.BadArg (RunBad) END ;
       acc := 0 ;

@@ -39,8 +39,10 @@ a compiled pattern; lives in a POOL
 
 ### TYPE Found
 
-start and end of group 0, 1, ...;
--1 and -1 for one that took no part
+_(undocumented)_
+
+- `span : SLICE OF I64` -- start and end of group 0, 1, ...;
+  -1 and -1 for one that took no part
 
 ### EXCEPTION BadPattern
 

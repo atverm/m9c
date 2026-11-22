@@ -129,7 +129,7 @@ static void run (const char *name, int variant, const int64_t *Ns, int nn)
 
   for (k = 0; k < nn; k++) {
     int64_t N = Ns[k], i;
-    m9_pool pool = { NULL };
+    m9_pool pool = { 0 };
     S s = { NULL, 0 };
     S x = { chunk, 8 };
     double t0, t1;

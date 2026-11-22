@@ -110,7 +110,10 @@ Policy was called
 
 ### TYPE Seat
 
-0 .. MaxChildren - 1
+_(undocumented)_
+
+- `id : I64` -- 0 .. MaxChildren - 1
+- `run : I64` -- the start it runs now
 
 ### EXCEPTION GaveUp
 

@@ -48,7 +48,7 @@ static int64_t registered (void)
 int main (void)
 {
   m9_state err;
-  m9_pool pool = { NULL };
+  m9_pool pool = { 0 };
   m9_mark m;
   unsigned char *a, *p, *q;
   m9_sl_UTF8 s, t, u, x;
@@ -111,7 +111,7 @@ int main (void)
   /* 4. In a fresh pool everything the statement carved goes, and the
         frame's free has nothing to do. */
   {
-    m9_pool fresh = { NULL };
+    m9_pool fresh = { 0 };
     m = m9_pool_mark (&fresh);
     ok ("a mark on an empty pool", m.head == NULL && m.used == 0);
     (void) m9_pool_alloc (&fresh, 1, 10, &err);

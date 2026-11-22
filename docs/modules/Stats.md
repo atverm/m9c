@@ -95,7 +95,10 @@ around it.
 
 ### TYPE Fit
 
-the values it was fitted to
+_(undocumented)_
+
+- `mu, sigma : F64`
+- `n : I64` -- the values it was fitted to
 
 ### NormFit (RO xs: SLICE OF F64) : Fit RAISES TooFew, ValueRange
 
@@ -105,7 +108,10 @@ exactly.
 
 ### TYPE Reg
 
-the PAIRS used: both values present
+_(undocumented)_
+
+- `slope, intercept, r, p, stderr : F64`
+- `n : I64` -- the PAIRS used: both values present
 
 ### LinReg (RO xs, ys: SLICE OF F64) : Reg RAISES TooFew, ValueRange, Overflow
 
@@ -116,8 +122,11 @@ present.  ValueRange is a vertical line: all the x equal.
 
 ### TYPE Test
 
-the values used; both samples
-together for TTest2
+_(undocumented)_
+
+- `t, p, dof : F64`
+- `n : I64` -- the values used; both samples
+  together for TTest2
 
 ### TTest1 (RO xs: SLICE OF F64 ; mu: F64) : Test RAISES TooFew, ValueRange, Overflow
 
@@ -145,12 +154,16 @@ wants the one-sided answer the tests do not give.
 
 ### TYPE Stream
 
-the four 64-bit words of xoshiro256**
-state, each held AS A BIT PATTERN in
-an I64: Bits and the wrapping ops are
-defined on the pattern whatever the
-sign, and U64 is the type the
-generator serves worst
+_(undocumented)_
+
+- `s0, s1, s2, s3 : I64` -- the four 64-bit words of xoshiro256**
+  state, each held AS A BIT PATTERN in
+  an I64: Bits and the wrapping ops are
+  defined on the pattern whatever the
+  sign, and U64 is the type the
+  generator serves worst
+- `have : BOOL` -- a cached second normal draw
+- `spare : F64`
 
 ### Seed (s: I64) : Stream RAISES ValueRange
 

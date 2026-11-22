@@ -60,6 +60,43 @@ END Nest ;
 
 (* F32 of a double beyond F32's range is ValueRange, not an infinity
    (2026-10-08): the C cast gave inf and the program went on *)
+(* HalfBox reads the box it is given and answers a box of half its n,
+   NONE for an odd n.  NestIf and NestWhile put Make, which raises for
+   0, inside an IS SOME condition, as the argument of HalfBox.  HalfBox must
+   not run on what Make answered when it raised: a NULL.  Until
+   2026-11-21 the IS SOME forms of IF and WHILE did not hoist the
+   argument.  HalfBox read through the NULL, as Llm.Parse ran Json.First
+   on one and crashed. *)
+PROCEDURE HalfBox (b: SHARED PTR Box) : OPT PTR Box =
+VAR q : PTR Box ;
+BEGIN
+  IF b.n MOD 2 # 0 THEN RETURN NONE END ;
+  q := NEW (Box) ;
+  q.n := b.n DIV 2 ;
+  RETURN SOME (q)
+END HalfBox ;
+
+PROCEDURE NestIf (n: I64) =
+BEGIN
+  IF HalfBox (Make (n)) IS SOME q THEN
+    Io.Write ('half ') ; Io.WriteI64 (q.n) ; Io.WriteLine ('')
+  END
+EXCEPT
+| Empty : Io.WriteLine ('Empty raised before HalfBox ran')
+END NestIf ;
+
+PROCEDURE NestWhile (n: I64) =
+VAR k : I64 ;
+BEGIN
+  k := 0 ;
+  WHILE HalfBox (Make (n - 2 * k)) IS SOME q DO
+    IF q.n > 0 THEN k := k + 1 END
+  END ;
+  Io.WriteLine ('the WHILE ended')
+EXCEPT
+| Empty : Io.Write ('Empty raised in the WHILE after ') ; Io.WriteI64 (k) ; Io.WriteLine ('')
+END NestWhile ;
+
 PROCEDURE Narrow (x: F64) =
 VAR f : F32 ;
 BEGIN
@@ -257,5 +294,8 @@ BEGIN
   Dispatch (Store.Fs) ;
   Dispatch (Store.Irods) ;
   Octets () ;
-  Forms ()
+  Forms () ;
+  NestIf (6) ;
+  NestIf (0) ;
+  NestWhile (4)
 END ShareUse.

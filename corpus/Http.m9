@@ -285,6 +285,57 @@ PROCEDURE CookieValue (cl: PTR Client ; RO name: STR) : STR
   (* CookieValue answers the value of the first live cookie named
      `name`, whatever its domain and path; '' when there is none. *)
 
+(* ---- a Stream: the body a line at a time (2026-11-21) ---------------
+
+   Request answers the body when it has all come.  A chat server that
+   streams sends its answer as server-sent events: one `data:` line
+   per piece, over minutes.  A Stream hands the body over a line at a
+   time, as it arrives.  Open sends the request and reads the status
+   and the headers; NextLine answers the next line of the body;
+   CloseStream closes the connection.
+
+   NextLine reads the framing itself: chunks, a Content-Length, or the
+   close.  A line ends at a line feed, and a carriage return before it
+   is dropped.  The line is decoded as DynStr.Decoded decodes: UTF-8,
+   else one character per octet.  A body cut short of its framing
+   raises TransportError, as Request does.  A line longer than LineMax
+   octets is refused by name.  Every Stream holds a connection, so
+   close each one; the connection goes one request only (Connection:
+   close).                                                          *)
+
+CONST
+  LineMax = 1048576 ;
+
+TYPE
+  Stream = RECORD
+    status : I64 ;                (* the response's status *)
+    hdrs : STR ;                  (* its header lines, as Request answers them *)
+    (* The fields below are the reader's own. *)
+    c : Conn ;
+    chunked, first, done : BOOL ;
+    clen, want : I64 ;
+  END ;
+
+PROCEDURE Open (VAR pool: POOL ; RO method: STR ; RO url: STR ;
+                RO headers: STR ; RO body: SLICE OF BYTE)
+  : PTR Stream IN pool
+  RAISES TransportError, ValueRange ;
+  (* Open makes one request, as Request does, and answers when the
+     headers have come.  The body is left on the connection for
+     NextLine.  A HEAD, a 1xx, a 204 and a 304 have an empty body. *)
+
+PROCEDURE NextLine (VAR pool: POOL ; VAR s: PTR Stream ; VAR line: STR)
+  : BOOL
+  RAISES TransportError, ValueRange ;
+  (* NextLine puts the body's next line in `line`, in pool, and answers
+     TRUE.  It answers FALSE, with `line` empty, at the end of the
+     body.  It waits for the server as long as the line takes. *)
+
+PROCEDURE CloseStream (VAR s: PTR Stream)
+  RAISES ValueRange ;
+  (* CloseStream closes the connection.  A Stream closed before its
+     body ended answers FALSE from NextLine after it. *)
+
 (* ---- trying again: retry with backoff (2026-10-02) -----------------
 
    A repository answers 503 for a minute while it restarts, or 429
@@ -835,20 +886,164 @@ EXCEPT
 | ValueRange : RETURN -1
 END ExtraHost ;
 
+(* Frame is what the headers said about the body that follows. *)
+TYPE
+  Frame = RECORD
+    chunked, noBody, http11, connClose, connKeep : BOOL ;
+    clen, want : I64 ;
+  END ;
+
+(* Head sends the request and reads the status line and the headers
+   into rs and fr.  The body is left on the connection.  Once reads it
+   whole; a Stream reads it a line at a time. *)
+PROCEDURE Head (VAR pool: POOL ; VAR c: Conn ; RO rq: Req ;
+                VAR rs: Resp ; VAR fr: Frame)
+  RAISES TransportError, ValueRange, IndexError =
+VAR
+  scratch : POOL ;
+  req : PTR DynStr.DString IN scratch ;
+  hd : PTR DynStr.DString IN scratch ;
+  line, val : STR ;
+  n, ln, clen, i, k : I64 ;
+  chunked, http11, connClose, connKeep : BOOL ;
+  hk, hn : I64 ;
+BEGIN
+  req := DynStr.New (scratch) ;
+  DynStr.Append (req, rq.method) ;
+  DynStr.Append (req, ' ') ;
+  DynStr.Append (req, rq.path) ;
+  DynStr.Append (req, ' HTTP/1.1') ;
+  CrLf (req) ;
+  (* This writes the caller's own Host line, when it gives one, in
+     place of the URL's (the definition). *)
+  hk := ExtraHost (rq.extra, hn) ;
+  IF hk >= 0 THEN
+    DynStr.Append (req, SLICE (rq.extra, hk, hn))
+  ELSE
+    DynStr.Append (req, 'Host: ') ;
+    HostLine (req, rq.host, rq.port, c.secure)
+  END ;
+  CrLf (req) ;
+  (* This asks for identity BY NAME: a server that decided to gzip
+     would hand back bytes this module does not decode, and the
+     failure would look like corrupt data rather than a missing
+     feature. *)
+  DynStr.Append (req, 'Accept-Encoding: identity') ;
+  CrLf (req) ;
+  IF rq.keep THEN
+    DynStr.Append (req, 'Connection: keep-alive')
+  ELSE
+    (* This is one request per connection, so a body with no
+       framing at all ends at the close. *)
+    DynStr.Append (req, 'Connection: close')
+  END ;
+  CrLf (req) ;
+  IF Text.BLen (rq.accept) > 0 THEN
+    DynStr.Append (req, 'Accept: ') ;
+    DynStr.Append (req, rq.accept) ;
+    CrLf (req)
+  END ;
+  IF Text.BLen (rq.cookie) > 0 THEN
+    DynStr.Append (req, 'Cookie: ') ;
+    DynStr.Append (req, rq.cookie) ;
+    CrLf (req)
+  END ;
+  (* The caller's own lines go out one per line feed, as given; a
+     carriage return before the line feed is tolerated, not
+     doubled. *)
+  k := 0 ;
+  WHILE k < Text.BLen (rq.extra) DO
+    i := k ;
+    WHILE i < Text.BLen (rq.extra) AND I64 (Text.BAt (rq.extra, i)) # 10 DO i := i + 1 END ;
+    n := i - k ;
+    IF n > 0 AND I64 (Text.BAt (rq.extra, i - 1)) = 13 THEN n := n - 1 END ;
+    IF n > 0 AND k # hk THEN
+      DynStr.Append (req, SLICE (rq.extra, k, n)) ;
+      CrLf (req)
+    END ;
+    k := i + 1
+  END ;
+  (* a body is framed by its length; a bodiless POST says 0 so the
+     server does not wait for one *)
+  IF LEN (rq.body) > 0 OR
+     NOT (Text.Eq (rq.method, 'GET') OR Text.Eq (rq.method, 'HEAD')) THEN
+    DynStr.Append (req, 'Content-Length: ') ;
+    DynStr.AppendI64 (req, LEN (rq.body)) ;
+    CrLf (req)
+  END ;
+  CrLf (req) ;
+  (* The request goes out as its text's UTF-8 octets, as curl sends
+     a UTF-8 path. *)
+  SendAll (c, OCTETS (DynStr.View (req))) ;
+  SendAll (c, rq.body) ;
+
+  (* ---- the status line and the headers ---- *)
+  ln := Line (c, line) ;
+  IF ln < 12 THEN RAISE TransportError ('short response') END ;
+  http11 := Text.BIs (line, 7, '1') ;
+  rs.status := (I64 (Text.BAt (line, 9)) - 48) * 100 + (I64 (Text.BAt (line, 10)) - 48) * 10
+               + (I64 (Text.BAt (line, 11)) - 48) ;
+  clen := -1 ; chunked := FALSE ; connClose := FALSE ; connKeep := FALSE ;
+  hd := DynStr.New (scratch) ;
+  LOOP
+    ln := Line (c, line) ;
+    IF ln = -2 THEN RAISE TransportError ('header line too long') END ;
+    IF ln <= 0 THEN EXIT END ;
+    IF rq.keepHdrs THEN
+      DynStr.Append (hd, line) ;
+      DynStr.AppendChar (hd, 0AC)
+    END ;
+    IF HeaderIs (line, 'content-length:') THEN
+      clen := Digits (HeaderVal (line, 15))
+    ELSIF HeaderIs (line, 'transfer-encoding:') THEN
+      (* chunked is the only one this speaks; anything else is
+         refused rather than read as though it were identity. *)
+      IF HeaderIs (HeaderVal (line, 18), 'chunked') THEN
+        chunked := TRUE
+      ELSE
+        RAISE TransportError ('unsupported transfer-encoding')
+      END
+    ELSIF HeaderIs (line, 'connection:') THEN
+      val := HeaderVal (line, 11) ;
+      IF HeaderIs (val, 'close') THEN connClose := TRUE END ;
+      IF HeaderIs (val, 'keep-alive') THEN connKeep := TRUE END
+    ELSIF HeaderIs (line, 'location:') THEN
+      rs.loc := Cat1 (pool, HeaderVal (line, 9))
+    ELSIF HeaderIs (line, 'set-cookie:') THEN
+      (* This keeps name=value only, up to the first ';': the
+         narrowing the GET forms state.  A Client reads the whole
+         line from hdrs. *)
+      val := HeaderVal (line, 11) ;
+      i := 0 ;
+      WHILE i < Text.BLen (val) AND NOT Text.BIs (val, i, ';') DO i := i + 1 END ;
+      rs.setCookie := Cat1 (pool, SLICE (val, 0, i))
+    END
+  END ;
+  IF rq.keepHdrs THEN rs.hdrs := Cat1 (pool, DynStr.View (hd)) END ;
+  fr.want := clen ;
+  IF chunked THEN fr.want := 0 END ;
+  (* No body follows a HEAD's headers, nor a 1xx, 204 or 304 (RFC
+     9110 par 6.4.1), whatever Content-Length says.  Waiting for one
+     would hang until the server tires of the connection. *)
+  fr.noBody := Text.Eq (rq.method, 'HEAD') OR rs.status < 200 OR
+               rs.status = 204 OR rs.status = 304 ;
+  IF fr.noBody THEN chunked := FALSE ; fr.want := 0 END ;
+  fr.chunked := chunked ; fr.clen := clen ; fr.http11 := http11 ;
+  fr.connClose := connClose ; fr.connKeep := connKeep
+END Head ;
+
 PROCEDURE Once (VAR pool: POOL ; VAR c: Conn ; RO rq: Req ;
                 VAR sink: SLICE OF BYTE ; VAR rs: Resp)
   RAISES TransportError, Io.IOError, ValueRange, IndexError =
 VAR
   scratch : POOL ;
-  req : PTR DynStr.DString IN scratch ;
   acc : PTR DynStr.DString IN pool ;
-  hd : PTR DynStr.DString IN scratch ;
   blk : SLICE OF BYTE ;
-  line, val : STR ;
-  n, ln, clen, want, got, held, sunk, i, k : I64 ;
+  line : STR ;
+  n, ln, clen, want, got, held, sunk, i : I64 ;
   chunked, first, opened, noBody, ended, done : BOOL ;
   http11, connClose, connKeep : BOOL ;
-  hk, hn : I64 ;
+  fr : Frame ;
 BEGIN
   rs.status := 0 ; rs.bytes := 0 ; rs.loc := '' ; rs.setCookie := '' ;
   rs.hdrs := '' ; rs.text := '' ; rs.keepable := FALSE ;
@@ -856,132 +1051,16 @@ BEGIN
   c.gotAny := FALSE ;
 
   BEGIN
-    req := DynStr.New (scratch) ;
-    DynStr.Append (req, rq.method) ;
-    DynStr.Append (req, ' ') ;
-    DynStr.Append (req, rq.path) ;
-    DynStr.Append (req, ' HTTP/1.1') ;
-    CrLf (req) ;
-    (* This writes the caller's own Host line, when it gives one, in
-       place of the URL's (the definition). *)
-    hk := ExtraHost (rq.extra, hn) ;
-    IF hk >= 0 THEN
-      DynStr.Append (req, SLICE (rq.extra, hk, hn))
-    ELSE
-      DynStr.Append (req, 'Host: ') ;
-      HostLine (req, rq.host, rq.port, c.secure)
-    END ;
-    CrLf (req) ;
-    (* This asks for identity BY NAME: a server that decided to gzip
-       would hand back bytes this module does not decode, and the
-       failure would look like corrupt data rather than a missing
-       feature. *)
-    DynStr.Append (req, 'Accept-Encoding: identity') ;
-    CrLf (req) ;
-    IF rq.keep THEN
-      DynStr.Append (req, 'Connection: keep-alive')
-    ELSE
-      (* This is one request per connection, so a body with no
-         framing at all ends at the close. *)
-      DynStr.Append (req, 'Connection: close')
-    END ;
-    CrLf (req) ;
-    IF Text.BLen (rq.accept) > 0 THEN
-      DynStr.Append (req, 'Accept: ') ;
-      DynStr.Append (req, rq.accept) ;
-      CrLf (req)
-    END ;
-    IF Text.BLen (rq.cookie) > 0 THEN
-      DynStr.Append (req, 'Cookie: ') ;
-      DynStr.Append (req, rq.cookie) ;
-      CrLf (req)
-    END ;
-    (* The caller's own lines go out one per line feed, as given; a
-       carriage return before the line feed is tolerated, not
-       doubled. *)
-    k := 0 ;
-    WHILE k < Text.BLen (rq.extra) DO
-      i := k ;
-      WHILE i < Text.BLen (rq.extra) AND I64 (Text.BAt (rq.extra, i)) # 10 DO i := i + 1 END ;
-      n := i - k ;
-      IF n > 0 AND I64 (Text.BAt (rq.extra, i - 1)) = 13 THEN n := n - 1 END ;
-      IF n > 0 AND k # hk THEN
-        DynStr.Append (req, SLICE (rq.extra, k, n)) ;
-        CrLf (req)
-      END ;
-      k := i + 1
-    END ;
-    (* a body is framed by its length; a bodiless POST says 0 so the
-       server does not wait for one *)
-    IF LEN (rq.body) > 0 OR
-       NOT (Text.Eq (rq.method, 'GET') OR Text.Eq (rq.method, 'HEAD')) THEN
-      DynStr.Append (req, 'Content-Length: ') ;
-      DynStr.AppendI64 (req, LEN (rq.body)) ;
-      CrLf (req)
-    END ;
-    CrLf (req) ;
-    (* The request goes out as its text's UTF-8 octets, as curl sends
-       a UTF-8 path. *)
-    SendAll (c, OCTETS (DynStr.View (req))) ;
-    SendAll (c, rq.body) ;
-
-    (* ---- the status line and the headers ---- *)
-    ln := Line (c, line) ;
-    IF ln < 12 THEN RAISE TransportError ('short response') END ;
-    http11 := Text.BIs (line, 7, '1') ;
-    rs.status := (I64 (Text.BAt (line, 9)) - 48) * 100 + (I64 (Text.BAt (line, 10)) - 48) * 10
-                 + (I64 (Text.BAt (line, 11)) - 48) ;
-    clen := -1 ; chunked := FALSE ; connClose := FALSE ; connKeep := FALSE ;
-    hd := DynStr.New (scratch) ;
-    LOOP
-      ln := Line (c, line) ;
-      IF ln = -2 THEN RAISE TransportError ('header line too long') END ;
-      IF ln <= 0 THEN EXIT END ;
-      IF rq.keepHdrs THEN
-        DynStr.Append (hd, line) ;
-        DynStr.AppendChar (hd, 0AC)
-      END ;
-      IF HeaderIs (line, 'content-length:') THEN
-        clen := Digits (HeaderVal (line, 15))
-      ELSIF HeaderIs (line, 'transfer-encoding:') THEN
-        (* chunked is the only one this speaks; anything else is
-           refused rather than read as though it were identity. *)
-        IF HeaderIs (HeaderVal (line, 18), 'chunked') THEN
-          chunked := TRUE
-        ELSE
-          RAISE TransportError ('unsupported transfer-encoding')
-        END
-      ELSIF HeaderIs (line, 'connection:') THEN
-        val := HeaderVal (line, 11) ;
-        IF HeaderIs (val, 'close') THEN connClose := TRUE END ;
-        IF HeaderIs (val, 'keep-alive') THEN connKeep := TRUE END
-      ELSIF HeaderIs (line, 'location:') THEN
-        rs.loc := Cat1 (pool, HeaderVal (line, 9))
-      ELSIF HeaderIs (line, 'set-cookie:') THEN
-        (* This keeps name=value only, up to the first ';': the
-           narrowing the GET forms state.  A Client reads the whole
-           line from hdrs. *)
-        val := HeaderVal (line, 11) ;
-        i := 0 ;
-        WHILE i < Text.BLen (val) AND NOT Text.BIs (val, i, ';') DO i := i + 1 END ;
-        rs.setCookie := Cat1 (pool, SLICE (val, 0, i))
-      END
-    END ;
-    IF rq.keepHdrs THEN rs.hdrs := Cat1 (pool, DynStr.View (hd)) END ;
+    Head (pool, c, rq, rs, fr) ;
+    chunked := fr.chunked ; clen := fr.clen ; want := fr.want ;
+    noBody := fr.noBody ; http11 := fr.http11 ;
+    connClose := fr.connClose ; connKeep := fr.connKeep ;
 
     (* ---- the body ---- *)
     opened := FALSE ; ended := FALSE ; sunk := 0 ;
     acc := DynStr.New (pool) ;
     blk := NEW (scratch, BYTE, IoBlock) ;
     held := 0 ;
-    want := clen ;
-    IF chunked THEN want := 0 END ;
-    (* No body follows a HEAD's headers, nor a 1xx, 204 or 304 (RFC
-       9110 par 6.4.1), whatever Content-Length says.  Waiting for one
-       would hang until the server tires of the connection. *)
-    noBody := Text.Eq (rq.method, 'HEAD') OR rs.status < 200 OR
-              rs.status = 204 OR rs.status = 304 ;
-    IF noBody THEN chunked := FALSE ; want := 0 END ;
     first := TRUE ;
     LOOP
       IF chunked AND want = 0 THEN
@@ -1220,6 +1299,150 @@ EXCEPT
 | IndexError : RAISE TransportError ('a malformed response')
 | Io.IOError (p) : RAISE TransportError ('unexpected file error')
 END Request ;
+
+(* ---- the body a line at a time ------------------------------------ *)
+
+PROCEDURE Open (VAR pool: POOL ; RO method: STR ; RO url: STR ;
+                RO headers: STR ; RO body: SLICE OF BYTE)
+  : PTR Stream IN pool
+  RAISES TransportError, ValueRange =
+VAR
+  s : PTR Stream IN pool ;
+  rq : Req ;
+  rs : Resp ;
+  fr : Frame ;
+  secure, ok : BOOL ;
+  host, path : STR ;
+  port : I64 ;
+BEGIN
+  IF Text.BLen (method) = 0 THEN RAISE TransportError ('no method') END ;
+  SplitUrl (pool, url, secure, host, port, path) ;
+  rq.method := method ; rq.host := host ; rq.port := port ; rq.path := path ;
+  rq.extra := headers ; rq.body := body ;
+  rq.accept := '' ; rq.cookie := '' ; rq.dest := '' ;
+  rq.toFile := FALSE ; rq.toSink := FALSE ; rq.keepHdrs := TRUE ;
+  rq.keep := FALSE ; rq.cap := 0 ;
+  s := NEW (pool, Stream) ;
+  s.c.fd := -1 ;
+  OpenConn (pool, s.c, secure, host, port) ;
+  ok := FALSE ;
+  BEGIN
+    Head (pool, s.c, rq, rs, fr) ;
+    ok := TRUE
+  FINALLY
+    (* A request that failed before its headers had come leaves
+       nothing to read: the connection is closed here. *)
+    IF NOT ok THEN CloseConn (s.c) END
+  END ;
+  s.status := rs.status ; s.hdrs := rs.hdrs ;
+  s.chunked := fr.chunked ; s.clen := fr.clen ; s.want := fr.want ;
+  s.first := TRUE ;
+  s.done := fr.noBody ;
+  IF s.done THEN CloseConn (s.c) END ;
+  RETURN s
+EXCEPT
+| IndexError : RAISE TransportError ('a malformed response')
+END Open ;
+
+(* BodyByte answers the body's next octet, or -1 at its end.  It reads
+   the framing as Once does: a chunk's size line, the CRLF after the
+   chunk, and the trailer after the last one.  A body cut short of its
+   framing raises with Once's messages. *)
+PROCEDURE BodyByte (VAR s: PTR Stream) : I64
+  RAISES TransportError, ValueRange, IndexError =
+VAR
+  line : STR ;
+  ln, i, v : I64 ;
+BEGIN
+  IF s.done THEN RETURN -1 END ;
+  IF s.chunked AND s.want = 0 THEN
+    IF NOT s.first THEN
+      ln := Line (s.c, line)            (* the chunk's CRLF *)
+    END ;
+    s.first := FALSE ;
+    ln := Line (s.c, line) ;
+    IF ln < 0 THEN
+      RAISE TransportError ('the body ended before its last chunk')
+    END ;
+    i := 0 ;
+    WHILE i < Text.BLen (line) AND NOT Text.BIs (line, i, ';') DO i := i + 1 END ;
+    s.want := HexVal (SLICE (line, 0, i)) ;
+    IF s.want = 0 THEN
+      LOOP
+        ln := Line (s.c, line) ;
+        IF ln <= 0 THEN EXIT END
+      END ;
+      s.done := TRUE ;
+      CloseConn (s.c) ;
+      RETURN -1
+    END
+  ELSIF NOT s.chunked AND s.clen >= 0 AND s.want = 0 THEN
+    s.done := TRUE ;
+    CloseConn (s.c) ;
+    RETURN -1
+  END ;
+  v := ConnByte (s.c) ;
+  IF v < 0 THEN
+    s.done := TRUE ;
+    CloseConn (s.c) ;
+    IF s.chunked THEN
+      RAISE TransportError ('the body ended before its last chunk')
+    END ;
+    IF s.clen >= 0 THEN
+      RAISE TransportError ('the body ended before its Content-Length')
+    END ;
+    RETURN -1
+  END ;
+  (* A body framed by the close has want -1, and it stays so. *)
+  IF s.want > 0 THEN s.want := s.want - 1 END ;
+  RETURN v
+END BodyByte ;
+
+PROCEDURE NextLine (VAR pool: POOL ; VAR s: PTR Stream ; VAR line: STR)
+  : BOOL
+  RAISES TransportError, ValueRange =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+  v, n : I64 ;
+  cr : BOOL ;
+BEGIN
+  line := '' ;
+  d := DynStr.New (scratch) ;
+  n := 0 ;
+  cr := FALSE ;
+  LOOP
+    v := BodyByte (s) ;
+    IF v < 0 THEN
+      IF n = 0 AND NOT cr THEN RETURN FALSE END ;
+      EXIT
+    END ;
+    IF v = 10 THEN cr := FALSE ; EXIT END ;
+    (* A carriage return is held back until the next octet shows
+       whether it ends the line. *)
+    IF cr THEN DynStr.AppendChar (d, 0DC) ; n := n + 1 END ;
+    cr := v = 13 ;
+    IF NOT cr THEN DynStr.AppendChar (d, CHR (v)) ; n := n + 1 END ;
+    IF n > LineMax THEN
+      CloseStream (s) ;
+      RAISE TransportError ('a line is longer than LineMax')
+    END
+  END ;
+  IF cr THEN DynStr.AppendChar (d, 0DC) END ;
+  (* The builder holds octets, one per character; the line is the
+     text they carry. *)
+  line := DynStr.Decoded (pool, DynStr.Bytes (scratch, DynStr.View (d), FALSE)) ;
+  RETURN TRUE
+EXCEPT
+| IndexError : RAISE TransportError ('a malformed response')
+END NextLine ;
+
+PROCEDURE CloseStream (VAR s: PTR Stream)
+  RAISES ValueRange =
+BEGIN
+  s.done := TRUE ;
+  CloseConn (s.c)
+END CloseStream ;
 
 PROCEDURE GetToFile (VAR pool: POOL ; RO url: STR ; RO accept: STR ;
                      RO cookie: STR ; RO dest: STR ; VAR bytes: I64)

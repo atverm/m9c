@@ -554,6 +554,8 @@ void (m9_pool_free) (m9_pool *pool)
     b = n;
   }
   pool->head = NULL;
+  memset (pool->grow, 0, sizeof pool->grow);
+  pool->grow_tick = 0;
 }
 
 /* m9_pool_release_slow is m9_pool_release's other case: the statement
@@ -564,11 +566,13 @@ void m9_pool_release_slow (m9_pool *pool, m9_mark m)
   m9_pool_block *b = pool->head, *n;
   while (b != NULL && b != m.head) {
     n = b->next;
+    m9_grow_drop (pool, (uintptr_t) (b + 1), (uintptr_t) (b + 1) + b->cap);
     m9_block_back (b);
     b = n;
   }
   pool->head = b;
   if (b != NULL && b->used > m.used) {
+    m9_grow_drop (pool, (uintptr_t) (b + 1) + m.used, (uintptr_t) (b + 1) + b->cap);
     M9_POISON_BYTES ((unsigned char *) (b + 1) + m.used, b->used - m.used);
     b->used = m.used;
     b->last = m.last;
@@ -576,7 +580,7 @@ void m9_pool_release_slow (m9_pool *pool, m9_mark m)
 }
 
 /* never freed, and that is the whole point -- see m9rt.h */
-m9_pool m9_heap = { NULL };
+m9_pool m9_heap = { 0 };
 
 /* m9_cat_extend asks whether `a` ends exactly where the arena's top
    allocation ends, with room to grow in place.  Then `a + b` need not
@@ -657,25 +661,126 @@ static uint8_t *m9_cat_extend_octets (m9_pool *pool, const uint8_t *a,
   return (uint8_t *) ((char *) (blk + 1) + (top - alen));
 }
 
+/* ---- grow slots (docs/append-plan.md) ----
+
+   m9_grow_find answers the slot of the string that starts at p and is
+   len octets long, or NULL.  A string of the same start and a shorter
+   length (a copy taken before an append) has no slot: it is copied. */
+static m9_grow *m9_grow_find (m9_pool *pool, const void *p, size_t len)
+{
+  int i;
+  if (p == NULL || len == 0) return NULL;
+  for (i = 0; i < M9_GROW_SLOTS; i++)
+    if (pool->grow[i].p == (const uint8_t *) p && pool->grow[i].len == len) {
+      pool->grow[i].tick = ++pool->grow_tick;
+      return &pool->grow[i];
+    }
+  return NULL;
+}
+
+/* m9_grow_take gives a new string the slot used least recently (a
+   free one first), with no room.  Its next append, if something was
+   carved after it, gets the room. */
+static void m9_grow_take (m9_pool *pool, void *p, size_t len)
+{
+  m9_grow *g = &pool->grow[0];
+  int i;
+  for (i = 0; i < M9_GROW_SLOTS; i++) {
+    if (pool->grow[i].p == NULL) { g = &pool->grow[i]; break; }
+    if (pool->grow[i].tick < g->tick) g = &pool->grow[i];
+  }
+  g->p = (uint8_t *) p;
+  g->len = len;
+  g->cap = len;
+  g->tick = ++pool->grow_tick;
+}
+
+/* m9_grow_cat appends n2 octets at b to the string a of n1 octets, in
+   pool, and answers the new string's first octet, or NULL on
+   OutOfMemory.  The four cases are docs/append-plan.md's: in a slot's
+   room; in place at the arena's top (extend, m9_cat_extend's
+   octets); a slot's string outgrown, copied with room for twice its
+   length; anything else copied exactly, taking a slot. */
+/* m9_grow_cat is kept out of its callers (noipa).  Inlined, with link
+   time optimisation, into a program's `'hello from ' + System.Os ()`,
+   gcc 16 sees that the slot's start was found equal to the literal,
+   and warns that the append writes past the literal's end
+   (-Wstringop-overflow; the Windows zip's install printed it twice,
+   2026-11-22, and its smoke test failed on the output).  The guard
+   that the slot is not a literal is m9_grow_find's: a slot holds this
+   pool's storage only.  m9_cat_extend met the same reasoning and
+   answers an address from the block for it.  clang has no noipa;
+   noinline does there. */
+#if defined (__GNUC__) && !defined (__clang__)
+#define M9_NOIPA __attribute__ ((noipa))
+#else
+#define M9_NOIPA __attribute__ ((noinline))
+#endif
+static M9_NOIPA uint8_t *m9_grow_cat (m9_pool *pool, const uint8_t *a, size_t n1,
+                             const uint8_t *b, size_t n2,
+                             uint8_t *(*extend) (m9_pool *, const uint8_t *, size_t, size_t),
+                             m9_state *err)
+{
+  size_t n = n1 + n2, cap;
+  m9_grow *g = m9_grow_find (pool, a, n1);
+  uint8_t *p;
+  if (g != NULL && n <= g->cap) {
+    M9_ASAN_UNPOISON (g->p + n1, n2);
+    if (n2 > 0) memcpy (g->p + n1, b, n2);
+    g->len = n;
+    return g->p;
+  }
+  p = extend (pool, a, n1, n);
+  if (p != NULL) {
+    if (n2 > 0) memcpy (p + n1, b, n2);
+    if (g != NULL) { g->p = p; g->len = n; g->cap = n; }
+    return p;
+  }
+  cap = g != NULL ? 2 * n : n;
+  p = (uint8_t *) m9_pool_alloc (pool, 1, (int64_t) cap, err);
+  if (err->exc != NULL) return NULL;
+  if (n1 > 0) memcpy (p, a, n1);
+  if (n2 > 0) memcpy (p + n1, b, n2);
+  if (g != NULL) {
+    M9_ASAN_POISON (p + n, cap - n);
+    g->p = p; g->len = n; g->cap = cap;
+  }
+  else m9_grow_take (pool, p, n);
+  return p;
+}
+
+/* The two extenders in m9_grow_cat's terms: octets in, octets out. */
+static uint8_t *m9_extend_chars (m9_pool *pool, const uint8_t *a, size_t n1, size_t n)
+{
+  m9_sl_CHAR s;
+  s.p = (uint32_t *) a;
+  s.len = (int64_t) (n1 / sizeof (uint32_t));
+  return (uint8_t *) m9_cat_extend (pool, s, (int64_t) (n / sizeof (uint32_t)));
+}
+
+static uint8_t *m9_extend_octets (m9_pool *pool, const uint8_t *a, size_t n1, size_t n)
+{
+  return m9_cat_extend_octets (pool, a, (int64_t) n1, (int64_t) n);
+}
+
 m9_sl_CHAR m9_cat (m9_pool *pool, m9_sl_CHAR a, m9_sl_CHAR b,
                    m9_state *err)
 {
   m9_sl_CHAR out;
   int64_t n = a.len + b.len;
-  uint32_t *p = m9_cat_extend (pool, a, n);
-  if (p != NULL) {
-    out.p = p;
-    out.len = n;
-    if (b.len > 0)
-      memcpy (p + a.len, b.p, (size_t) b.len * sizeof (uint32_t));
+  uint8_t *p;
+  /* An empty result is carved as before, and takes no slot. */
+  if (n == 0) {
+    out.p = (uint32_t *) m9_pool_alloc (pool, sizeof (uint32_t), 0, err);
+    out.len = 0;
     return out;
   }
-  out.p = (uint32_t *) m9_pool_alloc (pool, sizeof (uint32_t), n, err);
+  p = m9_grow_cat (pool, (const uint8_t *) a.p, (size_t) a.len * sizeof (uint32_t),
+                   (const uint8_t *) b.p, (size_t) b.len * sizeof (uint32_t),
+                   m9_extend_chars, err);
+  if (p == NULL) { out.p = NULL; out.len = 0; return out; }
+  out.p = (uint32_t *) p;
   out.len = n;
-  if (err->exc != NULL) { out.len = 0; return out; }
-  if (a.len > 0) memcpy (out.p, a.p, (size_t) a.len * sizeof (uint32_t));
-  if (b.len > 0)
-    memcpy (out.p + a.len, b.p, (size_t) b.len * sizeof (uint32_t));
   return out;
 }
 
@@ -1299,17 +1404,10 @@ m9_sl_UTF8 m9_utf_cat (m9_pool *pool, m9_sl_UTF8 a, m9_sl_UTF8 b,
   int64_t n = a.len + b.len;
   uint8_t *p;
   if (n == 0) return out;
-  p = m9_cat_extend_octets (pool, a.p, a.len, n);
-  if (p != NULL) {
-    out.p = p;
-    out.len = n;
-    if (b.len > 0) memcpy (p + a.len, b.p, (size_t) b.len);
-    return out;
-  }
-  out.p = (uint8_t *) m9_pool_alloc (pool, 1, n, err);
-  if (err->exc != NULL) { out.p = NULL; return out; }
-  if (a.len > 0) memcpy (out.p, a.p, (size_t) a.len);
-  if (b.len > 0) memcpy (out.p + a.len, b.p, (size_t) b.len);
+  p = m9_grow_cat (pool, a.p, (size_t) a.len, b.p, (size_t) b.len,
+                   m9_extend_octets, err);
+  if (p == NULL) return out;
+  out.p = p;
   out.len = n;
   return out;
 }

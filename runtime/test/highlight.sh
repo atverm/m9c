@@ -23,7 +23,7 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 KW=../../tools/edit/keywords.json
 n=0
 for f in ../../corpus/*.m9 ../../museum/*.m9 runfix/Shebang.m9; do
-  "$TG/lexdump" "$f" | awk '$2 == $3 && $2 ~ /^[A-Z]+$/ { print $1, $2 } $2 == "StrLit" { print $1, "StrLit" }' \
+  "$TG/lexdump" "$f" | awk '$2 == $3 && $2 ~ /^[A-Z]+$/ { print $1, $2 } $2 == "StrLit" || $2 == "InterpLit" { print $1, "StrLit" }' \
     > "$TG"/hl_lex.txt
   node highlight.mjs "$KW" "$f" > "$TG"/hl_mode.txt
   cmp -s "$TG"/hl_lex.txt "$TG"/hl_mode.txt ||

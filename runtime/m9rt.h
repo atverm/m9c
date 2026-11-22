@@ -1130,8 +1130,33 @@ typedef struct m9_pool_block {
   /* data follows */
 } m9_pool_block;
 
+/* A grow slot names a string the pool is growing, with its room
+   (docs/append-plan.md, 2026-11-22).  `+` copies a string with room
+   to spare from its second append on, when something was allocated
+   after it, and the next append goes into the room.  So `s := s + x`
+   stays linear whatever a call allocates between two appends.  p is
+   the string's first octet (NULL: a free slot); len its octets now;
+   cap the octets carved for it.  Every value that points into the
+   storage was made by an append to it, so its length is at most len;
+   an append writes past len only, and only for the string of exactly
+   that start and length. */
+typedef struct m9_grow {
+  uint8_t *p;
+  size_t len, cap;
+  uint64_t tick;                 /* the pool's clock at its last use */
+} m9_grow;
+
+/* A new string takes the slot used least recently.  An accumulator is
+   used at every append, so the strings a loop's turn makes between
+   two appends (a call's answer, an entry's own chain of +) evict each
+   other first.  Round robin evicted the accumulator instead: CatOrder
+   stayed quadratic with four slots taken in turn (2026-11-22). */
+#define M9_GROW_SLOTS 8
+
 typedef struct m9_pool {
   m9_pool_block *head;
+  m9_grow grow[M9_GROW_SLOTS];
+  uint64_t grow_tick;            /* the clock of the slots' uses */
 } m9_pool;
 
 void *m9_pool_alloc (m9_pool *pool, size_t elem, int64_t n, m9_state *err);
@@ -1203,11 +1228,24 @@ static inline m9_mark m9_pool_mark (const m9_pool *pool)
 void m9_pool_release_slow (m9_pool *pool, m9_mark m);   /* blocks to give back */
 
 
+/* m9_grow_drop frees every slot whose string starts in [lo, hi): the
+   storage a release or a free gives back.  The test is on integers,
+   as m9_cat_extend's is (m9rt.c). */
+static inline void m9_grow_drop (m9_pool *pool, uintptr_t lo, uintptr_t hi)
+{
+  int i;
+  for (i = 0; i < M9_GROW_SLOTS; i++) {
+    uintptr_t at = (uintptr_t) pool->grow[i].p;
+    if (at >= lo && at < hi) pool->grow[i].p = NULL;
+  }
+}
+
 static inline void m9_pool_release (m9_pool *pool, m9_mark m)
 {
   m9_pool_block *b = pool->head;
   if (b != m.head) { m9_pool_release_slow (pool, m); return; }
   if (b != NULL && b->used > m.used) {
+    m9_grow_drop (pool, (uintptr_t) (b + 1) + m.used, (uintptr_t) (b + 1) + b->cap);
     M9_POISON_BYTES ((unsigned char *) (b + 1) + m.used, b->used - m.used);
     b->used = m.used;
     b->last = m.last;

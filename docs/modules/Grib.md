@@ -70,6 +70,10 @@ one decoded message from it
 
 where each message begins
 
+- `n : I64`
+- `off : SLICE OF I64`
+- `len : SLICE OF I64`
+
 ### EXCEPTION Error
 
 _(documented with the group below)_

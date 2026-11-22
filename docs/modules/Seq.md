@@ -29,13 +29,22 @@ generics question as Sort's were.
 
 _(documented with the group below)_
 
+- `n : I64`
+- `at : SLICE OF STR`
+
 ### TYPE I64s
 
 _(documented with the group below)_
 
+- `n : I64`
+- `at : SLICE OF I64`
+
 ### TYPE F64s
 
 _(documented with the group below)_
+
+- `n : I64`
+- `at : SLICE OF F64`
 
 ### AddStr (VAR pool: POOL ; VAR s: Strs ; RO v: STR)
 

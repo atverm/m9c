@@ -1,0 +1,20 @@
+Mul {"a":17,"b":23} -> 391
+Mul {"a":17} -> {"error":"missing argument b"}
+Mul {"a":17,"b":23,"c":1} -> {"error":"unknown argument c"}
+Mul {"a":"17","b":23} -> {"error":"a is not a number"}
+Mul {"a":2.5,"b":2} -> {"error":"a is not an integer"}
+Mul {"a":4611686018427387904,"b":2} -> {"error":"Overflow"}
+Div {"a":7,"b":2} -> 3
+Div {"a":-7,"b":2} -> -3
+Div {"a":7,"b":0} -> {"error":"Calc.DivZero (what Div, n 7)"}
+Shrink {"n":100} -> 50
+Shrink {"n":200} -> {"error":"n is out of range -128 to 127"}
+Shrink {"n":-128} -> -64
+Mean {"x":1,"y":2.5} -> 1.75
+Greet {"name":"Ann \"A\" \\ ₂","loud":true} -> HELLO Ann "A" \ ₂
+Greet {"name":"x","loud":"yes"} -> {"error":"loud is not true or false"}
+Note {"line":"x"} -> done
+Nope {} -> {"error":"no tool named Nope"}
+Mul not json -> {"error":"the arguments are not JSON (1:1: value expected)"}
+Mul [1,2] -> {"error":"the arguments are not a JSON object"}
+Fill {} -> {"error":"no tool named Fill"}

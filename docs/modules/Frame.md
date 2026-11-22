@@ -50,7 +50,13 @@ boolean column REFUSES with the column named.
 
 ### TYPE Col
 
-short; the key.  Required, unique.
+_(undocumented)_
+
+- `name : STR` -- short; the key.  Required, unique.
+- `long : STR` -- optional long name; '' = absent
+- `cf : STR` -- optional CF standard_name
+- `unit : STR` -- optional; becomes CF units on export
+- `data : Data`
 
 ### TYPE Fr
 

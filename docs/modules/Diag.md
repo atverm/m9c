@@ -19,7 +19,10 @@ fifty-four lines of Gen.m9.
 
 ### TYPE Finding
 
-1-based, exactly as m9c prints them
+_(undocumented)_
+
+- `line, col : I64` -- 1-based, exactly as m9c prints them
+- `msg : UTF`
 
 ### Parse (RO line: UTF ; VAR f: Finding) : BOOL
 

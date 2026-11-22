@@ -49,9 +49,22 @@ in an IMPORTER's namespace (array count form unsupported).  Both
 are fixed in both generators; genforms' GfArrRecField holds
 them.
 
+- `line, col : I64`
+- `msg : UTF`
+
 ### TYPE Parser
 
-every error
+_(undocumented)_
+
+- `lx : Lex.Lexer`
+- `cur, peekTok : Lex.Token`
+- `peeked : BOOL`
+- `nerr : I64` -- every error
+- `nkept : I64` -- those kept: MIN (nerr, MaxErr)
+- `errs : ARRAY MaxErr OF Perr`
+- `depth : I64` -- levels open, against MaxDepth
+- `tdepth : I64` -- type levels open, against MaxTypeDepth
+- `deep : BOOL` -- a bound passed: the rest is EOF
 
 ### Init (VAR p: Parser ; RO src: UTF)
 

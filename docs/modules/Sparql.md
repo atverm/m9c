@@ -20,12 +20,18 @@ document.
 
 ### TYPE Kind
 
-_(documented with the group below)_
+_(undocumented)_
 
 ### TYPE Term
 
-the IRI, a literal's lexical form, a
-blank node's label; '' when unbound
+_(undocumented)_
+
+- `kind : Kind`
+- `value : STR` -- the IRI, a literal's lexical form, a
+  blank node's label; '' when unbound
+- `lang : STR` -- a literal's language tag, else ''
+- `datatype : STR` -- a literal's datatype IRI; '' for a
+  plain or a language-tagged literal
 
 ### TYPE Results
 

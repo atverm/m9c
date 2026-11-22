@@ -108,6 +108,7 @@ run Math
 run Bits
 run Sort Math Text
 run Seq Sort Text
+run Llm Chan DynStr Io Http Json Seq Text
 run Check Io Fmt Math Text
 run Arrays Faults Math
 run Numeric Faults Math

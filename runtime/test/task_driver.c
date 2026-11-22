@@ -25,6 +25,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <sys/resource.h>
 #include <pthread.h>
 #include "m9rt.h"
 
@@ -531,6 +532,11 @@ static char *stop (void (*f) (void), int *sig)
   pid = fork ();
   if (pid == 0) {
     alarm (20);                 /* a stop that does not fire is a FAIL, not a hang */
+    /* The child stops by abort, on purpose.  An abort writes a core
+       where core dumps are on: 265 MB in runtime/test, in a CI
+       container (found 2026-11-21).  The child turns them off for
+       itself. */
+    { struct rlimit no = { 0, 0 }; setrlimit (RLIMIT_CORE, &no); }
     dup2 (p[1], 2);
     close (p[0]);
     f ();

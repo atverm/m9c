@@ -284,6 +284,18 @@ BEGIN
   SameBig ("pyarrow's zstd", f, big) ;
   f := Parquet.Read (pool, Sample ('big_polarsdef')) ;
   SameBig ("polars' writer with its defaults (zstd)", f, big) ;
+
+  (* polars writes a column of one distinct value as a dictionary of
+     one entry and indices of no bits.  The reader refused both files
+     as damaged until 2026-11-20 (found by the icos-atm port, on a
+     day's file of one row). *)
+  f := Parquet.Read (pool, Sample ('one_value')) ;
+  Check.EqI64s (t, "polars' column of one distinct value, three rows",
+                Frame.ColI64 (f, 'a'), [7, 7, 7]) ;
+  f := Parquet.Read (pool, Sample ('one_string')) ;
+  Check.EqI64s (t, "polars' string column of one row: its length",
+                Lens (Frame.ColStrs (f, 's')), [1]) ;
+  Check.EqI64s (t, 'and its character', Codes (Frame.ColStrs (f, 's')), [ORD ('x')]) ;
   ran := ran + 1
 END Foreign ;
 

@@ -66,7 +66,7 @@ int main (int argc, char **argv)
 {
   m9_state e = { 0 };
   m9_args (argc, argv);                 /* what a generated main does first */
-  m9_pool pool = { NULL }, mine = { NULL };
+  m9_pool pool = { 0 }, mine = { 0 };
   System_Memory mem;
   System_ResultUtf r;
   m9_sl_m9_sl_UTF8 args;

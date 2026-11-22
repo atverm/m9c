@@ -1,0 +1,744 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
+DEFINITION MODULE Llm ;
+
+(* Llm is a client for a chat model behind the OpenAI-style API:
+   POST BASE/chat/completions, as sglang, vLLM, llama.cpp's server and
+   OpenAI serve it (docs/ml-plan.md, stage A1).
+
+   A Chat is a record the caller owns, like a Seq list.  Its storage
+   is in the POOL the caller names at every call, so the chat lives as
+   long as that pool.  It holds the server, the model, the messages
+   so far and the tools offered:
+
+       Llm.Init (pool, c, 'http://localhost:30000/v1', 'qwen') ;
+       Llm.User (pool, c, 'What is 17*23?') ;
+       Llm.Send (pool, c, r) ;
+       ... r.content, r.calls[i].name ...
+
+   Send records the model's answer in the chat, tool calls included.
+   So the next Send continues the conversation.  A tool's result goes
+   back by ToolResult, under the id of the call it answers.
+
+   Every string goes into the request through Json.Quote.  So a quote,
+   a backslash or a character past ASCII in a message cannot break the
+   request.  Every string of a Reply is decoded (Json.Text) and copied
+   into the pool.
+
+   A reply cut off by the token limit raises Truncated, unless the chat
+   allows it.  The model's reasoning counts against that limit: a
+   reasoning model can spend the whole limit reasoning and answer an
+   empty content.  The exception names both counts.
+
+   Parse reads a reply document without the network.  So a reply read
+   from a file is a Reply too, and the test holds the reading to
+   replies recorded from a real server. *)
+
+IMPORT Http ;
+IMPORT Seq ;
+
+TYPE
+  Chat = RECORD
+    url : STR ;               (* the API's base, ending in /v1 *)
+    model : STR ;
+    maxTokens : I64 ;         (* max_tokens; reasoning counts in it *)
+    allowTruncated : BOOL ;   (* TRUE: a cut-off reply is answered *)
+    format : STR ;            (* response_format as JSON; '' for text *)
+    messages : Seq.Strs ;     (* each one compact JSON *)
+    tools : Seq.Strs ;        (* each one compact JSON *)
+  END ;
+
+  Call = RECORD
+    id : STR ;                (* the id ToolResult answers under *)
+    name : STR ;
+    arguments : STR ;         (* JSON text, as the model wrote it *)
+  END ;
+
+  Reply = RECORD
+    content : STR ;           (* the answer, as the server sent it *)
+    reasoning : STR ;         (* reasoning_content; '' when none *)
+    finish : STR ;            (* stop, length, tool_calls *)
+    calls : SLICE OF Call ;
+    promptTokens : I64 ;
+    completionTokens : I64 ;  (* reasoning included *)
+    reasoningTokens : I64 ;   (* 0 when the server does not say *)
+  END ;
+
+EXCEPTION
+  ServerError (RO msg: STR ; status: I64) ;
+    (* ServerError says the server answered, but not 200.  msg is the
+       start of what it said. *)
+  FormatError (RO msg: STR) ;
+    (* FormatError reports a reply that is not a chat completion, or a
+       tool schema that is not a JSON object. *)
+  Truncated (completion, reasoning: I64) ;
+    (* Truncated says the reply hit maxTokens: completion tokens in
+       all, reasoning tokens of them. *)
+
+CONST
+  DefaultMaxTokens = 4096 ;
+  ReplyCap = 16777216 ;       (* 16 MB of reply, refused past it *)
+  ErrorShown = 300 ;          (* characters of an error body kept *)
+
+PROCEDURE Init (VAR pool: POOL ; VAR c: Chat ; RO url: STR ;
+                RO model: STR) ;
+  (* Init starts an empty chat with model at url, with
+     DefaultMaxTokens and no tools. *)
+
+PROCEDURE System (VAR pool: POOL ; VAR c: Chat ; RO text: STR) ;
+PROCEDURE User (VAR pool: POOL ; VAR c: Chat ; RO text: STR) ;
+
+PROCEDURE UserImage (VAR pool: POOL ; VAR c: Chat ; RO text: STR ;
+                     RO mime: STR ; RO image: SLICE OF BYTE) ;
+  (* UserImage adds a user message of text and one image.  The image
+     goes as a base64 data URL; mime is its type, image/png say. *)
+
+PROCEDURE Tool (VAR pool: POOL ; VAR c: Chat ; RO name: STR ;
+                RO description: STR ; RO parameters: STR)
+  RAISES FormatError ;
+  (* Tool offers the model a function.  parameters is its JSON schema
+     as text, an object.  Anything else raises FormatError. *)
+
+PROCEDURE ToolResult (VAR pool: POOL ; VAR c: Chat ; RO callId: STR ;
+                      RO content: STR) ;
+  (* ToolResult adds the result of the call whose id is callId. *)
+
+PROCEDURE Assistant (VAR pool: POOL ; VAR c: Chat ; RO r: Reply) ;
+  (* Assistant adds r as the model's message, its calls included.
+     Send does this itself.  It is for a chat rebuilt from replies
+     read elsewhere. *)
+
+PROCEDURE Expect (VAR pool: POOL ; VAR c: Chat ; RO name: STR ;
+                  RO schema: STR)
+  RAISES FormatError ;
+  (* Expect asks for the next answers as JSON that fits schema, a JSON
+     schema object as text, named name.  The server constrains its
+     output to it (sglang does; response_format json_schema).  The
+     answer is still text: the caller reads it, and a reader made by
+     tools/M9Tools.m9 checks it against the M9 type again. *)
+
+PROCEDURE Free (VAR c: Chat) ;
+  (* Free asks for text again, after Expect. *)
+
+PROCEDURE Messages (RO c: Chat) : I64 ;
+
+PROCEDURE Body (RO c: Chat) : STR ;
+  (* Body answers the request Send would post, as JSON text. *)
+
+PROCEDURE Send (VAR pool: POOL ; VAR c: Chat ; VAR r: Reply)
+  RAISES Http.TransportError, ServerError, FormatError, Truncated,
+         ValueRange ;
+  (* Send posts the chat and reads the reply into r, in pool.  It
+     records the reply in the chat. *)
+
+PROCEDURE Parse (VAR pool: POOL ; RO doc: STR ; VAR r: Reply)
+  RAISES FormatError, ValueRange ;
+  (* Parse reads a chat completion document into r, in pool. *)
+
+(* ---- a streamed reply (stage A4, 2026-11-21) ------------------------
+
+   Stream posts the chat with "stream": true and answers an Http.Stream
+   once the server has answered 200.  The server then sends the reply
+   in pieces, as server-sent events: one `data:` line per piece, and
+   `data: [DONE]` at the end.  Next answers one piece at a time, so a
+   caller can show the answer as it is written.  Collect reads the
+   rest into a Reply and records it in the chat, as Send does.
+
+   A streamed tool call arrives in fragments.  Stream does not read
+   them: a chat with tools is sent by Send, and Stream refuses it. *)
+
+TYPE
+  Delta = RECORD
+    content : STR ;           (* this piece of the answer; '' when none *)
+    reasoning : STR ;         (* this piece of reasoning_content *)
+    finish : STR ;            (* '' until the piece that ends the reply *)
+    promptTokens : I64 ;      (* the usage, in the last piece; 0 before *)
+    completionTokens : I64 ;
+    reasoningTokens : I64 ;
+  END ;
+
+PROCEDURE Stream (VAR pool: POOL ; RO c: Chat) : PTR Http.Stream IN pool
+  RAISES Http.TransportError, ServerError, FormatError, ValueRange ;
+  (* Stream posts c for a streamed reply.  It asks for the usage too
+     (stream_options include_usage).  A status other than 200 raises
+     ServerError, with the server's message.  A chat with tools raises
+     FormatError, and nothing is sent. *)
+
+PROCEDURE Next (VAR pool: POOL ; VAR s: PTR Http.Stream ; VAR d: Delta)
+  : BOOL
+  RAISES Http.TransportError, ServerError, FormatError, ValueRange ;
+  (* Next reads the next piece into d, in pool, and answers TRUE.  At
+     [DONE] it closes the stream and answers FALSE.  Lines that are not
+     data (comments, blank lines, event names) are passed over.  A
+     piece that is an error object raises ServerError with status 200,
+     the status the stream began with.  A stream that ends before
+     [DONE] raises FormatError.  Whatever Next raises, it has closed
+     the stream. *)
+
+PROCEDURE Collect (VAR pool: POOL ; VAR c: Chat ; VAR s: PTR Http.Stream ;
+                   VAR r: Reply)
+  RAISES Http.TransportError, ServerError, FormatError, Truncated,
+         ValueRange ;
+  (* Collect reads every piece left into r, in pool, and records r in
+     c.  A reply cut off by the token limit raises Truncated unless c
+     allows it, as Send does, and is then not recorded. *)
+
+(* ---- many prompts at once (stage A4, 2026-11-22) --------------------
+
+   Batch asks one question per prompt, each after the chat's messages,
+   with inFlight requests on the wire at a time.  Each request is a
+   TASK.  A task waiting for its answer parks, and its carrier runs the
+   others, so inFlight can be far more than the cores.  The server
+   batches what arrives together, so a thousand prompts cost about what
+   its batching allows, not a thousand round trips. *)
+
+CONST
+  MaxInFlight = 256 ;
+
+PROCEDURE Batch (VAR pool: POOL ; RO c: Chat ; RO prompts: SLICE OF STR ;
+                 inFlight: I64 ; VAR answers: SLICE OF STR ;
+                 VAR errors: SLICE OF STR)
+  RAISES ValueRange ;
+  (* Batch sends c with prompts[k] as one more user message, for every
+     k, and puts the answer's content in answers[k], in pool.  A prompt
+     whose request failed gets '' there and the failure in errors[k],
+     the exception's name and fields, as `ServerError 500 boom`; errors
+     is '' for every prompt answered.  A failure ends only its own
+     prompt.  The answers are not recorded in c.  inFlight is 1 ..
+     MaxInFlight, else ValueRange. *)
+
+END Llm.
+
+
+IMPLEMENTATION MODULE Llm ;
+
+IMPORT Chan ;
+IMPORT DynStr ;
+IMPORT Http ;
+IMPORT Json ;
+IMPORT Seq ;
+IMPORT Text ;
+
+PROCEDURE Init (VAR pool: POOL ; VAR c: Chat ; RO url: STR ;
+                RO model: STR) =
+BEGIN
+  c.url := Text.Keep (pool, url) ;
+  c.model := Text.Keep (pool, model) ;
+  c.maxTokens := DefaultMaxTokens ;
+  c.allowTruncated := FALSE ;
+  c.format := '' ;
+  c.messages.n := 0 ;
+  c.tools.n := 0
+END Init ;
+
+PROCEDURE Say (VAR pool: POOL ; VAR c: Chat ; RO role: STR ;
+               RO text: STR) =
+BEGIN
+  Seq.AddStr (pool, c.messages,
+    '{"role":"' + role + '","content":' + Json.Quote (text) + '}')
+END Say ;
+
+PROCEDURE System (VAR pool: POOL ; VAR c: Chat ; RO text: STR) =
+BEGIN
+  Say (pool, c, 'system', text)
+END System ;
+
+PROCEDURE User (VAR pool: POOL ; VAR c: Chat ; RO text: STR) =
+BEGIN
+  Say (pool, c, 'user', text)
+END User ;
+
+PROCEDURE UserImage (VAR pool: POOL ; VAR c: Chat ; RO text: STR ;
+                     RO mime: STR ; RO image: SLICE OF BYTE) =
+BEGIN
+  Seq.AddStr (pool, c.messages,
+    '{"role":"user","content":[{"type":"text","text":' + Json.Quote (text)
+    + '},{"type":"image_url","image_url":{"url":'
+    + Json.Quote ('data:' + mime + ';base64,' + Text.ToBase64 (image))
+    + '}}]}')
+END UserImage ;
+
+PROCEDURE Tool (VAR pool: POOL ; VAR c: Chat ; RO name: STR ;
+                RO description: STR ; RO parameters: STR)
+  RAISES FormatError =
+VAR schema : STR ;
+BEGIN
+  schema := Json.Compact (Json.Parse (parameters)) ;
+  IF NOT Text.StartsWith (schema, '{') THEN
+    RAISE FormatError ($'tool ${name}: the schema is not a JSON object')
+  END ;
+  Seq.AddStr (pool, c.tools,
+    '{"type":"function","function":{"name":' + Json.Quote (name)
+    + ',"description":' + Json.Quote (description)
+    + ',"parameters":' + schema + '}}')
+EXCEPT
+| Json.ParseError (m, line, col) :
+    RAISE FormatError ($'tool ${name}: the schema is not JSON (${line}:${col}: ${m})')
+| Json.TypeMismatch (m) : RAISE FormatError ($'tool ${name}: ${m}')
+| ValueRange : RAISE FormatError ($'tool ${name}: the schema holds a value out of range')
+END Tool ;
+
+PROCEDURE ToolResult (VAR pool: POOL ; VAR c: Chat ; RO callId: STR ;
+                      RO content: STR) =
+BEGIN
+  Seq.AddStr (pool, c.messages,
+    '{"role":"tool","tool_call_id":' + Json.Quote (callId)
+    + ',"content":' + Json.Quote (content) + '}')
+END ToolResult ;
+
+PROCEDURE Assistant (VAR pool: POOL ; VAR c: Chat ; RO r: Reply) =
+VAR calls : STR ; i : I64 ;
+BEGIN
+  IF LEN (r.calls) = 0 THEN
+    Say (pool, c, 'assistant', r.content)
+  ELSE
+    calls := '' ;
+    FOR i := 0 TO LEN (r.calls) - 1 DO
+      IF i > 0 THEN calls := calls + ',' END ;
+      calls := calls + '{"id":' + Json.Quote (r.calls[i].id)
+        + ',"type":"function","function":{"name":' + Json.Quote (r.calls[i].name)
+        + ',"arguments":' + Json.Quote (r.calls[i].arguments) + '}}'
+    END ;
+    Seq.AddStr (pool, c.messages,
+      '{"role":"assistant","content":' + Json.Quote (r.content)
+      + ',"tool_calls":[' + calls + ']}')
+  END
+END Assistant ;
+
+PROCEDURE Expect (VAR pool: POOL ; VAR c: Chat ; RO name: STR ;
+                  RO schema: STR)
+  RAISES FormatError =
+VAR s : STR ;
+BEGIN
+  s := Json.Compact (Json.Parse (schema)) ;
+  IF NOT Text.StartsWith (s, '{') THEN
+    RAISE FormatError ($'answer ${name}: the schema is not a JSON object')
+  END ;
+  c.format := Text.Keep (pool,
+    '{"type":"json_schema","json_schema":{"name":' + Json.Quote (name)
+    + ',"schema":' + s + '}}')
+EXCEPT
+| Json.ParseError (m, line, col) :
+    RAISE FormatError ($'answer ${name}: the schema is not JSON (${line}:${col}: ${m})')
+| Json.TypeMismatch (m) : RAISE FormatError ($'answer ${name}: ${m}')
+| ValueRange : RAISE FormatError ($'answer ${name}: the schema holds a value out of range')
+END Expect ;
+
+PROCEDURE Free (VAR c: Chat) =
+BEGIN
+  c.format := ''
+END Free ;
+
+PROCEDURE Messages (RO c: Chat) : I64 =
+BEGIN
+  RETURN c.messages.n
+END Messages ;
+
+PROCEDURE Body (RO c: Chat) : STR =
+BEGIN
+  RETURN BodyOf (c, FALSE)
+END Body ;
+
+(* BodyOf answers the request, asking for a streamed reply when stream
+   is TRUE. *)
+PROCEDURE BodyOf (RO c: Chat ; stream: BOOL) : STR =
+VAR b : STR ;
+BEGIN
+  b := '{"model":' + Json.Quote (c.model) + $',"max_tokens":${c.maxTokens}'
+    + ',"messages":[' + Text.Join (SLICE (c.messages.at, 0, c.messages.n), ',') + ']' ;
+  IF c.tools.n > 0 THEN
+    b := b + ',"tools":[' + Text.Join (SLICE (c.tools.at, 0, c.tools.n), ',') + ']'
+  END ;
+  IF Text.BLen (c.format) > 0 THEN b := b + ',"response_format":' + c.format END ;
+  IF stream THEN
+    b := b + ',"stream":true,"stream_options":{"include_usage":true}'
+  END ;
+  RETURN b + '}'
+END BodyOf ;
+
+(* ---- reading a reply ---------------------------------------------- *)
+
+(* Member answers member name of obj, or raises FormatError naming it. *)
+PROCEDURE Member (obj: PTR Json.Node ; RO name: STR) : PTR Json.Node
+  RAISES FormatError =
+BEGIN
+  IF Json.Field (obj, name) IS SOME v THEN RETURN v END ;
+  RAISE FormatError ('no member ' + name)
+END Member ;
+
+(* TextOf answers member name of obj decoded and kept in pool.  An
+   absent member or a null is ''. *)
+PROCEDURE TextOf (VAR pool: POOL ; obj: PTR Json.Node ; RO name: STR) : STR
+  RAISES FormatError, ValueRange =
+BEGIN
+  IF Json.Field (obj, name) IS SOME v THEN
+    IF Json.IsNull (v) THEN RETURN '' END ;
+    RETURN Text.Keep (pool, Json.Text (v))
+  END ;
+  RETURN ''
+EXCEPT
+| Json.TypeMismatch (m) : RAISE FormatError ('member ' + name + ' is not a string')
+END TextOf ;
+
+(* CountOf answers integer member name of obj, 0 when absent or null. *)
+PROCEDURE CountOf (obj: PTR Json.Node ; RO name: STR) : I64
+  RAISES FormatError =
+BEGIN
+  IF Json.Field (obj, name) IS SOME v THEN
+    IF Json.IsNull (v) THEN RETURN 0 END ;
+    RETURN Json.AsI64 (v)
+  END ;
+  RETURN 0
+EXCEPT
+| Json.TypeMismatch (m) : RAISE FormatError ('member ' + name + ' is not a number')
+| ValueRange : RAISE FormatError ('member ' + name + ' is out of range')
+END CountOf ;
+
+PROCEDURE Parse (VAR pool: POOL ; RO doc: STR ; VAR r: Reply)
+  RAISES FormatError, ValueRange =
+VAR d, choice, msg, call, fn : PTR Json.Node ;
+    it : OPT PTR Json.Node ;
+    n, i : I64 ;
+BEGIN
+  d := Json.Parse (doc) ;
+  IF Json.First (Member (d, 'choices')) IS SOME ch THEN choice := ch
+  ELSE RAISE FormatError ('no choices')
+  END ;
+  msg := Member (choice, 'message') ;
+  r.content := TextOf (pool, msg, 'content') ;
+  r.reasoning := TextOf (pool, msg, 'reasoning_content') ;
+  r.finish := TextOf (pool, choice, 'finish_reason') ;
+  r.calls := NEW (pool, Call, 0) ;
+  IF Json.Field (msg, 'tool_calls') IS SOME tc THEN
+    IF NOT Json.IsNull (tc) THEN
+      n := 0 ;
+      it := Json.First (tc) ;
+      WHILE it IS SOME x DO n := n + 1 ; it := Json.After (x) END ;
+      r.calls := NEW (pool, Call, n) ;
+      FOR i := 0 TO n - 1 DO
+        call := Json.Item (tc, i) ;
+        fn := Member (call, 'function') ;
+        r.calls[i].id := TextOf (pool, call, 'id') ;
+        r.calls[i].name := TextOf (pool, fn, 'name') ;
+        r.calls[i].arguments := TextOf (pool, fn, 'arguments')
+      END
+    END
+  END ;
+  r.promptTokens := 0 ; r.completionTokens := 0 ; r.reasoningTokens := 0 ;
+  IF Json.Field (d, 'usage') IS SOME u THEN
+    r.promptTokens := CountOf (u, 'prompt_tokens') ;
+    r.completionTokens := CountOf (u, 'completion_tokens') ;
+    r.reasoningTokens := CountOf (u, 'reasoning_tokens')
+  END
+EXCEPT
+| Json.ParseError (m, line, col) : RAISE FormatError ($'not JSON (${line}:${col}: ${m})')
+| Json.TypeMismatch (m) : RAISE FormatError ('wrong kind of value: ' + m)
+| IndexError : RAISE FormatError ('tool_calls is shorter than it says')
+END Parse ;
+
+(* Shown answers the first ErrorShown octets of body. *)
+PROCEDURE Shown (RO body: STR) : STR =
+BEGIN
+  IF Text.BLen (body) > ErrorShown THEN RETURN SLICE (body, 0, ErrorShown) END ;
+  RETURN body
+END Shown ;
+
+(* ErrorText answers what a server's error body says: its message when
+   it is an error object, else its start. *)
+PROCEDURE ErrorText (RO body: STR) : STR =
+VAR d : PTR Json.Node ; m : STR ;
+BEGIN
+  m := body ;
+  d := Json.Parse (body) ;
+  IF Json.Field (d, 'message') IS SOME v THEN
+    m := Json.Text (v)
+  ELSIF Json.Field (d, 'error') IS SOME e THEN
+    IF Json.Field (e, 'message') IS SOME v2 THEN m := Json.Text (v2) END
+  END ;
+  IF Text.BLen (m) > ErrorShown THEN m := SLICE (m, 0, ErrorShown) END ;
+  RETURN m
+EXCEPT
+| Json.ParseError (pm, line, col) : RETURN Shown (body)
+| Json.TypeMismatch (tm) : RETURN Shown (body)
+| ValueRange : RETURN Shown (body)
+END ErrorText ;
+
+PROCEDURE Send (VAR pool: POOL ; VAR c: Chat ; VAR r: Reply)
+  RAISES Http.TransportError, ServerError, FormatError, Truncated,
+         ValueRange =
+VAR status : I64 ; hdrs, body : STR ;
+BEGIN
+  body := Http.RequestText (pool, 'POST', c.url + '/chat/completions',
+    'Content-Type: application/json', Body (c), ReplyCap, status, hdrs) ;
+  IF status # 200 THEN RAISE ServerError (ErrorText (body), status) END ;
+  Parse (pool, body, r) ;
+  IF Text.Eq (r.finish, 'length') AND NOT c.allowTruncated THEN
+    RAISE Truncated (r.completionTokens, r.reasoningTokens)
+  END ;
+  Assistant (pool, c, r)
+END Send ;
+
+(* ---- a streamed reply --------------------------------------------- *)
+
+CONST
+  ErrorRead = 65536 ;         (* octets of an error body read *)
+
+PROCEDURE Stream (VAR pool: POOL ; RO c: Chat) : PTR Http.Stream IN pool
+  RAISES Http.TransportError, ServerError, FormatError, ValueRange =
+VAR
+  scratch : POOL ;
+  s : PTR Http.Stream IN pool ;
+  d : PTR DynStr.DString IN scratch ;
+  line : STR ;
+BEGIN
+  IF c.tools.n > 0 THEN
+    RAISE FormatError ('a chat with tools is sent by Send, not streamed')
+  END ;
+  s := Http.Open (pool, 'POST', c.url + '/chat/completions',
+                  'Content-Type: application/json',
+                  OCTETS (BodyOf (c, TRUE))) ;
+  IF s.status # 200 THEN
+    (* The error body is read whole, up to ErrorRead octets, so that
+       ErrorText can read the server's message out of its JSON. *)
+    d := DynStr.New (scratch) ;
+    WHILE DynStr.BLen (d) < ErrorRead AND Http.NextLine (scratch, s, line) DO
+      DynStr.Append (d, line) ;
+      DynStr.AppendChar (d, 0AC)
+    END ;
+    Http.CloseStream (s) ;
+    RAISE ServerError (ErrorText (DynStr.View (d)), s.status)
+  END ;
+  RETURN s
+END Stream ;
+
+PROCEDURE Next (VAR pool: POOL ; VAR s: PTR Http.Stream ; VAR d: Delta)
+  : BOOL
+  RAISES Http.TransportError, ServerError, FormatError, ValueRange =
+VAR
+  scratch : POOL ;
+  line, data : STR ;
+  doc, choice : PTR Json.Node ;
+  at : I64 ;
+BEGIN
+  d.content := '' ; d.reasoning := '' ; d.finish := '' ;
+  d.promptTokens := 0 ; d.completionTokens := 0 ; d.reasoningTokens := 0 ;
+  LOOP
+    IF NOT Http.NextLine (scratch, s, line) THEN
+      RAISE FormatError ('the stream ended before [DONE]')
+    END ;
+    IF Text.StartsWith (line, 'data:') THEN
+      (* One space after the colon belongs to the field's syntax, not
+         to its value (the WHATWG event stream). *)
+      at := 5 ;
+      IF Text.BLen (line) > 5 AND Text.BIs (line, 5, ' ') THEN at := 6 END ;
+      data := SLICE (line, at, Text.BLen (line) - at) ;
+      IF Text.Eq (data, '[DONE]') THEN
+        Http.CloseStream (s) ;
+        RETURN FALSE
+      END ;
+      doc := Json.Parse (data) ;
+      IF Json.Field (doc, 'error') IS SOME e THEN
+        Http.CloseStream (s) ;
+        RAISE ServerError (ErrorText (data), 200)
+      END ;
+      IF Json.Field (doc, 'choices') IS SOME ch THEN
+        IF Json.First (ch) IS SOME first THEN
+          choice := first ;
+          d.finish := TextOf (pool, choice, 'finish_reason') ;
+          IF Json.Field (choice, 'delta') IS SOME delta THEN
+            d.content := TextOf (pool, delta, 'content') ;
+            d.reasoning := TextOf (pool, delta, 'reasoning_content') ;
+            IF Json.Field (delta, 'tool_calls') IS SOME tc THEN
+              IF NOT Json.IsNull (tc) THEN
+                Http.CloseStream (s) ;
+                RAISE FormatError ('a streamed tool call')
+              END
+            END
+          END
+        END
+      ELSE
+        Http.CloseStream (s) ;
+        RAISE FormatError ('a piece without choices')
+      END ;
+      IF Json.Field (doc, 'usage') IS SOME u THEN
+        IF NOT Json.IsNull (u) THEN
+          d.promptTokens := CountOf (u, 'prompt_tokens') ;
+          d.completionTokens := CountOf (u, 'completion_tokens') ;
+          d.reasoningTokens := CountOf (u, 'reasoning_tokens')
+        END
+      END ;
+      RETURN TRUE
+    END
+  END
+EXCEPT
+| Json.ParseError (m, row, col) :
+    Http.CloseStream (s) ;
+    RAISE FormatError ($'a piece that is not JSON (${row}:${col}: ${m})')
+| Json.TypeMismatch (m) :
+    Http.CloseStream (s) ;
+    RAISE FormatError ('wrong kind of value: ' + m)
+END Next ;
+
+PROCEDURE Collect (VAR pool: POOL ; VAR c: Chat ; VAR s: PTR Http.Stream ;
+                   VAR r: Reply)
+  RAISES Http.TransportError, ServerError, FormatError, Truncated,
+         ValueRange =
+VAR
+  scratch : POOL ;
+  content, reasoning : PTR DynStr.DString IN scratch ;
+  d : Delta ;
+BEGIN
+  content := DynStr.New (scratch) ;
+  reasoning := DynStr.New (scratch) ;
+  r.finish := '' ;
+  r.promptTokens := 0 ; r.completionTokens := 0 ; r.reasoningTokens := 0 ;
+  WHILE Next (scratch, s, d) DO
+    DynStr.Append (content, d.content) ;
+    DynStr.Append (reasoning, d.reasoning) ;
+    IF Text.BLen (d.finish) > 0 THEN r.finish := Text.Keep (pool, d.finish) END ;
+    (* The usage comes in a piece of its own, after the finish. *)
+    IF d.completionTokens > 0 THEN
+      r.promptTokens := d.promptTokens ;
+      r.completionTokens := d.completionTokens ;
+      r.reasoningTokens := d.reasoningTokens
+    END
+  END ;
+  r.content := DynStr.ViewIn (pool, content) ;
+  r.reasoning := DynStr.ViewIn (pool, reasoning) ;
+  r.calls := NEW (pool, Call, 0) ;
+  IF Text.Eq (r.finish, 'length') AND NOT c.allowTruncated THEN
+    RAISE Truncated (r.completionTokens, r.reasoningTokens)
+  END ;
+  Assistant (pool, c, r)
+END Collect ;
+
+(* ---- many prompts at once ----------------------------------------- *)
+
+TYPE
+  (* Results holds what the tasks answer.  Its pool is carved only in
+     procedures bound to it, under its lock. *)
+  Results = MONITOR RECORD
+    pool : POOL ;
+    answers : SLICE OF STR ;
+    errors : SLICE OF STR ;
+    done : I64 ;              (* tasks ended *)
+  END ;
+
+  (* Job is what every task of a Batch holds.  The tasks only read c
+     and prompts, and each index k comes out of work to one task. *)
+  Job = RECORD
+    c : Chat ;
+    prompts : SLICE OF STR ;
+    work : Chan.Ints ;
+    out : Results ;
+  END [SHARABLE] ;
+
+PROCEDURE Size (VAR o: Results ; n: I64) =
+BEGIN
+  o.answers := NEW (o.pool, STR, n) ;
+  o.errors := NEW (o.pool, STR, n)
+END Size ;
+
+PROCEDURE Put (VAR o: Results ; k: I64 ; RO answer: STR ; RO error: STR) =
+BEGIN
+  o.answers[k] := Text.Keep (o.pool, answer) ;
+  o.errors[k] := Text.Keep (o.pool, error)
+EXCEPT
+| IndexError :
+END Put ;
+
+PROCEDURE Ended (VAR o: Results) =
+BEGIN
+  o.done := o.done + 1 ;
+  SIGNAL (o)
+END Ended ;
+
+PROCEDURE AwaitEnded (VAR o: Results ; n: I64) =
+BEGIN
+  WHILE o.done < n DO WAIT (o) END
+END AwaitEnded ;
+
+(* CopyOut copies the results into answers and errors, in pool. *)
+PROCEDURE CopyOut (VAR o: Results ; VAR pool: POOL ;
+                   VAR answers: SLICE OF STR ; VAR errors: SLICE OF STR) =
+VAR k : I64 ;
+BEGIN
+  FOR k := 0 TO LEN (o.answers) - 1 DO
+    answers[k] := Text.Keep (pool, o.answers[k]) ;
+    errors[k] := Text.Keep (pool, o.errors[k])
+  END
+EXCEPT
+| IndexError :
+END CopyOut ;
+
+(* AskOne sends prompt k of j and puts its answer, or its failure.  Its
+   pool holds the request and the reply, and dies with the call. *)
+PROCEDURE AskOne (VAR j: Job ; k: I64) =
+VAR
+  pool : POOL ;
+  d : Chat ;
+  r : Reply ;
+  i : I64 ;
+  error : STR ;
+BEGIN
+  error := '' ;
+  r.content := '' ;
+  BEGIN
+    Init (pool, d, j.c.url, j.c.model) ;
+    d.maxTokens := j.c.maxTokens ;
+    d.allowTruncated := j.c.allowTruncated ;
+    d.format := j.c.format ;
+    FOR i := 0 TO j.c.messages.n - 1 DO Seq.AddStr (pool, d.messages, j.c.messages.at[i]) END ;
+    FOR i := 0 TO j.c.tools.n - 1 DO Seq.AddStr (pool, d.tools, j.c.tools.at[i]) END ;
+    User (pool, d, j.prompts[k]) ;
+    Send (pool, d, r)
+  EXCEPT
+  | Truncated (completion, reasoning) : error := $'Truncated ${completion} ${reasoning}'
+  | ServerError (m, status) : error := $'ServerError ${status} ${m}'
+  | FormatError (m) : error := 'FormatError ' + m
+  | Http.TransportError (m) : error := 'TransportError ' + m
+  | ValueRange : error := 'ValueRange'
+  | IndexError : error := 'IndexError'
+  END ;
+  IF Text.BLen (error) > 0 THEN r.content := '' END ;
+  Put (j.out, k, r.content, error)
+END AskOne ;
+
+(* Asker takes prompt indices until the channel closes. *)
+PROCEDURE Asker (VAR j: Job) =
+VAR k : I64 ;
+BEGIN
+  k := 0 ;
+  WHILE Chan.Receive (j.work, k) DO AskOne (j, k) END ;
+  Ended (j.out)
+END Asker ;
+
+PROCEDURE Batch (VAR pool: POOL ; RO c: Chat ; RO prompts: SLICE OF STR ;
+                 inFlight: I64 ; VAR answers: SLICE OF STR ;
+                 VAR errors: SLICE OF STR)
+  RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  j : PTR Job IN scratch ;
+  k, n : I64 ;
+BEGIN
+  IF inFlight < 1 OR inFlight > MaxInFlight THEN RAISE ValueRange END ;
+  n := LEN (prompts) ;
+  answers := NEW (pool, STR, n) ;
+  errors := NEW (pool, STR, n) ;
+  j := NEW (scratch, Job) ;
+  j.c := c ;
+  j.prompts := prompts ;
+  Size (j.out, n) ;
+  IF inFlight > n THEN inFlight := n END ;
+  FOR k := 1 TO inFlight DO TASK (Asker, j) END ;
+  BEGIN
+    FOR k := 0 TO n - 1 DO Chan.Send (j.work, k) END
+  EXCEPT
+  | Chan.Closed :
+  END ;
+  Chan.Close (j.work) ;
+  AwaitEnded (j.out, inFlight) ;
+  CopyOut (j.out, pool, answers, errors)
+END Batch ;
+
+END Llm.

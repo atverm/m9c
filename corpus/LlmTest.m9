@@ -1,0 +1,390 @@
+MODULE LlmTest ;
+
+(* LlmTest holds Llm to a real server's replies (docs/ml-plan.md, stage
+   A1).  runtime/test/llmfix holds replies recorded once from sglang
+   serving Qwen3.8-27B (2026-11-21): a tool call, the answer to its
+   result, an answer with quotes, a backslash and CO₂ in it, a reply
+   cut off by the token limit, an image described, and a 400 for a
+   request that was not JSON.
+
+   OFFLINE, here and in m9test, Llm.Parse reads every recorded reply,
+   and each value is checked against what Python's json read from the
+   same file.
+
+   LIVE, when LLM_ENDPOINT names a server, the test holds a whole
+   conversation: a tool call, its result, a reply cut off, an image,
+   two server errors and a reply that is not JSON.
+   runtime/test/llm.sh starts runtime/test/llmfix/llmfix.py, which
+   replays the recorded replies by model name and saves every request.
+   Python's json then judges what Llm sent.  Against a real server
+   (LLM_MODEL names its model), only the shape of the answers is
+   checked. *)
+
+IMPORT Check ;
+IMPORT DynStr ;
+IMPORT Fmt ;
+IMPORT Http ;
+IMPORT Io ;
+IMPORT Llm ;
+IMPORT Text ;
+IMPORT Time ;
+
+CONST
+  Fix = 'runtime/test/llmfix/' ;
+  Mul = '{"type":"object","properties":{"a":{"type":"integer"},"b":{"type":"integer"}},"required":["a","b"]}' ;
+  Png = 'examples/gui/screenshot-windows.png' ;
+  (* Hard asks the user's question with what a request must escape: a
+     quote, a backslash, a newline in the text and a character past
+     ASCII. *)
+  Hard = 'What is 17*23? Use the tool. "Quoted", C:\data and CO₂' ;
+  Co2 = 'Name the chemical formula of carbon dioxide, in one short sentence.' ;
+
+VAR
+  t : Check.T ;
+  pool : POOL ;
+  endpoint, model : STR ;
+  live : BOOL ;
+
+(* Nn answers two newlines: the start of Qwen's every content. *)
+PROCEDURE Nn () : STR =
+BEGIN
+  RETURN '' + 0AC + 0AC
+END Nn ;
+
+PROCEDURE Read (RO name: STR ; VAR r: Llm.Reply) =
+  (* Read parses the recorded reply name into r; a failure fails the
+     check named after it. *)
+BEGIN
+  Llm.Parse (pool, Io.ReadFile (Fix + name + '.json'), r)
+EXCEPT
+| Llm.FormatError (m) : Check.That (t, name + ': ' + m, FALSE)
+| ValueRange : Check.That (t, name + ': ValueRange', FALSE)
+| Io.IOError (path) : Check.That (t, name + ': cannot read ' + path, FALSE)
+END Read ;
+
+PROCEDURE Offline () =
+VAR r : Llm.Reply ;
+BEGIN
+  Read ('toolcall', r) ;
+  Check.EqStr (t, 'toolcall finish', r.finish, 'tool_calls') ;
+  Check.EqI64 (t, 'toolcall calls', LEN (r.calls), 1) ;
+  IF LEN (r.calls) = 1 THEN
+    Check.EqStr (t, 'toolcall id', r.calls[0].id, 'call_4c237e0eaae446ceb60b27fb') ;
+    Check.EqStr (t, 'toolcall name', r.calls[0].name, 'mul') ;
+    Check.EqStr (t, 'toolcall arguments', r.calls[0].arguments, '{"a": 17, "b": 23}')
+  END ;
+  Check.EqStr (t, 'toolcall content', r.content, Nn ()) ;
+  Check.EqI64 (t, 'toolcall prompt tokens', r.promptTokens, 338) ;
+  Check.EqI64 (t, 'toolcall completion tokens', r.completionTokens, 62) ;
+  Check.EqI64 (t, 'toolcall reasoning tokens', r.reasoningTokens, 23) ;
+  Check.EqI64 (t, 'toolcall reasoning length', Text.CpCount (r.reasoning), 102) ;
+
+  Read ('toolresult', r) ;
+  Check.EqStr (t, 'toolresult finish', r.finish, 'stop') ;
+  Check.EqStr (t, 'toolresult content', r.content, Nn () + '17 × 23 = **391**') ;
+  Check.EqI64 (t, 'toolresult calls', LEN (r.calls), 0) ;
+
+  (* The server's text holds a quote, a backslash and CO₂, each
+     escaped in the document. *)
+  Read ('answer', r) ;
+  Check.EqStr (t, 'answer content', r.content,
+               Nn () + 'The gas is "CO₂", stored in C:\data\co2.csv') ;
+  Check.EqI64 (t, 'answer tokens', r.completionTokens, 52) ;
+
+  (* sglang counts more reasoning tokens than completion tokens here.
+     Llm reports both as the server says them. *)
+  Read ('length', r) ;
+  Check.EqStr (t, 'length finish', r.finish, 'length') ;
+  Check.EqStr (t, 'length content', r.content, '') ;
+  Check.EqI64 (t, 'length completion', r.completionTokens, 20) ;
+  Check.EqI64 (t, 'length reasoning', r.reasoningTokens, 27) ;
+
+  Read ('image', r) ;
+  Check.That (t, 'image content', Text.StartsWith (r.content, Nn () + 'The image shows a data-entry interface')) ;
+  Check.EqI64 (t, 'image prompt tokens', r.promptTokens, 126)
+END Offline ;
+
+(* Body checks what a chat puts into its request, without a server. *)
+PROCEDURE Bodies () =
+VAR c : Llm.Chat ; b : STR ;
+BEGIN
+  Llm.Init (pool, c, 'http://127.0.0.1:1/v1', 'm"odel') ;
+  Llm.User (pool, c, 'say "hi"\') ;
+  b := Llm.Body (c) ;
+  Check.EqStr (t, 'body of one message', b,
+    '{"model":"m\"odel","max_tokens":4096,"messages":[{"role":"user","content":"say \"hi\"\\"}]}') ;
+  Check.EqI64 (t, 'messages', Llm.Messages (c), 1) ;
+  Check.EqStr (t, 'a schema that is not JSON', ToolRefused ('{"type":'), 'FormatError') ;
+  Check.EqStr (t, 'a schema that is not an object', ToolRefused ('[1,2]'), 'FormatError') ;
+  Check.EqStr (t, 'a schema that is an object', ToolRefused (Mul), 'none')
+END Bodies ;
+
+PROCEDURE ToolRefused (RO schema: STR) : STR =
+VAR c : Llm.Chat ;
+BEGIN
+  Llm.Init (pool, c, 'http://127.0.0.1:1/v1', 'm') ;
+  Llm.Tool (pool, c, 'mul', 'multiply two integers', schema) ;
+  RETURN 'none'
+EXCEPT
+| Llm.FormatError (m) : RETURN 'FormatError'
+END ToolRefused ;
+
+(* Outcome sends c and answers what happened: ok, or the exception
+   raised with its fields. *)
+PROCEDURE Outcome (VAR c: Llm.Chat ; VAR r: Llm.Reply) : STR =
+BEGIN
+  Llm.Send (pool, c, r) ;
+  RETURN 'ok'
+EXCEPT
+| Llm.Truncated (completion, reasoning) : RETURN $'Truncated ${completion} ${reasoning}'
+| Llm.ServerError (m, status) : RETURN $'ServerError ${status} ${m}'
+| Llm.FormatError (m) : RETURN 'FormatError ' + m
+| Http.TransportError (m) : RETURN 'TransportError ' + m
+| ValueRange : RETURN 'ValueRange'
+END Outcome ;
+
+PROCEDURE Model (RO fixture: STR) : STR =
+BEGIN
+  IF live THEN RETURN model END ;
+  RETURN 'fixture-' + fixture
+END Model ;
+
+PROCEDURE Live () =
+VAR c, d : Llm.Chat ; r : Llm.Reply ; id, o : STR ; png : SLICE OF BYTE ;
+BEGIN
+  (* A tool call and its result, in one chat. *)
+  Llm.Init (pool, c, endpoint, Model ('toolcall')) ;
+  Llm.System (pool, c, 'Answer briefly.') ;
+  Llm.User (pool, c, Hard + 0AC + 'Second line.') ;
+  Llm.Tool (pool, c, 'mul', 'multiply two integers', Mul) ;
+  Check.EqStr (t, 'live: the tool call', Outcome (c, r), 'ok') ;
+  Check.EqStr (t, 'live: finish', r.finish, 'tool_calls') ;
+  Check.EqI64 (t, 'live: one call', LEN (r.calls), 1) ;
+  Check.EqI64 (t, 'live: the chat holds the answer', Llm.Messages (c), 3) ;
+  IF LEN (r.calls) = 1 THEN
+    Check.EqStr (t, 'live: the call is mul', r.calls[0].name, 'mul') ;
+    id := r.calls[0].id ;
+    Llm.ToolResult (pool, c, id, '391') ;
+    c.model := Text.Keep (pool, Model ('toolresult')) ;
+    Check.EqStr (t, 'live: the result', Outcome (c, r), 'ok') ;
+    Check.That (t, 'live: the answer has 391', Text.Contains (r.content, '391')) ;
+    Check.EqI64 (t, 'live: five messages', Llm.Messages (c), 5)
+  END ;
+
+  (* A reply cut off is an exception, unless the chat allows it. *)
+  Llm.Init (pool, d, endpoint, Model ('length')) ;
+  d.maxTokens := 20 ;
+  Llm.User (pool, d, 'Count from 1 to 100.') ;
+  o := Outcome (d, r) ;
+  Check.That (t, 'live: cut off raises Truncated (' + o + ')', Text.StartsWith (o, 'Truncated 20 ')) ;
+  Check.EqI64 (t, 'live: a cut-off reply is not recorded', Llm.Messages (d), 1) ;
+  d.allowTruncated := TRUE ;
+  Check.EqStr (t, 'live: cut off, allowed', Outcome (d, r), 'ok') ;
+  Check.EqStr (t, 'live: its finish', r.finish, 'length') ;
+
+  (* An image. *)
+  png := Io.ReadFileBytes (pool, Png) ;
+  Llm.Init (pool, d, endpoint, Model ('image')) ;
+  Llm.UserImage (pool, d, 'Describe this image in one sentence.', 'image/png', png) ;
+  Check.EqStr (t, 'live: the image', Outcome (d, r), 'ok') ;
+  Check.That (t, 'live: the image is described', Text.BLen (r.content) > 20) ;
+
+  IF NOT live THEN
+    Llm.Init (pool, d, endpoint, 'fixture-badjson') ;
+    Llm.User (pool, d, 'hi') ;
+    Check.That (t, "fixture: a 400 is a ServerError with sglang's message",
+      Text.StartsWith (Outcome (d, r), 'ServerError 400 1 validation error')) ;
+    Llm.Init (pool, d, endpoint, 'fixture-500') ;
+    Llm.User (pool, d, 'hi') ;
+    Check.EqStr (t, "fixture: a 500 is a ServerError with OpenAI's message",
+      Outcome (d, r), 'ServerError 500 boom "quoted"') ;
+    Llm.Init (pool, d, endpoint, 'fixture-notjson') ;
+    Llm.User (pool, d, 'hi') ;
+    Check.That (t, 'fixture: a reply that is not JSON is a FormatError',
+      Text.StartsWith (Outcome (d, r), 'FormatError not JSON')) ;
+    Llm.Init (pool, d, endpoint, 'fixture-nochoices') ;
+    Llm.User (pool, d, 'hi') ;
+    Check.EqStr (t, 'fixture: a reply without choices is a FormatError',
+      Outcome (d, r), 'FormatError no member choices')
+  END
+EXCEPT
+| Llm.FormatError (m) : Check.That (t, 'live: ' + m, FALSE)
+| Io.IOError (path) : Check.That (t, 'live: cannot read ' + path, FALSE)
+| ValueRange : Check.That (t, 'live: ValueRange', FALSE)
+END Live ;
+
+(* Streamed streams c, collects the reply into r and answers what
+   happened, as Outcome does for Send. *)
+PROCEDURE Streamed (VAR c: Llm.Chat ; VAR r: Llm.Reply) : STR =
+VAR s : PTR Http.Stream IN pool ;
+BEGIN
+  s := Llm.Stream (pool, c) ;
+  Llm.Collect (pool, c, s, r) ;
+  RETURN 'ok'
+EXCEPT
+| Llm.Truncated (completion, reasoning) : RETURN $'Truncated ${completion} ${reasoning}'
+| Llm.ServerError (m, status) : RETURN $'ServerError ${status} ${m}'
+| Llm.FormatError (m) : RETURN 'FormatError ' + m
+| Http.TransportError (m) : RETURN 'TransportError ' + m
+| ValueRange : RETURN 'ValueRange'
+END Streamed ;
+
+(* Streams holds the streamed replies (stage A4).  The fixture replays
+   two streams recorded from sglang: stream.sse, the answer CO₂ in 15
+   pieces before [DONE], and streamlength.sse, cut off at 10 tokens.
+   The counts checked here are those files' own.  The judge holds the
+   collected answer to Python's reading of stream.sse: the next request
+   carries it back. *)
+PROCEDURE Streams () =
+VAR
+  c, d : Llm.Chat ;
+  r : Llm.Reply ;
+  x, last : Llm.Delta ;
+  s : PTR Http.Stream IN pool ;
+  got : PTR DynStr.DString IN pool ;
+  pieces : I64 ;
+  o : STR ;
+BEGIN
+  (* Piece by piece. *)
+  Llm.Init (pool, c, endpoint, Model ('stream')) ;
+  Llm.User (pool, c, Co2) ;
+  s := Llm.Stream (pool, c) ;
+  got := DynStr.New (pool) ;
+  pieces := 0 ;
+  last.completionTokens := 0 ;
+  WHILE Llm.Next (pool, s, x) DO
+    pieces := pieces + 1 ;
+    DynStr.Append (got, x.content) ;
+    IF x.completionTokens > 0 THEN last := x END
+  END ;
+  Check.That (t, 'stream: more than one piece', pieces > 1) ;
+  Check.That (t, 'stream: the usage came', last.completionTokens > 0) ;
+  Check.EqI64 (t, 'stream: Next records nothing', Llm.Messages (c), 1) ;
+  IF NOT live THEN
+    Check.EqI64 (t, 'stream: 15 pieces', pieces, 15) ;
+    Check.EqStr (t, 'stream: the pieces make the answer', DynStr.View (got),
+                 Nn () + 'The chemical formula of carbon dioxide is CO₂.') ;
+    Check.EqI64 (t, 'stream: prompt tokens', last.promptTokens, 65) ;
+    Check.EqI64 (t, 'stream: completion tokens', last.completionTokens, 50) ;
+    Check.EqI64 (t, 'stream: reasoning tokens', last.reasoningTokens, 38)
+  END ;
+
+  (* Whole: Collect reads the reply and records it. *)
+  Check.EqStr (t, 'stream: collected', Streamed (c, r), 'ok') ;
+  Check.EqStr (t, 'stream: finish', r.finish, 'stop') ;
+  Check.That (t, 'stream: an answer', Text.BLen (r.content) > 0) ;
+  Check.That (t, 'stream: reasoning', Text.BLen (r.reasoning) > 0) ;
+  Check.EqI64 (t, 'stream: the chat holds the answer', Llm.Messages (c), 2) ;
+  IF NOT live THEN
+    Check.EqStr (t, 'stream: Collect answers what the pieces made', r.content, DynStr.View (got)) ;
+    Check.EqI64 (t, 'stream: reasoning length', Text.CpCount (r.reasoning), 174) ;
+    Check.EqI64 (t, 'stream: Collect has the usage', r.completionTokens, 50)
+  END ;
+  Llm.User (pool, c, 'Thank you.') ;
+  c.model := Text.Keep (pool, Model ('answer')) ;
+  Check.EqStr (t, 'stream: and the chat goes on', Outcome (c, r), 'ok') ;
+
+  (* A stream cut off is an exception, unless the chat allows it. *)
+  Llm.Init (pool, d, endpoint, Model ('streamlength')) ;
+  d.maxTokens := 10 ;
+  Llm.User (pool, d, 'Count from one to twenty in words.') ;
+  o := Streamed (d, r) ;
+  Check.That (t, 'stream: cut off raises Truncated (' + o + ')', Text.StartsWith (o, 'Truncated 10 ')) ;
+  Check.EqI64 (t, 'stream: a cut-off reply is not recorded', Llm.Messages (d), 1) ;
+  d.allowTruncated := TRUE ;
+  Check.EqStr (t, 'stream: cut off, allowed', Streamed (d, r), 'ok') ;
+  Check.EqStr (t, 'stream: its finish', r.finish, 'length') ;
+
+  IF NOT live THEN
+    Llm.Init (pool, d, endpoint, 'fixture-500') ;
+    Llm.User (pool, d, 'hi') ;
+    Check.EqStr (t, 'fixture: a streamed 500 is a ServerError with its message',
+      Streamed (d, r), 'ServerError 500 boom "quoted"') ;
+    Llm.Init (pool, d, endpoint, 'fixture-streamcut') ;
+    Llm.User (pool, d, 'hi') ;
+    Check.EqStr (t, 'fixture: a stream without [DONE] is a FormatError',
+      Streamed (d, r), 'FormatError the stream ended before [DONE]') ;
+    Llm.Init (pool, d, endpoint, 'fixture-streamerror') ;
+    Llm.User (pool, d, 'hi') ;
+    Check.EqStr (t, 'fixture: an error piece is a ServerError with its message',
+      Streamed (d, r), 'ServerError 200 boom mid-stream')
+  END ;
+
+  (* A chat with tools is refused before anything is sent. *)
+  Llm.Init (pool, d, endpoint, Model ('stream')) ;
+  Llm.User (pool, d, 'hi') ;
+  Llm.Tool (pool, d, 'mul', 'multiply two integers', Mul) ;
+  Check.EqStr (t, 'stream: a chat with tools is refused', Streamed (d, r),
+    'FormatError a chat with tools is sent by Send, not streamed')
+EXCEPT
+| Llm.FormatError (m) : Check.That (t, 'stream: ' + m, FALSE)
+| Llm.ServerError (m, status) : Check.That (t, $'stream: ServerError ${status} ${m}', FALSE)
+| Http.TransportError (m) : Check.That (t, 'stream: TransportError ' + m, FALSE)
+| ValueRange : Check.That (t, 'stream: ValueRange', FALSE)
+END Streams ;
+
+(* Batches holds Llm.Batch to the fixture's echo model: twelve prompts,
+   four at a time.  Each answer must come back under its own prompt,
+   the one that fails must fail alone, and the judge reads how many
+   requests the server held at once.  Each takes half a second, so
+   twelve one at a time take 6 s, four at a time 1.5 s. *)
+PROCEDURE Batches () =
+VAR
+  c : Llm.Chat ;
+  prompts, answers, errors : SLICE OF STR ;
+  k, right : I64 ;
+  t0 : Time.Instant ;
+  secs : F64 ;
+BEGIN
+  Llm.Init (pool, c, endpoint, 'fixture-echo') ;
+  Llm.System (pool, c, 'Echo.') ;
+  prompts := NEW (pool, STR, 12) ;
+  FOR k := 0 TO 11 DO prompts[k] := Text.Keep (pool, 'p' + Fmt.I64Str (k)) END ;
+  prompts[5] := 'fail' ;
+  t0 := Time.Now () ;
+  Llm.Batch (pool, c, prompts, 4, answers, errors) ;
+  secs := Time.Elapsed (t0, Time.Now ()) ;
+  right := 0 ;
+  FOR k := 0 TO 11 DO
+    IF k # 5 AND Text.Eq (answers[k], 'echo: p' + Fmt.I64Str (k)) AND
+       Text.BLen (errors[k]) = 0 THEN
+      right := right + 1
+    END
+  END ;
+  Check.EqI64 (t, 'batch: eleven answers, each under its prompt', right, 11) ;
+  Check.EqStr (t, 'batch: the one that failed', errors[5], 'ServerError 500 echo refused') ;
+  Check.EqStr (t, 'batch: and has no answer', answers[5], '') ;
+  Check.EqI64 (t, 'batch: the chat records nothing', Llm.Messages (c), 1) ;
+  Check.That (t, $'batch: four at a time, not one (${secs} s)', secs < 4.0) ;
+  Check.EqStr (t, 'batch: inFlight 0 is refused', Refused (c, prompts, 0), 'ValueRange') ;
+  Check.EqStr (t, 'batch: inFlight past MaxInFlight is refused',
+               Refused (c, prompts, Llm.MaxInFlight + 1), 'ValueRange')
+EXCEPT
+| ValueRange : Check.That (t, 'batch: ValueRange', FALSE)
+| IndexError : Check.That (t, 'batch: IndexError', FALSE)
+END Batches ;
+
+PROCEDURE Refused (RO c: Llm.Chat ; RO prompts: SLICE OF STR ; inFlight: I64) : STR =
+VAR answers, errors : SLICE OF STR ;
+BEGIN
+  Llm.Batch (pool, c, prompts, inFlight, answers, errors) ;
+  RETURN 'none'
+EXCEPT
+| ValueRange : RETURN 'ValueRange'
+END Refused ;
+
+BEGIN
+  Offline ;
+  Bodies ;
+  endpoint := Io.Env (pool, 'LLM_ENDPOINT') ;
+  model := Io.Env (pool, 'LLM_MODEL') ;
+  live := Text.BLen (model) > 0 ;
+  IF Text.BLen (endpoint) > 0 THEN
+    Live ; Streams () ;
+    IF NOT live THEN Batches () END
+  ELSE Io.WriteLine ('LlmTest: offline only (LLM_ENDPOINT names a server)')
+  END ;
+  Io.Halt (Check.Done (t, 'Llm'))
+EXCEPT
+| ValueRange : Io.ErrLine ('LlmTest: LLM_ENDPOINT or LLM_MODEL is not UTF-8') ; Io.Halt (1)
+END LlmTest.

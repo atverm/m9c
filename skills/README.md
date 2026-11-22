@@ -39,5 +39,7 @@ every museum piece fails to compile, and every tutorial example runs
 and prints what the page says.  When a skill and one of those
 disagree, the gated one is right, and the skill is what gets fixed.
 
-These two files are the source; the repository's own `.claude/skills/`
-entries point here.
+These three are the source; the repository's own `.claude/skills/`
+entries point here.  Another project keeps a copy in its own
+`.claude/skills/`, refreshed from here and checked with `diff -r`,
+never edited there.

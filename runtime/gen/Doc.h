@@ -15,6 +15,10 @@ typedef struct Doc_Anchor Doc_Anchor;
 
 #define Doc_MaxAnchor INT64_C(4096)
 
+#ifndef M9SL_m9_sl_m9_sl_UTF8
+#define M9SL_m9_sl_m9_sl_UTF8
+typedef struct { m9_sl_UTF8 *p; int64_t len; } m9_sl_m9_sl_UTF8;
+#endif
 #ifndef M9SL_m9_sl_Doc_Anchor
 #define M9SL_m9_sl_Doc_Anchor
 typedef struct { Doc_Anchor *p; int64_t len; } m9_sl_Doc_Anchor;

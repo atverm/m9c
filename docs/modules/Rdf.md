@@ -29,16 +29,25 @@ Out: JSON-LD, TriG and named graphs, and any inference.  Language tags are kept 
 
 ### TYPE Kind
 
-_(documented with the group below)_
+_(undocumented)_
 
 ### TYPE Term
 
-the IRI, a blank node's label, a
-literal's lexical form
+_(undocumented)_
+
+- `kind : Kind`
+- `value : STR` -- the IRI, a blank node's label, a
+  literal's lexical form
+- `lang : STR` -- a literal's language tag, else ''
+- `datatype : STR` -- a literal's datatype IRI; '' for a
+  language-tagged one; xsd:string for
+  a simple literal, as RDF 1.1 says
 
 ### TYPE Triple
 
 _(undocumented)_
+
+- `s, p, o : Term`
 
 ### TYPE Graph
 

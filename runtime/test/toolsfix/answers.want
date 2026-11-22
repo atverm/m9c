@@ -1,0 +1,14 @@
+Reading {"station":"HTM","co2":421.7,"height":150,"flag":"Good","checked":true} -> ok HTM 421.7 150 0 TRUE
+Reading {"station":"PAL","co2":418,"height":12,"flag":"Suspect"} -> FormatError the answer does not fit Obs.Reading: missing argument checked
+Reading {"station":"PAL","co2":418,"height":12,"flag":"Suspect","checked":false,"unit":"ppm"} -> FormatError the answer does not fit Obs.Reading: unknown argument unit
+Reading {"station":"PAL","co2":418,"height":12,"flag":"Great","checked":false} -> FormatError the answer does not fit Obs.Reading: flag is not one of Good, Suspect, Bad
+Reading {"station":"PAL","co2":418,"height":40000,"flag":"Bad","checked":false} -> FormatError the answer does not fit Obs.Reading: height is out of range -32768 to 32767
+Reading {"station":"PAL","co2":"high","height":12,"flag":"Bad","checked":false} -> FormatError the answer does not fit Obs.Reading: co2 is not a number
+Reading nope -> FormatError the answer is not JSON (1:1: value expected)
+Reading [1,2] -> FormatError the answer does not fit Obs.Reading: the arguments are not a JSON object
+Reading {"station":"SVB \"x\" ₂","co2":425.9,"height":150,"flag":"Bad","checked":true} -> ok SVB "x" ₂ 425.9 150 2 TRUE
+Batch {"readings":[{"station":"A","co2":1,"height":1,"flag":"Good","checked":true},{"station":"B","co2":2.5,"height":2,"flag":"Bad","checked":false}],"note":"two"} -> ok 2 readings, note two; A 1.0 1 0 TRUE; B 2.5 2 2 FALSE
+Batch {"readings":5,"note":"x"} -> FormatError the answer does not fit Obs.Batch: a list of Batch is not a list
+Batch {"readings":[{"station":"A","co2":1,"height":1.5,"flag":"Good","checked":true}],"note":"x"} -> FormatError the answer does not fit Obs.Batch: height is not an integer
+Batch {"readings":[],"note":"none"} -> ok 0 readings, note none
+Reading (with newlines first) -> ok HTM 421.7 150 0 TRUE

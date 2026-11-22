@@ -1,0 +1,108 @@
+MODULE ConcatTest ;
+
+(* ConcatTest holds `+` to linear growth when a call allocates between
+   two appends (docs/append-plan.md).  Each entry of a document comes
+   from calls (Name, Fmt.I64Str), and the document grows by `+`: the
+   shape that copied the whole document at every append until
+   2026-11-22.  4,000 entries then left about 280 MB of dead copies in
+   the frame; now the pools grow by a few times the document.
+
+   Each document is checked against the same one built by DynStr, and
+   the pools' growth (System.PoolBytes) is held to a bound linear in
+   the document.  runtime/test/append_driver.c holds the runtime's
+   half: aliases, a statement's release, a pool's free. *)
+
+IMPORT Check ;
+IMPORT DynStr ;
+IMPORT Fmt ;
+IMPORT Io ;
+IMPORT System ;
+IMPORT Text ;
+
+CONST
+  N = 4000 ;
+  (* Bound is the pools' growth allowed for a document of n octets:
+     the document, its room, the entries' own strings and the frame's
+     first blocks. *)
+  Slack = 4194304 ;
+
+VAR
+  t : Check.T ;
+  pool : POOL ;
+
+PROCEDURE Name (i: I64) : STR =
+BEGIN
+  RETURN '"entry ' + Fmt.I64Str (i) + '"'
+END Name ;
+
+(* Want answers the document DynStr builds. *)
+PROCEDURE Want () : STR =
+VAR d : PTR DynStr.DString IN pool ; i : I64 ;
+BEGIN
+  d := DynStr.New (pool) ;
+  FOR i := 0 TO N - 1 DO
+    DynStr.Append (d, '{"name":' + Name (i) + ',"line":' + Fmt.I64Str (i) + '},')
+  END ;
+  RETURN DynStr.ViewIn (pool, d)
+END Want ;
+
+(* Stored builds each entry in a variable first, then appends it. *)
+PROCEDURE Stored (RO want: STR) =
+VAR doc, e : STR ; i, base, grew : I64 ;
+BEGIN
+  base := System.PoolBytes () ;
+  doc := '' ;
+  FOR i := 0 TO N - 1 DO
+    e := '{"name":' + Name (i) + ',"line":' + Fmt.I64Str (i) + '}' ;
+    doc := doc + e + ','
+  END ;
+  grew := System.PoolBytes () - base ;
+  Check.EqStr (t, 'doc := doc + e: the document DynStr builds', doc, want) ;
+  Check.That (t, $'doc := doc + e: the pools grew ${grew} octets for ${Text.BLen (doc)}',
+              grew <= 16 * Text.BLen (doc) + Slack)
+END Stored ;
+
+(* OneLine appends the entry's pieces to the document in one statement. *)
+PROCEDURE OneLine (RO want: STR) =
+VAR doc : STR ; i, base, grew : I64 ;
+BEGIN
+  base := System.PoolBytes () ;
+  doc := '' ;
+  FOR i := 0 TO N - 1 DO
+    doc := doc + '{"name":' + Name (i) + ',"line":' + Fmt.I64Str (i) + '},'
+  END ;
+  grew := System.PoolBytes () - base ;
+  Check.EqStr (t, 'one statement: the document DynStr builds', doc, want) ;
+  Check.That (t, $'one statement: the pools grew ${grew} octets for ${Text.BLen (doc)}',
+              grew <= 16 * Text.BLen (doc) + Slack)
+END OneLine ;
+
+(* Printed writes a line built by + beside each append: a statement
+   whose temporaries are released every turn.  The document keeps its
+   room, and the line is right. *)
+PROCEDURE Printed (RO want: STR) =
+VAR doc, last : STR ; i, base, grew : I64 ;
+BEGIN
+  base := System.PoolBytes () ;
+  doc := '' ;
+  last := '' ;
+  FOR i := 0 TO N - 1 DO
+    doc := doc + '{"name":' + Name (i) + ',"line":' + Fmt.I64Str (i) + '},' ;
+    IF Text.Eq ('entry ' + Fmt.I64Str (i), 'entry 3999') THEN last := Text.Keep (pool, Name (i)) END
+  END ;
+  grew := System.PoolBytes () - base ;
+  Check.EqStr (t, 'beside a released statement: the document DynStr builds', doc, want) ;
+  Check.EqStr (t, 'and the released statement saw its own text', last, '"entry 3999"') ;
+  Check.That (t, $'beside a released statement: the pools grew ${grew} octets for ${Text.BLen (doc)}',
+              grew <= 16 * Text.BLen (doc) + Slack)
+END Printed ;
+
+VAR want : STR ;
+
+BEGIN
+  want := Want () ;
+  Stored (want) ;
+  OneLine (want) ;
+  Printed (want) ;
+  Io.Halt (Check.Done (t, 'Concat'))
+END ConcatTest.

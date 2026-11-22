@@ -105,12 +105,17 @@ as for Fn: here usually the data.
 
 ### TYPE Fitted
 
-info says why the search stopped, in MINPACK's numbering.  1: the
-sum of squares no longer falls by more than the tolerance; 2: the
-parameters no longer move by more than it; 3: both; 4: the
-residuals are orthogonal to the model's slopes, a minimum
-exactly.  6, 7, 8: the same three, at the limit of the
-arithmetic; the tolerance asked was smaller than F64 has.
+_(undocumented)_
+
+- `info : I64` -- info says why the search stopped, in MINPACK's numbering.  1: the
+  sum of squares no longer falls by more than the tolerance; 2: the
+  parameters no longer move by more than it; 3: both; 4: the
+  residuals are orthogonal to the model's slopes, a minimum
+  exactly.  6, 7, 8: the same three, at the limit of the
+  arithmetic; the tolerance asked was smaller than F64 has.
+- `nfev : I64` -- how often the function was asked
+- `cost : F64` -- the sum of the squared residuals
+- `covariance : BOOL` -- CurveFit only: cov could be estimated
 
 ### LeastSq (f: Residuals ; RO p: SLICE OF F64 ; VAR x: SLICE OF F64 ; m: I64 ; tol: F64) : Fitted RAISES Faults.BadArg, NoConverge, ValueRange
 

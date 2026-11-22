@@ -114,13 +114,34 @@ owning the socket's arithmetic.  It is exported only because
 Client holds one; nothing outside this module reads its
 fields.
 
+- `secure : BOOL`
+- `fd : I64`
+- `buf : SLICE OF BYTE`
+- `at : I64` -- next unread byte in buf
+- `n : I64` -- bytes held
+- `eof : BOOL`
+- `gotAny : BOOL` -- a byte of THIS response arrived
+
 ### TYPE Cookie
 
-seconds since the epoch; 0 = session
+_(undocumented)_
+
+- `name, value, domain, path : STR`
+- `hostOnly, secure : BOOL`
+- `expires : F64` -- seconds since the epoch; 0 = session
 
 ### TYPE Client
 
-the jar: the first `n` are live
+_(undocumented)_
+
+- `cookies : SLICE OF Cookie` -- the jar: the first `n` are live
+- `n : I64`
+- `c : Conn` -- the kept connection, when `open`
+- `open : BOOL`
+- `secure : BOOL`
+- `host : STR`
+- `port : I64`
+- `kept : I64` -- requests answered on a kept connection
 
 ### NewClient (VAR pool: POOL) : PTR Client IN pool
 
@@ -156,6 +177,37 @@ promise.
 
 CookieValue answers the value of the first live cookie named
 `name`, whatever its domain and path; '' when there is none.
+
+### CONST LineMax
+
+_(undocumented)_
+
+### TYPE Stream
+
+_(undocumented)_
+
+- `status : I64` -- the response's status
+- `hdrs : STR` -- its header lines, as Request answers them
+- `c : Conn`
+- `chunked, first, done : BOOL`
+- `clen, want : I64`
+
+### Open (VAR pool: POOL ; RO method: STR ; RO url: STR ; RO headers: STR ; RO body: SLICE OF BYTE) : PTR Stream IN pool RAISES TransportError, ValueRange
+
+Open makes one request, as Request does, and answers when the
+headers have come.  The body is left on the connection for
+NextLine.  A HEAD, a 1xx, a 204 and a 304 have an empty body.
+
+### NextLine (VAR pool: POOL ; VAR s: PTR Stream ; VAR line: STR) : BOOL RAISES TransportError, ValueRange
+
+NextLine puts the body's next line in `line`, in pool, and answers
+TRUE.  It answers FALSE, with `line` empty, at the end of the
+body.  It waits for the server as long as the line takes.
+
+### CloseStream (VAR s: PTR Stream) RAISES ValueRange
+
+CloseStream closes the connection.  A Stream closed before its
+body ended answers FALSE from NextLine after it.
 
 ### CONST MaxWait
 

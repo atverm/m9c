@@ -40,21 +40,46 @@ degrees from the centre, whatever longitudes it names.  A
 narrower window across that cut (west past east) is drawn in
 two pieces, so give it a centre meridian of its own.
 
+- `west, east, south, north : F64`
+
 ### TYPE Backdrop
 
-the image; '' draws none
+_(undocumented)_
+
+- `href : STR` -- the image; '' draws none
+- `x0, x1, y0, y1 : F64` -- the projected box it covers, under
+  the map's centre meridian
 
 ### TYPE Marker
 
-an SVG colour; '' is the default
+_(undocumented)_
+
+- `lon, lat : F64`
+- `label : STR`
+- `colour : STR` -- an SVG colour; '' is the default
 
 ### TYPE Scale
 
-base 10; values <= 0 are left out
+_(undocumented)_
+
+- `log : BOOL` -- base 10; values <= 0 are left out
+- `low, high : F64` -- percentiles of the values present
+- `alpha : F64` -- the colour grid's opacity, 0 .. 1
 
 ### TYPE Spec
 
-the centre meridian, degrees east
+_(undocumented)_
+
+- `title : STR`
+- `proj : OPT Projection`
+- `lon0 : F64` -- the centre meridian, degrees east
+- `window : Window`
+- `width : I64` -- pixels; the height follows
+- `backdrop : Backdrop`
+- `graticule : F64` -- degrees between lines; 0 draws none
+- `coast : BOOL`
+- `scale : Scale`
+- `credit : STR` -- bottom right; '' writes none
 
 ### NaturalEarth (lon: F64 ; lat: F64 ; VAR x: F64 ; VAR y: F64)
 

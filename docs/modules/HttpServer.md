@@ -182,29 +182,126 @@ opaque; lives in a POOL
 
 ### TYPE Request
 
-as sent: GET, POST, ...
+_(undocumented)_
+
+- `method : STR` -- as sent: GET, POST, ...
+- `target : STR` -- the request target as sent
+- `path : STR` -- the target up to '?'
+- `query : STR` -- after '?', or ''
+- `version : STR` -- HTTP/1.1 or HTTP/1.0
+- `headers : STR` -- the header lines as `name: value`,
+  one per line, line feeds between.
+  This is Http's convention; read
+  them with Header.
+- `body : SLICE OF BYTE` -- the whole body, de-chunked
+- `peer : STR` -- the socket peer's numeric address
+- `client : STR` -- the client's address: the peer's, or
+  the address X-Forwarded-For names
+  when the peer is a trusted proxy
+  (Config.trusted)
+- `worker : I64` -- 0 .. workers - 1
 
 ### TYPE Producer
 
-_(documented with the group below)_
+A Producer answers a stream's parts: part 0, 1, 2 ... of the
+answer to req, and the empty string after the last.  It has no
+capture: a producer finds what it needs in req (its query, its
+worker) and in module state.
 
 ### TYPE Response
 
-Content-Type; '' sends none
+_(undocumented)_
+
+- `status : I64`
+- `ctype : STR` -- Content-Type; '' sends none
+- `text : STR` -- the body as text, sent as UTF-8 ...
+- `data : SLICE OF BYTE` -- ... or as these octets, if binary
+- `binary : BOOL`
+- `headers : STR` -- more header lines, `name: value`,
+  line feeds between; WithHeader
+- `close : BOOL` -- close the connection after it
+- `file : STR` -- a file to send instead, '' for none:
+  ReplyFile
+- `stream : OPT Producer` -- parts to send instead: ReplyStream
 
 ### TYPE Handler
 
-_(documented with the group below)_
+_(undocumented)_
 
 ### TYPE Config
 
-The server listens on 127.0.0.1: the
-runtime's contract.  A reverse proxy
-faces out.
+_(undocumented)_
+
+- `port : I64` -- The server listens on 127.0.0.1: the
+  runtime's contract.  A reverse proxy
+  faces out.
+- `workers : I64` -- 1 .. MaxWorkers.  With tasks, set it to
+  the requests expected at once: a
+  connection that waits for a worker's
+  number waits in a monitor, and each
+  request's end wakes every one waiting.
+  64 connections on 8 took 164 us of CPU
+  a request on host1, on 64 took 64 us
+  (2026-11-03).
+- `queue : I64` -- accepted connections waiting for a
+  worker, 1 .. MaxQueue.  Over it, the
+  answer is 503.
+- `backlog : I64` -- the kernel's listen backlog
+- `maxConn : I64` -- stop after this many connections;
+  0 = never (a gate bounds a run)
+- `lineMax : I64` -- request line, octets
+- `headerMax : I64` -- request line and header block
+- `bodyMax : I64` -- request body, octets
+- `idleMs : I64` -- a kept connection's silence
+- `headerMs : I64` -- first byte to end of header block
+- `perConn : I64` -- requests on one connection
+- `gzipMin : I64` -- a body this long or longer is gzipped
+  for a client that takes gzip; 0 never
+- `bind : STR` -- the numeric address to listen at:
+  127.0.0.1 (the default), 0.0.0.0,
+  ::1 or :: (v6 and v4 both)
+- `trusted : STR` -- proxies' numeric addresses, commas
+  between: X-Forwarded-For is believed
+  only from these; '' believes none
+- `accessLog : BOOL` -- one Logger Info line a request
+- `signals : BOOL` -- SIGTERM and SIGINT stop Run gracefully
+  (the default); FALSE leaves them be
+- `keepBytes : I64` -- the large freed blocks each worker
+  keeps for its next request; 0 (the
+  default) keeps none.  A worker gives
+  them back when the ring is empty.
+  System.KeepAtMost says more.
+- `tasks : BOOL` -- serve each connection in a TASK of its
+  own instead of on a worker thread;
+  FALSE (the default) keeps the
+  threads.  workers is then how many
+  handlers run at once.
+- `maxOpen : I64` -- with tasks, the connections open at
+  once; over it, the answer is 503.
+  10,000 by default.  Such a server
+  wants a backlog of thousands too:
+  with 128, Linux drops a burst's SYNs,
+  and each costs its client a second.
+- `only4xx : BOOL` -- answer 400 where the server would
+  answer 505 (an HTTP version it does
+  not speak) or 501 (a transfer coding
+  or a method it does not know).  The
+  RFC's codes are the default.  A
+  service whose contract allows no 5xx
+  for what a client sent sets this:
+  two agents copied this module to
+  change those lines (2026-11-19).
 
 ### TYPE Stats
 
-accepted
+_(undocumented)_
+
+- `connections : I64` -- accepted
+- `busy : I64` -- answered 503 by the accepting thread
+- `requests : I64` -- answered by a worker
+- `faults : I64` -- handlers that raised: 500
+- `s2xx, s3xx, s4xx, s5xx : I64`
+- `bytesOut : I64` -- response bodies, octets
 
 ### NewRouter (VAR pool: POOL) : PTR Router IN pool
 

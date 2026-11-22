@@ -123,6 +123,7 @@ begin
   GenModule ('Bits', []);
   GenModule ('Sort', ['Math', 'Text']);
   GenModule ('Seq', ['Sort', 'Text']);
+  GenModule ('Llm', ['Chan', 'DynStr', 'Io', 'Http', 'Json', 'Seq', 'Text']);
   GenModule ('Check', ['Io', 'Fmt', 'Math', 'Text']);
   GenModule ('Arrays', ['Faults', 'Math']);
   GenModule ('Numeric', ['Faults', 'Math']);

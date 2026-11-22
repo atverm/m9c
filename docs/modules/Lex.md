@@ -19,9 +19,22 @@ takes the octets as they are.
 
 ### TYPE Token
 
-verbatim source; for Error, message
+_(undocumented)_
+
+- `kind, line, col : I64`
+- `text : UTF` -- verbatim source; for Error, message
 
 ### TYPE Lexer
+
+the source is UTF-8 and pos a BYTE offset into it (since
+2026-10-23, docs/utf8-stage3-plan.md step 4); line and col count
+characters, as they always did, so a diagnostic's position is the
+same on both sides of the switch
+
+- `src : UTF`
+- `pos, line, col : I64`
+
+### TYPE Comment
 
 A Comment holds a comment, for the callers that want the
 documentation rather than the program.  text is VERBATIM and
@@ -29,9 +42,8 @@ includes the opening `(*` and closing `*)`, because a reader that
 wants them stripped can strip them and one that wants the nesting
 cannot put them back.
 
-### TYPE Comment
-
-_(undocumented)_
+- `line, col, endLine : I64`
+- `text : UTF`
 
 ### Init (VAR lx: Lexer ; RO src: UTF)
 

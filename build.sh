@@ -119,7 +119,7 @@ COMPILER="DynStr Io Lex M9f Ast Parse Print Text System Sem Gen Doc DynUtf Revie
 LIBRARY="DynStr Io Lex M9f Ast Parse Print Text Fmt Sem Gen ExplainTab Explain \
          Json JsonUtf Chars DynUtf Tsk Chan Jobs Sup Dict Faults Mat Math Bits Sort Seq Check Arrays Numeric NumpyExact Png Time Logger Syslog Http HttpServer OpenApi ApiSpec \
          Arrow Doc Review \
-         NetCDF Grib Csv Delim Zip Pg Sparql Rdf Regex Xml Hash Smtp Rsa Map Stats System Frame Parquet NbCells NbShow \
+         NetCDF Grib Csv Delim Zip Pg Sparql Llm Rdf Regex Xml Hash Smtp Rsa Map Stats System Frame Parquet NbCells NbShow \
          Plot ZarrStore Zarr Diag Lsp M9fmt M9elide"
 
 mkdir -p "$OUT"

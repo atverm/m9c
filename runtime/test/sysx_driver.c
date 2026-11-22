@@ -99,7 +99,7 @@ static int there (const char *path)
 int main (int argc, char **argv)
 {
   m9_state e = { 0 };
-  m9_pool pool = { NULL };
+  m9_pool pool = { 0 };
   System_ResultUtf r;
   m9_sl_UTF8 child, av[5], ev[1];
   m9_sl_m9_sl_UTF8 args = { NULL, 0 }, noenv = { NULL, 0 }, env1;

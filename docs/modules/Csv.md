@@ -69,7 +69,17 @@ not parsed; costs only the scan
 
 ### TYPE Options
 
-',' unless said otherwise
+_(undocumented)_
+
+- `delimiter : CHAR` -- ',' unless said otherwise
+- `quoted : BOOL` -- honour "..." around a field
+- `header : BOOL` -- a header row names the columns
+- `skipLines : I64` -- preamble lines before the header
+- `missing : F32` -- a real equal to this becomes NaN
+- `hasMissing : BOOL`
+- `utcOffset : F64` -- seconds to subtract from a Stamp
+- `threads : I64` -- the threads Open and Parse may use; 1
+  unless said otherwise.  See Parse.
 
 ### CONST StampYmdHm
 

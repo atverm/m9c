@@ -209,11 +209,45 @@ station slots s1 .. s6
 
 ### TYPE Trace
 
-the legend's text
+_(undocumented)_
+
+- `label : STR` -- the legend's text
+- `short : STR` -- the label at the line's end; empty
+  for none
+- `key : STR` -- the colour slot
+- `x, y : SLICE OF F64` -- days since the epoch, and values;
+  NaN lifts the pen
+- `width : F64` -- pixels; 0 draws the markers alone
+- `dash : STR` -- an SVG dash pattern, empty = solid
+- `marks : BOOL` -- a marker on every point
 
 ### TYPE ChartSpec
 
-pixels
+_(undocumented)_
+
+- `width, height : I64` -- pixels
+- `title : STR`
+- `ylabel : STR`
+- `x0, x1 : F64` -- the window, days since the epoch
+- `band : BOOL`
+- `bandKey : STR`
+- `bandX : SLICE OF F64`
+- `outerLo, outerHi : SLICE OF F64`
+- `innerLo, innerHi : SLICE OF F64`
+- `outerLabel, innerLabel : STR`
+- `lines : SLICE OF Trace` -- drawn in order: the last is on top
+- `dots : BOOL`
+- `dotsKey : STR`
+- `dotsLabel : STR`
+- `dotsX, dotsY : SLICE OF F64` -- This is the hover table: for each position a heading and one
+  cell for each name, already formatted.  An empty cell is left
+  out of the readout.  Leave hoverX empty for no layer.
+- `hoverX : SLICE OF F64`
+- `hoverHead : SLICE OF STR`
+- `hoverNames : SLICE OF STR`
+- `hoverKeys : SLICE OF STR`
+- `hoverVals : SLICE OF STR`
+- `unit : STR`
 
 ### Chart (RO s: ChartSpec) : STR RAISES ValueRange
 

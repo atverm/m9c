@@ -11,16 +11,31 @@ no shell, and both of its streams come back as strings.
 
 ### TYPE Memory
 
-this process, bytes: now, and high water
+_(undocumented)_
+
+- `resident, peak : I64` -- this process, bytes: now, and high water
+- `total, available : I64` -- the machine's RAM, bytes: all of it, and
+  what a new allocation could still get
 
 ### TYPE PoolInfo
 
-bytes carved, bytes held, blocks
+_(undocumented)_
+
+- `used, capacity, blocks : I64` -- bytes carved, bytes held, blocks
 
 ### TYPE ResultUtf
 
-the exit status; minus the signal number
-when the program was killed by one
+_(undocumented)_
+
+- `status : I64` -- the exit status; minus the signal number
+  when the program was killed by one
+- `out, err : UTF` -- everything it wrote, each stream whole,
+  validated as UTF-8 (ValueRange when it
+  is not)
+- `stopped : BOOL` -- it ran past the limit and was stopped:
+  what it had written by then is above,
+  and status is the kill.  Never TRUE
+  from Exec, which sets no limit.
 
 ### TYPE Result
 

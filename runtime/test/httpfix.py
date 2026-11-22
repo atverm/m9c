@@ -8,13 +8,36 @@ carrying a Set-Cookie the next request must present, a chunked body on
 both a 302 and a 200, and a body whose only framing is the close.
 
   usage: httpfix.py <port> [address]
+         httpfix.py sselines
 """
 import socket
 import sys
+import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 PLAIN = b"the-plain-body\n" * 100                 # 1500 bytes
 BIG = bytes((i * 7 + 11) % 251 for i in range(5 * 1024 * 1024))
+
+# The event stream a chat server sends, for Http's Stream.  The lines
+# end in CRLF and LF by turns.  One is past ASCII, one is longer than
+# the client's 64 KiB read, and one holds a carriage return of its own.
+SSE_LINES = [
+    'data: {"choices": [{"delta": {"content": "CO\u2082"}}]}',
+    "",
+    ": a comment",
+    "data: " + "x" * 70000,
+    "",
+    "data: a\rb",
+    "",
+    "data: [DONE]",
+    "",
+]
+SSE = b"".join(ln.encode() + (b"\r\n" if i % 2 else b"\n")
+               for i, ln in enumerate(SSE_LINES))
+# The chunks split the UTF-8 of the subscript and a CRLF, and one is
+# longer than the client's read.  None is empty: an empty chunk ends
+# the body.
+SSE_CUTS = (1, 41, 3, 2, 7, 66000, 9, 2)
 
 
 class H(BaseHTTPRequestHandler):
@@ -147,6 +170,49 @@ class H(BaseHTTPRequestHandler):
     def _is_retry(self):
         return self.path.split("/")[1] in H.RETRY_KINDS
 
+    def _sse(self, p):
+        if p == "/sse/length":
+            self._raw(b"HTTP/1.1 200 OK\r\n"
+                      b"Content-Type: text/event-stream\r\n"
+                      b"Content-Length: %d\r\n"
+                      b"Connection: close\r\n" % len(SSE), SSE)
+            return
+        if p == "/sse/close":
+            self.wfile.write(b"HTTP/1.1 200 OK\r\n"
+                             b"Content-Type: text/event-stream\r\n"
+                             b"Connection: close\r\n\r\n" + SSE)
+            self.close_connection = True
+            return
+        self.wfile.write(b"HTTP/1.1 200 OK\r\n"
+                         b"Content-Type: text/event-stream\r\n"
+                         b"Transfer-Encoding: chunked\r\n"
+                         b"Connection: close\r\n\r\n")
+        if p == "/sse/slow":
+            # one line, a pause, then the rest: the first line must
+            # reach the client before the pause ends
+            for part in (b"data: first\n", b"data: second\n"):
+                self.wfile.write(b"%x\r\n" % len(part) + part + b"\r\n")
+                self.wfile.flush()
+                time.sleep(1.0)
+            self.wfile.write(b"0\r\n\r\n")
+            return
+        at = 0
+        for n in SSE_CUTS:
+            part = SSE[at:at + n]
+            at += n
+            self.wfile.write(b"%x\r\n" % len(part) + part + b"\r\n")
+            if p == "/sse/cut":
+                # the close between two chunks
+                self.close_connection = True
+                return
+            if p == "/sse/cutmid":
+                # the close inside a chunk: its size says 10 more
+                self.wfile.write(b"%x\r\n" % (len(SSE) - at + 10) + SSE[at:at + 10])
+                self.close_connection = True
+                return
+        part = SSE[at:]
+        self.wfile.write(b"%x\r\n" % len(part) + part + b"\r\n0\r\n\r\n")
+
     def do_GET(self):                                    # noqa: N802
         p = self.path
         if self._is_retry():
@@ -157,6 +223,9 @@ class H(BaseHTTPRequestHandler):
             return
         if p.startswith("/jar") or p in ("/show", "/other/show"):
             self._jar()
+            return
+        if p.startswith("/sse/"):
+            self._sse(p)
             return
         if p == "/plain":
             self._raw(b"HTTP/1.1 200 OK\r\n"
@@ -376,6 +445,12 @@ class Server6(HTTPServer):
 
 
 if __name__ == "__main__":
+    if sys.argv[1] == "sselines":
+        # what Http.NextLine must answer, one line each, then `end`
+        for ln in SSE_LINES:
+            sys.stdout.buffer.write(b"line " + ln.encode() + b"\n")
+        sys.stdout.buffer.write(b"end\n")
+        sys.exit(0)
     # A second argument binds another address: "::1" serves the IPv6
     # loopback, for the bracketed-host checks.
     addr = sys.argv[2] if len(sys.argv) > 2 else "127.0.0.1"

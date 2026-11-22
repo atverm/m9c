@@ -38,7 +38,11 @@ for try in 1 2 3 4 5; do
   pid=$!
   i=0
   while [ $i -lt 50 ]; do
-    if curl -s -m 2 -o /dev/null "http://127.0.0.1:$port/"; then up=1; break; fi
+    # The page must be this server's own.  A port another gate's server
+    # holds answers / too, while this one fails its listen and exits
+    # (paddle, 2026-11-22: /tick answered "not found").
+    if curl -s -m 2 "http://127.0.0.1:$port/" 2>/dev/null |
+       grep -q 'Snake, served by Modula-9'; then up=1; break; fi
     kill -0 "$pid" 2>/dev/null || break
     i=$((i+1)); sleep 0.1
   done

@@ -416,11 +416,23 @@ lazily below.
 
 ### TYPE Node
 
-au and bu hold the node's names,
-UTF-8 since
-docs/utf8-stage3-plan.md step 7
-(2026-10-23).  SetA/SetB below
-write them, and they copy.
+_(undocumented)_
+
+- `kind, line, col : I64`
+- `au, bu : UTF` -- au and bu hold the node's names,
+  UTF-8 since
+  docs/utf8-stage3-plan.md step 7
+  (2026-10-23).  SetA/SetB below
+  write them, and they copy.
+- `f1, f2, f3, f4 : BOOL` -- f3 marks the RO mode on a binding.
+  f4 marks KEPT, which composes with
+  any of the modes rather than
+  replacing one.  A kept parameter
+  is usually also RO.
+- `kids : SLICE OF Kid`
+- `nkids : I64`
+- `id : I64` -- id is the node's number, given by
+  NewNode.  It keys the typed tree.
 
 ### NewNode (VAR pool: POOL ; kind, line, col: I64) : PTR Node IN pool
 

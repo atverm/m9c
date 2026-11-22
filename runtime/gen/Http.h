@@ -11,9 +11,11 @@ void Http_m9init (m9_state *err);
 typedef struct Http_Conn Http_Conn;
 typedef struct Http_Cookie Http_Cookie;
 typedef struct Http_Client Http_Client;
+typedef struct Http_Stream Http_Stream;
 typedef struct Http_Form Http_Form;
 typedef struct Http_Req Http_Req;
 typedef struct Http_Resp Http_Resp;
+typedef struct Http_Frame Http_Frame;
 typedef struct Http_Part Http_Part;
 typedef struct Http_Form Http_Form;
 
@@ -21,6 +23,7 @@ extern const m9_exc Http_TransportError;
 
 #define Http_MaxHop INT64_C(5)
 #define Http_JarMax INT64_C(256)
+#define Http_LineMax INT64_C(1048576)
 #define Http_MaxWait (120.0)
 #define Http_IoBlock INT64_C(65536)
 #define Http_HdrMax INT64_C(16384)
@@ -76,6 +79,18 @@ struct Http_Client {
   int64_t kept;
 };
 
+typedef struct Http_Stream Http_Stream;
+struct Http_Stream {
+  int64_t status;
+  m9_sl_UTF8 hdrs;
+  Http_Conn c;
+  bool chunked;
+  bool first;
+  bool done;
+  int64_t clen;
+  int64_t want;
+};
+
 int64_t Http_Get (m9_sl_UTF8 host, int64_t port, m9_sl_UTF8 path, m9_sl_BYTE body, int64_t *bodyLen, m9_state *err);
 int64_t Http_GetTls (m9_sl_UTF8 host, int64_t port, m9_sl_UTF8 path, m9_sl_BYTE body, int64_t *bodyLen, m9_state *err);
 int64_t Http_GetToFile (m9_pool *pool, m9_sl_UTF8 url, m9_sl_UTF8 accept, m9_sl_UTF8 cookie, m9_sl_UTF8 dest, int64_t *bytes, m9_state *err);
@@ -91,6 +106,9 @@ m9_sl_UTF8 Http_SendText (m9_pool *pool, Http_Client * *cl, m9_pool *cl_pool, m9
 void Http_CloseClient (Http_Client * *cl, m9_pool *cl_pool, m9_state *err);
 int64_t Http_Kept (Http_Client * cl, m9_state *err);
 m9_sl_UTF8 Http_CookieValue (Http_Client * cl, m9_sl_UTF8 name, m9_state *err);
+Http_Stream * Http_Open (m9_pool *pool, m9_sl_UTF8 method, m9_sl_UTF8 url, m9_sl_UTF8 headers, m9_sl_BYTE body, m9_state *err);
+bool Http_NextLine (m9_pool *pool, Http_Stream * *s, m9_pool *s_pool, m9_sl_UTF8 *line, m9_state *err);
+void Http_CloseStream (Http_Stream * *s, m9_pool *s_pool, m9_state *err);
 double Http_Backoff (int64_t failures, double factor, m9_state *err);
 bool Http_Retryable (m9_sl_UTF8 method, int64_t status, bool hasRetryAfter, m9_state *err);
 double Http_RetryAfter (m9_sl_UTF8 headers, double now, m9_state *err);
