@@ -57,7 +57,7 @@
 # release.)
 #
 # A GATE THAT MEASURES TIME IS RUN AGAIN ALONE BEFORE IT IS RED.  The
-# gates of M9_LANES_RETRY (default: scale) share the machine with the
+# gates of M9_LANES_RETRY (default: scale and flock) share the machine with the
 # other lanes, and with whatever else the machine does.  One of them
 # that is red is run once more after the lanes have ended.  Green then,
 # its line says `ok alone' and the step is not red: the first run
@@ -70,13 +70,25 @@ cd "$(dirname "$0")/../.." || exit 1
 # container, found 2026-11-21).  GitHub's runners have them off too.
 ulimit -c 0 2>/dev/null
 L=$(mktemp -d "${RUNNER_TEMP:-/tmp}/m9lanes.XXXXXX") || exit 1
-RETRY=${M9_LANES_RETRY-scale}
+# flock joined on 2026-11-22: its flight on one carrier failed twice
+# on the loaded CI runner ("a bird could not be started") and was
+# green when run again, and each failure cost a whole job.  Its cause
+# is not found yet (the 0.29.1 cut); alone and red, it is still red.
+RETRY=${M9_LANES_RETRY-scale flock}
 
 gate () {
   case $1 in
     fpc:*) ( cd host/fpc && fpc -O2 "${1#fpc:}.pas" && "./${1#fpc:}" ) ;;
     denycheck) tools/release/denycheck.sh ;;
-    *) "runtime/test/$1.sh" ;;
+    # A gate the public tree does not carry is skipped there, out
+    # loud: llmtools tests a tool that stays private (the author,
+    # 2026-11-22).  The public tree is the one without tools/release,
+    # which the deny list never lets out.  In the private tree a
+    # missing script is red, so a misspelt gate cannot hide.
+    *) if [ -f "runtime/test/$1.sh" ]; then "runtime/test/$1.sh"
+       elif [ ! -d tools/release ]; then echo "SKIP: $1 -- its script is not in the public tree"
+       else echo "lanes: no runtime/test/$1.sh"; return 1
+       fi ;;
   esac
 }
 

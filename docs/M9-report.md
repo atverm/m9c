@@ -885,8 +885,8 @@ change, one program went from 13,924 KB of peak resident memory to
 1,828 KB.  `docs/frame-pools.md` has the measurements and what is
 still owed.*
 
-`+` is for composition and `DynStr` for accumulation, and the reason
-is no longer performance.  **`s := s + x` in a loop is linear.**  The
+`+` composes and accumulates; the reason to reach for `DynStr` is no
+longer performance.  **`s := s + x` in a loop is linear.**  The
 arena extends its top allocation in place rather than copying the
 prefix: the bytes after it are fresh arena nobody can be holding, and
 every existing holder of the old string keeps its own `{p, len}` and
@@ -901,12 +901,23 @@ written -- the copy really did happen every iteration.  Rust's
 capacity; M9's `STR` is a non-owning slice with none, and the arena
 supplies what the type does not.*
 
-The fast path is not a guarantee.  It holds while the string is the
-arena's most recent allocation, so one unrelated allocation between
-iterations returns the loop to copying, with nothing to say so --
-CPython's situation exactly, and the reason `DynStr` remains the
-accumulation API rather than a legacy one.  There is still no
-compound-assignment form.
+**An allocation between two appends does not undo it.**  The pool
+remembers the last eight strings it grew, least recently used first
+out.  When `+` has to copy a string that was itself made by an
+append, it gives the copy room for twice its length, and the next
+append goes into the room.  So `doc := doc + e` stays linear when a
+call makes `e` between two appends: 40,000 entries take 0.012 s and
+20 MB, as `DynStr.Append` does.  What still copies is a prepend
+(`d := ' ' + d`), and more than eight strings grown in turn.  A
+statement's release and a pool's free forget the strings whose
+storage they give back.  `DynStr` remains the accumulator a record
+holds across calls.  There is still no compound-assignment form.
+
+*Until 0.29.1 this said the fast path was not a guarantee: one
+unrelated allocation between iterations returned the loop to copying,
+CPython's situation, and that was why `DynStr` was the accumulation
+API.  A document of 40,000 entries made by calls took 4.4 s and 24 GB
+then (`docs/append-plan.md`).*
 
 **Returning a `+` result just works; the compiler places its memory.**
 A concatenation lives in the frame arena and dies when the frame

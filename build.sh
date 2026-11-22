@@ -6,7 +6,12 @@
 # no incremental case worth expressing: a full build is seconds.
 #
 #   ./build.sh              build into ./out
-#   ./build.sh DESTDIR      also install under DESTDIR (packaging)
+#   ./build.sh DESTDIR      also install under DESTDIR
+#   ./build.sh --install DESTDIR
+#                           install what ./build.sh built into ./out,
+#                           without building it again (packaging: the
+#                           packagings build, then install; until 0.29.1
+#                           their install step built everything twice)
 #   ./build.sh --fill-cache DESTDIR
 #                           fill DESTDIR/usr/lib/m9/cache with the
 #                           library compiled, with the m9c installed
@@ -80,7 +85,13 @@ esac
 CPPFLAGS=${CPPFLAGS:-}
 LDFLAGS=${LDFLAGS:-}
 OUT=${OUT:-out}
-DESTDIR=$1
+INSTALL_ONLY=
+if [ "${1:-}" = --install ]; then
+  INSTALL_ONLY=1
+  DESTDIR=${2:?--install wants DESTDIR}
+else
+  DESTDIR=${1:-}
+fi
 
 WARN="-std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter"
 # Apple's cc is clang, which warns by default about two things the
@@ -122,6 +133,14 @@ LIBRARY="DynStr Io Lex M9f Ast Parse Print Text Fmt Sem Gen ExplainTab Explain \
          NetCDF Grib Csv Delim Zip Pg Sparql Llm Rdf Regex Xml Hash Smtp Rsa Map Stats System Frame Parquet NbCells NbShow \
          Plot ZarrStore Zarr Diag Lsp M9fmt M9elide"
 
+if [ -n "$INSTALL_ONLY" ]; then
+  # An install from nothing would put a missing or an old m9c into the
+  # package.  Built first, by `./build.sh', or refused.
+  for f in "$OUT/m9c" "$OUT/libm9rt.a"; do
+    [ -f "$f" ] || { echo "build.sh: --install: $f is not built; run ./build.sh first" >&2; exit 1; }
+  done
+  echo "installing what $OUT holds ($(wc -c < "$OUT/m9c") bytes of m9c)"
+else
 mkdir -p "$OUT"
 
 echo "building m9c ..."
@@ -148,6 +167,7 @@ $CC $CPPFLAGS $CFLAGS $WARN -iquote runtime -c runtime/tlsshim.c -o "$OUT/tlsshi
 ar rcs "$OUT/libm9rt.a" "$OUT/m9rt.o" "$OUT/tcpshim.o" "$OUT/tlsshim.o" "$OUT/fmtshim.o"
 
 echo "built $OUT/m9c ($(wc -c < "$OUT/m9c") bytes) and $OUT/libm9rt.a"
+fi
 
 [ -n "$DESTDIR" ] || exit 0
 

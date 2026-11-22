@@ -277,9 +277,7 @@ disagree is not evidence.
          END
        END Reason ;
 
-       DynStr.Append (scratch, d, 'HTTP/1.1 '
-                      + Fmt.I64Str (status) + ' '
-                      + Reason (status)) ;
+       line := 'HTTP/1.1 ' + Fmt.I64Str (status) + ' ' + Reason (status) ;
 
    **The number appears ONCE, in the label.**  Writing `| 200 :
    RETURN '200 OK'` says it twice, and the two can disagree -- an arm
@@ -294,8 +292,7 @@ disagree is not evidence.
    `TYPE Row = RECORD code : I64 ; text : STR END` (a record is always
    a TYPE: written inline it is refused), filled once and searched --
    is also fine and is better when
-   the rows come from data.  DynStr is for ACCUMULATING across
-   statements; `+` is for composing an expression, and this
+   the rows come from data.  `+` composes an expression, and this
    language's reason for existing is the reviewer.  A `+` the
    statement consumes -- a call's argument, a condition, a value
    assigned to a scalar -- dies with that statement since 0.23.0, so
@@ -303,8 +300,12 @@ disagree is not evidence.
    Text.Eq (ids[j], '<' + id + '>')` in a loop of a million turns
    costs the arena one line, not a million (report par 2.3).  What
    still lives to the frame's end is a `+` that is STORED -- `s := s
-   + x`, a field, a VAR or KEPT argument -- which is exactly the
-   accumulation DynStr is for.
+   + x`, a field, a VAR or KEPT argument.  An append in a loop,
+   `doc := doc + e`, is linear since 0.29.1 even when calls make the
+   pieces (docs/append-plan.md): it costs what DynStr.Append costs,
+   so write `+`.  Keep DynStr for an accumulator a record holds across
+   calls.  Prepending in a loop, `d := ' ' + d`, still copies `d`
+   every time: append, then prepend once.
 
 7. **No NIL.**  `OPT PTR T`, and the only way in is `IF x IS SOME p
    THEN ... END` -- as the WHOLE condition of IF/ELSIF/WHILE, binding
